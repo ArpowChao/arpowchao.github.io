@@ -1,0 +1,11 @@
+{
+  "name": "my-jekyll-blog",
+  "version": "1.0.0",
+  "description": "A Jekyll blog running in a Dev Container",
+  "scripts": {
+    "start": "bundle exec jekyll serve --host 0.0.0.0 --livereload --incremental",
+    "build": "bundle exec jekyll build"
+  },
+  "author": "",
+  "license": "ISC"
+}
