@@ -2,7 +2,8 @@
 	"name": "Jekyll 個人網站開發環境",
 	// 使用我們自訂的 Dockerfile 來建立環境
 	"build": {
-		"dockerfile": "Dockerfile"
+		"dockerfile": "Dockerfile",
+		"context": ".."
 	},
 	// 在容器建立後，如果 Chirpy 的初始化腳本存在，就執行它
 	"postCreateCommand": "if [ -f tools/init.sh ]; then bash tools/init.sh; fi",
