@@ -1,12 +1,13 @@
 {
-  "name": "arpowchao.github.io", 
+  "name": "arpowchao.github.io",
   "version": "1.0.0",
   "description": "A personal website built with Jekyll and Chirpy theme.",
   "scripts": {
     "dev": "bundle exec jekyll serve --host 0.0.0.0 --livereload",
     "sync": "git checkout main && git pull origin main && git checkout -",
     "save": "git add . && git commit",
-    "push": "git push"
+    "push": "git push",
+    "pr": "gh pr create --fill"
   },
   "keywords": [
     "jekyll",
