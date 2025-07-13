@@ -1,30 +1,40 @@
 {
-  "name": "Jekyll",
-  "image": "mcr.microsoft.com/devcontainers/jekyll:2-bullseye",
+  "name": "Jekyll 個人網站開發環境",
+  "dockerFile": "Dockerfile",
+  // 在容器創建後立即執行，這類指令通常用於不需重新構建的設定
   "onCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
-  "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "postStartCommand": "bundle exec jekyll serve --host 0.0.0.0 --livereload",
+  // 在容器啟動並就緒後執行，非常適合用於安裝專案依賴
+  "postCreateCommand": "bundle install && npm install",
   "customizations": {
     "vscode": {
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "zsh"
+        "editor.wordWrap": "on",
+        "files.associations": {
+          "*.html": "liquid",
+          "*.md": "liquid"
+        },
+        "terminal.integrated.defaultProfile.linux": "bash", // 設置預設的終端機
+        "prettier.tabWidth": 2, // 格式化工具的通用設定
+        "markdownlint.config": {
+          "MD033": false
+        }
       },
       "extensions": [
-        // Liquid tags auto-complete
+        "Shopify.ruby-lsp",
+        "sgarcial.vscode-liquid",
         "killalau.vscode-liquid-snippets",
-        // Liquid syntax highlighting and formatting
-        "Shopify.theme-check-vscode",
-        // Shell
-        "timonwong.shellcheck",
-        "mkhl.shfmt",
-        // Common formatter
-        "EditorConfig.EditorConfig",
+        "redhat.vscode-yaml",
+        "davidanson.vscode-markdownlint",
+        "streetsidesoftware.code-spell-checker",
+        "vscode-icons-team.vscode-icons",
         "esbenp.prettier-vscode",
-        "stylelint.vscode-stylelint",
         "yzhang.markdown-all-in-one",
-        // Git
         "mhutchie.git-graph"
       ]
     }
-  }
+  },
+  "forwardPorts": [
+    4000
+  ],
+  "remoteUser": "root"
 }
