@@ -16,20 +16,20 @@ timezone: Asia/Taipei
 
 title: "Sanbu Space" # the main title
 
-tagline: A text-focused Jekyll theme # it will display as the subtitle
+tagline: 交流和學習 (Learning and Sharing) # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
-  A minimal, responsive and feature-rich Jekyll theme for technical writing.
-
+  People are like little birds—no matter how hard we try to fly against gravity, we can never truly leave this blue cradle of life. But we can enjoy every moment and travel to the worlds we most wish to see.
+  Thank you for visiting; this is a place where Arpow shares a part of their world, which includes finance, physics, technology, education, and photography.
 # Fill in the protocol & hostname for your site.
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
 url: "https://arpowchao.github.io"
 
 github:
-  username: github_username # change to your GitHub username
+  username: Arpowchao # change to your GitHub username
 
 twitter:
-  username: twitter_username # change to your Twitter username
+  username: ChinHungChao趙晉鴻 # change to your Twitter username
 
 social:
   # Change to your full name.
