@@ -1,14 +1,10 @@
-# frozen_string_literal: true
-
+# Gemfile (Docker 優化版)
 source "https://rubygems.org"
 
+# 核心：您的 Chirpy 主題
 gem "jekyll-theme-chirpy", "~> 7.3"
 
+# 用於測試的 gem，保留無妨
 gem "html-proofer", "~> 5.0", group: :test
 
-platforms :mingw, :x64_mingw, :mswin, :jruby do
-  gem "tzinfo", ">= 1", "< 3"
-  gem "tzinfo-data"
-end
-
-gem "wdm", "~> 0.2.0", :platforms => [:mingw, :x64_mingw, :mswin]
+# --- 以下 Windows 相關的設定已全部移除，因為 Docker 環境不需要它們 ---
