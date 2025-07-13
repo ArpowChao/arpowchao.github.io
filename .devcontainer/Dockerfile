@@ -11,16 +11,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 設定工作目錄
 WORKDIR /workspace
 
-# 【修正】從上一層目錄 (../) 複製 Gemfile
-COPY ../Gemfile ./
+# 【改回】直接複製 Gemfile，因為現在的視野是專案根目錄
+COPY Gemfile ./
 RUN bundle install
 
-# 【修正】從上一層目錄 (../) 複製 package.json
+# 【改回】直接複製 package.json
 # 檢查 package.json 是否存在，如果存在才複製並執行 npm install
-RUN if [ -f ../package.json ]; then \
-    cp ../package.json . && \
+RUN if [ -f package.json ]; then \
     npm install; \
     fi
 
-# 【修正】從上一層目錄 (../) 複製專案的所有其他檔案
-COPY .. .
+# 【改回】直接複製所有檔案
+COPY . .
