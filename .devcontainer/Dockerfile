@@ -2,7 +2,6 @@
 FROM ruby:3.2-bullseye
 
 # 安裝必要的系統工具，包含 git、Node.js 和 npm
-# 這一步很重要，它會把 npm 工具安裝到我們的環境裡
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     nodejs \
@@ -12,15 +11,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 設定工作目錄
 WORKDIR /workspace
 
-# 僅複製 Gemfile，然後安裝 Ruby 套件
-# 這樣可以利用 Docker 的快取機制，未來如果只有文章變動，就不用重裝套件
-COPY Gemfile ./
+# 【修正】從上一層目錄 (../) 複製 Gemfile
+COPY ../Gemfile ./
 RUN bundle install
 
-# 僅複製 package.json，然後安裝 Node.js 套件
-# 這會在這裡產生 package-lock.json，解決找不到檔案的問題
-COPY package.json ./
-RUN npm install
+# 【修正】從上一層目錄 (../) 複製 package.json
+# 檢查 package.json 是否存在，如果存在才複製並執行 npm install
+RUN if [ -f ../package.json ]; then \
+    cp ../package.json . && \
+    npm install; \
+    fi
 
-# 最後，將專案的所有其他檔案複製進來
-COPY . .
+# 【修正】從上一層目錄 (../) 複製專案的所有其他檔案
+COPY .. .
