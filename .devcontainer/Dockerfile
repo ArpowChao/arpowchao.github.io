@@ -1,23 +1,26 @@
-# 使用官方 Ruby 映像檔作為基礎，確保環境乾淨
+# 使用官方的 Ruby 映像檔作為基礎
 FROM ruby:3.2-bullseye
 
-# 安裝系統依賴項，例如 Node.js 和其他編譯工具
-RUN apt-get update && apt-get install -y \
-  nodejs \
-  npm \
-  build-essential
+# 安裝必要的系統工具，包含 git、Node.js 和 npm
+# 這一步很重要，它會把 npm 工具安裝到我們的環境裡
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
 # 設定工作目錄
 WORKDIR /workspace
 
-# 安裝 Bundler 和 Jekyll
-RUN gem install bundler jekyll
+# 僅複製 Gemfile，然後安裝 Ruby 套件
+# 這樣可以利用 Docker 的快取機制，未來如果只有文章變動，就不用重裝套件
+COPY Gemfile ./
+RUN bundle install
 
-# 將 Gemfile 和 Gemfile.lock 複製到容器中
-COPY Gemfile Gemfile.lock ./
+# 僅複製 package.json，然後安裝 Node.js 套件
+# 這會在這裡產生 package-lock.json，解決找不到檔案的問題
+COPY package.json ./
+RUN npm install
 
-# 將 package.json 和 package-lock.json 複製到容器中
-COPY package.json package-lock.json ./
-
-# 暴露 Jekyll 伺服器的預設端口
-EXPOSE 4000
+# 最後，將專案的所有其他檔案複製進來
+COPY . .
