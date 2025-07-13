@@ -1,38 +1,38 @@
 {
-  "name": "Jekyll 個人網站開發環境",
-  "dockerFile": "Dockerfile",
-  "onCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
-  "postCreateCommand": "bundle install && npm install",
-  "customizations": {
-    "vscode": {
-      "settings": {
-        "editor.wordWrap": "on",
-        "files.associations": {
-          "*.html": "liquid",
-          "*.md": "liquid"
-        },
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "prettier.tabWidth": 2,
-        "markdownlint.config": {
-          "MD033": false
-        }
-      },
-      "extensions": [
-        "Shopify.ruby-lsp",
-        "sgarcial.vscode-liquid",
-        "killalau.vscode-liquid-snippets",
-        "redhat.vscode-yaml",
-        "davidanson.vscode-markdownlint",
-        "streetsidesoftware.code-spell-checker",
-        "vscode-icons-team.vscode-icons",
-        "esbenp.prettier-vscode",
-        "yzhang.markdown-all-in-one",
-        "mhutchie.git-graph"
-      ]
-    }
-  },
-  "forwardPorts": [
-    4000
-  ],
-  "remoteUser": "root"
+	"name": "Jekyll 個人網站開發環境",
+	"dockerFile": "Dockerfile",
+	"onCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+	"postCreateCommand": "bundle install && npm install && if [ -f tools/init.sh ]; then bash tools/init.sh; fi",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"editor.wordWrap": "on",
+				"files.associations": {
+					"*.html": "liquid",
+					"*.md": "liquid"
+				},
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"prettier.tabWidth": 2,
+				"markdownlint.config": {
+					"MD033": false
+				}
+			},
+			"extensions": [
+				"Shopify.ruby-lsp",
+				"sgarcial.vscode-liquid",
+				"killalau.vscode-liquid-snippets",
+				"redhat.vscode-yaml",
+				"davidanson.vscode-markdownlint",
+				"streetsidesoftware.code-spell-checker",
+				"vscode-icons-team.vscode-icons",
+				"esbenp.prettier-vscode",
+				"yzhang.markdown-all-in-one",
+				"mhutchie.git-graph"
+			]
+		}
+	},
+	"forwardPorts": [
+		4000
+	],
+	"remoteUser": "root"
 }
