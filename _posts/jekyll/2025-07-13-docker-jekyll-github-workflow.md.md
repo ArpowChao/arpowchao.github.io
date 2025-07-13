@@ -2,9 +2,9 @@
 layout: post
 title: "從零到專業：一個 GitHub Jekyll 網站的建立案例研究"
 title_en: "From Zero to Pro: A Case Study on Setting Up a GitHub Jekyll Site"
-date: 2025-07-13 21:00:00 +0800
+date: 2025-07-13 22:00:00 +0800
 categories: [Tech, Tutorial]
-tags: [docker, vscode, jekyll, dev-environment, wsl, github]
+tags: [docker, vscode, jekyll, dev-environment, wsl, github, cli]
 ---
 
 ### 引言 (Introduction)
@@ -37,66 +37,49 @@ tags: [docker, vscode, jekyll, dev-environment, wsl, github]
 
 > Our core philosophy is "Environment as Code." We will use two files to precisely define our development environment. In the root of your Jekyll project, create a folder named `.devcontainer`.
 
-#### 1.1 建築藍圖 (`Dockerfile`)
+#### 1.1 建築藍圖 (`Dockerfile`) - 包含 GitHub CLI
 
-在 `.devcontainer` 資料夾中，建立一個名為 `Dockerfile` 的檔案。這是我們開發環境的「建築藍圖」，它指示 Docker 如何從無到有建立一個包含所有必要工具的「小電腦」。
+在 `.devcontainer` 資料夾中，建立一個名為 `Dockerfile` 的檔案。這是我們開發環境的「建築藍圖」，它指示 Docker 如何從無到有建立一個包含所有必要工具的「小電腦」。**這個版本新增了 GitHub CLI (`gh`) 的安裝步驟。**
 
-> In the `.devcontainer` folder, create a file named `Dockerfile`. This is the "blueprint" for our development environment, instructing Docker on how to build a "mini-computer" containing all the necessary tools from scratch.
+> In the `.devcontainer` folder, create a file named `Dockerfile`. This is the "blueprint" for our development environment, instructing Docker on how to build a "mini-computer" containing all the necessary tools from scratch. **This version adds the installation step for the GitHub CLI (`gh`).**
 
 ```dockerfile
 # Dockerfile
 
 # Step 1: 選擇基礎作業系統與工具
-# 我們從一個已經安裝好 Ruby 3.2 的官方 Debian (Bullseye) 映像檔開始。
-# ---
-# Step 1: Choose the base operating system and tools.
-# We start from an official Debian (Bullseye) image that already has Ruby 3.2 installed.
 FROM ruby:3.2-bullseye
 
 # Step 2: 安裝額外的系統依賴
-# Jekyll 主題 (如 Chirpy) 可能需要 Node.js 來處理 JavaScript，所以我們一併安裝。
-# `apt-get update` 是更新套件列表，`&&` 串接指令，`--no-install-recommends` 避免安裝非必要的套件。
-# ---
-# Step 2: Install additional system dependencies.
-# Jekyll themes (like Chirpy) may require Node.js to process JavaScript, so we install it as well.
-# `apt-get update` refreshes the package list, `&&` chains commands, and `--no-install-recommends` avoids installing non-essential packages.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     nodejs \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
-# Step 3: 設定工作目錄
-# 在容器內建立一個名為 /workspace 的資料夾，並將其設定為預設路徑。
+# 【新增步驟】安裝 GitHub CLI (gh)
+# 這是官方建議的安裝步驟，目的是將 GitHub 的軟體庫加入到我們的系統中
 # ---
-# Step 3: Set the working directory.
-# Create a folder named /workspace inside the container and set it as the default path.
+# [NEW STEP] Install GitHub CLI (gh)
+# These are the official installation steps to add the GitHub repository to our system.
+RUN curl -fsSL [https://cli.github.com/packages/githubcli-archive-keyring.gpg](https://cli.github.com/packages/githubcli-archive-keyring.gpg) | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+&& chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] [https://cli.github.com/packages](https://cli.github.com/packages) stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+&& apt-get update \
+&& apt-get install gh -y
+
+# Step 3: 設定工作目錄
 WORKDIR /workspace
 
 # Step 4: 安裝專案依賴 (Ruby Gems)
-# 為了利用 Docker 的快取機制，我們先只複製 Gemfile 並安裝，
-# 這樣未來如果只有文章內容變動，就無需重裝所有套件，能大幅加快重建速度。
-# ---
-# Step 4: Install project dependencies (Ruby Gems).
-# To leverage Docker's caching mechanism, we first copy only the Gemfile and install.
-# This way, if only post content changes in the future, we won't need to reinstall all gems, significantly speeding up rebuilds.
 COPY Gemfile ./
 RUN bundle install
 
 # Step 5: 安裝專案依賴 (Node.js Packages)
-# 同樣地，先處理 Node.js 的依賴。
-# ---
-# Step 5: Install project dependencies (Node.js Packages).
-# Similarly, we handle Node.js dependencies first.
 RUN if [ -f package.json ]; then \
     npm install; \
     fi
 
 # Step 6: 複製整個專案
-# 最後，將專案的所有其他檔案（文章、設定檔等）複製到工作目錄。
-# ---
-# Step 6: Copy the entire project.
-# Finally, copy all other project files (posts, configs, etc.) into the working directory.
 COPY . .
 ```
 
@@ -155,7 +138,11 @@ gem "jekyll-theme-chirpy", "~> 7.3"
 # gem "jekyll-seo-tag"
 ```
 
-#### 2.2 Node.js 與快捷指令 (`package.json`)
+#### 2.2 Node.js 與快捷指令 (`package.json`) - 包含一鍵發布
+
+這個版本的 `package.json` 新增了 `"pr"` 指令，讓你可以從終端機一鍵建立 Pull Request。
+
+> This version of `package.json` adds the `"pr"` script, allowing you to create a Pull Request with a single command from your terminal.
 
 ```json
 {
@@ -166,7 +153,8 @@ gem "jekyll-theme-chirpy", "~> 7.3"
     "dev": "bundle exec jekyll serve --host 0.0.0.0 --livereload",
     "sync": "git checkout main && git pull origin main && git checkout -",
     "save": "git add . && git commit",
-    "push": "git push"
+    "push": "git push",
+    "pr": "gh pr create --fill"
   },
   "author": "Your Name",
   "license": "ISC"
@@ -189,7 +177,66 @@ gem "jekyll-theme-chirpy", "~> 7.3"
 
 ---
 
+### 【進階技巧】終端機驅動的完整工作流程
+
+當你熟悉了基本流程後，你會發現每次發布都要打開瀏覽器很繁瑣。我們可以透過 GitHub CLI (`gh`) 這個官方工具，實現從頭到尾都在終端機完成的專業流程。
+
+> **[Advanced Tip] A Terminal-Driven Full Workflow**
+>
+> Once you're familiar with the basic flow, you'll find opening a browser for every release tedious. We can achieve a professional, end-to-end terminal workflow using the official GitHub CLI (`gh`) tool.
+
+1.  **安裝與授權 `gh`**:
+
+    - 我們的 `Dockerfile` 新版本已經包含了安裝 `gh` 的步驟。在重建容器後，你需要執行一次性的登入授權：
+    - `gh auth login`
+    - 跟隨提示，選擇 `Login with a web browser`，並在瀏覽器中完成授權。
+
+2.  **同步主幹更新**:
+
+    - 有時在你開發的過程中，`main` 分支可能已經有了新的更新（例如你加入了 `pr` 指令）。為了避免衝突，你需要將這些更新同步到你目前的工作分支。
+    - `git merge main`
+    - 這個指令會將 `main` 的最新進度合併到你目前的分支。
+
+3.  **一鍵發布**:
+    - 在你的文章分支上，完成 `npm run save` 和 `npm run push` 之後，直接執行：
+    - `npm run pr`
+    - `gh` 會自動幫你建立 Pull Request，並詢問你是否要立即合併。從此告別網頁介面！
+
+---
+
 ### 常見問題與解決方案 (Troubleshooting)
+
+- **【終極手段】問題：** `npm run pr` 執行時持續提示 `could not find any commits between...`。
+- **解決方案：** 這代表您的分支歷史與 `main` 分支的關係已經混亂。最乾淨的解決方法是使用 `cherry-pick`（摘櫻桃）來重建一個乾淨的分支：
+  1.  `git log` (找到並複製您要發布的文章 commit 的 hash 值，例如 `517e00a`)
+  2.  `git checkout main`
+  3.  `git pull origin main` (確保 main 是最新的)
+  4.  `git checkout -b <一個全新的分支名>` (例如 `feature/publish-article-final`)
+  5.  `git cherry-pick <您複製的commit-hash>` (將您的文章嫁接到新分支上)
+  6.  `git push --set-upstream origin <您全新的分支名>`
+  7.  `npm run pr` (這次一定會成功)
+
+> - **[Ultimate Fix] Problem:** Running `npm run pr` persistently shows a `could not find any commits between...` error.
+> - **Solution:** This indicates your branch history has become tangled with `main`. The cleanest solution is to rebuild a pristine branch using `cherry-pick`:
+>   1.  `git log` (Find and copy the commit hash of the post you want to publish, e.g., `517e00a`)
+>   2.  `git checkout main`
+>   3.  `git pull origin main` (Ensure main is up-to-date)
+>   4.  `git checkout -b <a-brand-new-branch-name>` (e.g., `feature/publish-article-final`)
+>   5.  `git cherry-pick <the-commit-hash-you-copied>` (Graft your article commit onto the new branch)
+>   6.  `git push --set-upstream origin <your-new-branch-name>`
+>   7.  `npm run pr` (This will now succeed)
+
+- **問題：** `npm run pr` 執行時提示 `missing script: pr`。
+- **解決方案：** 這代表你目前的分支是從「舊的」`main` 分支出來的，當時的 `package.json` 還沒有 `"pr"` 指令。請執行 `git merge main` 將主幹的最新修改同步過來即可解決。
+
+> - **Problem:** Running `npm run pr` shows a `missing script: pr` error.
+> - **Solution:** This means your current branch was created from an "older" `main` branch where `package.json` didn't have the `"pr"` script yet. Simply run `git merge main` to sync the latest changes from the main branch to resolve this.
+
+- **問題：** `git commit` 時提示 `Author identity unknown`。
+- **解決方案：** 這是因為容器是全新的，還不認識你。每個新容器都需要執行一次性的身分設定：`git config --global user.name "Your Name"` 和 `git config --global user.email "you@example.com"`。
+
+> - **Problem:** `git commit` prompts `Author identity unknown`.
+> - **Solution:** This is because the container is brand new and doesn't know who you are. Each new container requires a one-time identity setup: `git config --global user.name "Your Name"` and `git config --global user.email "you@example.com"`.
 
 - **問題：** `code .` 指令無法啟動 VS Code 或打開了錯誤的程式 (例如 Cursor)。
 - **解決方案：** 這是本機電腦的 PATH 環境變數衝突。最徹底的解決方法是手動編輯 Windows 的「系統環境變數」，找到 `Path` 變數，將 VS Code 的 `bin` 資料夾路徑（例如 `C:\Users\YourName\AppData\Local\Programs\Microsoft VS Code\bin`）**上移到列表最頂端**。
