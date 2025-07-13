@@ -7,4 +7,4 @@ tags: [Education, Bilingual]
 toc: true
 ---
 
-![2025 Bilingual Course - First Session](/assets/img/bilingualicon/kH-bilingual-2025-1st.jpg)
+![2025 Bilingual Course - First Session](/assets/img/bilingualicon/KH-bilingual-2025-1st.jpg)
