@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>給高中生的測量不確定度完整指南</title>
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMckDpbDM7voUVD3yTMgLTrCKwW2heG+YiSH2e/tcxNBsWZLTA" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang TC", "Microsoft JhengHei", sans-serif;
+            line-height: 1.8;
+            color: #333;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            background-color: #fdfdfd;
+        }
+        h1, h2, h3, h4 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.4em;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        h1 { font-size: 2.4em; text-align: center; border-bottom: none; }
+        h2 { font-size: 1.8em; }
+        h3 { font-size: 1.4em; border-bottom: 1px solid #ccc; }
+        h4 { font-size: 1.2em; border-bottom: none; color: #0056b3;}
+        .container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .intro, .summary, .pro-tip, .math-note {
+            background-color: #e9f7ff;
+            border-left: 5px solid #007bff;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+        .pro-tip { background-color: #fffbe6; border-left-color: #ffc107; }
+        .math-note { background-color: #f0f0f0; border-left-color: #6c757d; font-size: 0.9em; }
+        .concept-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .formula {
+            background-color: #282c34; color: #f1fa8c; padding: 1rem 1.5rem;
+            border-radius: 5px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            overflow-x: auto; margin: 1rem 0; font-size: 1.1em; text-align: center;
+        }
+        strong { color: #d9534f; }
+        .interactive-ruler-container {
+            width: 100%; max-width: 600px; margin: 2rem auto;
+            text-align: center; padding: 1.5rem; background: #fafafa; border-radius: 8px; overflow: hidden;
+        }
+        .ruler-bg {
+            height: 120px;
+            background-image:
+                linear-gradient(to right, #ccc 1px, transparent 1px),
+                linear-gradient(to right, #888 1px, transparent 1px);
+            background-size: 10% 100%, 100% 100%; /* Minor ticks every 0.1, major every 1.0 */
+            background-position: 0 70px, 0 50px;
+            position: relative;
+            font-family: monospace;
+        }
+        .pencil { 
+            height: 30px; 
+            width: 76%; /* Tip at 8.76cm on a 8.0-9.0 ruler (1cm span) */
+            background: linear-gradient(90deg, #f0c040 95%, #333 95%, #333 98%, #ffc0cb 98%);
+            border-radius: 0 8px 8px 0;
+            position: absolute;
+            top: 30px;
+            left: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .uncertainty-zone {
+            position: absolute;
+            height: 120px;
+            top: 0;
+            background-color: rgba(0, 123, 255, 0.2);
+            border-left: 1px dashed #0056b3;
+            border-right: 1px dashed #0056b3;
+        }
+        .cursor-line {
+            position: absolute;
+            height: 120px;
+            top: 0;
+            width: 2px;
+            background-color: #d9534f;
+            transform: translateX(-1px); /* Center the line */
+        }
+        .ruler-labels { display: flex; justify-content: space-between; padding-top: 80px;}
+        .simulation-container {
+            display: flex; flex-wrap: wrap; justify-content: space-around;
+            align-items: flex-end; margin-top: 2rem; padding: 1.5rem 1rem;
+            background: #fafafa; border-radius: 8px;
+        }
+        .dist-group { text-align: center; margin: 1rem; }
+        .histogram {
+            display: flex; align-items: flex-end; border-bottom: 2px solid #333;
+            width: 180px; height: 150px; margin: 0 auto;
+            transform: perspective(300px) rotateX(20deg);
+        }
+        .bar { background-color: #007bff; flex-grow: 1; margin: 0 1px; opacity: 0.7; }
+        .interactive-chart-container {
+            width: 100%; max-width: 600px; margin: 2rem auto;
+            text-align: center; padding: 1.5rem; background: #fafafa; border-radius: 8px;
+        }
+        canvas { width: 100%; height: auto; background-color: #fff; border-radius: 4px; }
+        .controls { margin-top: 1rem; }
+        .controls input[type="range"] { width: 80%; }
+        .controls p { font-size: 1.2em; font-weight: bold; color: #0056b3; margin: 0.5rem 0;}
+        table { width: 100%; border-collapse: collapse; margin: 1.5em 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #f2f2f2; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+
+<div class="container">
+
+    <h1>給高中生的測量不確定度完整指南</h1>
+    
+    <h2>一、 為什麼我們需要「不確定度」？</h2>
+    <div class="concept-box">
+        <h3>傳統「誤差」的矛盾</h3>
+        <p>我們以前學過：<strong>誤差 = 實驗值 - 真實值</strong>。</p>
+        <p>但這裡有一個大問題：如果我們知道**真實值**，那一開始何必測量呢？就是因為不知道真實值，我們才需要做實驗啊！所以這個公式在現實中根本沒辦法用。</p>
+        <p>有人可能會想，那我們反過來說：<strong>真實值 = 實驗值 ± 誤差</strong>。但這個說法也很奇怪，「加上或減去一個錯誤」聽起來很不科學。到底該怎麼辦呢？</p>
+        <h3>一個更好的想法：用「範圍」來思考</h3>
+        <p>想像一下你正在用尺量一支鉛筆的長度。筆尖剛好落在兩個刻度之間，你該怎麼辦？</p>
+        <div class="interactive-ruler-container">
+            <h4>互動模擬：量鉛筆</h4>
+            <div class="ruler-bg">
+                <div class="pencil"></div>
+                <div class="uncertainty-zone" id="zone"></div>
+                <div class="cursor-line" id="cursor"></div>
+                <div class="ruler-labels">
+                    <span>8.0</span><span></span><span>8.2</span><span></span><span>8.4</span><span></span><span>8.6</span><span></span><span>8.8</span><span></span><span>9.0 cm</span>
+                </div>
+            </div>
+            <div class="controls">
+                <label for="ruler-slider">拖動紅色游標來估計筆尖位置</label>
+                <input type="range" id="ruler-slider" min="870" max="880" value="876" step="1">
+                <p>你的最佳估計值：<span id="readingValue">8.76</span> cm</p>
+                <p>不確定範圍：<span id="uncertaintyRangeText">(8.71 ~ 8.81) cm</span></p>
+            </div>
+        </div>
+        <p>看到了嗎？你無法給出一個「絕對精準」的數字，但你可以很自信地說出一個**範圍**。例如：「我的最佳估計是8.76公分，而我確定真實值落在8.71到8.81公分之間」。</p>
+        <p><strong>這就是「不確定度」的核心精神！</strong>它不是說你犯了錯，而是科學地、誠實地表達出你的測量結果所在的「可信範圍」。</p>
+    </div>
+
+
+    <h2>二、 從「誤差」到「不確定度」的科學語言</h2>
+    <div class="concept-box">
+        <h3>傳統誤差的兩種來源</h3>
+        <ul>
+            <li><strong>系統誤差 (Systematic Error)</strong>：這就像槍的瞄準鏡歪掉了，就算你是神射手，每次都打在同一個點，但那個點就是偏離靶心。這代表你的測量工具或方法本身有問題，導致結果<strong>「不準」</strong>。</li>
+            <li><strong>隨機誤差 (Random Error)</strong>：這就像你每次瞄準時，手都會微微顫抖。就算瞄準鏡是準的，你的彈孔還是會在靶心附近散開。這代表每次測量都會有無法預測的隨機波動，導致結果<strong>「不穩」</strong>。</li>
+        </ul>
+    </div>
+    <div class="pro-tip">
+        <h3>如何對付「不穩」的隨機誤差？</h3>
+        <p>最便宜也最有效的作法，就是**「多量幾次取平均」**！當你把多次測量的結果平均後，那些偏高和偏低的隨機波動會互相抵銷，讓平均值更接近靶心。而「不確定度」這套方法，就是用科學的語言來描述這件事。</p>
+    </div>
+
+    <h2>三、 深入理解：標準差與統計的魔法</h2>
+    <div class="concept-box">
+        <h3>到底什麼是「標準差 (s)」？</h3>
+        <p>標準差是一個數字，用來描述你的數據有多**分散**或**不穩**。它的公式看起來很可怕，但我們一步步拆解它，你會發現它非常有道理：</p>
+        <div class="formula"> \( s = \sqrt{\frac{\sum(x_i - \bar{x})^2}{n-1}} \) </div>
+        <ol>
+            <li><strong>\( (x_i - \bar{x}) \)：離均差</strong> - 計算「每一個數據」跟「平均值」差了多少，這是看**離散**程度的基礎。</li>
+            <li><strong>\( (\dots)^2 \)：平方</strong> - 把差值平方，是為了把負數變正數，避免正負抵銷。</li>
+            <li><strong>\( \sum(\dots)^2 \)：加總</strong> - 把所有平方後的差值全部加起來，得到一個「總離散程度」。</li>
+            <li><strong>\( \frac{\dots}{n-1} \)：平均</strong> - 把「總離散程度」除以 `n-1` 來取「平均影響力」。</li>
+            <li><strong>\( \sqrt{\dots} \)：開根號</strong> - 因為前面做了平方，單位也變成了平方（例如 cm²），最後開根號是為了把**單位還原**！</li>
+        </ol>
+    </div>
+
+    <div class="concept-box">
+        <h3>標準差的機率意義：互動式常態分佈</h3>
+        <p>對於很多隨機測量，數據的分佈會像一個鐘形的「常態分佈」。這時，標準差(s)就有一個神奇的機率意義。拖動下面的滑桿，親手驗證 <strong>68-95-99.7 法則</strong>吧！</p>
+        <div class="interactive-chart-container">
+            <canvas id="bellCurveCanvas" width="500" height="250"></canvas>
+            <div class="controls">
+                <label for="sigma-slider">平均值 ± <strong><span id="kValue">1.0</span></strong> 倍標準差</label>
+                <input type="range" id="sigma-slider" min="0" max="3" value="1" step="0.01">
+                <p>涵蓋機率：<span id="probabilityValue">68.3%</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="concept-box">
+        <h3>母體 vs. 樣本：萬次抽樣模擬</h3>
+        <p>想像一個大箱子裡有成千上萬張數字卡片（**母體**）。我們不可能全抽完，所以只抽一小把（**樣本**）。實驗也是一樣：我們用有限的樣本，去猜測無限的母體。下面的圖模擬了**上萬次**實驗後的結果，你會親眼見證「取平均」的神奇效果！</p>
+        
+        <div class="simulation-container">
+             <div class="dist-group">
+                <h5>1抽 (單次測量)</h5>
+                <div class="histogram">
+                    <div class="bar" style="height: 55%;"></div> <div class="bar" style="height: 58%;"></div> <div class="bar" style="height: 60%;"></div> <div class="bar" style="height: 62%;"></div> <div class="bar" style="height: 59%;"></div> <div class="bar" style="height: 56%;"></div>
+                </div>
+                <p><strong>結果：</strong>像一片平坦的沙灘，分佈很散亂。</p>
+            </div>
+            <div class="dist-group">
+                <h5>3抽平均</h5>
+                <div class="histogram">
+                    <div class="bar" style="height: 20%;"></div> <div class="bar" style="height: 50%;"></div> <div class="bar" style="height: 85%;"></div> <div class="bar" style="height: 90%;"></div> <div class="bar" style="height: 45%;"></div> <div class="bar" style="height: 18%;"></div>
+                </div>
+                <p><strong>結果：</strong>像一座小山丘，分佈明顯變集中。</p>
+            </div>
+            <div class="dist-group">
+                <h5>9抽平均</h5>
+                <div class="histogram">
+                    <div class="bar" style="height: 2%;"></div> <div class="bar" style="height: 15%;"></div> <div class="bar" style="height: 80%;"></div> <div class="bar" style="height: 100%;"></div> <div class="bar" style="height: 75%;"></div> <div class="bar" style="height: 12%;"></div><div class="bar" style="height: 1%;"></div>
+                </div>
+                <p><strong>結果：</strong>像一座拔地而起的山峰，分佈超級集中！</p>
+            </div>
+        </div>
+        <h4>如何用數字表示分佈的集中程度？</h4>
+        <p>我們可以計算這些「平均值」們的標準差，這個值稱為**平均標準差**。它代表了「平均值」這個數字本身有多穩定。下表是上萬次模擬的計算結果：</p>
+        <table>
+            <thead> <tr><th>抽樣方式</th><th>模擬出的平均標準差</th><th>與「1抽」的標準差比較</th></tr> </thead>
+            <tbody>
+                <tr><td>1抽平均 (就是單次測量)</td><td>約 2.85</td><td>-</td></tr>
+                <tr><td>3抽平均</td><td>約 1.65</td><td>大約是 2.85 / <strong>1.73</strong> ( \(\approx \sqrt{3}\) )</td></tr>
+                <tr><td>9抽平均</td><td>約 0.95</td><td>大約是 2.85 / <strong>3</strong> ( \(= \sqrt{9}\) )</td></tr>
+            </tbody>
+        </table>
+        <p><strong>我們發現一個驚人的規律！</strong> N抽平均的標準差，會是單次測量標準差的 \(1/\sqrt{N}\) 倍。</p>
+    </div>
+
+    <h2>四、 不確定度的評估與合成</h2>
+    <div class="concept-box">
+        <h3>A類與B類評估</h3>
+        <h4>A類評估 (Type A)：平均值的標準差</h4>
+        <p>現在你可以理解了！**A類不確定度 (\(u_A\)) 就是「樣本平均值」的標準差**。我們在實驗室只量一組數據(例如30次)，就是想用這一組數據的標準差(s)，來估計那個「取平均後會縮小 \(1/\sqrt{n}\) 倍」的結果！</p>
+        <div class="formula"> \( u_A = \frac{s}{\sqrt{n}} \) </div>
+        
+        <h4>B類評估 (Type B)：儀器的限制</h4>
+        <p>這是來自儀器本身的不確定性，最常見的算法是：</p>
+        <div class="formula"> \( u_B = \frac{\text{最小刻度}}{\sqrt{12}} \) </div>
+    </div>
+    
+    <div class="concept-box">
+        <h3>不確定度的合成運算</h3>
+        <h4>基本合成 (組合A類和B類)</h4>
+        <p>最終的「組合不確定度」u，就是把A類和B類當成畢氏定理的兩股來合成！</p>
+        <div class="formula"> \( u = \sqrt{u_A^2 + u_B^2} \) </div>
+
+        <h4>加法與減法 (\(Z = X \pm Y\))</h4>
+        <p><strong>規則：</strong> 不管是相加還是相減，不確定度永遠只會變大、不會抵銷！</p>
+        <div class="formula"> \( u_Z = \sqrt{u_X^2 + u_Y^2} \) </div>
+        <div class="math-note">
+            <p><strong>為什麼是這樣？(直觀證明)</strong></p>
+            <ol>
+                <li>記住一個關鍵：不確定度(u)就是標準差(s)。雖然不確定度本身不能直接相加，但**「不確定度的平方」(\(u^2\))** 這個量，在統計學上卻有著神奇的可加性！</li>
+                <li>統計學家證明了一個超好用的規則：當兩個**獨立**的測量值相加或相減時，它們的**「不確定度的平方」會直接相加**！也就是 \(u_Z^2 = u_X^2 + u_Y^2\)。</li>
+                <li>最後兩邊開根號，就得到了上面的公式！這就是為什麼就算是減法，不確定度也是用平方和相加，因為「不確定度的平方」永遠是正的，只會累積不會減少。</li>
+            </ol>
+        </div>
+
+        <h4>乘法與除法 (\(Z = X \times Y\) 或 \(Z = X / Y\))</h4>
+        <p><strong>規則：</strong> 對於乘除，我們要改看「相對不確定度」（即 \(\frac{u}{X}\)）。最終的相對不確定度，是由各部分的相對不確定度用畢氏定理想！</p>
+        <div class="formula"> \( (\frac{u_Z}{Z})^2 = (\frac{u_X}{X})^2 + (\frac{u_Y}{Y})^2 \) </div>
+        <div class="math-note">
+            <p><strong>為什麼是這樣？(直觀證明)</strong></p>
+            <ol>
+                <li>想像一個測量值 X，它可以看成是「平均值 \(\bar{X}\)」加上一個小小的「隨機波動 \(\delta_X\)」。所以 \(X = \bar{X} + \delta_X\)。</li>
+                <li>如果 \(Z = X \times Y\)，那麼 \(Z = (\bar{X} + \delta_X)(\bar{Y} + \delta_Y) = \bar{X}\bar{Y} + \bar{X}\delta_Y + \bar{Y}\delta_X + \delta_X\delta_Y\)。</li>
+                <li>因為 \(\delta_X\) 和 \(\delta_Y\) 都是很小的波動，它們相乘的 \(\delta_X\delta_Y\) 就會更小，我們可以忽略它。所以 Z 的波動 \(\delta_Z \approx \bar{X}\delta_Y + \bar{Y}\delta_X\)。</li>
+                <li>這裡我們要再次使用「不確定度的平方可以直接相加」的規則。經過一些代數運算，可以得到 \(u_Z^2 \approx \bar{X}^2 u_Y^2 + \bar{Y}^2 u_X^2\)。</li>
+                <li>最後，把這個式子兩邊都除以 \(Z^2 \approx (\bar{X}\bar{Y})^2\)，經過神奇的約分之後，就能得到上面那個漂亮的相對不確定度公式了！</li>
+            </ol>
+        </div>
+    </div>
+    
+    <h2>五、 如何報告你的測量結果？</h2>
+    <div class="summary">
+        <h3>報告流程總整理</h3>
+        <ol>
+            <li><strong>算出 \(u_A\) 和 \(u_B\)</strong>。</li>
+            <li><strong>算出總不確定度 u</strong> (用畢氏定理或運算規則)。</li>
+            <li><strong>處理不確定度的位數</strong> (通常是無條件進位取1或2位有效數字)。</li>
+            <li><strong>處理最佳估計值</strong> (把平均值四捨五入到跟不確定度的「末位」對齊)。</li>
+            <li><strong>寫出最終結果</strong>：<strong>測量結果 = (最佳估計值 ± 不確定度) 單位</strong></li>
+        </ol>
+        <p><strong>範例：</strong> 如果你算出來平均值是 `10.12345 cm`，總不確定度是 `0.016 cm`。
+        <br>那你應該報告成：<strong>(10.12 ± 0.02) cm</strong>。（不確定度0.016無條件進位變0.02，平均值就對齊到小數第二位）</p>
+    </div>
+
+</div>
+
+<!-- Scripts for interactive elements -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // KaTeX rendering
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true}, {left: "\\[", right: "\\]", display: true},
+                {left: "$", right: "$", display: false}, {left: "\\(", right: "\\)", display: false}
+            ]
+        });
+
+        // Ruler simulation
+        const rulerSlider = document.getElementById('ruler-slider');
+        const readingValue = document.getElementById('readingValue');
+        const uncertaintyRangeText = document.getElementById('uncertaintyRangeText');
+        const cursor = document.getElementById('cursor');
+        const zone = document.getElementById('zone');
+        
+        function updateRuler() {
+            const estimatedReading = parseFloat(rulerSlider.value) / 100.0;
+            const posPercent = (estimatedReading - 8.0) * 100;
+            
+            cursor.style.left = `${posPercent}%`;
+            readingValue.textContent = estimatedReading.toFixed(2);
+
+            const halfMinScale = 0.05; // Minimum scale is 0.1cm
+            const rangeStart = estimatedReading - halfMinScale;
+            const rangeEnd = estimatedReading + halfMinScale;
+            
+            uncertaintyRangeText.textContent = `(${rangeStart.toFixed(2)} ~ ${rangeEnd.toFixed(2)}) cm`;
+
+            const zoneWidthPercent = 10; // 0.1cm is 10% of the 1cm view
+            const zoneStartPercent = posPercent - (zoneWidthPercent / 2);
+            
+            zone.style.left = `${zoneStartPercent}%`;
+            zone.style.width = `${zoneWidthPercent}%`;
+        }
+        rulerSlider.addEventListener('input', updateRuler);
+        updateRuler();
+
+
+        // Bell curve simulation
+        const bellCanvas = document.getElementById('bellCurveCanvas');
+        const bellCtx = bellCanvas.getContext('2d');
+        const sigmaSlider = document.getElementById('sigma-slider');
+        const kValueSpan = document.getElementById('kValue');
+        const probValueSpan = document.getElementById('probabilityValue');
+        const bellWidth = bellCanvas.width;
+        const bellHeight = bellCanvas.height;
+        const mu = bellWidth / 2;
+        const sigma = bellWidth / 8;
+
+        function normalPDF(x, mu, sigma) {
+            const sigma2 = Math.pow(sigma, 2);
+            return (1 / Math.sqrt(2 * Math.PI * sigma2)) * Math.exp(-Math.pow(x - mu, 2) / (2 * sigma2));
+        }
+
+        function erf(x) {
+            const sign = (x >= 0) ? 1 : -1;
+            x = Math.abs(x);
+            const a1 =  0.254829592, a2 = -0.284496736, a3 =  1.421413741, a4 = -1.453152027, a5 =  1.061405429, p  =  0.3275911;
+            const t = 1.0 / (1.0 + p * x);
+            const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return sign * y;
+        }
+
+        function drawBellChart() {
+            bellCtx.clearRect(0, 0, bellWidth, bellHeight);
+            bellCtx.beginPath();
+            bellCtx.moveTo(0, bellHeight - 30);
+            bellCtx.lineTo(bellWidth, bellHeight - 30);
+            bellCtx.strokeStyle = '#333';
+            bellCtx.stroke();
+            const labels = [-3, -2, -1, 0, 1, 2, 3];
+            bellCtx.textAlign = 'center';
+            labels.forEach(k => {
+                const x = mu + k * sigma;
+                bellCtx.fillText(k === 0 ? '平均值' : `${k}s`, x, bellHeight - 10);
+            });
+            
+            bellCtx.beginPath();
+            bellCtx.moveTo(0, bellHeight - 30);
+            const peak = normalPDF(mu, mu, sigma);
+            for (let x = 0; x < bellWidth; x++) {
+                const y = (normalPDF(x, mu, sigma) / peak) * (bellHeight * 0.7);
+                bellCtx.lineTo(x, bellHeight - 30 - y);
+            }
+            bellCtx.strokeStyle = '#007bff';
+            bellCtx.lineWidth = 3;
+            bellCtx.stroke();
+
+            const k = parseFloat(sigmaSlider.value);
+            const x_start = mu - k * sigma;
+            const x_end = mu + k * sigma;
+
+            bellCtx.beginPath();
+            bellCtx.moveTo(x_start, bellHeight - 30);
+            for (let x = x_start; x < x_end; x++) {
+                 const y = (normalPDF(x, mu, sigma) / peak) * (bellHeight * 0.7);
+                 bellCtx.lineTo(x, bellHeight - 30 - y);
+            }
+            bellCtx.lineTo(x_end, bellHeight-30);
+            bellCtx.fillStyle = 'rgba(0, 123, 255, 0.3)';
+            bellCtx.fill();
+        }
+
+        function updateBellValues() {
+            const k = parseFloat(sigmaSlider.value);
+            kValueSpan.textContent = k.toFixed(2);
+            const probability = erf(k / Math.sqrt(2));
+            probValueSpan.textContent = (probability * 100).toFixed(1) + '%';
+            drawBellChart();
+        }
+
+        sigmaSlider.addEventListener('input', updateBellValues);
+        updateBellValues();
+    });
+</script>
+
+</body>
+</html>
+

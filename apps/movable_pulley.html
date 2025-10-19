@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滑輪組與阿特伍德機</title>
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ] });"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1, h2 {
+            color: #1c1e21;
+        }
+        canvas {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .controls label {
+            font-weight: 600;
+        }
+        .controls input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+        .controls button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #release-btn { background-color: #28a745; color: white; }
+        #pause-btn { background-color: #ffc107; color: #212529; }
+        #reset-btn { background-color: #6c757d; color: white; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .info-box {
+            background-color: #e9f7ff;
+            border-left: 5px solid #007bff;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .info-box h3 { margin: 0 0 5px 0; color: #0056b3; font-size: 1em; }
+        .info-box p { margin: 0; font-size: 1.4em; font-weight: bold; }
+        .explanation {
+            text-align: left;
+            background-color: #fffbe6;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .explanation ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+        .katex-display {
+            margin: 1em 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+    <div class="container">
+        <h1>滑輪組與阿特伍德機</h1>
+        <p>設定質量，點擊「釋放」開始模擬，可隨時暫停或調整速度。</p>
+        
+        <div class="controls">
+            <label for="mass1">主物質量 ($m_1$):</label>
+            <input type="number" id="mass1" value="10" min="1" step="0.5">
+            <span>kg</span>
+            <label for="mass2">配重質量 ($m_2$):</label>
+            <input type="number" id="mass2" value="10" min="0.5" step="0.1">
+            <span>kg</span>
+        </div>
+        <div class="controls">
+            <button id="release-btn">釋放</button>
+            <button id="pause-btn">暫停</button>
+            <button id="reset-btn">重置</button>
+            <label for="speed-slider">慢動作: <span id="speed-value">1.0</span>x</label>
+            <input type="range" id="speed-slider" min="0.1" max="1" step="0.05" value="1">
+        </div>
+
+        <canvas id="pulley-canvas" width="700" height="500"></canvas>
+
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>主物($m_1$)加速度</h3>
+                <p id="accel1-display">0.00 m/s²</p>
+            </div>
+            <div class="info-box">
+                <h3>配重($m_2$)加速度</h3>
+                <p id="accel2-display">0.00 m/s²</p>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h2>原理說明</h2>
+            <p>這是一個經典的物理問題。設主物體 $m_1$ 的加速度為 $a_1$ (向上為正)，則配重物體 $m_2$ 的加速度為 $a_2 = -2a_1$。根據牛頓第二運動定律，我們可以分別解出兩個物體的理論加速度：</p>
+            <p style="text-align:center;"><strong>主物體 ($m_1$) 加速度：</strong></p>
+            $$ a_1 =  \frac{2m_2 - m_1}{m_1 + 4m_2} g $$
+            <p style="text-align:center;"><strong>配重物體 ($m_2$) 加速度：</strong></p>
+            $$ a_2 = -2a_1 = -2 \frac{2m_2 - m_1}{m_1 + 4m_2} 2g $$
+            <p>從公式中可以看出：</p>
+            <ul>
+                <li>當 $2m_2 > m_1$ 時，$a_1$ 為正，主物體會加速上升。</li>
+                <li>當 $2m_2 < m_1$ 時，$a_1$ 為負，主物體會加速下降。</li>
+                <li>當 $2m_2 = m_1$ 時，$a_1$ 和 $a_2$ 均為零，系統達到力平衡。</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const canvas = document.getElementById('pulley-canvas');
+            const ctx = canvas.getContext('2d');
+
+            const mass1Input = document.getElementById('mass1');
+            const mass2Input = document.getElementById('mass2');
+            const releaseBtn = document.getElementById('release-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            const accel1Display = document.getElementById('accel1-display');
+            const accel2Display = document.getElementById('accel2-display');
+
+            const g = 9.81;
+            const PIXELS_PER_METER = 100;
+            const PULLEY_RADIUS = 25;
+            const WEIGHT_WIDTH = 60;
+            const WEIGHT_HEIGHT = 60;
+            const ROD_LENGTH = 30;
+
+            const movablePulleyX = canvas.width / 2 - 100;
+            const fixedPulleyX = movablePulleyX + 2 * PULLEY_RADIUS;
+            const fixedAnchorX = movablePulleyX - PULLEY_RADIUS;
+            const counterWeightX = fixedPulleyX + PULLEY_RADIUS;
+            const fixedPulleyY = 70;
+
+            let m1, m2, movablePulleyY, weight2Y, vel1, vel2, accel1, initialY;
+            let isSimulating = false, isPaused = true, animationFrameId;
+            let simulationSpeed = 1;
+
+            function reset() {
+                isSimulating = false;
+                isPaused = true;
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                m1 = parseFloat(mass1Input.value);
+                m2 = parseFloat(mass2Input.value);
+                
+                initialY = canvas.height / 2 + 80;
+                
+                weight2Y = initialY;
+                movablePulleyY = initialY - (PULLEY_RADIUS + ROD_LENGTH + WEIGHT_HEIGHT / 2);
+
+                vel1 = 0;
+                vel2 = 0;
+                accel1 = 0;
+                
+                releaseBtn.disabled = false;
+                pauseBtn.textContent = "暫停";
+                pauseBtn.disabled = true;
+                mass1Input.disabled = false;
+                mass2Input.disabled = false;
+                
+                updateDisplays(0, 0);
+                draw();
+            }
+
+            function togglePause() {
+                if (!isSimulating) return;
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? "繼續" : "暫停";
+                if (!isPaused) {
+                    let lastTime = performance.now();
+                    animate(lastTime);
+                }
+            }
+
+            function release() {
+                if (isSimulating && !isPaused) return; 
+                
+                reset();
+
+                isSimulating = true;
+                isPaused = false;
+
+                releaseBtn.disabled = true;
+                pauseBtn.disabled = false;
+                pauseBtn.textContent = "暫停";
+                mass1Input.disabled = true;
+                mass2Input.disabled = true;
+
+                m1 = parseFloat(mass1Input.value);
+                m2 = parseFloat(mass2Input.value);
+
+                accel1 = g * (2 * m2 - m1) / (m1 + 4 * m2);
+                
+                let lastTime = performance.now();
+                requestAnimationFrame(function(time) {
+                    animate(time, lastTime);
+                });
+            }
+
+            function animate(time, lastTime) {
+                if (isPaused || !isSimulating) return;
+
+                const dt = ((time - lastTime) / 1000) * simulationSpeed;
+                
+                if (!isNaN(dt) && dt > 0) {
+                    const accel2 = -2 * accel1;
+
+                    vel1 += accel1 * dt;
+                    vel2 += accel2 * dt;
+
+                    movablePulleyY -= vel1 * PIXELS_PER_METER * dt;
+                    weight2Y -= vel2 * PIXELS_PER_METER * dt;
+                    
+                    const weight1Bottom = movablePulleyY + PULLEY_RADIUS + ROD_LENGTH + WEIGHT_HEIGHT / 2;
+                    if (movablePulleyY < fixedPulleyY + 10 || weight1Bottom > canvas.height || weight2Y - WEIGHT_HEIGHT/2 < 0 || weight2Y + WEIGHT_HEIGHT/2 > canvas.height) {
+                        isSimulating = false;
+                        isPaused = true;
+                        pauseBtn.textContent = "已停止";
+                        pauseBtn.disabled = true;
+                    } else {
+                         updateDisplays(accel1, accel2);
+                    }
+                }
+
+                draw();
+                
+                if(isSimulating && !isPaused) {
+                    animationFrameId = requestAnimationFrame(function(newTime) {
+                        animate(newTime, time);
+                    });
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const weight1X = movablePulleyX;
+                const weight1Y = movablePulleyY + PULLEY_RADIUS + ROD_LENGTH + WEIGHT_HEIGHT / 2;
+
+                ctx.fillStyle = '#95a5a6';
+                ctx.fillRect(0, 20, canvas.width, 10);
+
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#bdc3c7';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, initialY);
+                ctx.lineTo(canvas.width, initialY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.strokeStyle = '#34495e';
+                ctx.lineWidth = 4;
+
+                ctx.beginPath();
+                ctx.moveTo(fixedAnchorX, 20);
+                ctx.lineTo(fixedAnchorX, movablePulleyY);
+                ctx.arc(movablePulleyX, movablePulleyY, PULLEY_RADIUS, Math.PI, 0, true); // Corrected arc
+                ctx.lineTo(movablePulleyX + PULLEY_RADIUS, fixedPulleyY);
+                ctx.arc(fixedPulleyX, fixedPulleyY, PULLEY_RADIUS, Math.PI, 0, false);
+                ctx.lineTo(counterWeightX, weight2Y - WEIGHT_HEIGHT/2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(fixedPulleyX, 20);
+                ctx.lineTo(fixedPulleyX, fixedPulleyY - PULLEY_RADIUS);
+                ctx.stroke();
+                
+                drawPulley(movablePulleyX, movablePulleyY);
+                drawPulley(fixedPulleyX, fixedPulleyY);
+                
+                ctx.beginPath();
+                ctx.moveTo(movablePulleyX, movablePulleyY);
+                ctx.lineTo(weight1X, weight1Y - WEIGHT_HEIGHT/2);
+                ctx.stroke();
+
+                drawWeight(weight1X, weight1Y, m1, "m1");
+                drawWeight(counterWeightX, weight2Y, m2, "m2");
+            }
+
+            function drawPulley(x, y) {
+                ctx.fillStyle = '#7f8c8d';
+                ctx.beginPath();
+                ctx.arc(x, y, PULLEY_RADIUS, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = '#ecf0f1';
+                ctx.beginPath();
+                ctx.arc(x, y, PULLEY_RADIUS * 0.8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = '#7f8c8d';
+                ctx.beginPath();
+                ctx.arc(x, y, PULLEY_RADIUS * 0.3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+                    function drawWeight(x, y, mass, label) {
+                        ctx.fillStyle = '#2c3e50';
+                        ctx.fillRect(x - WEIGHT_WIDTH / 2, y - WEIGHT_HEIGHT / 2, WEIGHT_WIDTH, WEIGHT_HEIGHT);
+                        ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center';
+                        
+                        // Draw label on top
+                        ctx.font = 'bold 18px sans-serif';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(label, x, y - 2); // Small offset from center
+            
+                        // Draw mass value below
+                        ctx.font = '14px sans-serif';
+                        ctx.textBaseline = 'top';
+                        ctx.fillText(`${mass} kg`, x, y + 2); // Small offset from center
+                    }
+            function updateDisplays(a1, a2) {
+                accel1Display.textContent = (isSimulating ? a1 : 0).toFixed(2) + ' m/s²';
+                accel2Display.textContent = (isSimulating ? a2 : 0).toFixed(2) + ' m/s²';
+            }
+
+            releaseBtn.addEventListener('click', release);
+            pauseBtn.addEventListener('click', togglePause);
+            resetBtn.addEventListener('click', reset);
+            speedSlider.addEventListener('input', (e) => {
+                simulationSpeed = parseFloat(e.target.value);
+                speedValue.textContent = simulationSpeed.toFixed(1);
+            });
+
+            reset();
+        });
+    </script>
+</body>
+</html>

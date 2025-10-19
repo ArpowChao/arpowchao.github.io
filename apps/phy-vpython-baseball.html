@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>棒球投球模擬</title>
+</head>
+<body>
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+
+<div id="glowscript" class="glowscript">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
+<link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
+<script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
+<script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
+<script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
+<script type="text/javascript"><!--//--><![CDATA[//><!--
+
+// START JAVASCRIPT
+;(function() {;
+var ρσ_modules = {};
+var running, paused_at_0_2, t, slowcheck, fastball_speed, fastball_angle, fastball_axis_x, fastball_axis_y, fastball_axis_z, forkball_speed, forkball_angle, forkball_axis_x, forkball_axis_y, forkball_axis_z, changeup_speed, changeup_angle, changeup_axis_x, changeup_axis_y, changeup_axis_z;
+ρσ_modules.pythonize = {};
+
+(function(){
+    function strings() {
+        var string_funcs, exclude, name;
+        string_funcs = set("capitalize strip lstrip rstrip islower isupper isspace lower upper swapcase center count endswith startswith find rfind index rindex format join ljust rjust partition rpartition replace split rsplit splitlines zfill".split(" "));
+        if (!arguments.length) {
+            exclude = (function(){
+                var s = ρσ_set();
+                s.jsset.add("split");
+                s.jsset.add("replace");
+                return s;
+            })();
+        } else if (arguments[0]) {
+            exclude = Array.prototype.slice.call(arguments);
+        } else {
+            exclude = null;
+        }
+        if (exclude) {
+            string_funcs = string_funcs.difference(set(exclude));
+        }
+        var ρσ_Iter0 = string_funcs;
+        ρσ_Iter0 = ((typeof ρσ_Iter0[Symbol.iterator] === "function") ? (ρσ_Iter0 instanceof Map ? ρσ_Iter0.keys() : ρσ_Iter0) : Object.keys(ρσ_Iter0));
+        for (var ρσ_Index0 of ρσ_Iter0) {
+            name = ρσ_Index0;
+            (ρσ_expr_temp = String.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name] = (ρσ_expr_temp = ρσ_str.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name];
+        }
+    };
+    if (!strings.__module__) Object.defineProperties(strings, {
+        __module__ : {value: "pythonize"}
+    });
+
+    ρσ_modules.pythonize.strings = strings;
+})();
+async function __main__() {
+"use strict";
+    var display = canvas;
+    var scene = canvas();
+
+    function round(num, n=0) {return Number(num.toFixed(n))}
+
+    var version, print, arange, __name__, type, ρσ_ls, g, dt, rho, r, m, A, I, tau_omega, k_omega, t, running, paused_at_0_2, slowcheck, slow, markers, fastball_speed, fastball_angle, fastball_axis_x, fastball_axis_y, fastball_axis_z, forkball_speed, forkball_angle, forkball_axis_x, forkball_axis_y, forkball_axis_z, changeup_speed, changeup_angle, changeup_axis_x, changeup_axis_y, changeup_axis_z, fastball_speed_slider, fastball_speed_text, fastball_angle_slider, fastball_angle_text, fastball_axisx_slider, fastball_axisx_text, fastball_axisy_slider, fastball_axisy_text, fastball_axisz_slider, fastball_axisz_text, forkball_speed_slider, forkball_speed_text, forkball_angle_slider, forkball_angle_text, forkball_axisx_slider, forkball_axisx_text, forkball_axisy_slider, forkball_axisy_text, forkball_axisz_slider, forkball_axisz_text, changeup_speed_slider, changeup_speed_text, changeup_angle_slider, changeup_angle_text, changeup_axisx_slider, changeup_axisx_text, changeup_axisy_slider, changeup_axisy_text, changeup_axisz_slider, changeup_axisz_text, ground, target, strike_zone, pitcher_mound_height, pitcher_mound_radius, pitcher_mound, pitcher_plate_width, pitcher_plate_depth, pitcher_plate_height, pitcher_plate, pitcher_color, pitcher_height, leg_width, leg_height, leg_depth, leg_offset, left_leg, right_leg, torso_width, torso_height, torso_depth, torso, head_radius, head, arm_length, arm_width, arm_height, left_arm, right_arm, batter_color, batter_height, batter_x, batter_z, batter_leg_width, batter_leg_height, batter_leg_depth, batter_leg_offset, batter_left_leg, batter_right_leg, batter_torso_width, batter_torso_height, batter_torso_depth, batter_torso, batter_head_radius, batter_head, batter_arm_length, batter_arm_width, batter_arm_height, batter_left_arm, batter_right_arm, bat_length, bat_radius, bat, x_pos, marker_height, marker_size, marker_pos, m_box, m_label, i, fastball, forkball, changeup, balls_data, b, C_M, v_mag, omega_vec, magnus_dir, F_M, magnus_force, C_D, drag_force, a, data;
+    version = ρσ_list_decorate([ "3.2", "glowscript" ]);
+    Array.prototype['+'] = function(r) {return this.concat(r)}
+    Array.prototype['*'] = function(r) {return __array_times_number(this, r)}
+    window.__GSlang = "vpython";
+    print = GSprint;
+    arange = range;
+    __name__ = "__main__";
+    type = pytype;
+    var strings = ρσ_modules.pythonize.strings;
+
+    strings();
+    "6";
+    scene.width = 1e3;
+    "7";
+    scene.height = 600;
+    "8";
+    scene.background = vec(0, .8, .8);
+    "9";
+    scene.center = vector(9.22, .5, 0);
+    "10";
+    scene.camera.pos = vector(1["-u"]()["*"](1.5), 1.5, 10);
+    "11";
+    scene.camera.axis = vector(12, 1["-u"]()["*"](3), 1["-u"]()["*"](15));
+    "14";
+    scene.caption = "";
+    "17";
+    g = 9.81;
+    "18";
+    dt = .001;
+    "19";
+    rho = 1.2;
+    "20";
+    r = .037;
+    "21";
+    m = .145;
+    "22";
+    A = pi["*"](Math.pow(r, 2));
+    "23";
+    I = 2["/"](5)["*"](m)["*"](Math.pow(r, 2));
+    "26";
+    tau_omega = 3.33;
+    "27";
+    k_omega = I["/"](tau_omega);
+    "30";
+    t = 0;
+    "31";
+    running = false;
+    "32";
+    paused_at_0_2 = false;
+    "33";
+    slowcheck = false;
+    "34";
+    slow = 1;
+    "40";
+    async function start_button() {
+        "41";
+        "42";
+        running = true;
+    };
+    if (!start_button.__module__) Object.defineProperties(start_button, {
+        __module__ : {value: null}
+    });
+
+    "44";
+    async function pause_button() {
+        "45";
+        "46";
+        running = false;
+    };
+    if (!pause_button.__module__) Object.defineProperties(pause_button, {
+        __module__ : {value: null}
+    });
+
+    "48";
+    async function continue_button() {
+        "49";
+        "50";
+        running = true;
+        "51";
+        paused_at_0_2 = false;
+    };
+    if (!continue_button.__module__) Object.defineProperties(continue_button, {
+        __module__ : {value: null}
+    });
+
+    "53";
+    async function reset_button() {
+        var ρσ_ls, fb_axis, fk_axis, cu_axis, b, data;
+        "59";
+        "60";
+        running = false;
+        "61";
+        t = 0;
+        "64";
+        fastball.initial_speed = fastball_speed;
+        "65";
+        fastball.initial_angle = fastball_angle;
+        "67";
+        fb_axis = vector(fastball_axis_x, fastball_axis_y, fastball_axis_z);
+        "68";
+        if (mag(fb_axis)["<"](1e-9)) {
+            "69";
+            fb_axis = vector(0, 0, 1);
+        }
+        "70";
+        fastball.initial_axis = fb_axis.hat;
+        "73";
+        forkball.initial_speed = forkball_speed;
+        "74";
+        forkball.initial_angle = forkball_angle;
+        "75";
+        fk_axis = vector(forkball_axis_x, forkball_axis_y, forkball_axis_z);
+        "76";
+        if (mag(fk_axis)["<"](1e-9)) {
+            "77";
+            fk_axis = vector(0, 0, 1["-u"]()["*"](1));
+        }
+        "78";
+        forkball.initial_axis = fk_axis.hat;
+        "81";
+        changeup.initial_speed = changeup_speed;
+        "82";
+        changeup.initial_angle = changeup_angle;
+        "83";
+        cu_axis = vector(changeup_axis_x, changeup_axis_y, changeup_axis_z);
+        "84";
+        if (mag(cu_axis)["<"](1e-9)) {
+            "85";
+            cu_axis = vector(0, 0, 1);
+        }
+        "86";
+        changeup.initial_axis = cu_axis.hat;
+        "89";
+        var ρσ_Iter1 = balls_data;
+        ρσ_Iter1 = ((typeof ρσ_Iter1[Symbol.iterator] === "function") ? (ρσ_Iter1 instanceof Map ? ρσ_Iter1.keys() : ρσ_Iter1) : Object.keys(ρσ_Iter1));
+        for (var ρσ_Index1 of ρσ_Iter1) {
+            data = ρσ_Index1;
+            "90";
+            b = ρσ_getitem(data, "ball");
+            "91";
+            b.pos = vector(0, 1.8, 0);
+            "92";
+            b.v = vector(b.initial_speed["*"](cos((await radians(b.initial_angle)))), b.initial_speed["*"](sin((await radians(b.initial_angle)))), 0);
+            "96";
+            b.axis_vec = b.initial_axis;
+            "97";
+            b.omega = b.initial_spin["*"](2)["*"](pi)["/"](60);
+            "98";
+            b.clear_trail();
+        }
+    };
+    if (!reset_button.__module__) Object.defineProperties(reset_button, {
+        __module__ : {value: null}
+    });
+
+    "100";
+    async function toggle_trail(chk) {
+        var ρσ_ls, data;
+        "102";
+        var ρσ_Iter2 = balls_data;
+        ρσ_Iter2 = ((typeof ρσ_Iter2[Symbol.iterator] === "function") ? (ρσ_Iter2 instanceof Map ? ρσ_Iter2.keys() : ρσ_Iter2) : Object.keys(ρσ_Iter2));
+        for (var ρσ_Index2 of ρσ_Iter2) {
+            data = ρσ_Index2;
+            "103";
+            ρσ_getitem(data, "ball").make_trail = chk.checked;
+        }
+    };
+    if (!toggle_trail.__argnames__) Object.defineProperties(toggle_trail, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "105";
+    async function toggle_paused_at_0_2(chk) {
+        "106";
+        "107";
+        paused_at_0_2 = chk.checked;
+    };
+    if (!toggle_paused_at_0_2.__argnames__) Object.defineProperties(toggle_paused_at_0_2, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "109";
+    async function toggle_slow(chk) {
+        "110";
+        "111";
+        slowcheck = chk.checked;
+    };
+    if (!toggle_slow.__argnames__) Object.defineProperties(toggle_slow, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "114";
+    async function toggle_fastball(chk) {
+        "115";
+        fastball.visible = chk.checked;
+    };
+    if (!toggle_fastball.__argnames__) Object.defineProperties(toggle_fastball, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "117";
+    async function toggle_forkball(chk) {
+        "118";
+        forkball.visible = chk.checked;
+    };
+    if (!toggle_forkball.__argnames__) Object.defineProperties(toggle_forkball, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "120";
+    async function toggle_changeup(chk) {
+        "121";
+        changeup.visible = chk.checked;
+    };
+    if (!toggle_changeup.__argnames__) Object.defineProperties(toggle_changeup, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "124";
+    markers = ρσ_list_decorate([]);
+    "127";
+    async function toggle_markers(chk) {
+        var ρσ_ls, m;
+        "128";
+        var ρσ_Iter3 = markers;
+        ρσ_Iter3 = ((typeof ρσ_Iter3[Symbol.iterator] === "function") ? (ρσ_Iter3 instanceof Map ? ρσ_Iter3.keys() : ρσ_Iter3) : Object.keys(ρσ_Iter3));
+        for (var ρσ_Index3 of ρσ_Iter3) {
+            m = ρσ_Index3;
+            "129";
+            m.visible = chk.checked;
+        }
+    };
+    if (!toggle_markers.__argnames__) Object.defineProperties(toggle_markers, {
+        __argnames__ : {value: ["chk"]},
+        __module__ : {value: null}
+    });
+
+    "134";
+    async function batter_view() {
+        var ρσ_ls, camera_x, camera_y, camera_z, pitcher_mound_center, camera_to_pitcher;
+        "135";
+        camera_x = batter_x;
+        "136";
+        camera_y = batter_leg_height["+"](batter_torso_height)["+"](batter_head_radius["*"](.8));
+        "137";
+        if (batter_z[">"](0)) {
+            "138";
+            camera_z = batter_z["+"](.3);
+            "139";
+        } else {
+            "140";
+            camera_z = batter_z["-"](1["*"](.3));
+        }
+        "141";
+        scene.camera.pos = vector(camera_x, camera_y, camera_z);
+        "143";
+        pitcher_mound_center = vector(0, pitcher_mound_height, 0);
+        "144";
+        camera_to_pitcher = pitcher_mound_center["-"](1["*"](scene.camera.pos));
+        "145";
+        scene.camera.axis = camera_to_pitcher;
+    };
+    if (!batter_view.__module__) Object.defineProperties(batter_view, {
+        __module__ : {value: null}
+    });
+
+    "147";
+    async function umpire_view() {
+        "148";
+        scene.camera.pos = vector(21, 1.2, 0);
+        "149";
+        scene.camera.axis = vector(1["-u"]()["*"](21), 0, 0);
+    };
+    if (!umpire_view.__module__) Object.defineProperties(umpire_view, {
+        __module__ : {value: null}
+    });
+
+    "151";
+    async function pitcher_view() {
+        var ρσ_ls, camera_x, camera_y, camera_z, home_plate_center, camera_to_home_plate;
+        "152";
+        camera_x = 1["-u"]()["*"](4);
+        "153";
+        camera_y = 1.8;
+        "154";
+        camera_z = 1;
+        "155";
+        scene.camera.pos = vector(camera_x, camera_y, camera_z);
+        "156";
+        home_plate_center = vector(18.44["+"](.3), 0, .5);
+        "157";
+        camera_to_home_plate = home_plate_center["-"](1["*"](scene.camera.pos));
+        "158";
+        scene.camera.axis = camera_to_home_plate;
+    };
+    if (!pitcher_view.__module__) Object.defineProperties(pitcher_view, {
+        __module__ : {value: null}
+    });
+
+    "159";
+    async function Side_view() {
+        var ρσ_ls, camera_x, camera_y, camera_z, home_plate_center, camera_to_home_plate;
+        "160";
+        camera_x = 11;
+        "161";
+        camera_y = 1.2;
+        "162";
+        camera_z = 13;
+        "163";
+        scene.camera.pos = vector(camera_x, camera_y, camera_z);
+        "164";
+        home_plate_center = vector(9, 1.2, 1["-u"]()["*"](1));
+        "165";
+        camera_to_home_plate = home_plate_center["-"](1["*"](scene.camera.pos));
+        "166";
+        scene.camera.axis = camera_to_home_plate;
+    };
+    if (!Side_view.__module__) Object.defineProperties(Side_view, {
+        __module__ : {value: null}
+    });
+
+    "172";
+    scene.append_to_caption("動畫執行： ");
+    "173";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Start", bind: start_button})]);
+    "174";
+    scene.append_to_caption(" ");
+    "175";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Pause", bind: pause_button})]);
+    "176";
+    scene.append_to_caption(" ");
+    "177";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Continue", bind: continue_button})]);
+    "178";
+    scene.append_to_caption(" ");
+    "179";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Reset", bind: reset_button})]);
+    "180";
+    scene.append_to_caption("  ");
+    "182";
+    scene.append_to_caption("視角： ");
+    "183";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "打擊者視角", bind: batter_view})]);
+    "184";
+    scene.append_to_caption(" ");
+    "185";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "主審視角", bind: umpire_view})]);
+    "186";
+    scene.append_to_caption(" ");
+    "187";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "投手後方視角", bind: pitcher_view})]);
+    "188";
+    scene.append_to_caption(" ");
+    "189";
+    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "側邊方視角", bind: Side_view})]);
+    "191";
+    scene.append_to_caption("\n");
+    "194";
+    scene.append_to_caption("功能勾選： ");
+    "195";
+    scene.append_to_caption("顯示軌跡: ");
+    "196";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_trail, checked: false})]);
+    "197";
+    scene.append_to_caption("  0.2s暫停: ");
+    "198";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_paused_at_0_2, checked: false})]);
+    "199";
+    scene.append_to_caption("  0.1倍速: ");
+    "200";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_slow, checked: false})]);
+    "202";
+    scene.append_to_caption("\n");
+    "205";
+    scene.append_to_caption("顯示勾選： ");
+    "206";
+    scene.append_to_caption("顯示直球: ");
+    "207";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_fastball, checked: true})]);
+    "208";
+    scene.append_to_caption("  顯示指叉球: ");
+    "209";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_forkball, checked: true})]);
+    "210";
+    scene.append_to_caption("  顯示變速球: ");
+    "211";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_changeup, checked: true})]);
+    "212";
+    scene.append_to_caption("  顯示距離標記: ");
+    "213";
+    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_markers, checked: false})]);
+    "214";
+    scene.append_to_caption("\n\n");
+    "230";
+    fastball_speed = 44.704;
+    "231";
+    fastball_angle = 1["-u"]()["*"](1.5);
+    "232";
+    fastball_axis_x = 0;
+    "233";
+    fastball_axis_y = 0;
+    "234";
+    fastball_axis_z = 1;
+    "236";
+    forkball_speed = 40.2336;
+    "237";
+    forkball_angle = 0;
+    "238";
+    forkball_axis_x = 0;
+    "239";
+    forkball_axis_y = 0;
+    "240";
+    forkball_axis_z = 1["-u"]()["*"](1);
+    "242";
+    changeup_speed = 40.2336;
+    "243";
+    changeup_angle = 1["-u"]()["*"](1);
+    "244";
+    changeup_axis_x = 0;
+    "245";
+    changeup_axis_y = 0;
+    "246";
+    changeup_axis_z = 1;
+    "251";
+    scene.append_to_caption("<b>Fastball(直球) 參數<\/b>\n");
+    "253";
+    async function update_fastball_speed(s) {
+        "254";
+        "255";
+        fastball_speed = s.value;
+        "256";
+        fastball_speed_text.text = "Speed = "["+"](ρσ_str.format("{:.2f}", fastball_speed))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", fastball_speed["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", fastball_speed["*"](2.23694)))["+"](" mph\n");
+    };
+    if (!update_fastball_speed.__argnames__) Object.defineProperties(update_fastball_speed, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "258";
+    async function update_fastball_angle(s) {
+        "259";
+        "260";
+        fastball_angle = s.value;
+        "261";
+        fastball_angle_text.text = "Angle = "["+"](ρσ_str.format("{:.1f}", fastball_angle))["+"]("°");
+    };
+    if (!update_fastball_angle.__argnames__) Object.defineProperties(update_fastball_angle, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "263";
+    async function update_fastball_axisx(s) {
+        "264";
+        "265";
+        fastball_axis_x = s.value;
+        "266";
+        fastball_axisx_text.text = "Axis X = "["+"](ρσ_str.format("{:.2f}", fastball_axis_x))["+"]("");
+    };
+    if (!update_fastball_axisx.__argnames__) Object.defineProperties(update_fastball_axisx, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "268";
+    async function update_fastball_axisy(s) {
+        "269";
+        "270";
+        fastball_axis_y = s.value;
+        "271";
+        fastball_axisy_text.text = "Axis Y = "["+"](ρσ_str.format("{:.2f}", fastball_axis_y))["+"]("");
+    };
+    if (!update_fastball_axisy.__argnames__) Object.defineProperties(update_fastball_axisy, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "273";
+    async function update_fastball_axisz(s) {
+        "274";
+        "275";
+        fastball_axis_z = s.value;
+        "276";
+        fastball_axisz_text.text = "Axis Z = "["+"](ρσ_str.format("{:.2f}", fastball_axis_z))["+"]("");
+    };
+    if (!update_fastball_axisz.__argnames__) Object.defineProperties(update_fastball_axisz, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "279";
+    scene.append_to_caption(" 速度: ");
+    "280";
+    fastball_speed_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 20, max: 50, step: .1, value: fastball_speed, bind: update_fastball_speed})]);
+    "281";
+    fastball_speed_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Speed = "["+"](ρσ_str.format("{:.2f}", fastball_speed_slider.value))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", fastball_speed_slider.value["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", fastball_speed_slider.value["*"](2.23694)))["+"](" mph\n")})]);
+    "282";
+    scene.append_to_caption("\n");
+    "284";
+    scene.append_to_caption(" 仰角: ");
+    "285";
+    fastball_angle_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](10), max: 10, step: .1, value: fastball_angle, bind: update_fastball_angle})]);
+    "286";
+    fastball_angle_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Angle = "["+"](ρσ_str.format("{:.1f}", fastball_angle_slider.value))["+"]("°\n")})]);
+    "287";
+    scene.append_to_caption("\n");
+    "289";
+    scene.append_to_caption(" 軸X: ");
+    "290";
+    fastball_axisx_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: fastball_axis_x, bind: update_fastball_axisx})]);
+    "291";
+    fastball_axisx_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis X = "["+"](ρσ_str.format("{:.2f}", fastball_axisx_slider.value))["+"]("\n")})]);
+    "292";
+    scene.append_to_caption("\n");
+    "294";
+    scene.append_to_caption(" 軸Y: ");
+    "295";
+    fastball_axisy_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: fastball_axis_y, bind: update_fastball_axisy})]);
+    "296";
+    fastball_axisy_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Y = "["+"](ρσ_str.format("{:.2f}", fastball_axisy_slider.value))["+"]("\n")})]);
+    "297";
+    scene.append_to_caption("\n");
+    "299";
+    scene.append_to_caption(" 軸Z: ");
+    "300";
+    fastball_axisz_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: fastball_axis_z, bind: update_fastball_axisz})]);
+    "301";
+    fastball_axisz_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Z = "["+"](ρσ_str.format("{:.2f}", fastball_axisz_slider.value))["+"]("\n\n")})]);
+    "302";
+    scene.append_to_caption("\n");
+    "306";
+    scene.append_to_caption("<b>Forkball(指叉球)參數</b>\n");
+    "308";
+    async function update_forkball_speed(s) {
+        "309";
+        "310";
+        forkball_speed = s.value;
+        "311";
+        forkball_speed_text.text = "Speed = "["+"](ρσ_str.format("{:.2f}", forkball_speed))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", forkball_speed["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", forkball_speed["*"](2.23694)))["+"](" mph\n");
+    };
+    if (!update_forkball_speed.__argnames__) Object.defineProperties(update_forkball_speed, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "313";
+    async function update_forkball_angle(s) {
+        "314";
+        "315";
+        forkball_angle = s.value;
+        "316";
+        forkball_angle_text.text = "Angle = "["+"](ρσ_str.format("{:.1f}", forkball_angle))["+"]("°");
+    };
+    if (!update_forkball_angle.__argnames__) Object.defineProperties(update_forkball_angle, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "318";
+    async function update_forkball_axisx(s) {
+        "319";
+        "320";
+        forkball_axis_x = s.value;
+        "321";
+        forkball_axisx_text.text = "Axis X = "["+"](ρσ_str.format("{:.2f}", forkball_axis_x))["+"]("");
+    };
+    if (!update_forkball_axisx.__argnames__) Object.defineProperties(update_forkball_axisx, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "323";
+    async function update_forkball_axisy(s) {
+        "324";
+        "325";
+        forkball_axis_y = s.value;
+        "326";
+        forkball_axisy_text.text = "Axis Y = "["+"](ρσ_str.format("{:.2f}", forkball_axis_y))["+"]("");
+    };
+    if (!update_forkball_axisy.__argnames__) Object.defineProperties(update_forkball_axisy, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "328";
+    async function update_forkball_axisz(s) {
+        "329";
+        "330";
+        forkball_axis_z = s.value;
+        "331";
+        forkball_axisz_text.text = "Axis Z = "["+"](ρσ_str.format("{:.2f}", forkball_axis_z))["+"]("");
+    };
+    if (!update_forkball_axisz.__argnames__) Object.defineProperties(update_forkball_axisz, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "335";
+    scene.append_to_caption(" 速度: ");
+    "336";
+    forkball_speed_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 20, max: 50, step: .1, value: forkball_speed, bind: update_forkball_speed})]);
+    "337";
+    forkball_speed_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Speed = "["+"](ρσ_str.format("{:.2f}", forkball_speed_slider.value))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", forkball_speed_slider.value["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", forkball_speed_slider.value["*"](2.23694)))["+"](" mph\n")})]);
+    "338";
+    scene.append_to_caption("\n");
+    "340";
+    scene.append_to_caption(" 仰角: ");
+    "341";
+    forkball_angle_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](10), max: 10, step: .1, value: forkball_angle, bind: update_forkball_angle})]);
+    "342";
+    forkball_angle_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Angle = "["+"](ρσ_str.format("{:.1f}", forkball_angle_slider.value))["+"]("°\n")})]);
+    "343";
+    scene.append_to_caption("\n");
+    "345";
+    scene.append_to_caption(" 軸X: ");
+    "346";
+    forkball_axisx_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: forkball_axis_x, bind: update_forkball_axisx})]);
+    "347";
+    forkball_axisx_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis X = "["+"](ρσ_str.format("{:.2f}", forkball_axisx_slider.value))["+"]("\n")})]);
+    "348";
+    scene.append_to_caption("\n");
+    "350";
+    scene.append_to_caption(" 軸Y: ");
+    "351";
+    forkball_axisy_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: forkball_axis_y, bind: update_forkball_axisy})]);
+    "352";
+    forkball_axisy_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Y = "["+"](ρσ_str.format("{:.2f}", forkball_axisy_slider.value))["+"]("\n")})]);
+    "353";
+    scene.append_to_caption("\n");
+    "355";
+    scene.append_to_caption(" 軸Z: ");
+    "356";
+    forkball_axisz_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: forkball_axis_z, bind: update_forkball_axisz})]);
+    "357";
+    forkball_axisz_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Z = "["+"](ρσ_str.format("{:.2f}", forkball_axisz_slider.value))["+"]("\n\n")})]);
+    "358";
+    scene.append_to_caption("\n");
+    "362";
+    scene.append_to_caption("<b>Changeup(變速球) 參數</b>\n");
+    "364";
+    async function update_changeup_speed(s) {
+        "365";
+        "366";
+        changeup_speed = s.value;
+        "367";
+        changeup_speed_text.text = "Speed = "["+"](ρσ_str.format("{:.2f}", changeup_speed))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", changeup_speed["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", changeup_speed["*"](2.23694)))["+"](" mph\n");
+    };
+    if (!update_changeup_speed.__argnames__) Object.defineProperties(update_changeup_speed, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "369";
+    async function update_changeup_angle(s) {
+        "370";
+        "371";
+        changeup_angle = s.value;
+        "372";
+        changeup_angle_text.text = "Angle = "["+"](ρσ_str.format("{:.1f}", changeup_angle))["+"]("°");
+    };
+    if (!update_changeup_angle.__argnames__) Object.defineProperties(update_changeup_angle, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "374";
+    async function update_changeup_axisx(s) {
+        "375";
+        "376";
+        changeup_axis_x = s.value;
+        "377";
+        changeup_axisx_text.text = "Axis X = "["+"](ρσ_str.format("{:.2f}", changeup_axis_x))["+"]("");
+    };
+    if (!update_changeup_axisx.__argnames__) Object.defineProperties(update_changeup_axisx, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "379";
+    async function update_changeup_axisy(s) {
+        "380";
+        "381";
+        changeup_axis_y = s.value;
+        "382";
+        changeup_axisy_text.text = "Axis Y = "["+"](ρσ_str.format("{:.2f}", changeup_axis_y))["+"]("");
+    };
+    if (!update_changeup_axisy.__argnames__) Object.defineProperties(update_changeup_axisy, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "384";
+    async function update_changeup_axisz(s) {
+        "385";
+        "386";
+        changeup_axis_z = s.value;
+        "387";
+        changeup_axisz_text.text = "Axis Z = "["+"](ρσ_str.format("{:.2f}", changeup_axis_z))["+"]("");
+    };
+    if (!update_changeup_axisz.__argnames__) Object.defineProperties(update_changeup_axisz, {
+        __argnames__ : {value: ["s"]},
+        __module__ : {value: null}
+    });
+
+    "390";
+    scene.append_to_caption(" 速度: ");
+    "391";
+    changeup_speed_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 20, max: 50, step: .1, value: changeup_speed, bind: update_changeup_speed})]);
+    "392";
+    changeup_speed_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Speed = "["+"](ρσ_str.format("{:.2f}", changeup_speed_slider.value))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", changeup_speed_slider.value["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", changeup_speed_slider.value["*"](2.23694)))["+"](" mph\n")})]);
+    "394";
+    scene.append_to_caption("\n");
+    "396";
+    scene.append_to_caption(" 仰角: ");
+    "397";
+    changeup_angle_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](10), max: 10, step: .1, value: changeup_angle, bind: update_changeup_angle})]);
+    "398";
+    changeup_angle_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Angle = "["+"](ρσ_str.format("{:.1f}", changeup_angle_slider.value))["+"]("°\n")})]);
+    "399";
+    scene.append_to_caption("\n");
+    "401";
+    scene.append_to_caption(" 軸X: ");
+    "402";
+    changeup_axisx_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: changeup_axis_x, bind: update_changeup_axisx})]);
+    "403";
+    changeup_axisx_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis X = "["+"](ρσ_str.format("{:.2f}", changeup_axisx_slider.value))["+"]("\n")})]);
+    "404";
+    scene.append_to_caption("\n");
+    "406";
+    scene.append_to_caption(" 軸Y: ");
+    "407";
+    changeup_axisy_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: changeup_axis_y, bind: update_changeup_axisy})]);
+    "408";
+    changeup_axisy_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Y = "["+"](ρσ_str.format("{:.2f}", changeup_axisy_slider.value))["+"]("\n")})]);
+    "409";
+    scene.append_to_caption("\n");
+    "411";
+    scene.append_to_caption(" 軸Z: ");
+    "412";
+    changeup_axisz_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: changeup_axis_z, bind: update_changeup_axisz})]);
+    "413";
+    changeup_axisz_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Z = "["+"](ρσ_str.format("{:.2f}", changeup_axisz_slider.value))["+"]("\n\n")})]);
+    "414";
+    scene.append_to_caption("\n");
+    "418";
+    ground = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(9.22, 1["-u"]()["*"](.05), 0), size: vector(18.44, .1, 10), color: color.green})]);
+    "419";
+    target = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(18.44, .5, 0), size: vector(.1, 1, .43), color: color.white, opacity: .5})]);
+    "420";
+    strike_zone = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(18.44, .85, 0), size: vector(.1, .7, .43), color: color.yellow, opacity: .2})]);
+    "422";
+    pitcher_mound_height = .254;
+    "423";
+    pitcher_mound_radius = 2.7432["/"](2);
+    "424";
+    pitcher_mound = ρσ_interpolate_kwargs.call(this, cylinder, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["/"](2), 0), axis: vector(0, 1, 0), radius: pitcher_mound_radius, length: pitcher_mound_height, color: color.orange})]);
+    "430";
+    pitcher_plate_width = .6096;
+    "431";
+    pitcher_plate_depth = .1524;
+    "432";
+    pitcher_plate_height = .01;
+    "433";
+    pitcher_plate = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["+"](pitcher_plate_height["/"](2)), 0), size: vector(pitcher_plate_width, pitcher_plate_height, pitcher_plate_depth), color: color.white})]);
+    "437";
+    pitcher_color = vec(.7, .5, .3);
+    "438";
+    pitcher_height = 1.8;
+    "440";
+    leg_width = .1;
+    "441";
+    leg_height = pitcher_height["-"](1["*"](pitcher_mound_height))["*"](.5);
+    "442";
+    leg_depth = .1;
+    "443";
+    leg_offset = .06;
+    "445";
+    left_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(1["-u"]()["*"](leg_offset), pitcher_mound_height["+"](leg_height["/"](2)), 0), size: vector(leg_width, leg_height, leg_depth), color: pitcher_color})]);
+    "448";
+    right_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(leg_offset, pitcher_mound_height["+"](leg_height["/"](2)), 0), size: vector(leg_width, leg_height, leg_depth), color: pitcher_color})]);
+    "452";
+    torso_width = leg_width["*"](3);
+    "453";
+    torso_height = leg_height["*"](.8);
+    "454";
+    torso_depth = leg_depth["*"](1.5);
+    "455";
+    torso = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["+"](leg_height)["+"](torso_height["/"](2)), 0), size: vector(torso_width, torso_height, torso_depth), color: pitcher_color})]);
+    "459";
+    head_radius = torso_width["/"](2.5);
+    "460";
+    head = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["+"](leg_height)["+"](torso_height)["+"](head_radius), 0), radius: head_radius, color: pitcher_color})]);
+    "464";
+    arm_length = torso_width["*"](.8);
+    "465";
+    arm_width = leg_width["/"](2);
+    "466";
+    arm_height = leg_height["/"](4);
+    "468";
+    left_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(1["-u"]()["*"](torso_width)["/"](2)["-"](1["*"](arm_length)["/"](2)), pitcher_mound_height["+"](leg_height)["+"](torso_height["/"](1.5)), 0), size: vector(arm_length, arm_height, arm_width), color: pitcher_color})]);
+    "472";
+    right_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(torso_width["/"](2)["+"](arm_length["/"](2)), pitcher_mound_height["+"](leg_height)["+"](torso_height["/"](1.5)), 0), size: vector(arm_length, arm_height, arm_width), color: pitcher_color})]);
+    "477";
+    batter_color = vec(.4, .4, .7);
+    "478";
+    batter_height = 1.7;
+    "479";
+    batter_x = 18.44["+"](.3);
+    "480";
+    batter_z = .5;
+    "482";
+    batter_leg_width = .1;
+    "483";
+    batter_leg_height = batter_height["*"](.45);
+    "484";
+    batter_leg_depth = .1;
+    "485";
+    batter_leg_offset = .08;
+    "487";
+    batter_left_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_leg_offset)), batter_leg_height["/"](2), batter_z), size: vector(batter_leg_width, batter_leg_height, batter_leg_depth), color: batter_color})]);
+    "490";
+    batter_right_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["+"](batter_leg_offset), batter_leg_height["/"](2), batter_z), size: vector(batter_leg_width, batter_leg_height, batter_leg_depth), color: batter_color})]);
+    "494";
+    batter_torso_width = batter_leg_width["*"](2.8);
+    "495";
+    batter_torso_height = batter_leg_height["*"](.9);
+    "496";
+    batter_torso_depth = batter_leg_depth["*"](1.5);
+    "497";
+    batter_torso = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x, batter_leg_height["+"](batter_torso_height["/"](2)), batter_z), size: vector(batter_torso_width, batter_torso_height, batter_torso_depth), color: batter_color})]);
+    "505";
+    batter_head_radius = batter_torso_width["/"](2.8);
+    "506";
+    batter_head = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({pos: vector(batter_x, batter_leg_height["+"](batter_torso_height)["+"](batter_head_radius), batter_z), radius: batter_head_radius, color: batter_color})]);
+    "512";
+    batter_arm_length = batter_torso_width["*"](.7);
+    "513";
+    batter_arm_width = batter_leg_width["/"](2.5);
+    "514";
+    batter_arm_height = batter_leg_height["/"](4);
+    "516";
+    batter_left_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_torso_width)["/"](2.5))["-"](1["*"](batter_arm_length)["/"](2)), batter_leg_height["+"](batter_torso_height["/"](1.3)), batter_z["-"](1["*"](.1))), size: vector(batter_arm_length, batter_arm_height, batter_arm_width), color: batter_color})]);
+    "522";
+    batter_right_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_torso_width)["/"](2.5))["-"](1["*"](batter_arm_length)["/"](2)), batter_leg_height["+"](batter_torso_height["/"](1.8)), batter_z["-"](1["*"](.1))), size: vector(batter_arm_length, batter_arm_height, batter_arm_width), color: batter_color})]);
+    "528";
+    bat_length = .8;
+    "529";
+    bat_radius = .035;
+    "530";
+    bat = ρσ_interpolate_kwargs.call(this, cylinder, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_torso_width)["/"](2))["-"](1["*"](batter_arm_length)), batter_leg_height["+"](batter_torso_height["/"](1.2)), batter_z["-"](1["*"](.1))), axis: vector(.6, .4, 1["-u"]()["*"](.1)), radius: bat_radius, length: bat_length, color: color.yellow})]);
+    "541";
+    for (var ρσ_Index4 = 0; ρσ_Index4["<"](19); ρσ_Index4++) {
+        i = ρσ_Index4;
+        "542";
+        x_pos = i["*"](1);
+        "543";
+        marker_height = .15;
+        "544";
+        marker_size = vector(.02, marker_height, .2);
+        "545";
+        marker_pos = vector(x_pos["+"](.44), marker_height["/"](2), 0);
+        "547";
+        m_box = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: marker_pos, size: marker_size, color: color.white})]);
+        "548";
+        m_box.visible = false;
+        "549";
+        markers.append(m_box);
+        "551";
+        m_label = ρσ_interpolate_kwargs.call(this, label, [ρσ_desugar_kwargs({pos: vector(x_pos["+"](.44), marker_height["+"](.1), 0), text: str(18["-"](1["*"](i))), height: 10, color: color.white, opacity: .8, box: false, font: "sans"})]);
+        "558";
+        m_label.visible = false;
+        "559";
+        markers.append(m_label);
+    }
+    "564";
+    async function create_ball(speed_m_s, angle_deg, spin_rpm, axis_vec, col, name) {
+        var ρσ_ls, theta, b;
+        "565";
+        theta = (await radians(angle_deg));
+        "566";
+        b = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({pos: vector(0, 1.8, 0), radius: r, color: col, trail_radius: r["/"](2), make_trail: false})]);
+        "567";
+        b.v = vector(speed_m_s["*"](cos(theta)), speed_m_s["*"](sin(theta)), 0);
+        "568";
+        b.omega = spin_rpm["*"](2)["*"](pi)["/"](60);
+        "569";
+        b.axis_vec = axis_vec.hat;
+        "570";
+        b.name = name;
+        "572";
+        b.initial_speed = speed_m_s;
+        "573";
+        b.initial_angle = angle_deg;
+        "574";
+        b.initial_spin = spin_rpm;
+        "575";
+        b.initial_axis = axis_vec.hat;
+        "576";
+        return b;
+    };
+    if (!create_ball.__argnames__) Object.defineProperties(create_ball, {
+        __argnames__ : {value: ["speed_m_s", "angle_deg", "spin_rpm", "axis_vec", "col", "name"]},
+        __module__ : {value: null}
+    });
+
+    "579";
+    fastball = (await create_ball(100["*"](.44704), 1["-u"]()["*"](1.5), 2300, vector(0, 0, 1), color.red, "四縫線直球"));
+    "580";
+    forkball = (await create_ball(90["*"](.44704), 0, 900, vector(0, 0, 1["-u"]()["*"](1)), color.blue, "快速指叉球"));
+    "581";
+    changeup = (await create_ball(90["*"](.44704), 1["-u"]()["*"](1), 1500, vector(0, 0, 1), color.green, "變速球"));
+    "583";
+    balls_data = ρσ_list_decorate([ (function(){
+        var ρσ_d = ρσ_dict();
+        ρσ_d.set("ball", fastball);
+        ρσ_d.set("C_M", .18);
+        return ρσ_d;
+    }).call(this), (function(){
+        var ρσ_d = ρσ_dict();
+        ρσ_d.set("ball", forkball);
+        ρσ_d.set("C_M", .05);
+        return ρσ_d;
+    }).call(this), (function(){
+        var ρσ_d = ρσ_dict();
+        ρσ_d.set("ball", changeup);
+        ρσ_d.set("C_M", .15);
+        return ρσ_d;
+    }).call(this) ]);
+    "592";
+    while (true) {
+        "594";
+        if (slowcheck) {
+            "595";
+            slow = 10;
+            "596";
+        } else {
+            "597";
+            slow = 1;
+        }
+        "599";
+        (await rate(1["/"](dt["*"](slow))));
+        "601";
+        if (running) {
+            "602";
+            var ρσ_Iter5 = balls_data;
+            ρσ_Iter5 = ((typeof ρσ_Iter5[Symbol.iterator] === "function") ? (ρσ_Iter5 instanceof Map ? ρσ_Iter5.keys() : ρσ_Iter5) : Object.keys(ρσ_Iter5));
+            for (var ρσ_Index5 of ρσ_Iter5) {
+                data = ρσ_Index5;
+                "603";
+                b = ρσ_getitem(data, "ball");
+                "604";
+                C_M = ρσ_getitem(data, "C_M");
+                "607";
+                if (b.pos.x["<"](18.44) && b.pos.y[">="](0)) {
+                    "609";
+                    b.omega=b.omega["*"](1["-"](1["*"](k_omega["/"](I))["*"](dt)));
+                    "611";
+                    v_mag = mag(b.v);
+                    "612";
+                    omega_vec = b.omega["*"](b.axis_vec);
+                    "613";
+                    magnus_dir = norm(cross(omega_vec, b.v));
+                    "614";
+                    F_M = .5["*"](rho)["*"](C_M)["*"](A)["*"](Math.pow(v_mag, 2));
+                    "615";
+                    magnus_force = F_M["/"](m)["*"](magnus_dir);
+                    "618";
+                    C_D = .35;
+                    "619";
+                    drag_force = 1["-u"]()["*"](.5)["*"](rho)["*"](C_D)["*"](A)["*"](Math.pow(v_mag, 2))["*"](norm(b.v))["/"](m);
+                    "621";
+                    a = vector(0, 1["-u"]()["*"](g), 0)["+"](drag_force)["+"](magnus_force);
+                    "622";
+                    b.v=b.v["+"](a["*"](dt));
+                    "623";
+                    b.pos=b.pos["+"](b.v["*"](dt));
+                    "626";
+                    if (abs(b.pos.x["-"](1["*"](18.44)))["<"](.1)) {
+                        "627";
+                        print(""["+"](ρσ_str.format("{}", b.name))["+"]("本壘板高度: ")["+"](ρσ_str.format("{:.2f}", b.pos.y))["+"](" m"));
+                        "628";
+                        print(""["+"](ρσ_str.format("{}", b.name))["+"]("最終轉速: ")["+"](ρσ_str.format("{:.0f}", b.omega["*"](60)["/"](2["*"](pi))))["+"](" RPM"));
+                        "629";
+                        print("到達時間: "["+"](ρσ_str.format("{:.3f}", t))["+"](" s"));
+                    }
+                }
+            }
+            "631";
+            t=t["+"](dt);
+            "634";
+            if (t[">="](.2) && paused_at_0_2) {
+                "635";
+                running = false;
+                "636";
+                print("模擬在時間 t = 0.2 s 暫停。");
+            }
+        }
+    }
+};
+if (!__main__.__module__) Object.defineProperties(__main__, {
+    __module__ : {value: null}
+});
+
+;$(function(){ window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })})()
+// END JAVASCRIPT
+
+//--><!]]></script>
+</div>
+
+</body>
+</html>

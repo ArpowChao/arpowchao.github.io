@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拉塞福散射公式推導 (Gemini 互動版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMwkznGDdsrzXsCvoy9cRIIkiLlQV2A/ZTNLKGFev7cvQCvN_" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <style>
+        /* 使用 Google Fonts 提供的 Inter 字體，並為繁體中文設定備用字體 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            line-height: 1.8;
+        }
+        /* 美化 KaTeX 區塊的樣式 */
+        .katex-display {
+            margin: 1.5em 0;
+            padding: 1em 1.5em;
+            border-radius: 0.5rem;
+            background-color: #f8fafc; /* bg-slate-50 */
+            border: 1px solid #e2e8f0; /* border-slate-200 */
+            overflow-x: auto;
+            transition: background-color 0.3s;
+        }
+        .katex-display:hover {
+            background-color: #f1f5f9; /* bg-slate-100 */
+        }
+        h2 {
+            border-bottom: 2px solid #e2e8f0; /* border-slate-200 */
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        /* 設計一個精緻的載入中動畫 */
+        .loader {
+            border: 4px solid #e5e7eb; /* bg-gray-200 */
+            border-top: 4px solid #3b82f6; /* Blue-500 */
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+
+    <!-- 將 SVG 圖示定義在這邊，方便重複使用 -->
+    <svg style="display: none;">
+        <symbol id="nucleus-symbol" viewBox="0 0 30 30">
+            <circle cx="15" cy="15" r="15" fill="#3b82f6"/>
+            <text x="9" y="20" font-size="12" fill="white" font-weight="bold">Q</text>
+        </symbol>
+        <symbol id="alpha-particle-symbol" viewBox="0 0 16 16">
+            <circle cx="8" cy="8" r="8" fill="#f59e0b"/>
+            <text x="4" y="11" font-size="10" fill="white" font-weight="bold">q</text>
+        </symbol>
+    </svg>
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-8 bg-white shadow-xl rounded-lg my-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-2">拉塞福散射 (Rutherford Scattering)</h1>
+            <p class="text-lg text-slate-600">原子核發現之旅的基石 (✨ Gemini 互動版)</p>
+        </header>
+
+        <section id="intro-section">
+            <p class="mb-4 text-lg">1909年，在拉塞福的指導下，蓋格和馬斯登進行了 berühmten 金箔實驗。他們用α粒子（氦原子核）轟擊一片極薄的金箔，並觀察粒子的散射角度。實驗結果大大出乎意料：絕大多數粒子直接穿過，少數發生大角度偏轉，甚至有極少數被反彈回來。</p>
+            <p class="text-lg">這個現象無法用當時主流的「梅子布丁模型」解釋。拉塞福基於此實驗結果，提出了革命性的原子核模型：原子大部分的質量與所有的正電荷，都集中在一個體積非常小的「原子核」中。以下，我們將推導描述此現象的兩個關鍵物理公式。</p>
+        </section>
+
+        <!-- Section 1: 最近距離 -->
+        <section id="closest-approach-section">
+            <h2 class="text-3xl font-bold text-slate-800">1. 原子核最大尺寸（最近距離）</h2>
+            <p class="mb-6">當α粒子與原子核發生「正面碰撞」(head-on collision) 時，它能多靠近原子核？這個「最近距離」`d` 提供了原子核尺寸的上限估計。此公式的推導基於一個基本物理原理：<strong class="text-blue-600">能量守恆定律</strong>。</p>
+
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <!-- Illustration 1 -->
+                <div class="p-4 rounded-lg bg-slate-50 border">
+                    <svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                        <path d="M 10 75 L 180 75" stroke-dasharray="4 2" stroke="gray" stroke-width="1.5"/><path d="M 175 70 L 180 75 L 175 80" fill="none" stroke="gray" stroke-width="1.5"/>
+                        <use href="#alpha-particle-symbol" x="32" y="67" width="16" height="16"/><text x="25" y="60" font-size="12" fill="#475569">初始狀態</text><text x="15" y="100" font-size="12" fill="#475569">動能: $K_i = \frac{1}{2}mv_0^2$</text><text x="15" y="118" font-size="12" fill="#475569">位能: $U_i \approx 0$</text>
+                        <use href="#nucleus-symbol" x="235" y="60" width="30" height="30"/>
+                        <use href="#alpha-particle-symbol" x="172" y="67" width="16" height="16" opacity="0.7"/><text x="160" y="60" font-size="12" fill="#475569">最近距離點</text><text x="155" y="100" font-size="12" fill="#475569">動能: $K_f=0$</text><text x="155" y="118" font-size="12" fill="#475569">位能: $U_f$</text>
+                        <path d="M 180 85 L 250 85" stroke="black" stroke-width="1"/><path d="M 180 82 L 180 88" stroke="black" stroke-width="1"/><path d="M 250 82 L 250 88" stroke="black" stroke-width="1"/><text x="210" y="100" font-size="14" fill="black">d</text>
+                    </svg>
+                </div>
+                <!-- Derivation Text -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">推導過程</h3>
+                    <p class="mb-2"><strong class="font-semibold">初始狀態：</strong>α粒子 (電荷 $q$, 質量 $m$, 初速 $v_0$) 距離原子核 (電荷 $Q$) 非常遠。此時系統的總能量幾乎完全是α粒子的動能 $K_i$，靜電位能可忽略不計。</p><p class="text-center">$E_{\text{total}} = K_i + U_i = \frac{1}{2}mv_0^2 + 0$</p>
+                    <p class="mt-4 mb-2"><strong class="font-semibold">最近距離點：</strong>在正面碰撞中，α粒子因庫侖斥力減速。當它到達最近距離 $d$ 時，其速度瞬間為零。此刻，所有初始動能都轉換為系統的靜電位能。</p><p class="text-center">$E_{\text{total}} = K_f + U_f = 0 + \frac{1}{4\pi\epsilon_0} \frac{qQ}{d}$</p>
+                </div>
+            </div>
+            <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                <p>根據能量守恆定律 $E_i = E_f$，我們得到：</p><div class="katex-display">$\frac{1}{2}mv_0^2 = \frac{1}{4\pi\epsilon_0} \frac{qQ}{d}$</div>
+                <p>其中，$m$ 是α粒子質量，$v_0$ 是初始速度，$\epsilon_0$ 是真空電容率。由此可解出最近距離 $d$。</p>
+            </div>
+            <!-- Gemini Features for Section 1 -->
+            <div class="mt-8 p-4 border-t-2 border-dashed">
+                <h3 class="text-lg font-semibold text-slate-700 mb-4">✨ Gemini 智慧助理</h3>
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="getExplanation('closest-approach-section', 'eli5')" class="bg-violet-500 hover:bg-violet-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105">為我簡化這個概念</button>
+                    <button onclick="getExplanation('closest-approach-section', 'summary')" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105">總結本節重點</button>
+                </div>
+                <div id="gemini-output-1" class="mt-4 p-4 bg-slate-50 rounded-lg min-h-[50px] whitespace-pre-wrap border"></div>
+            </div>
+        </section>
+        
+        <!-- Section 2: 微分散射截面 -->
+        <section id="cross-section-section">
+            <h2 class="text-3xl font-bold text-slate-800">2. 拉塞福微分散射截面</h2>
+            <p class="mb-4">這個公式描述了入射粒子被散射到特定角度的機率，是粒子物理學中的一個核心概念。其推導過程較為複雜，涉及幾何學與微積分。</p>
+            <div class="grid md:grid-cols-2 gap-8 items-center mb-8">
+                <div class="p-4 rounded-lg bg-slate-50 border">
+                     <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto"><circle cx="150" cy="100" r="10" fill="#3b82f6"/><text x="145" y="105" font-size="8" fill="white">Q</text><text x="165" y="105" font-size="12" fill="#475569">原子核</text><path d="M 0 50 L 150 50" stroke-dasharray="4 2" stroke="gray" stroke-width="1.5"/><path d="M 145 45 L 150 50 L 145 55" fill="none" stroke="gray" stroke-width="1.5"/><path d="M 150 100 L 300 175" stroke-dasharray="4 2" stroke="gray" stroke-width="1.5"/><path d="M 295 170 L 300 175 L 295 180" fill="none" stroke="gray" stroke-width="1.5"/><path d="M 0 50 Q 100 50, 150 100 T 300 175" stroke="#f59e0b" fill="none" stroke-width="2"/><circle cx="40" cy="50" r="5" fill="#f59e0b"/><text x="25" y="45" font-size="10">α粒子</text><path d="M 150 50 L 150 100" stroke="black" stroke-width="1"/><path d="M 148 50 L 152 50" stroke="black" stroke-width="1"/><path d="M 148 100 L 152 100" stroke="black" stroke-width="1"/><text x="155" y="75" font-size="12" fill="black">b (碰撞參數)</text><path d="M 180 100 A 30 30 0 0 1 201.2 118.8" stroke="red" stroke-width="1.5" fill="none" transform="translate(-30, -50)"/><text x="205" y="65" font-size="12" fill="red">θ (散射角)</text></svg>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">核心概念</h3>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong>碰撞參數 (Impact Parameter, $b$)：</strong>入射粒子初始路徑與原子核中心的垂直距離。$b$ 決定了散射角度 $\theta$ 的大小。</li><li><strong>散射截面 (Cross Section, $\sigma$)：</strong>衡量散射發生機率的有效面積。</li><li><strong>立體角 (Solid Angle, $\Omega$)：</strong>描述三維空間角度範圍的物理量。</li>
+                    </ul>
+                </div>
+            </div>
+            <h3 class="text-xl font-semibold mt-8 mb-2">推導步驟</h3>
+            <div class="space-y-6">
+                <div class="p-4 border rounded-lg"><strong class="text-lg">步驟一：建立碰撞參數 $b$ 與散射角 $\theta$ 的關係</strong><p>通過對α粒子受到的庫侖力進行動量分析，可以證明碰撞參數 $b$ 與散射角 $\theta$ 之間存在一個精確的關係式（此處直接引用結果）：</p><div class="katex-display">$b = \frac{qQ}{8\pi\epsilon_0 K} \cot\left(\frac{\theta}{2}\right)$ </div><p>其中 $K$ 是α粒子的初始動能 $\frac{1}{2}mv_0^2$。</p></div>
+                <div class="p-4 border rounded-lg"><strong class="text-lg">步驟二：定義微分散射截面 $\frac{d\sigma}{d\Omega}$</strong><p>我們關心的是單位立體角內有多少粒子被散射。這個量被定義為微分散射截面 $\frac{d\sigma}{d\Omega}$。</p><div class="grid md:grid-cols-2 gap-8 items-center"><div><p>入射粒子中，碰撞參數介于 $b$ 和 $b+db$ 之間的粒子（形成一個環狀面積 $d\sigma$），將會被散射到 $\theta$ 和 $\theta+d\theta$ 角度之間的環状立體角 $d\Omega$ 中。</p><ul><li>入射環面積: $d\sigma = 2\pi b |db|$</li><li>散射立體角: $d\Omega = 2\pi \sin\theta d\theta$</li></ul></div><div class="p-2"><svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto"><circle cx="60" cy="60" r="40" stroke="gray" fill="none"/><circle cx="60" cy="60" r="50" stroke="gray" fill="none"/><path d="M60,10 A50,50 0 0 1 60,110 A40,40 0 0 0 60,20 Z" fill="#3b82f6" fill-opacity="0.3"/><text x="20" y="20" font-size="10">$d\sigma=2\pi b|db|$</text><path d="M60,60 L 100,60" stroke-dasharray="2 2" stroke="black"/><text x="75" y="55" font-size="10">b</text><path d="M 120 60 L 180 60" stroke="black" stroke-width="2"/><path d="M 175 55 L 180 60 L 175 65" fill="none" stroke="black" stroke-width="2"/><text x="135" y="50" font-size="10">散射</text><path d="M 240 60 A 40 40 0 0 1 274.6 85.6" fill="none" stroke="gray"/><path d="M 240 60 A 50 50 0 0 1 288.3 97" fill="none" stroke="gray"/><path d="M240,60 L288.3,97 A50,50 0 0 0 274.6,85.6 L240,60 Z" fill="#f59e0b" fill-opacity="0.3"/><text x="210" y="20" font-size="10">$d\Omega=2\pi \sin\theta d\theta$</text><path d="M 240,60 L 280,60" stroke-dasharray="2 2" stroke="black"/><path d="M 255 60 A 15 15 0 0 1 268 70" fill="none" stroke="black"/><text x="260" y="80" font-size="10">$\theta$</text></svg></div></div><p class="mt-4">因此，定義式為：</p><div class="katex-display"> $\frac{d\sigma}{d\Omega} = \frac{2\pi b |db|}{2\pi \sin\theta d\theta} = \frac{b}{\sin\theta} \left| \frac{db}{d\theta} \right|$ </div></div>
+                <div class="p-4 border rounded-lg"><strong class="text-lg">步驟三：計算與代入</strong><p>我們需要對步驟一的關係式求導，得到 $\frac{db}{d\theta}$：</p><div class="katex-display"> $\frac{db}{d\theta} = \frac{d}{d\theta} \left[ \frac{qQ}{8\pi\epsilon_0 K} \cot\left(\frac{\theta}{2}\right) \right] = -\frac{qQ}{16\pi\epsilon_0 K} \csc^2\left(\frac{\theta}{2}\right)$</div><p>將 $b$ 和 $|\frac{db}{d\theta}|$ 代入定義式，並使用三角恆等式 $\sin\theta = 2\sin(\frac{\theta}{2})\cos(\frac{\theta}{2})$ 進行化簡。</p></div>
+            </div>
+            <div class="mt-8 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
+                <p>經過一系列代數運算與化簡後，我們最終得到拉塞福散射公式：</p><div class="katex-display">$\frac{d\sigma}{d\Omega} = \left( \frac{qQ}{16\pi\epsilon_0 K \sin^2(\theta/2)} \right)^2$</div>
+                <p>這個公式精確地預測了散射粒子數隨角度的變化，與實驗數據完美吻合，是原子核物理學的偉大成就之一。</p>
+            </div>
+             <!-- Gemini Features for Section 2 -->
+             <div class="mt-8 p-4 border-t-2 border-dashed">
+                <h3 class="text-lg font-semibold text-slate-700 mb-4">✨ Gemini 智慧助理</h3>
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="getExplanation('cross-section-section', 'eli5')" class="bg-violet-500 hover:bg-violet-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105">為我簡化這個概念</button>
+                    <button onclick="getExplanation('cross-section-section', 'summary')" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105">總結本節重點</button>
+                </div>
+                <div id="gemini-output-2" class="mt-4 p-4 bg-slate-50 rounded-lg min-h-[50px] whitespace-pre-wrap border"></div>
+            </div>
+        </section>
+
+        <!-- Gemini Q&A Section -->
+        <section class="mt-12">
+            <h2 class="text-3xl font-bold text-slate-800">有其他問題嗎？</h2>
+            <div class="mt-4 p-6 border rounded-lg bg-slate-50">
+                <p class="mb-4">對於拉塞福散射，還有其他想深入了解的地方嗎？請在下面提問，讓 Gemini 為您解答。</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="user-question" placeholder="例如：為什麼散射角度越大，粒子越少？" class="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow">
+                    <button id="ask-gemini-btn" onclick="askQuestion()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow hover:shadow-lg">✨ 提問 Gemini</button>
+                </div>
+                <div id="gemini-output-qa" class="mt-4 p-4 bg-white rounded-lg min-h-[50px] whitespace-pre-wrap border"></div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- KaTeX Auto-rendering ---
+        // We wrap this in a DOMContentLoaded listener to ensure the document is fully loaded
+        // before KaTeX tries to render the math formulas. This fixes the error.
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                // optional config
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        });
+
+        // --- Gemini API Integration ---
+
+        // 【重要】請在此處貼上您的 Gemini API 金鑰
+        // 警告：將 API 金鑰直接放在前端程式碼中存在安全風險，因為任何人都可以查看網頁原始碼並取得您的金鑰。
+        // 這個做法僅適用於開發、測試或個人專案。在正式的生產環境中，應透過後端伺服器來管理 API 金鑰。
+        const API_KEY = ""; 
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+
+        /**
+         * A reusable function to call the Gemini API with exponential backoff.
+         * @param {string} prompt The prompt to send to the model.
+         * @param {HTMLElement} outputElement The element to display the result in.
+         */
+        async function callGemini(prompt, outputElement) {
+            outputElement.innerHTML = '<div class="loader"></div>'; // 顯示載入動畫
+
+            if (!API_KEY) {
+                outputElement.innerHTML = '錯誤：請在 JavaScript 程式碼中設定您的 API_KEY。';
+                return;
+            }
+
+            let retries = 3; // 設定重試次數
+            let delay = 1000; // 初始延遲時間 (1秒)
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                    };
+
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        // 如果 API 回傳錯誤狀態 (例如 429 Too Many Requests)，則拋出錯誤以觸發重試
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates[0].content.parts[0].text) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        // 將 markdown 的星號列表轉換成 HTML 的項目符號
+                        let htmlText = text.replace(/^\s*\*\s/gm, '<br>• ').trim();
+                        outputElement.innerHTML = htmlText;
+                        return; // 成功，結束函式
+                    } else {
+                         throw new Error("從 API 收到的回應格式不正確。");
+                    }
+
+                } catch (error) {
+                    console.error(`第 ${i + 1} 次嘗試失敗:`, error);
+                    if (i < retries - 1) {
+                        // 等待一段時間後重試，等待時間會加倍
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // 指數退避
+                    } else {
+                        outputElement.innerHTML = '對不起，目前無法取得回應，請檢查您的 API 金鑰或網路連線，然後稍後再試。';
+                    }
+                }
+            }
+        }
+
+        /**
+         * Handles clicks for explanation and summary buttons.
+         * @param {string} sectionId The ID of the section to get context from.
+         * @param {'eli5' | 'summary'} type The type of explanation requested.
+         */
+        function getExplanation(sectionId, type) {
+            const section = document.getElementById(sectionId);
+            const outputElementId = sectionId === 'closest-approach-section' ? 'gemini-output-1' : 'gemini-output-2';
+            const outputElement = document.getElementById(outputElementId);
+            const contextText = section.innerText; // 取得該區塊的所有文字作為上下文
+
+            let systemPrompt = '';
+            if (type === 'eli5') {
+                systemPrompt = '你是一位友善的物理老師。請用一個日常生活中的比喻，像對一個十歲孩子解釋一樣，簡單說明以下物理概念。請用繁體中文回答。\n\n## 概念內容：\n';
+            } else if (type === 'summary') {
+                systemPrompt = '你是一位科學傳播專家。請將以下物理學解釋，總結成幾個關鍵的要點 (bullet points)。請用繁體中文回答。\n\n## 原文內容：\n';
+            }
+
+            const fullPrompt = systemPrompt + contextText;
+            callGemini(fullPrompt, outputElement);
+        }
+
+        /**
+         * Handles the user's custom question.
+         */
+        function askQuestion() {
+            const inputElement = document.getElementById('user-question');
+            const userQuestion = inputElement.value;
+            const outputElement = document.getElementById('gemini-output-qa');
+
+            if (!userQuestion.trim()) {
+                outputElement.innerText = '請先輸入您的問題。';
+                return;
+            }
+
+            const systemPrompt = `你是一位物理學專家，專精於拉塞福散射。請根據以下整個網頁的內容為脈絡，準確且簡潔地回答使用者的問題。請用繁體中文回答。\n\n## 使用者的問題：\n"${userQuestion}"`;
+            callGemini(systemPrompt, outputElement);
+        }
+
+        // 讓使用者在輸入框按下 Enter 鍵也能觸發提問
+        document.getElementById('user-question').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // 防止表單提交的預設行為
+                askQuestion();
+            }
+        });
+    </script>
+
+</body>
+</html>
+

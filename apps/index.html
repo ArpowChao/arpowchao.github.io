@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arpow Deep-Learning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #00aaff;
+            --primary-hover-color: #00c6ff;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 170, 255, 0.2);
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-theme {
+            --bg-color: #f0f2f5;
+            --surface-color: #ffffff;
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 123, 255, 0.2);
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+        #changelog-sidebar {
+            background-color: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            height: fit-content;
+            position: sticky;
+            top: 4rem;
+        }
+        #changelog-sidebar h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+        #changelog-sidebar ul { list-style: none; padding: 0; }
+        #changelog-sidebar li { margin-bottom: 1.5rem; }
+        #changelog-sidebar .log-date {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+        #changelog-sidebar .log-entry { font-size: 0.95rem; line-height: 1.6; }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, var(--primary-hover-color), var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p { font-size: 1.1rem; color: var(--text-secondary); }
+        #theme-toggle-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        #theme-toggle-btn:hover { background-color: var(--primary-color); }
+        .filter-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 4rem; }
+        .filter-btn { background-color: var(--surface-color); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.3s ease; }
+        .filter-btn:hover { background-color: var(--primary-color); color: #121212; border-color: var(--primary-color); }
+        body.light-theme .filter-btn:hover { color: #fff; }
+        .filter-btn.active { background-color: var(--primary-hover-color); color: #121212; border-color: var(--primary-hover-color); box-shadow: 0 0 15px var(--shadow-color); }
+        body.light-theme .filter-btn.active { color: #fff; }
+        .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2.5rem; }
+        .project-card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; opacity: 0; transform: translateY(20px); animation: card-fade-in 0.6s ease forwards; }
+        .project-card:nth-child(1) { animation-delay: 0.1s; }
+        .project-card:nth-child(2) { animation-delay: 0.2s; }
+        .project-card:nth-child(3) { animation-delay: 0.3s; }
+        .project-card:nth-child(4) { animation-delay: 0.4s; }
+        .project-card:nth-child(5) { animation-delay: 0.5s; }
+        .project-card:hover { transform: translateY(-8px); box-shadow: 0 10px 30px -10px var(--shadow-color); }
+        .project-card.hide { display: none; }
+        .card-image { width: 100%; height: 180px; background-color: #333; }
+        .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+        .project-card:hover .card-image img { transform: scale(1.05); }
+        .card-content { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; }
+        .card-content h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .card-content .description { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; flex-grow: 1; margin-bottom: 1rem; }
+        .card-tags { margin-bottom: 1.5rem; }
+        .card-tags .tag { display: inline-block; background-color: rgba(0, 170, 255, 0.1); color: var(--primary-color); padding: 0.25rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; margin-right: 0.5rem; margin-top: 0.5rem; }
+        body.light-theme .card-tags .tag { background-color: rgba(0, 123, 255, 0.1); color: var(--primary-color); }
+        .card-footer { margin-top: auto; }
+        .cta-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.8rem 1rem; background-color: var(--primary-color); color: #000; text-decoration: none; font-weight: 700; font-size: 1rem; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; }
+        body.light-theme .cta-btn { color: #fff; }
+        .cta-btn.disabled { background-color: #444; color: #888; cursor: not-allowed; }
+        .cta-btn:not(.disabled):hover { background-color: var(--primary-hover-color); transform: scale(1.02); }
+        .cta-btn:not(.disabled):active { transform: scale(0.98); }
+        .cta-btn svg { width: 1.2em; height: 1.2em; }
+        @keyframes card-fade-in { to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        <aside id="changelog-sidebar">
+            <h2>更新日誌</h2>
+            <ul>
+                <li>
+                    <p class="log-date">2025年10月19日</p>
+                    <p class="log-entry">新增「滑輪組」物理模擬，並完成多次視覺與功能修正。</p>
+                </li>
+                <li>
+                    <p class="log-date">2025年10月19日</p>
+                    <p class="log-entry">新增「隨機數值抽樣」工具頁面，並加入首頁。</p>
+                </li>
+                <li>
+                    <p class="log-date">2025年10月19日</p>
+                    <p class="log-entry">為所有分頁增加了「回首頁」按鈕，提升導覽體驗。</p>
+                </li>
+                 <li>
+                    <p class="log-date">2025年10月19日</p>
+                    <p class="log-entry">為首頁增加了淺色/深色模式切換功能。</p>
+                </li>
+            </ul>
+        </aside>
+        <main id="content-area">
+            <header>
+                <h1>Arpow's track</h1>
+                <p>record the data of the self-learning</p>
+                <button id="theme-toggle-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+            </header>
+
+            <div class="filter-container" id="filter-container"></div>
+
+            <div class="project-grid" id="project-grid">
+                <article class="project-card" data-tags="Simulation Vpython Physics">
+                    <div class="card-image"><img src="https://i.postimg.cc/bv0dm6VV/vpython-baseball-simulation.png" alt="物理模擬專案預覽圖"></div>
+                    <div class="card-content">
+                        <h2>Pitcher's Baseball simulation</h2>
+                        <p class="description">使用 GlowScript 製作的棒球投球軌跡物理模擬器，展示馬格努斯效應與空氣阻力。</p>
+                        <div class="card-tags"><span class="tag">Simulation</span><span class="tag">Vpython</span><span class="tag">Physics</span></div>
+                        <div class="card-footer"><a href="phy-vpython-baseball.html" class="cta-btn"><span>Play!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="Olympic 力學能手恆 轉動 牛頓定律 Physics">
+                    <div class="card-image"><img src="https://i.postimg.cc/Cx7xDZRX/olympic-bar-wall.png" alt="題目參考圖"></div>
+                    <div class="card-content">
+                        <h2>競賽題-棒子滑落</h2>
+                        <p class="description">使用守恆定律與牛頓定律來進行運動分析</p>
+                        <div class="card-tags"><span class="tag">Olympic</span><span class="tag">力學能手恆</span><span class="tag">轉動</span><span class="tag">牛頓定律</span><span class="tag">Physics</span></div>
+                        <div class="card-footer"><a href="phy-olympic-wall-bar-move.html" class="cta-btn"><span>Together~Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="art paint">
+                    <div class="card-image"><img src="https://i.meee.com.tw/ajp130Y.png" alt="whiteboard"></div>
+                    <div class="card-content">
+                        <h2>WhiteBoard</h2>
+                        <p class="description">在瀏覽器中直接當畫布使用，進行簡易繪圖。</p>
+                        <div class="card-tags"><span class="tag">art</span><span class="tag">paint</span></div>
+                        <div class="card-footer"><a href="whiteboard.html" class="cta-btn"><span>Let's Painting!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="Uncertainty Physics">
+                    <div class="card-image"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtkYQzWiKFODPPeenAEccC5y-wXTjRfZH3xQ&s" alt="Uncertainty"></div>
+                    <div class="card-content">
+                        <h2>Uncertainty</h2>
+                        <p class="description">透過微積分探討不確定度的相關概念與證明。</p>
+                        <div class="card-tags"><span class="tag">Uncertainty</span><span class="tag">Physics</span></div>
+                        <div class="card-footer"><a href="Uncertainty.html" class="cta-btn"><span>Together~Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="Semiconductor Physics">
+                    <div class="card-image"><img src="https://i.postimg.cc/Cx72XC0X/2025-10-19-132907.png" alt="Semiconductor"></div>
+                    <div class="card-content">
+                        <h2>Semiconductor</h2>
+                        <p class="description">An introduction to semiconductor physics.</p>
+                        <div class="card-tags"><span class="tag">Semiconductor</span><span class="tag">Physics</span></div>
+                        <div class="card-footer"><a href="semiconductor.html" class="cta-btn"><span>Together~Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="Utility Statistics Generator">
+                    <div class="card-image"><img src="https://i.postimg.cc/2618V8Tf/2025-10-19-134155.png" alt="隨機數值抽樣產生器"></div>
+                    <div class="card-content">
+                        <h2>隨機數值抽樣產生器</h2>
+                        <p class="description">一個可以生成指定範圍內隨機數值，並進行統計分析的工具。</p>
+                        <div class="card-tags"><span class="tag">Utility</span><span class="tag">Statistics</span><span class="tag">Generator</span></div>
+                        <div class="card-footer"><a href="random_sampler.html" class="cta-btn"><span>Try it!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="Physics Simulation Interactive Pulley">
+                    <div class="card-image"><img src="https://i.postimg.cc/fy4D24np/2025-10-19-151256.png" alt="動滑輪與定滑輪組合"></div>
+                    <div class="card-content">
+                        <h2>動滑輪與定滑輪組合</h2>
+                        <p class="description">比較動滑輪與定滑輪的加速度差異，並學習力學優勢。</p>
+                        <div class="card-tags"><span class="tag">Physics</span><span class="tag">Simulation</span><span class="tag">Interactive</span><span class="tag">Pulley</span></div>
+                        <div class="card-footer"><a href="movable_pulley.html" class="cta-btn"><span>Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                    </div>
+                </article>
+                <article class="project-card" data-tags="Utility In Progress">
+                    <div class="card-image"><img src="https://i.postimg.cc/vHrr0xSW/Gemini-Generated-Image-xgx7wxgx7wxgx7wx.png" alt="待辦事項專案預覽圖"></div>
+                    <div class="card-content">
+                        <h2>待辦事項清單</h2>
+                        <p class="description">一個純 JavaScript 打造的待辦事項應用，具備新增、刪除與完成標記功能。</p>
+                        <div class="card-tags"><span class="tag">Utility</span><span class="tag">In Progress</span></div>
+                        <div class="card-footer"><a href="#" class="cta-btn disabled"><span>施工中</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></a></div>
+                    </div>
+                </article>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterContainer = document.getElementById('filter-container');
+            const projectGrid = document.getElementById('project-grid');
+            const projectCards = document.querySelectorAll('.project-card');
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const body = document.body;
+
+            // --- Theme Switcher ---
+            const applyTheme = (theme) => {
+                if (theme === 'light') {
+                    body.classList.add('light-theme');
+                } else {
+                    body.classList.remove('light-theme');
+                }
+            };
+
+            const toggleTheme = () => {
+                const currentTheme = localStorage.getItem('theme') || 'dark';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            };
+
+            themeToggleBtn.addEventListener('click', toggleTheme);
+
+            // Apply saved theme on initial load
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            }
+
+            // --- Project Filter ---
+            const tags = new Set();
+            projectCards.forEach(card => {
+                const cardTags = card.dataset.tags.split(' ');
+                cardTags.forEach(tag => tags.add(tag));
+            });
+
+            let filterButtonsHTML = '<button class="filter-btn active" data-filter="all">All</button>';
+            tags.forEach(tag => {
+                filterButtonsHTML += `<button class="filter-btn" data-filter="${tag}">${tag}</button>`;
+            });
+            filterContainer.innerHTML = filterButtonsHTML;
+
+            const filterButtons = filterContainer.querySelectorAll('.filter-btn');
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    const filterValue = button.dataset.filter;
+
+                    projectCards.forEach(card => {
+                        if (filterValue === 'all' || card.dataset.tags.includes(filterValue)) {
+                            card.classList.remove('hide');
+                        } else {
+                            card.classList.add('hide');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

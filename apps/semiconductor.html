@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>半導體物理進階模擬</title>
+    <style>
+        /* --- CSS 樣式 --- */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+            padding: 20px 30px 30px 30px;
+            text-align: center;
+        }
+
+        .simulation-area {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1.6 / 1;
+            max-width: 700px;
+            margin: 15px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls-top {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            font-family: 'Noto Sans TC', sans-serif;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .controls-top label {
+            font-weight: 700;
+            font-size: 15px;
+            margin-left: 10px;
+        }
+
+        .controls-top select {
+            font-family: 'Noto Sans TC', sans-serif;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            font-size: 15px;
+            background-color: #fff;
+        }
+
+        .controls-top input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+        }
+        
+        #explanation {
+            min-height: 80px; padding: 20px; background-color: #f8f9fa;
+            border-radius: 8px; border: 1px solid #e9ecef; color: #495057;
+            line-height: 1.8; font-size: 15px; text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+
+    <div class="container">
+        <h1>半導體物理進階模擬</h1>
+        
+        <div class="simulation-area">
+            <canvas id="semiconductorCanvas"></canvas>
+        </div>
+
+        <div class="controls-top">
+            <button id="dope-n">摻雜 N 型施主</button>
+            <button id="dope-p">摻雜 P 型受主</button>
+            <label for="carrier-count">載子數量:</label>
+            <select id="carrier-count">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+            <button id="toggle-field" style="background-color: #f1c40f; color: #2c3e50;" disabled>施加電場</button>
+            <label for="speed-slider">模擬速度:</label>
+            <input type="range" id="speed-slider" min="0.2" max="5" step="0.1" value="1">
+            <button id="reset">重置晶格</button>
+        </div>
+
+        <div id="explanation">
+            <p><strong>初始狀態：</strong>一個完美的純矽(Si)晶格。P型載子(電洞)會與價電子交換位置；N型載子(電子)則會推擠價電子來前進。</p>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('semiconductorCanvas');
+        const ctx = canvas.getContext('2d');
+        const explanationDiv = document.getElementById('explanation');
+        const fieldBtn = document.getElementById('toggle-field');
+        const dopeNBtn = document.getElementById('dope-n');
+        const dopePBtn = document.getElementById('dope-p');
+        const speedSlider = document.getElementById('speed-slider');
+
+        const GRID_COLS = 8;
+        const GRID_ROWS = 5;
+        
+        let atomRadius, valenceERadius, carrierRadius, spacing;
+        let atoms = [], bonds = [], freeCarriers = [], recombinationEvents = [];
+        let animationFrameId, electricField = false;
+        let activeSwaps = [];
+        let simulationSpeed = 1;
+
+        const COLORS = {
+            si: '#9b59b6', dopant_n: '#2980b9', dopant_p: '#c0392b',
+            electron: '#3498db', hole: '#e74c3c', valenceElectron: '#2c3e50',
+            text: '#ffffff', fieldText: '#e67e22',
+            recombination: 'rgba(241, 196, 15, '
+        };
+        
+        function setFixedRadii() {
+            const baseRatio = 0.04;
+            atomRadius = canvas.width * baseRatio;
+            valenceERadius = atomRadius * 0.25;
+            carrierRadius = valenceERadius;
+        }
+
+        function resizeCanvas() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+            setFixedRadii();
+            initGrid();
+        }
+        
+        function initGrid() {
+            electricField = false;
+            fieldBtn.disabled = true; fieldBtn.textContent = '施加電場';
+            dopeNBtn.disabled = false; dopePBtn.disabled = false;
+            atoms = []; bonds = []; freeCarriers = []; recombinationEvents = []; activeSwaps = [];
+            
+            spacing = Math.min(canvas.width / (GRID_COLS + 0.5), canvas.height / (GRID_ROWS + 0.5));
+            const gridWidth = spacing * (GRID_COLS - 1);
+            const gridHeight = spacing * (GRID_ROWS - 1);
+            const offsetX = (canvas.width - gridWidth) / 2;
+            const offsetY = (canvas.height - gridHeight) / 2;
+
+            for (let j = 0; j < GRID_ROWS; j++) {
+                for (let i = 0; i < GRID_COLS; i++) {
+                    atoms.push({
+                        id: j * GRID_COLS + i, type: 'Si',
+                        x: offsetX + i * spacing, y: offsetY + j * spacing,
+                        doped: false, row: j, col: i
+                    });
+                }
+            }
+            createBonds();
+            updateExplanation('initial');
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animate();
+        }
+
+        function createBonds() {
+            bonds = [];
+            for (let j = 0; j < GRID_ROWS; j++) {
+                for (let i = 0; i < GRID_COLS; i++) {
+                    const currentAtom = atoms.find(a => a.row === j && a.col === i);
+                    if (i < GRID_COLS - 1) {
+                        const rightAtom = atoms.find(a => a.row === j && a.col === i + 1);
+                        bonds.push({ atom1_id: currentAtom.id, atom2_id: rightAtom.id, electrons: [{}, {}] });
+                    }
+                    if (j < GRID_ROWS - 1) {
+                        const downAtom = atoms.find(a => a.row === j + 1 && a.col === i);
+                        bonds.push({ atom1_id: currentAtom.id, atom2_id: downAtom.id, electrons: [{}, {}] });
+                    }
+                }
+            }
+            bonds.forEach(bond => positionElectronsInBond(bond));
+        }
+        
+        function positionElectronsInBond(bond) {
+            const atom1 = atoms.find(a => a.id === bond.atom1_id);
+            const atom2 = atoms.find(a => a.id === bond.atom2_id);
+            const midX = (atom1.x + atom2.x) / 2;
+            const midY = (atom1.y + atom2.y) / 2;
+            const angle = Math.atan2(atom2.y - atom1.y, atom2.x - atom1.x);
+            const perpAngle = angle + Math.PI / 2;
+            const offset = valenceERadius * 0.7;
+            bond.electrons[0] = { x: midX + offset * Math.cos(perpAngle), y: midY + offset * Math.sin(perpAngle) };
+            bond.electrons[1] = { x: midX - offset * Math.cos(perpAngle), y: midY - offset * Math.sin(perpAngle) };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBondsAndValenceElectrons();
+            drawAtoms();
+            drawFreeCarriers();
+            drawActiveSwaps();
+            drawRecombinationFlashes();
+            if (electricField) drawEField();
+        }
+        
+        function drawAtoms() {
+            atoms.forEach(atom => {
+                ctx.beginPath();
+                ctx.arc(atom.x, atom.y, atomRadius, 0, Math.PI * 2);
+                let color;
+                switch(atom.type) {
+                    case 'Si': color = COLORS.si; break;
+                    case 'P': color = COLORS.dopant_n; break;
+                    case 'B': color = COLORS.dopant_p; break;
+                }
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.fillStyle = COLORS.text;
+                ctx.font = `bold ${atomRadius * 0.9}px 'Noto Sans TC'`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(atom.type, atom.x, atom.y);
+            });
+        }
+        
+        function drawEField() {
+            ctx.fillStyle = COLORS.fieldText;
+            ctx.font = `bold ${atomRadius*1.5}px 'Noto Sans TC'`;
+            ctx.textAlign = 'center';
+            ctx.fillText('－', atomRadius * 1.5, canvas.height / 2);
+            ctx.fillText('＋', canvas.width - atomRadius * 1.5, canvas.height / 2);
+        }
+
+        function drawBondsAndValenceElectrons() {
+            bonds.forEach(bond => {
+                bond.electrons.forEach(e => {
+                    const isOccupiedByHole = freeCarriers.some(carrier => carrier.type === 'hole' && Math.hypot(carrier.x - e.x, carrier.y - e.y) < 1);
+                    const isSwapping = activeSwaps.some(swap => swap.target === e);
+                    if (!isOccupiedByHole && !isSwapping) {
+                        ctx.beginPath(); ctx.arc(e.x, e.y, valenceERadius, 0, Math.PI * 2);
+                        ctx.fillStyle = COLORS.valenceElectron; ctx.fill();
+                    }
+                });
+            });
+        }
+        
+        function drawFreeCarriers() {
+            freeCarriers.forEach(carrier => {
+                const isSwapping = activeSwaps.some(swap => swap.carrier === carrier);
+                if (!isSwapping) {
+                    ctx.beginPath();
+                    ctx.arc(carrier.x, carrier.y, carrierRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = carrier.type === 'electron' ? COLORS.electron : COLORS.hole;
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawActiveSwaps() {
+            activeSwaps.forEach(swap => {
+                const carrier = swap.carrier;
+                
+                let carrierColor = carrier.type === 'electron' ? COLORS.electron : COLORS.hole;
+                let targetColor = COLORS.valenceElectron;
+
+                if (swap.type === 'electron') {
+                    targetColor = COLORS.electron;
+                }
+                
+                if (swap.paused && swap.type === 'electron') {
+                    carrierColor = COLORS.valenceElectron;
+                    targetColor = COLORS.electron;
+                }
+
+                ctx.beginPath();
+                ctx.arc(swap.carrierX, swap.carrierY, carrierRadius, 0, Math.PI * 2);
+                ctx.fillStyle = carrierColor;
+                ctx.fill();
+                
+                if (swap.target) {
+                    ctx.beginPath();
+                    ctx.arc(swap.targetX, swap.targetY, valenceERadius, 0, Math.PI * 2);
+                    ctx.fillStyle = targetColor;
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function drawRecombinationFlashes() {
+            recombinationEvents.forEach(event => {
+                const alpha = event.life / 30;
+                ctx.beginPath();
+                ctx.arc(event.x, event.y, carrierRadius * (2.0 - alpha * 1.5), 0, Math.PI * 2);
+                ctx.fillStyle = `${COLORS.recombination}${alpha})`;
+                ctx.fill();
+                event.life -= simulationSpeed;
+            });
+            recombinationEvents = recombinationEvents.filter(event => event.life > 0);
+        }
+
+        function dope(type) {
+            initGrid(); 
+            fieldBtn.disabled = false;
+
+            const carrierCount = parseInt(document.getElementById('carrier-count').value, 10);
+            let availableAtoms = atoms.filter(a => !a.doped && a.col > 0 && a.col < GRID_COLS - 1 && a.row > 0 && a.row < GRID_ROWS - 1);
+
+            if (availableAtoms.length < carrierCount) {
+                console.error("Not enough atoms to dope.");
+                return;
+            }
+
+            availableAtoms.sort(() => 0.5 - Math.random());
+            const atomsToDope = availableAtoms.slice(0, carrierCount);
+
+            if (type === 'n') {
+                atomsToDope.forEach(atom => {
+                    atom.type = 'P';
+                    atom.doped = true;
+                    freeCarriers.push({
+                        type: 'electron',
+                        x: atom.x + atomRadius * (Math.random() > 0.5 ? 1.5 : -1.5),
+                        y: atom.y + atomRadius * (Math.random() > 0.5 ? 1.5 : -1.5),
+                        lastJumpTime: Date.now(),
+                        lastTarget: null
+                    });
+                });
+                updateExplanation('n-type-finish');
+            } else { // type 'p'
+                let potentialHoleSlots = [];
+                atomsToDope.forEach(atom => {
+                    atom.type = 'B';
+                    atom.doped = true;
+                    const bondsOfAtom = bonds.filter(b => b.atom1_id === atom.id || b.atom2_id === atom.id);
+                    bondsOfAtom.forEach(bond => {
+                        potentialHoleSlots.push(...bond.electrons);
+                    });
+                });
+
+                potentialHoleSlots = [...new Set(potentialHoleSlots)];
+                
+                potentialHoleSlots.sort(() => 0.5 - Math.random());
+                
+                const slotsForHoles = potentialHoleSlots.slice(0, carrierCount);
+                slotsForHoles.forEach(slot => {
+                    freeCarriers.push({ type: 'hole', x: slot.x, y: slot.y, lastJumpTime: Date.now() });
+                });
+                updateExplanation('p-type-finish');
+            }
+
+            dopeNBtn.disabled = true;
+            dopePBtn.disabled = true;
+        }
+        
+        function updateCarrierPositions() {
+            const now = Date.now();
+            freeCarriers.forEach(carrier => {
+                const isSwapping = activeSwaps.some(swap => swap.carrier === carrier);
+                if (isSwapping) return;
+
+                const jumpInterval = (electricField ? 1500 : 3000) / simulationSpeed;
+                if (now - carrier.lastJumpTime < jumpInterval) return;
+
+                let potentialTargets = [];
+                bonds.forEach(bond => {
+                    bond.electrons.forEach(e => {
+                        const isOccupied = freeCarriers.some(h => Math.hypot(h.x - e.x, h.y - e.y) < 1);
+                        if (!isOccupied && e !== carrier.lastTarget) {
+                            const dist = Math.hypot(e.x - carrier.x, e.y - carrier.y);
+                            if (dist < spacing * 1.5) { // Increased radius
+                                potentialTargets.push({ electron: e, dist: dist });
+                            }
+                        }
+                    });
+                });
+                
+                let targetsToUse = [...potentialTargets];
+                let noForwardTargets = false;
+                if (electricField) {
+                    if (carrier.type === 'electron') {
+                        let preferred = potentialTargets.filter(t => t.electron.x > carrier.x);
+                        if (preferred.length > 0) {
+                            targetsToUse = preferred;
+                        } else {
+                            noForwardTargets = true;
+                        }
+                    } else { // hole
+                        let preferred = potentialTargets.filter(t => t.electron.x < carrier.x);
+                        if (preferred.length > 0) {
+                            targetsToUse = preferred;
+                        } else {
+                            noForwardTargets = true;
+                        }
+                    }
+                }
+
+                if (noForwardTargets && electricField) {
+                    let wrapTargets = [];
+                    const gridWidth = spacing * (GRID_COLS - 1);
+                    const offsetX = (canvas.width - gridWidth) / 2;
+                    
+                    if (carrier.type === 'electron') {
+                        const rightBoundary = offsetX + gridWidth;
+                        if (carrier.x > rightBoundary - spacing) { // Near right edge
+                            bonds.forEach(bond => bond.electrons.forEach(e => {
+                                if (Math.abs(e.x - offsetX) < spacing / 2) { // Leftmost column
+                                    const isOccupied = freeCarriers.some(h => Math.hypot(h.x - e.x, h.y - e.y) < 1);
+                                    if (!isOccupied) wrapTargets.push({ electron: e });
+                                }
+                            }));
+                        }
+                    } else { // hole
+                        if (carrier.x < offsetX + spacing) { // Near left edge
+                            const rightBoundary = offsetX + gridWidth;
+                            bonds.forEach(bond => bond.electrons.forEach(e => {
+                                if (Math.abs(e.x - rightBoundary) < spacing / 2) { // Rightmost column
+                                    const isOccupied = freeCarriers.some(h => Math.hypot(h.x - e.x, h.y - e.y) < 1);
+                                    if (!isOccupied) wrapTargets.push({ electron: e });
+                                }
+                            }));
+                        }
+                    }
+
+                    if (wrapTargets.length > 0) {
+                        const offsetY = (canvas.height - (spacing * (GRID_ROWS - 1))) / 2;
+                        const carrierRowIndex = Math.round((carrier.y - offsetY) / spacing);
+                        let differentRowTargets = [];
+                        wrapTargets.forEach(t => {
+                            const targetRowIndex = Math.round((t.electron.y - offsetY) / spacing);
+                            if (targetRowIndex !== carrierRowIndex) {
+                                differentRowTargets.push(t);
+                            }
+                        });
+
+                        let finalTarget;
+                        if (differentRowTargets.length > 0 && Math.random() < 0.8) {
+                            finalTarget = differentRowTargets[Math.floor(Math.random() * differentRowTargets.length)];
+                        } else {
+                            finalTarget = wrapTargets[Math.floor(Math.random() * wrapTargets.length)];
+                        }
+                        
+                        if (finalTarget) {
+                            targetsToUse = [{electron: finalTarget.electron, dist: 0}];
+                        }
+                    }
+                }
+
+                if (targetsToUse.length > 0) {
+                    targetsToUse.sort((a, b) => a.dist - b.dist);
+                    const target = targetsToUse[0];
+                    
+                    let tempPos = {x: target.electron.x + spacing * 0.3, y: target.electron.y};
+
+                    activeSwaps.push({
+                        carrier: carrier,
+                        target: target.electron,
+                        startX: carrier.x, startY: carrier.y,
+                        endX: target.electron.x, endY: target.electron.y,
+                        targetStartX: target.electron.x, targetStartY: target.electron.y,
+                        targetEndX: tempPos.x, targetEndY: tempPos.y,
+                        progress: 0,
+                        type: carrier.type 
+                    });
+                    
+                    carrier.lastJumpTime = now;
+                }
+            });
+        }
+        
+        function updateSwapAnimations() {
+            const swapSpeed = 0.02 * simulationSpeed;
+            for (let i = activeSwaps.length - 1; i >= 0; i--) {
+                const swap = activeSwaps[i];
+                
+                if (swap.paused) {
+                    if (Date.now() - swap.pauseStartTime > (500 / simulationSpeed)) { // 500ms pause
+                        // --- IDENTITY TRANSFER ---
+                        const carrierIndex = freeCarriers.indexOf(swap.carrier);
+                        if (carrierIndex > -1) {
+                            // The free carrier object now represents the electron that was pushed out.
+                            // Update its position to the temporary spot.
+                            swap.carrier.x = swap.targetEndX;
+                            swap.carrier.y = swap.targetEndY;
+                            swap.carrier.lastJumpTime = Date.now();
+                            swap.carrier.lastTarget = swap.target; // Prevent jumping back
+
+                            // The valence electron object (`swap.target`) that was pushed now takes the place in the bond.
+                            // Its position is updated to where the free carrier moved.
+                            swap.target.x = swap.endX;
+                            swap.target.y = swap.endY;
+                        }
+                        activeSwaps.splice(i, 1);
+                    }
+                    continue;
+                }
+
+                swap.progress += swapSpeed;
+
+                swap.carrierX = swap.startX + (swap.endX - swap.startX) * swap.progress;
+                swap.carrierY = swap.startY + (swap.endY - swap.startY) * swap.progress;
+                swap.targetX = swap.targetStartX + (swap.targetEndX - swap.targetStartX) * swap.progress;
+                swap.targetY = swap.targetStartY + (swap.targetEndY - swap.targetStartY) * swap.progress;
+
+                if (swap.progress >= 1) {
+                    if (swap.type === 'hole') {
+                         if(swap.target) { 
+                            const oldCarrierX = swap.carrier.x;
+                            const oldCarrierY = swap.carrier.y;
+                            swap.carrier.x = swap.target.x;
+                            swap.carrier.y = swap.target.y;
+                            swap.target.x = oldCarrierX;
+                            swap.target.y = oldCarrierY;
+                        }
+                        activeSwaps.splice(i, 1);
+                    } else {
+                        swap.paused = true;
+                        swap.pauseStartTime = Date.now();
+                        swap.carrierX = swap.endX;
+                        swap.carrierY = swap.endY;
+                        swap.targetX = swap.targetEndX;
+                        swap.targetY = swap.targetEndY;
+                    }
+                }
+            }
+        }
+        
+        function handleRecombination() {
+            let carriersToRemove = new Set();
+            const electrons = freeCarriers.filter(c => c.type === 'electron' && !activeSwaps.some(s => s.carrier === c));
+            const holes = freeCarriers.filter(c => c.type === 'hole' && !activeSwaps.some(s => s.carrier === c));
+
+            electrons.forEach(e_carrier => {
+                holes.forEach(h_carrier => {
+                    const dist = Math.hypot(e_carrier.x - h_carrier.x, e_carrier.y - h_carrier.y);
+                    if (dist < carrierRadius * 1.5) {
+                        carriersToRemove.add(e_carrier);
+                        carriersToRemove.add(h_carrier);
+                        recombinationEvents.push({ x: e_carrier.x, y: e_carrier.y, life: 30 });
+                    }
+                });
+            });
+
+            if (carriersToRemove.size > 0) {
+                freeCarriers = freeCarriers.filter(c => !carriersToRemove.has(c));
+            }
+        }
+
+        function updateExplanation(state) {
+            let html = '';
+            switch(state) {
+                case 'initial': html = `<p><strong>初始狀態：</strong>一個完美的純矽(Si)晶格。P型載子(電洞)會與價電子交換位置；N型載子(電子)則會推擠價電子來前進。</p>`; break;
+                case 'recombination': html = `<p><strong>電子-電洞複合：</strong>自由電子與電洞相遇，兩者同時消失，並釋放能量(黃色閃光)。</p>`; break;
+                case 'n-type-finish': html = `<p><strong>N型摻雜：</strong>第五顆價電子成為自由電子(e⁻)，它會透過「推擠」的方式在晶格中移動。</p>`; break;
+                case 'p-type-finish': html = `<p><strong>P型摻雜：</strong>價電子填補空位，產生可移動的<strong>電洞(h⁺)</strong>，透過「交換」位置移動。</p>`; break;
+                case 'field-on': html = `<p><strong>施加電場：</strong>電子(e⁻)與電洞(h⁺)分別朝正負極進行漂移運動，形成<strong>漂移電流</strong>。</p>`; break;
+                case 'field-off': html = `<p><strong>移除電場：</strong>載子恢復隨機的熱運動。</p>`; break;
+            }
+            if(html) explanationDiv.innerHTML = html;
+        }
+
+        function animate() {
+            updateCarrierPositions();
+            updateSwapAnimations();
+            handleRecombination();
+            draw();
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        fieldBtn.addEventListener('click', () => {
+            electricField = !electricField;
+            fieldBtn.textContent = electricField ? '移除電場' : '施加電場';
+            updateExplanation(electricField ? 'field-on' : 'field-off');
+        });
+
+        speedSlider.addEventListener('input', (e) => {
+            simulationSpeed = parseFloat(e.target.value);
+        });
+
+        dopeNBtn.addEventListener('click', () => dope('n'));
+        dopePBtn.addEventListener('click', () => dope('p'));
+        document.getElementById('reset').addEventListener('click', initGrid);
+        window.addEventListener('resize', resizeCanvas);
+
+        resizeCanvas();
+    });
+    </script>
+</body>
+</html>

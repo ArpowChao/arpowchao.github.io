@@ -1,0 +1,128 @@
+/* --- 全域設定 --- */
+:root {
+    --accent-color: rgba(255, 255, 255, 1);
+    --text-color: #ffffff;
+    --background-blur: 10px;
+    --border-radius: 12px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden; /* 防止動態背景造成滾動條 */
+}
+
+body {
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--text-color);
+    /* 動態漸層背景 */
+    background: linear-gradient(45deg, #1d2b64, #f8cdda, #1d2b64, #f8cdda);
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+}
+
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* --- 主要容器 (全螢幕置中) --- */
+.hero-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+/* --- 內容框 (毛玻璃效果) --- */
+.content-box {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 3rem 4rem;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    backdrop-filter: blur(var(--background-blur));
+    -webkit-backdrop-filter: blur(var(--background-blur)); /* 支援 Safari */
+
+    /* 進場動畫 */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-in-up 0.8s ease forwards;
+    animation-delay: 0.2s;
+}
+
+@keyframes fade-in-up {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- 文字排版 --- */
+.content-box h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.content-box p {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-bottom: 2.5rem;
+    opacity: 0.8;
+}
+
+/* --- 按鈕容器 --- */
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap; /* 在小螢幕時換行 */
+}
+
+/* --- 鬼魂按鈕樣式與互動 --- */
+.ghost-btn {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 0.8rem 2rem;
+    border: 2px solid var(--accent-color);
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    background-color: transparent;
+    text-decoration: none;
+    transition: all 0.3s ease-out;
+    cursor: pointer;
+    
+    /* 按鈕進場動畫 */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-in-up 0.6s ease forwards;
+}
+
+/* 按鈕延遲載入，製造層次感 */
+.ghost-btn:nth-child(1) { animation-delay: 0.8s; }
+.ghost-btn:nth-child(2) { animation-delay: 1.0s; }
+.ghost-btn:nth-child(3) { animation-delay: 1.2s; }
+
+.ghost-btn:hover {
+    background-color: var(--accent-color);
+    color: #333; /* 滑鼠懸停時文字變深色 */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+/* 核心：按壓的互動感 */
+.ghost-btn:active {
+    transform: scale(0.95); /* 點擊時輕微縮小 */
+    transition-duration: 0.1s;
+    box-shadow: none;
+}

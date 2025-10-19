@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滑動桿物理模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A single-page, multi-section educational module. It guides the user from problem setup (interactive diagram), through the physics principles and derivation (static text), to an interactive simulation with real-time data and charts. This linear, step-by-step structure is chosen to be the most effective pedagogical approach for a complex physics problem, building understanding layer by layer before the interactive payoff. -->
+    <!-- Visualization & Content Choices: 1. Initial Setup: Canvas diagram + HTML slider. Goal: Inform/Orient. Interaction: User sets initial angle. Justification: Allows user to control the problem's starting conditions. 2. Derivation: Formatted HTML text. Goal: Explain. Justification: Clear, static presentation for complex math. 3. Simulation: Canvas animation. Goal: Show Change. Justification: Visualizes the dynamic motion. 4. Data Display: Dynamic HTML text. Goal: Inform (real-time). Justification: Connects animation to quantitative values. 5. Normal Force vs. Angle: Chart.js Line Chart. Goal: Show Relationship/Change. Interaction: Data is plotted live during simulation. Justification: Visually pinpoints the exact moment the force becomes zero, which is the core of the problem. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #fdfdfc;
+            color: #333;
+        }
+        .latex {
+            font-family: 'Cambria Math', 'Latin Modern Math', serif;
+            font-style: italic;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .btn {
+            background-color: #4a5568;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2d3748;
+        }
+        .btn-reset {
+            background-color: #a0aec0;
+        }
+        .btn-reset:hover {
+            background-color: #718096;
+        }
+        h1, h2, h3 {
+            color: #2d3748;
+            font-weight: 700;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+         @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2">滑動桿脫離牆面問題</h1>
+            <p class="text-lg text-gray-600">一個質量為 <span class="latex">m</span>、長度為 <span class="latex">L</span> 的均勻細桿，在光滑牆面與地面間滑落的互動探索。</p>
+        </header>
+
+        <main class="space-y-12">
+            <section id="setup" class="card">
+                <h2 class="text-2xl font-bold mb-4">1. 問題設定與互動調整</h2>
+                <p class="mb-6 text-gray-700">此部分讓您設定問題的初始條件。調整滑塊來改變桿子開始滑落時與牆面的夾角 <span class="latex">θ₀</span>。這個角度將是我們整個分析的起點，您將看到初始角度如何影響最終脫離牆面的角度。</p>
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <label for="initialAngle" class="block text-lg font-semibold text-gray-800 mb-2">初始角度 <span class="latex">θ₀</span>: <span id="angleValue" class="font-bold text-blue-600">60</span>°</label>
+                        <input type="range" id="initialAngle" min="15" max="85" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <p class="mt-4 text-sm text-gray-500">此處設定的初始角度 <span class="latex">θ₀</span> 將用於下方的模擬。物理上，脫離角度取決於這個初始值。</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg flex justify-center items-center h-64">
+                        <canvas id="setupCanvas" width="250" height="250"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="principles" class="card">
+                <h2 class="text-2xl font-bold mb-4">2. 物理原理</h2>
+                <p class="mb-6 text-gray-700">為了解決這個問題，我們需要運用兩個核心的物理學原理：能量守恆定律和牛頓第二運動定律的轉動形式。這些原理共同描述了桿子在滑落過程中的能量轉換和受力情況。</p>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-xl font-semibold">能量守恆</h3>
+                        <p class="text-gray-600">由於牆面與地面皆為光滑，沒有摩擦力作功，系統的總機械能（動能＋位能）在整個過程中保持不變。桿子的位能轉換為平移動能與轉動動能。</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold">力學分析</h3>
+                        <p class="text-gray-600">我們需要分析桿子質心的水平運動。牆壁對桿子的正向力 <span class="latex">N₁</span> 是造成其水平方向加速度的原因。當桿子脫離牆面時，這個正向力 <span class="latex">N₁</span> 恰好變為零。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="derivation" class="card">
+                <h2 class="text-2xl font-bold mb-4">3. 數學推導</h2>
+                <p class="mb-6 text-gray-700">透過結合能量守恆與力學分析，我們可以推導出桿子脫離牆面時的角度。以下是推導的關鍵步驟，展示了如何從物理原理得到最終的數學關係式。</p>
+                <div class="space-y-4 text-gray-800 bg-gray-50 p-6 rounded-lg">
+                    <p>1. <strong>質心位置：</strong> 設桿子與垂直牆面的夾角為 <span class="latex">θ</span>。其質心座標為：<br>
+                    <span class="latex">x = (L/2) sin(θ)</span>, <span class="latex">y = (L/2) cos(θ)</span></p>
+                    
+                    <p>2. <strong>能量守恒方程式：</strong> 系統總能量 <span class="latex">E</span> 等於初始位能。<br>
+                    <span class="latex">E = mg(L/2)cos(θ₀)</span><br>
+                    在任意角度 <span class="latex">θ</span> 時：<br>
+                    <span class="latex">mg(L/2)cos(θ₀) = (1/2)mv² + (1/2)Iω² + mg(L/2)cos(θ)</span><br>
+                    其中 <span class="latex">v</span> 是質心速度，<span class="latex">ω = dθ/dt</span> 是角速度，<span class="latex">I = (1/12)mL²</span> 是轉動慣量。</p>
+
+                    <p>3. <strong>求解角速度 <span class="latex">ω</span>：</strong> 透過對質心位置求導，並利用 <span class="latex">v² = (dx/dt)² + (dy/dt)²</span>，我們可以得到 <span class="latex">v² = (L²/4)ω²</span>。代入能量守恆式，整理後得到：<br>
+                    <span class="latex">ω² = (3g/L)(cos(θ₀) - cos(θ))</span></p>
+
+                    <p>4. <strong>力學方程式：</strong> 分析水平方向的力，牆的正向力 <span class="latex">N₁</span> 提供質心水平加速度 <span class="latex">aₓ</span>。<br>
+                    <span class="latex">N₁ = maₓ = m (d²x/dt²)</span><br>
+                    對 <span class="latex">x</span> 求二次導，得到 <span class="latex">aₓ = (L/2)(-ω²sin(θ) + αcos(θ))</span>，其中 <span class="latex">α = dω/dt</span> 是角加速度。</p>
+
+                    <p>5. <strong>脫離條件：</strong> 脫離瞬間，<span class="latex">N₁ = 0</span>。這意味著 <span class="latex">aₓ = 0</span>。我們需要求解角加速度 <span class="latex">α</span>，透過對 <span class="latex">ω²</span> 的表示式對時間微分得到：<br>
+                    <span class="latex">α = (3g/2L)sin(θ)</span><br>
+                    將 <span class="latex">N₁ = 0</span>、<span class="latex">ω²</span> 和 <span class="latex">α</span> 代入力學方程式，最終解得：<br>
+                    <strong class="text-xl text-blue-700 block mt-2 text-center"><span class="latex">cos(θ) = (2/3)cos(θ₀)</span></strong></p>
+                </div>
+            </section>
+            
+            <section id="simulation" class="card">
+                <h2 class="text-2xl font-bold mb-4">4. 互動模擬與結果</h2>
+                <p class="mb-6 text-gray-700">現在，讓我們透過動態模擬來驗證我們的推導。點擊“開始模擬”按鈕，觀察桿子的滑落過程。動畫將在桿子脫離牆面的精確瞬間暫停。下方的圖表和數據會即時更新，展示物理量的變化，特別是牆面正向力如何逐漸變為零。</p>
+
+                <div class="text-center mb-6">
+                    <button id="startButton" class="btn text-xl">開始模擬</button>
+                    <button id="resetButton" class="btn btn-reset text-xl ml-4">重設</button>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8 items-start">
+                    <div class="bg-gray-50 p-4 rounded-lg flex justify-center items-center h-[400px]">
+                        <canvas id="simulationCanvas" width="350" height="350"></canvas>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold text-center">即時物理數據</h3>
+                         <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-800">角度 <span class="latex">θ</span></p>
+                                <p id="thetaDisplay" class="text-2xl font-bold text-blue-900">-</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-sm text-green-800">角速度 <span class="latex">ω</span></p>
+                                <p id="omegaDisplay" class="text-2xl font-bold text-green-900">-</p>
+                            </div>
+                             <div class="bg-red-50 p-4 rounded-lg col-span-2">
+                                <p class="text-sm text-red-800">牆面正向力 <span class="latex">N₁</span> (相對值)</p>
+                                <p id="normalForceDisplay" class="text-2xl font-bold text-red-900">-</p>
+                            </div>
+                        </div>
+                         <div id="resultText" class="mt-4 text-center text-lg font-semibold text-gray-800 h-12"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold text-center mb-4">牆面正向力 vs. 角度</h3>
+                    <div class="chart-container">
+                        <canvas id="forceChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="conclusion" class="card">
+                <h2 class="text-2xl font-bold mb-4">5. 結論</h2>
+                <p class="text-gray-700">從我們的推導與模擬中，我們得到一個非常簡潔的結果：桿子脫離牆面的角度 <span class="latex">θ</span> 僅取決於其初始角度 <span class="latex">θ₀</span>，其關係為 <span class="latex">cos(θ) = (2/3)cos(θ₀)</span>。這個結果與桿子的質量 <span class="latex">m</span> 和長度 <span class="latex">L</span> 無關。</p>
+                <p class="mt-4 text-gray-700">這背後的物理意義是：隨著桿子滑落，其質心的水平加速度越來越難以由牆面提供。當質心水平加速度的需求（由轉動和角度變化決定）超過了牆面能提供的最大加速度（即正向力變為零）時，桿子便與牆面分離。這個臨界點恰好發生在上述的角度關係式成立時。</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const g = 9.8;
+            const L = 2; 
+            const m = 1; 
+
+            const initialAngleSlider = document.getElementById('initialAngle');
+            const angleValueDisplay = document.getElementById('angleValue');
+            
+            const setupCanvas = document.getElementById('setupCanvas');
+            const simCanvas = document.getElementById('simulationCanvas');
+            const setupCtx = setupCanvas.getContext('2d');
+            const simCtx = simCanvas.getContext('2d');
+
+            const startButton = document.getElementById('startButton');
+            const resetButton = document.getElementById('resetButton');
+
+            const thetaDisplay = document.getElementById('thetaDisplay');
+            const omegaDisplay = document.getElementById('omegaDisplay');
+            const normalForceDisplay = document.getElementById('normalForceDisplay');
+            const resultText = document.getElementById('resultText');
+
+            let theta0_deg = 60;
+            let theta0_rad = theta0_deg * Math.PI / 180;
+            
+            let theta, omega, alpha, normalForce;
+            let animationFrameId;
+            let chart;
+            let isSimulating = false;
+
+            function drawRod(ctx, canvas, angle_rad, color = 'rgba(74, 85, 104, 1)') {
+                const w = canvas.width;
+                const h = canvas.height;
+                const rodDisplayLength = Math.min(w, h) * 0.8;
+
+                const x1 = w / 2 - (rodDisplayLength / 2) * Math.sin(angle_rad);
+                const y1 = h / 2 - (rodDisplayLength / 2) * Math.cos(angle_rad);
+                const x2 = w / 2 + (rodDisplayLength / 2) * Math.sin(angle_rad);
+                const y2 = h / 2 + (rodDisplayLength / 2) * Math.cos(angle_rad);
+                
+                const wallX = x1;
+                const floorY = y2;
+
+                ctx.clearRect(0, 0, w, h);
+                
+                ctx.strokeStyle = '#a0aec0';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(wallX, 0);
+                ctx.lineTo(wallX, h);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, floorY);
+                ctx.lineTo(w, floorY);
+                ctx.stroke();
+
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            function initializeChart() {
+                const ctx = document.getElementById('forceChart').getContext('2d');
+                if (chart) {
+                    chart.destroy();
+                }
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '牆面正向力 (相對值)',
+                            data: [],
+                            borderColor: 'rgba(229, 62, 62, 1)',
+                            backgroundColor: 'rgba(229, 62, 62, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '角度 θ (°)'
+                                },
+                                reverse: true
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: '正向力 N₁'
+                                },
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            }
+
+            function updateDisplays() {
+                thetaDisplay.textContent = `${(theta * 180 / Math.PI).toFixed(1)}°`;
+                omegaDisplay.textContent = `${omega.toFixed(2)} rad/s`;
+                normalForceDisplay.textContent = normalForce > 0 ? normalForce.toFixed(2) : '0.00';
+            }
+
+            function resetSimulation() {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                isSimulating = false;
+                theta = theta0_rad;
+                omega = 0;
+                alpha = 0;
+                normalForce = 1;
+
+                thetaDisplay.textContent = '-';
+                omegaDisplay.textContent = '-';
+                normalForceDisplay.textContent = '-';
+                resultText.textContent = '';
+                startButton.disabled = false;
+                initialAngleSlider.disabled = false;
+
+                drawRod(simCtx, simCanvas, theta0_rad);
+                initializeChart();
+            }
+
+            function simulationLoop() {
+                const dt = 0.005;
+
+                if (normalForce <= 0) {
+                    isSimulating = false;
+                    startButton.disabled = true;
+                    const separation_angle_deg = (theta * 180 / Math.PI).toFixed(2);
+                    const theoretical_angle_deg = (Math.acos(2/3 * Math.cos(theta0_rad)) * 180 / Math.PI).toFixed(2);
+                    resultText.innerHTML = `桿子在 <span class="text-blue-600">${separation_angle_deg}°</span> 脫離牆面。<br>理論值: <span class="text-green-600">${theoretical_angle_deg}°</span>`;
+                    drawRod(simCtx, simCanvas, theta, 'rgba(229, 62, 62, 1)');
+                    return;
+                }
+                
+                omega = Math.sqrt(Math.max(0, (3 * g / L) * (Math.cos(theta0_rad) - Math.cos(theta))));
+                alpha = (3 * g / (2 * L)) * Math.sin(theta);
+                
+                const ax_cm = (L / 2) * (-omega * omega * Math.sin(theta) + alpha * Math.cos(theta));
+                normalForce = m * ax_cm;
+                if (normalForce < 0) normalForce = 0;
+
+                theta += omega * dt;
+
+                updateDisplays();
+                drawRod(simCtx, simCanvas, theta);
+                
+                chart.data.labels.push((theta * 180 / Math.PI).toFixed(1));
+                chart.data.datasets[0].data.push(normalForce);
+                chart.update();
+
+                if(isSimulating) {
+                    animationFrameId = requestAnimationFrame(simulationLoop);
+                }
+            }
+
+            startButton.addEventListener('click', () => {
+                if (isSimulating) return;
+
+                resetSimulation(); 
+
+                isSimulating = true;
+                startButton.disabled = true;
+                initialAngleSlider.disabled = true;
+                resultText.textContent = '模擬中...';
+
+                // 手動推進第一個時間步長以啟動模擬
+                const dt = 0.005;
+                // 在 t=0 時，omega 為 0。計算初始 alpha。
+                alpha = (3 * g / (2 * L)) * Math.sin(theta);
+                // 更新第一幀的狀態
+                omega += alpha * dt;
+                theta += 0.5 * alpha * dt * dt; // 更精確的第一步位置更新
+                
+                animationFrameId = requestAnimationFrame(simulationLoop);
+            });
+
+            resetButton.addEventListener('click', () => {
+                resetSimulation();
+                drawRod(simCtx, simCanvas, theta0_rad);
+            });
+
+            initialAngleSlider.addEventListener('input', (e) => {
+                theta0_deg = parseInt(e.target.value);
+                angleValueDisplay.textContent = theta0_deg;
+                theta0_rad = theta0_deg * Math.PI / 180;
+                drawRod(setupCtx, setupCanvas, theta0_rad);
+                resetSimulation();
+            });
+
+            drawRod(setupCtx, setupCanvas, theta0_rad);
+            drawRod(simCtx, simCanvas, theta0_rad);
+            initializeChart();
+        });
+    </script>
+</body>
+</html>
+
