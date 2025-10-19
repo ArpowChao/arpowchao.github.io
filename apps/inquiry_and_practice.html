@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探究與實作：從靈感到實踐</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --bg-color: #f0f2f5;
+            --surface-color: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #495057;
+            --border-color: #dee2e6;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.8;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .content-wrapper {
+            max-width: 900px;
+            margin: 2rem auto;
+            background-color: var(--surface-color);
+            padding: 2rem 3rem 3rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+        h1, h2, h3, h4, h5 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--primary-hover-color);
+        }
+        h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 4rem;
+            margin-bottom: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+        h3 { 
+            font-size: 1.6rem; 
+            font-weight: 600;
+            margin-top: 3rem;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1rem;
+        }
+        h4 { 
+            font-size: 1.3rem; 
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 2.5rem;
+        }
+        h5 { 
+            font-size: 1.1rem; 
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 2rem;
+        }
+        p, li { font-size: 1.1em; color: var(--text-secondary); line-height: 1.8; }
+        .intro { text-align: center; margin-bottom: 3rem; font-size: 1.2em; }
+        
+        .example-box {
+            padding: 1.25rem 1.75rem;
+            margin: 1.5rem 0;
+            border-radius: var(--radius-sm);
+            font-size: 1em;
+            background-color: #e7f3ff;
+            border: 1px solid #cce5ff;
+            transition: box-shadow 0.3s ease;
+        }
+        .example-box:hover {
+            box-shadow: var(--shadow-sm);
+        }
+        .example-title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 1rem;
+            color: var(--primary-hover-color);
+            font-size: 1.1em;
+        }
+        strong { color: var(--text-primary); font-weight: 600; }
+
+        textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            background-color: #fff;
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            font-size: 1em;
+            line-height: 1.6;
+            min-height: 120px;
+            margin-top: 0.75rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+            outline: none;
+        }
+        .action-button {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            margin: 3rem 0 1rem;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .action-button:hover { background-color: var(--primary-hover-color); transform: translateY(-2px); }
+        
+        #report-section { 
+            background-color: #f8f9fa; 
+            border: 1px dashed var(--border-color); 
+            padding: 1.5rem; 
+            margin-top: 2rem; 
+            border-radius: var(--radius-md); 
+        }
+        #report-output { 
+            white-space: pre-wrap; 
+            font-family: 'Courier New', Courier, monospace; 
+            background-color: var(--surface-color); 
+            padding: 1rem; 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-sm); 
+            color: var(--text-secondary);
+        }
+        .auto-fill-note {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+        .procedure-example-list {
+            list-style-type: none;
+            padding-left: 0;
+            text-align: left;
+            color: var(--text-secondary);
+        }
+        .procedure-example-list li {
+            margin-bottom: 1rem;
+            padding-left: 1.75rem; 
+            text-indent: -1.75rem; 
+        }
+        .procedure-example-list li strong {
+            color: var(--primary-hover-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 8px; z-index: 1000; box-shadow: var(--shadow-sm);">回首頁</a>
+
+    <div class="content-wrapper">
+        <h1>探究與實作：從靈感到實踐</h1>
+        <p class="intro">一個好的科學研究，始於一個好問題。本工具將引導你將模糊的靈感，轉化為一個嚴謹、可執行的探究計畫。</p>
+
+        <div class="phase">
+            <h2>第一階段：從靈感到問題——定義你的研究</h2>
+            
+            <h3>1. 好奇心是科學的起點：寫下你的觀察</h3>
+            <p>拋開所有假設，單純、客觀地描述你看到的現象。就像在寫生，只畫你看到的，不加任何想像。</p>
+            <textarea id="s1_observation" placeholder="例如：天氣熱的時候，打開的汽水比較容易冒泡泡。/ 我發現用不同大小的紙摺的青蛙，跳的距離好像不一樣。"></textarea>
+            <div class="example-box">
+                <span class="example-title">範例：如何區分「觀察」與「解釋」</span>
+                這個階段最常見的錯誤是將兩者混淆。請專注於「What」，而不是「Why」。<br>
+                <strong>NG範例：</strong>因為紙比較重，所以大青蛙跳不遠。(X 這已經是解釋了)<br>
+                <strong>OK範例：</strong>我用較大的紙摺成的青蛙，跳躍的距離比小紙摺的要近。(✓ 這是一個客觀的觀察)
+            </div>
+
+            <h3>2. 拆解現象：找出可能的「變因」</h3>
+            <p>從你的觀察描述中，找出所有可能影響結果的「名詞」、「動詞」和「形容詞」。這些都是未來研究中可能的「變因」。</p>
+            <textarea id="s1_keywords" placeholder="例如：汽水、溫度、泡泡 / 紙、大小、青蛙、距離、跳躍"></textarea>
+            <div class="example-box">
+                <span class="example-title">小提示</span>
+                「變因」聽起來很複雜，其實就是「會改變的因素」。在科學探究中，我們想知道的就是一個因素 (操縱變因) 如何影響另一個因素 (應變變因)。
+            </div>
+
+            <h3>3. 提出一個好問題：聚焦與精煉</h3>
+            <p>一個好的科學問題，必須是「可被驗證的」。這意味著我們一次只能探討一個變因的影響。這個步驟就是要幫助你從混亂的想法中，聚焦出一個可以動手做的問題。</p>
+            
+            <h4>步驟A：發散思考 (Brainstorming)</h4>
+            <p>問自己：<strong>什麼(What)</strong> 可能會影響結果？我想怎麼 <strong>測量(How)</strong>？</p>
+            <textarea id="s1_initial_questions" placeholder="例如：
+- What: 什麼影響跳躍距離？ -> 紙張大小、材質、摺法、重心...
+- How: 如何測量「大小」？ -> 用不同邊長的紙，測量跳躍公分距離。"></textarea>
+            <div class="example-box">
+                <span class="example-title">範例：如何從模糊的觀察中，聚焦出一個「好問題」？</span>
+                <ol class="procedure-example-list">
+                    <li><strong>1. 原始觀察：</strong>「大」青蛙好像跳得比較近。</li>
+                    <li><strong>2. 初步問題：</strong>是紙的「大小」影響了跳躍距離嗎？</li>
+                    <li><strong>3. 發現陷阱：</strong>等一下，「大小」是一個很模糊的詞。如果我用一張 A4 紙（大）和一張 A5 紙（小）來摺，A4 的青蛙會又大又重，A5 的則又小又輕。這樣「大小」和「重量」兩個變因就混在一起了！研究將會無效。</li>
+                    <li><strong>4. 聚焦方法：</strong>那我能不能「控制」其中一個變因呢？例如，固定「重量」。如果我都用 A4 紙（重量固定），但透過不同的剪裁或摺法，做出「細長型」和「矮胖型」的青蛙，這樣是不是就能只研究「形狀（長寬比）」對跳躍距離的影響了？</li>
+                    <li><strong>5. 形成好問題：</strong>太棒了！我的研究問題從「紙的大小如何影響跳躍距離」精煉成了「在紙張重量固定的情況下，紙青蛙的長寬比是否會影響其跳躍距離？」。這才是一個可以動手做的「好問題」。</li>
+                </ol>
+            </div>
+
+            <h4>步驟B：收斂與聚焦 (Focusing)</h4>
+            <p>根據上面的思考，寫下你最終決定要探討的、更精確的問題。</p>
+            <textarea id="s1_followup_questions" placeholder="我最終決定要研究的問題是..."></textarea>
+
+            <h3>4. 形成你的假說：一個有根據的猜測 (CER)</h3>
+            <p>「假說」不是隨便亂猜，而是基於現有知識，對你的問題提出一個最有可能的答案。</p>
+            <h4>研究假說 (Hypothesis / Claim)</h4>
+            <p>明確陳述你預測的「操縱變因」與「應變變因」之間的關係。</p>
+            <textarea id="s1_hypothesis" placeholder="我假設，當 [操縱變因] 改變時，[應變變因] 會如何改變。"></textarea>
+
+            <h4>理由 (Reasoning)</h4>
+            <p>你的猜測不能只是空想。試著連結你學過的物理、化學、生物知識，或過去的閱讀經驗，來支持你的主張。</p>
+            <textarea id="s1_reasoning" placeholder="因為根據...原理/知識，我推測..."></textarea>
+            <div class="example-box">
+                <span class="example-title">範例：如何寫出有深度的「理由」？</span>
+                <strong>NG範例：</strong>我認為長一點的青蛙跳得遠，因為它的腿比較長。(X 這只是重複觀察，沒有解釋背後原理)<br>
+                <strong>OK範例：</strong><br>我假設青蛙的跳躍符合槓桿原理。<br>在固定施力下，過長的力臂（腿）不一定能產生最大力矩。<br>因此，我推測存在一個最佳的「長寬比」，能讓儲存的彈性位能最有效地轉換為動能，從而達到最遠的跳躍距離。(✓ 連結了物理學原理)
+            </div>
+        </div>
+
+        <div class="phase">
+            <h2>第二階段：從想到做——撰寫你的實驗步驟</h2>
+            
+            <h4>實驗設計總覽</h4>
+            <p>在開始撰寫詳細步驟前，請再次確認本次實驗的核心變因。</p>
+            <textarea id="design_overview" placeholder="- 操縱變因：紙青蛙的長寬比
+- 應變變因：跳躍的水平距離 (cm)
+- 控制變因：紙張材質、紙張面積、彈射方式、環境風速">
+            </textarea>
+
+            <h4>實驗目的</h4>
+            <p>清晰、簡潔地寫下本次實驗要達成的目的，通常是為了驗證前一階段提出的假說。</p>
+            <textarea id="experiment_purpose" placeholder="此處將根據您的研究假說自動填入，您也可以手動修改。"></textarea>
+            <p class="auto-fill-note">（此欄位會根據「研究假說」自動填寫）</p>
+
+            <h4>實驗步驟</h4>
+
+            <h5>步驟一：實驗設置</h5>
+            <p>描述你如何準備實驗環境與器材。</p>
+            <textarea id="proc_step1" placeholder="例如：於水平桌面鋪設標有起點線的公分格線紙作為軌道。於側面架設手機，並開啟慢動作錄影模式。"></textarea>
+
+            <h5>步驟二：基準測量</h5>
+            <p>詳細描述如何對你的第一個或基準樣本進行操作與測量。</p>
+            <textarea id="proc_step2" placeholder="例如：取長寬比為 1:1 的紙青蛙，將其後緣對齊起點線。使用 50g 砝碼垂直下壓其尾部至桌面後迅速移開。待青蛙完全靜止後，記錄其質心位置的水平距離。"></textarea>
+
+            <h5>步驟三：改變變因與重複測量</h5>
+            <p>說明如何依序改變操縱變因的數值，並重複測量流程。</p>
+            <textarea id="proc_step3" placeholder="例如：依序以長寬比為 1.5:1, 2:1, 2.5:1, 3:1 的紙青蛙取代前一樣本，並重複步驟二的所有操作。"></textarea>
+
+            <h5>步驟四：數據可靠性</h5>
+            <p>為了降低隨機誤差，你打算如何重複實驗？</p>
+            <textarea id="proc_step4" placeholder="例如：針對每一個長寬比的青蛙，皆重複步驟二與三共 10 次。我將計算每組的平均跳躍距離與標準差，以利後續分析。"></textarea>
+            
+            <div class="example-box" style="margin-top: 2.5rem;">
+                <span class="example-title">完整實驗步驟專業範例 (綜合以上四點)</span>
+                <ol class="procedure-example-list">
+                    <li><strong>步驟 1：</strong>於室內無風處，選擇一長度超過 2 公尺的水平桌面。將捲尺固定於桌面邊緣作為軌道。於軌道起點線旁約 50 公分處，架設手機並開啟慢動作錄影功能，確保鏡頭涵蓋起點線與預計的落點範圍。</li>
+                    <li><strong>步驟 2：</strong>取「長寬比 1:1」的樣本蛙，將其後緣精確對齊軌道起點線。將 50g 標準砝碼置於其尾部彈射結構正上方，垂直下壓至結構接觸桌面後，迅速移開砝碼使青蛙彈射。</li>
+                    <li><strong>步驟 3：</strong>待青蛙完全靜止後，讀取並記錄其身體最末端相對於起點線的水平距離，精確至 0.1 公分。</li>
+                    <li><strong>步驟 4：</strong>針對「長寬比 1:1」的樣本，重複步驟 2 與 3 共 10 次。完成後，依序以「長寬比 1.5:1」至「長寬比 3:1」的樣本蛙取代，對每一個新樣本皆重複前述操作，完成所有 5 組（每組 10 次）的測量。</li>
+                    <li><strong>步驟 5：</strong>分別計算各組的平均跳躍距離與標準差，並記錄於數據表格中以進行後續分析。</li>
+                </ol>
+            </div>
+        </div>
+
+        <button class="action-button" onclick="generateReport()">產生我的探究計畫書</button>
+
+        <div id="report-section" style="display:none;">
+            <h3>你的完整探究計畫書</h3>
+            <pre id="report-output"></pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const hypothesisInput = document.getElementById('s1_hypothesis');
+            const purposeInput = document.getElementById('experiment_purpose');
+
+            if (hypothesisInput && purposeInput) {
+                hypothesisInput.addEventListener('input', () => {
+                    if (hypothesisInput.value.trim() !== '') {
+                        purposeInput.value = `本實驗目的在於驗證「${hypothesisInput.value}」此一假說。`;
+                    } else {
+                        purposeInput.value = '';
+                    }
+                });
+            }
+        });
+
+        function generateReport() {
+            const s1_observation = document.getElementById('s1_observation').value;
+            const s1_keywords = document.getElementById('s1_keywords').value;
+            const s1_initial_questions = document.getElementById('s1_initial_questions').value;
+            const s1_followup_questions = document.getElementById('s1_followup_questions').value;
+            const s1_hypothesis = document.getElementById('s1_hypothesis').value;
+            const s1_reasoning = document.getElementById('s1_reasoning').value;
+            
+            const design_overview = document.getElementById('design_overview').value;
+            const experiment_purpose = document.getElementById('experiment_purpose').value;
+            const proc_step1 = document.getElementById('proc_step1').value;
+            const proc_step2 = document.getElementById('proc_step2').value;
+            const proc_step3 = document.getElementById('proc_step3').value;
+            const proc_step4 = document.getElementById('proc_step4').value;
+
+            const reportContent = `
+================================
+      我的探究與實作計畫書
+================================
+
+【第一階段：從靈感到問題——定義你的研究】
+
+- 研究動機與觀察：
+${s1_observation || '（尚未填寫）'}
+
+- 核心問題：
+${s1_followup_questions || '（尚未填寫）'}
+
+- 研究假說：
+${s1_hypothesis || '（尚未填寫）'}
+
+- 學理基礎：
+${s1_reasoning || '（尚未填寫）'}
+
+--------------------------------
+
+【第二階段：實驗設計與步驟】
+
+- 實驗目的：
+${experiment_purpose || '（尚未填寫）'}
+
+- 實驗設計總覽：
+${design_overview || '（尚未填寫）'}
+
+- 實驗步驟：
+  1. **實驗設置**：
+     ${proc_step1 || '（尚未填寫）'}
+
+  2. **基準測量**：
+     ${proc_step2 || '（尚未填寫）'}
+
+  3. **改變變因與重複測量**：
+     ${proc_step3 || '（尚未填寫）'}
+
+  4. **數據可靠性**：
+     ${proc_step4 || '（尚未填寫）'}
+
+================================
+`;
+            
+            const reportSection = document.getElementById('report-section');
+            const reportOutput = document.getElementById('report-output');
+            
+            reportOutput.textContent = reportContent.trim();
+            reportSection.style.display = 'block';
+
+            reportSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+
+</body>
+</html>
