@@ -233,54 +233,54 @@
             <thead> <tr><th>抽樣方式</th><th>模擬出的平均標準差</th><th>與「1抽」的標準差比較</th></tr> </thead>
             <tbody>
                 <tr><td>1抽平均 (就是單次測量)</td><td>約 2.85</td><td>-</td></tr>
-                <tr><td>3抽平均</td><td>約 1.65</td><td>大約是 2.85 / <strong>1.73</strong> ( \(\approx \sqrt{3}\) )</td></tr>
-                <tr><td>9抽平均</td><td>約 0.95</td><td>大約是 2.85 / <strong>3</strong> ( \(= \sqrt{9}\) )</td></tr>
+                <tr><td>3抽平均</td><td>約 1.65</td><td>大約是 2.85 / <strong>1.73</strong> ( $\approx \sqrt{3}$ )</td></tr>
+                <tr><td>9抽平均</td><td>約 0.95</td><td>大約是 2.85 / <strong>3</strong> ( $= \sqrt{9}$ )</td></tr>
             </tbody>
         </table>
-        <p><strong>我們發現一個驚人的規律！</strong> N抽平均的標準差，會是單次測量標準差的 \(1/\sqrt{N}\) 倍。</p>
+        <p><strong>我們發現一個驚人的規律！</strong> N抽平均的標準差，會是單次測量標準差的 $1/\sqrt{N}$ 倍。</p>
     </div>
 
     <h2>四、 不確定度的評估與合成</h2>
     <div class="concept-box">
         <h3>A類與B類評估</h3>
         <h4>A類評估 (Type A)：平均值的標準差</h4>
-        <p>現在你可以理解了！**A類不確定度 (\(u_A\)) 就是「樣本平均值」的標準差**。我們在實驗室只量一組數據(例如30次)，就是想用這一組數據的標準差(s)，來估計那個「取平均後會縮小 \(1/\sqrt{n}\) 倍」的結果！</p>
-        <div class="formula"> \( u_A = \frac{s}{\sqrt{n}} \) </div>
+        <p>現在你可以理解了！**A類不確定度 ($u_A$) 就是「樣本平均值」的標準差**。我們在實驗室只量一組數據(例如30次)，就是想用這一組數據的標準差(s)，來估計那個「取平均後會縮小 $1/\sqrt{n}$ 倍」的結果！</p>
+        <div class="formula">$$ u_A = \frac{s}{\sqrt{n}} $$</div>
         
         <h4>B類評估 (Type B)：儀器的限制</h4>
         <p>這是來自儀器本身的不確定性，最常見的算法是：</p>
-        <div class="formula"> \( u_B = \frac{\text{最小刻度}}{\sqrt{12}} \) </div>
+        <div class="formula">$$ u_B = \frac{\text{最小刻度}}{\sqrt{12}} $$</div>
     </div>
     
     <div class="concept-box">
         <h3>不確定度的合成運算</h3>
         <h4>基本合成 (組合A類和B類)</h4>
         <p>最終的「組合不確定度」u，就是把A類和B類當成畢氏定理的兩股來合成！</p>
-        <div class="formula"> \( u = \sqrt{u_A^2 + u_B^2} \) </div>
+        <div class="formula">$$ u = \sqrt{u_A^2 + u_B^2} $$</div>
 
-        <h4>加法與減法 (\(Z = X \pm Y\))</h4>
+        <h4>加法與減法 ($Z = X \pm Y$)</h4>
         <p><strong>規則：</strong> 不管是相加還是相減，不確定度永遠只會變大、不會抵銷！</p>
-        <div class="formula"> \( u_Z = \sqrt{u_X^2 + u_Y^2} \) </div>
+        <div class="formula">$$ u_Z = \sqrt{u_X^2 + u_Y^2} $$</div>
         <div class="math-note">
             <p><strong>為什麼是這樣？(直觀證明)</strong></p>
             <ol>
-                <li>記住一個關鍵：不確定度(u)就是標準差(s)。雖然不確定度本身不能直接相加，但**「不確定度的平方」(\(u^2\))** 這個量，在統計學上卻有著神奇的可加性！</li>
-                <li>統計學家證明了一個超好用的規則：當兩個**獨立**的測量值相加或相減時，它們的**「不確定度的平方」會直接相加**！也就是 \(u_Z^2 = u_X^2 + u_Y^2\)。</li>
+                <li>記住一個關鍵：不確定度(u)就是標準差(s)。雖然不確定度本身不能直接相加，但**「不確定度的平方」($u^2$)** 這個量，在統計學上卻有著神奇的可加性！</li>
+                <li>統計學家證明了一個超好用的規則：當兩個**獨立**的測量值相加或相減時，它們的**「不確定度的平方」會直接相加**！也就是 $u_Z^2 = u_X^2 + u_Y^2$。</li>
                 <li>最後兩邊開根號，就得到了上面的公式！這就是為什麼就算是減法，不確定度也是用平方和相加，因為「不確定度的平方」永遠是正的，只會累積不會減少。</li>
             </ol>
         </div>
 
-        <h4>乘法與除法 (\(Z = X \times Y\) 或 \(Z = X / Y\))</h4>
-        <p><strong>規則：</strong> 對於乘除，我們要改看「相對不確定度」（即 \(\frac{u}{X}\)）。最終的相對不確定度，是由各部分的相對不確定度用畢氏定理想！</p>
-        <div class="formula"> \( (\frac{u_Z}{Z})^2 = (\frac{u_X}{X})^2 + (\frac{u_Y}{Y})^2 \) </div>
+        <h4>乘法與除法 ($Z = X \times Y$ 或 $Z = X / Y$)</h4>
+        <p><strong>規則：</strong> 對於乘除，我們要改看「相對不確定度」（即 $\frac{u}{X}$）。最終的相對不確定度，是由各部分的相對不確定度用畢氏定理想！</p>
+        <div class="formula">$$ (\frac{u_Z}{Z})^2 = (\frac{u_X}{X})^2 + (\frac{u_Y}{Y})^2 $$</div>
         <div class="math-note">
             <p><strong>為什麼是這樣？(直觀證明)</strong></p>
             <ol>
-                <li>想像一個測量值 X，它可以看成是「平均值 \(\bar{X}\)」加上一個小小的「隨機波動 \(\delta_X\)」。所以 \(X = \bar{X} + \delta_X\)。</li>
-                <li>如果 \(Z = X \times Y\)，那麼 \(Z = (\bar{X} + \delta_X)(\bar{Y} + \delta_Y) = \bar{X}\bar{Y} + \bar{X}\delta_Y + \bar{Y}\delta_X + \delta_X\delta_Y\)。</li>
-                <li>因為 \(\delta_X\) 和 \(\delta_Y\) 都是很小的波動，它們相乘的 \(\delta_X\delta_Y\) 就會更小，我們可以忽略它。所以 Z 的波動 \(\delta_Z \approx \bar{X}\delta_Y + \bar{Y}\delta_X\)。</li>
-                <li>這裡我們要再次使用「不確定度的平方可以直接相加」的規則。經過一些代數運算，可以得到 \(u_Z^2 \approx \bar{X}^2 u_Y^2 + \bar{Y}^2 u_X^2\)。</li>
-                <li>最後，把這個式子兩邊都除以 \(Z^2 \approx (\bar{X}\bar{Y})^2\)，經過神奇的約分之後，就能得到上面那個漂亮的相對不確定度公式了！</li>
+                <li>想像一個測量值 X，它可以看成是「平均值 $\bar{X}$」加上一個小小的「隨機波動 $\delta_X$」。所以 $X = \bar{X} + \delta_X$。</li>
+                <li>如果 $Z = X \times Y$，那麼 $Z = (\bar{X} + \delta_X)(\bar{Y} + \delta_Y) = \bar{X}\bar{Y} + \bar{X}\delta_Y + \bar{Y}\delta_X + \delta_X\delta_Y$。</li>
+                <li>因為 $\delta_X$ 和 $\delta_Y$ 都是很小的波動，它們相乘的 $\delta_X\delta_Y$ 就會更小，我們可以忽略它。所以 Z 的波動 $\delta_Z \approx \bar{X}\delta_Y + \bar{Y}\delta_X$。</li>
+                <li>這裡我們要再次使用「不確定度的平方可以直接相加」的規則。經過一些代數運算，可以得到 $u_Z^2 \approx \bar{X}^2 u_Y^2 + \bar{Y}^2 u_X^2$。</li>
+                <li>最後，把這個式子兩邊都除以 $Z^2 \approx (\bar{X}\bar{Y})^2$，經過神奇的約分之後，就能得到上面那個漂亮的相對不確定度公式了！</li>
             </ol>
         </div>
     </div>
@@ -289,7 +289,7 @@
     <div class="summary">
         <h3>報告流程總整理</h3>
         <ol>
-            <li><strong>算出 \(u_A\) 和 \(u_B\)</strong>。</li>
+            <li><strong>算出 $u_A$ 和 $u_B$</strong>。</li>
             <li><strong>算出總不確定度 u</strong> (用畢氏定理或運算規則)。</li>
             <li><strong>處理不確定度的位數</strong> (通常是無條件進位取1或2位有效數字)。</li>
             <li><strong>處理最佳估計值</strong> (把平均值四捨五入到跟不確定度的「末位」對齊)。</li>
