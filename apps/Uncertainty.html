@@ -177,13 +177,13 @@
     <div class="concept-box">
         <h3>到底什麼是「標準差 (s)」？</h3>
         <p>標準差是一個數字，用來描述你的數據有多**分散**或**不穩**。它的公式看起來很可怕，但我們一步步拆解它，你會發現它非常有道理：</p>
-        <div class="formula"> \( s = \sqrt{\frac{\sum(x_i - \bar{x})^2}{n-1}} \) </div>
+        <div class="formula">$$ s = \sqrt{\frac{\sum(x_i - \bar{x})^2}{n-1}} $$</div>
         <ol>
-            <li><strong>\( (x_i - \bar{x}) \)：離均差</strong> - 計算「每一個數據」跟「平均值」差了多少，這是看**離散**程度的基礎。</li>
-            <li><strong>\( (\dots)^2 \)：平方</strong> - 把差值平方，是為了把負數變正數，避免正負抵銷。</li>
-            <li><strong>\( \sum(\dots)^2 \)：加總</strong> - 把所有平方後的差值全部加起來，得到一個「總離散程度」。</li>
-            <li><strong>\( \frac{\dots}{n-1} \)：平均</strong> - 把「總離散程度」除以 `n-1` 來取「平均影響力」。</li>
-            <li><strong>\( \sqrt{\dots} \)：開根號</strong> - 因為前面做了平方，單位也變成了平方（例如 cm²），最後開根號是為了把**單位還原**！</li>
+            <li><strong>$ (x_i - \bar{x}) $：離均差</strong> - 計算「每一個數據」跟「平均值」差了多少，這是看**離散**程度的基礎。</li>
+            <li><strong>$ (\dots)^2 $：平方</strong> - 把差值平方，是為了把負數變正數，避免正負抵銷。</li>
+            <li><strong>$ \sum(\dots)^2 $：加總</strong> - 把所有平方後的差值全部加起來，得到一個「總離散程度」。</li>
+            <li><strong>$ \frac{\dots}{n-1} $：平均</strong> - 把「總離散程度」除以 `n-1` 來取「平均影響力」。</li>
+            <li><strong>$ \sqrt{\dots} $：開根號</strong> - 因為前面做了平方，單位也變成了平方（例如 cm²），最後開根號是為了把**單位還原**！</li>
         </ol>
     </div>
 
@@ -307,8 +307,8 @@
         // KaTeX rendering
         renderMathInElement(document.body, {
             delimiters: [
-                {left: "$$", right: "$$", display: true}, {left: "\\[", right: "\\]", display: true},
-                {left: "$", right: "$", display: false}, {left: "\\(", right: "\\)", display: false}
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
             ]
         });
 
