@@ -5,17 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>給高中生的測量不確定度完整指南</title>
     <!-- KaTeX for LaTeX rendering -->
-    <script>
-      window.renderMathInElementOptions = {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false}
-        ]
-      };
-    </script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0KOVEMckDpbDM7voUVD3yTMgLTrCKwW2heG+YiSH2e/tcxNBsWZLTA" crossorigin="anonymous">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ] });"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang TC", "Microsoft JhengHei", sans-serif;
@@ -187,11 +179,11 @@
         <p>標準差是一個數字，用來描述你的數據有多**分散**或**不穩**。它的公式看起來很可怕，但我們一步步拆解它，你會發現它非常有道理：</p>
         <div class="formula">$$ s = \sqrt{\frac{\sum(x_i - \bar{x})^2}{n-1}} $$</div>
         <ol>
-            <li><strong>$ (x_i - \bar{x}) $：離均差</strong> - 計算「每一個數據」跟「平均值」差了多少，這是看**離散**程度的基礎。</li>
+            <li><strong>$ (x_i - \bar{x}) $：離均差</strong> - 計算「每一個數據」跟「平均值」差了多少，這是看<strong>離散</strong>程度的基礎。</li>
             <li><strong>$ (\dots)^2 $：平方</strong> - 把差值平方，是為了把負數變正數，避免正負抵銷。</li>
             <li><strong>$ \sum(\dots)^2 $：加總</strong> - 把所有平方後的差值全部加起來，得到一個「總離散程度」。</li>
             <li><strong>$ \frac{\dots}{n-1} $：平均</strong> - 把「總離散程度」除以 `n-1` 來取「平均影響力」。</li>
-            <li><strong>$ \sqrt{\dots} $：開根號</strong> - 因為前面做了平方，單位也變成了平方（例如 cm²），最後開根號是為了把**單位還原**！</li>
+            <li><strong>$ \sqrt{\dots} $：開根號</strong> - 因為前面做了平方，單位也變成了平方（例如 cm²），最後開根號是為了把<strong>單位還原</strong>！</li>
         </ol>
     </div>
 
@@ -210,7 +202,7 @@
     
     <div class="concept-box">
         <h3>母體 vs. 樣本：萬次抽樣模擬</h3>
-        <p>想像一個大箱子裡有成千上萬張數字卡片（**母體**）。我們不可能全抽完，所以只抽一小把（**樣本**）。實驗也是一樣：我們用有限的樣本，去猜測無限的母體。下面的圖模擬了**上萬次**實驗後的結果，你會親眼見證「取平均」的神奇效果！</p>
+        <p>想像一個大箱子裡有成千上萬張數字卡片（<strong>母體</strong>）。我們不可能全抽完，所以只抽一小把（<strong>樣本</strong>）。實驗也是一樣：我們用有限的樣本，去猜測無限的母體。下面的圖模擬了<strong>上萬次</strong>實驗後的結果，你會親眼見證「取平均」的神奇效果！</p>
         
         <div class="simulation-container">
              <div class="dist-group">
@@ -236,7 +228,7 @@
             </div>
         </div>
         <h4>如何用數字表示分佈的集中程度？</h4>
-        <p>我們可以計算這些「平均值」們的標準差，這個值稱為**平均標準差**。它代表了「平均值」這個數字本身有多穩定。下表是上萬次模擬的計算結果：</p>
+        <p>我們可以計算這些「平均值」們的標準差，這個值稱為<strong>平均標準差</strong>。它代表了「平均值」這個數字本身有多穩定。下表是上萬次模擬的計算結果：</p>
         <table>
             <thead> <tr><th>抽樣方式</th><th>模擬出的平均標準差</th><th>與「1抽」的標準差比較</th></tr> </thead>
             <tbody>
@@ -252,7 +244,7 @@
     <div class="concept-box">
         <h3>A類與B類評估</h3>
         <h4>A類評估 (Type A)：平均值的標準差</h4>
-        <p>現在你可以理解了！**A類不確定度 ($u_A$) 就是「樣本平均值」的標準差**。我們在實驗室只量一組數據(例如30次)，就是想用這一組數據的標準差(s)，來估計那個「取平均後會縮小 $1/\sqrt{n}$ 倍」的結果！</p>
+        <p>現在你可以理解了！<strong>A類不確定度 ($u_A$) 就是「樣本平均值」的標準差</strong>。我們在實驗室只量一組數據(例如30次)，就是想用這一組數據的標準差(s)，來估計那個「取平均後會縮小 $1/\sqrt{n}$ 倍」的結果！</p>
         <div class="formula">$$ u_A = \frac{s}{\sqrt{n}} $$</div>
         
         <h4>B類評估 (Type B)：儀器的限制</h4>
@@ -272,8 +264,8 @@
         <div class="math-note">
             <p><strong>為什麼是這樣？(直觀證明)</strong></p>
             <ol>
-                <li>記住一個關鍵：不確定度(u)就是標準差(s)。雖然不確定度本身不能直接相加，但**「不確定度的平方」($u^2$)** 這個量，在統計學上卻有著神奇的可加性！</li>
-                <li>統計學家證明了一個超好用的規則：當兩個**獨立**的測量值相加或相減時，它們的**「不確定度的平方」會直接相加**！也就是 $u_Z^2 = u_X^2 + u_Y^2$。</li>
+                <li>記住一個關鍵：不確定度(u)就是標準差(s)。雖然不確定度本身不能直接相加，但<strong>「不確定度的平方」($u^2$)</strong> 這個量，在統計學上卻有著神奇的可加性！</li>
+                <li>統計學家證明了一個超好用的規則：當兩個<strong>獨立</strong>的測量值相加或相減時，它們的<strong>「不確定度的平方」會直接相加</strong>！也就是 $u_Z^2 = u_X^2 + u_Y^2$。</li>
                 <li>最後兩邊開根號，就得到了上面的公式！這就是為什麼就算是減法，不確定度也是用平方和相加，因為「不確定度的平方」永遠是正的，只會累積不會減少。</li>
             </ol>
         </div>
@@ -312,13 +304,6 @@
 <!-- Scripts for interactive elements -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // KaTeX rendering
-        renderMathInElement(document.body, {
-            delimiters: [
-                {left: "$$", right: "$$", display: true},
-                {left: "$", right: "$", display: false}
-            ]
-        });
 
         // Ruler simulation
         const rulerSlider = document.getElementById('ruler-slider');
@@ -430,4 +415,3 @@
 
 </body>
 </html>
-

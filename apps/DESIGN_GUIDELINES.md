@@ -92,3 +92,36 @@
 - **CSS**: 盡量將通用樣式集中管理。對於特定頁面的樣式，可以寫在該頁面的 `<style>` 標籤中。
 - **JavaScript**: 頁面邏輯應與全域腳本（如主題切換）分離。
 - **一致性**: 在創建新頁面時，應優先參考「內容頁面版面」的結構與樣式，以確保使用者體驗的統一。
+
+---
+
+## 5. 數學公式渲染 (Math Rendering with KaTeX)
+
+若要在獨立的 HTML 頁面中加入 LaTeX 數學公式渲染，請使用 KaTeX 函式庫。為避免腳本衝突和載入問題，請務必遵循以下特定的實作模式。
+
+### 問題總結
+
+不正確地載入或設定 KaTeX 會導致多種問題：
+1.  **重複渲染**: 公式出現重複或錯亂 (例如 `\sqrt` 變成 `√{rac{...}}`)。這通常發生在有多個腳本試圖同時渲染數學公式時。
+2.  **資源被封鎖**: 如果 CDN 連結的 `integrity` 安全雜湊值不正確，瀏覽器會基於安全考量封鎖腳本載入，導致渲染完全失敗。
+3.  **脆弱的執行時機**: 依賴 `DOMContentLoaded` 或全域設定物件等方法，可能會產生「競爭條件」，導致渲染腳本在錯誤的時機執行。
+
+### 正確的實作方式
+
+為確保渲染穩定且正確，應在 `<head>` 中載入 KaTeX 腳本，並使用 `onload` 屬性來觸發渲染。這能保證渲染動作只在腳本載入完成後執行一次。
+
+**不建議使用 `integrity` 雜湊值**，除非您能確保它們是完全正確且即時更新的，否則這很容易出錯。
+
+**正確範例：**
+```html
+<head>
+    ...
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ] });"></script>
+    ...
+</head>
+```
+
+此方法已在本專案的 `movable_pulley.html` 和 `Uncertainty.html` 中被驗證為可以正常運作。
