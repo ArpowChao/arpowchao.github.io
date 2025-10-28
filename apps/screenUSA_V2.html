@@ -26,6 +26,21 @@
         .negative { color: #FF5733; }
         .top-bg { background-color: rgba(80, 80, 30, 0.6); }
         .bottom-bg { background-color: rgba(80, 30, 30, 0.6); }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
     </style>
 </head>
 <body>
@@ -36,7 +51,10 @@
                 <button id="run-button" class="btn btn-primary">🚀 開始監測</button>
                 <button id="export-button" class="btn btn-secondary" disabled>📄 匯出至 CSV</button>
             </div>
-            <div id="status">準備就緒。</div>
+            <div id="status-container" class="d-flex align-items-center">
+                <div class="loader" style="display: none;"></div>
+                <span id="status-text">準備就緒。</span>
+            </div>
         </div>
         <table class="table table-striped table-hover">
             <thead id="table-head">
@@ -49,24 +67,34 @@
     <script type="text/javascript">
         const runButton = document.getElementById('run-button');
         const exportButton = document.getElementById('export-button');
-        const statusDiv = document.getElementById('status');
+        const statusContainer = document.getElementById('status-container');
+        const loader = statusContainer.querySelector('.loader');
+        const statusText = document.getElementById('status-text');
         const tableHead = document.getElementById('table-head');
         const tableBody = document.getElementById('table-body');
         let currentData = [];
 
+        function updateStatus(message, showLoader = false) {
+            statusText.textContent = message;
+            loader.style.display = showLoader ? 'inline-block' : 'none';
+        }
+
         async function main() {
-            statusDiv.textContent = '正在初始化 Pyodide...';
+            updateStatus('正在初始化 Pyodide...', true);
             let pyodide = await loadPyodide();
-            statusDiv.textContent = 'Pyodide 初始化完畢。正在安裝函式庫...';
+            updateStatus('Pyodide 初始化完畢。正在安裝函式庫...', true);
             await pyodide.loadPackage(['micropip']);
             const micropip = pyodide.pkg_api.micropip;
-            await micropip.install(['pandas', 'yfinance']);
-            statusDiv.textContent = '函式庫安裝完畢。';
+            updateStatus('正在安裝 pandas...', true);
+            await micropip.install(['pandas']);
+            updateStatus('正在安裝 yfinance...', true);
+            await micropip.install(['yfinance']);
+            updateStatus('函式庫安裝完畢。', false);
             
             runButton.addEventListener('click', async () => {
                 runButton.disabled = true;
                 exportButton.disabled = true;
-                statusDiv.textContent = '正在抓取數據...';
+                updateStatus('正在抓取數據...', true);
                 try {
                     pyodide.runPython(`
                         import pandas as pd
@@ -125,14 +153,14 @@
 
                         def fetch_data():
                             tickers = get_all_tickers(CATEGORIZED_TICKERS)
-                            js.document.getElementById('status').textContent = f"🔍 正在抓取 {len(tickers)} 個標的的每日數據..."
+                            js.updateStatus(f"🔍 正在抓取 {len(tickers)} 個標的的每日數據...", True)
                             today = datetime.now()
                             start_of_last_year = today.replace(year=today.year - 1, month=1, day=1)
                             start_str = start_of_last_year.strftime('%Y-%m-%d')
                             end_str = (today + timedelta(days=1)).strftime('%Y-%m-%d')
                             
                             daily_data = yf.download(tickers, start=start_str, end=end_str, group_by='ticker', auto_adjust=True)
-                            js.document.getElementById('status').textContent = "🔍 數據下載完畢，正在進行計算..."
+                            js.updateStatus("🔍 數據下載完畢，正在進行計算...", True)
                             
                             results = []
                             reverse_ticker_map = {v: k for category in CATEGORIZED_TICKERS.values() for k, v in category.items()}
@@ -174,11 +202,11 @@
                     const rankings = result.rankings;
                     const categorized_tickers = pyodide.globals.get('CATEGORIZED_TICKERS_py').toJs();
                     renderTable(currentData, categorized_tickers, rankings);
-                    statusDiv.textContent = '✅ 數據更新完畢！';
+                    updateStatus('✅ 數據更新完畢！', false);
                     exportButton.disabled = false;
                 } catch (error) {
                     console.error(error);
-                    statusDiv.textContent = `❌ 發生錯誤: ${error.message}`;
+                    updateStatus(`❌ 發生錯誤: ${error.message}`, false);
                 } finally {
                     runButton.disabled = false;
                 }
