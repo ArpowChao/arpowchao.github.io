@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>市場綜合儀表板</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <style>
+        body {
+            background-color: #2E2E2E;
+            color: #E0E0E0;
+        }
+        .table {
+            --bs-table-bg: #2E2E2E;
+            --bs-table-color: #E0E0E0;
+            --bs-table-border-color: #454545;
+            --bs-table-striped-bg: #3A3A3A;
+            --bs-table-hover-bg: #4A4A4A;
+        }
+        .btn-primary {
+            background-color: #3A3A3A;
+            border-color: #454545;
+        }
+        .positive { color: #50C878; }
+        .negative { color: #FF5733; }
+        .top-bg { background-color: rgba(80, 80, 30, 0.6); }
+        .bottom-bg { background-color: rgba(80, 30, 30, 0.6); }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>市場綜合儀表板</h1>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <button id="run-button" class="btn btn-primary">🚀 開始監測</button>
+                <button id="export-button" class="btn btn-secondary" disabled>📄 匯出至 CSV</button>
+            </div>
+            <div id="status">準備就緒。</div>
+        </div>
+        <table class="table table-striped table-hover">
+            <thead id="table-head">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+
+    <script type="text/javascript">
+        const runButton = document.getElementById('run-button');
+        const exportButton = document.getElementById('export-button');
+        const statusDiv = document.getElementById('status');
+        const tableHead = document.getElementById('table-head');
+        const tableBody = document.getElementById('table-body');
+        let currentData = [];
+
+        async function main() {
+            statusDiv.textContent = '正在初始化 Pyodide...';
+            let pyodide = await loadPyodide();
+            statusDiv.textContent = 'Pyodide 初始化完畢。正在安裝函式庫...';
+            await pyodide.loadPackage(['micropip']);
+            const micropip = pyodide.pkg_api.micropip;
+            await micropip.install(['pandas', 'yfinance']);
+            statusDiv.textContent = '函式庫安裝完畢。';
+            
+            runButton.addEventListener('click', async () => {
+                runButton.disabled = true;
+                exportButton.disabled = true;
+                statusDiv.textContent = '正在抓取數據...';
+                try {
+                    pyodide.runPython(`
+                        import pandas as pd
+                        import numpy as np
+                        from datetime import datetime, timedelta
+                        import yfinance as yf
+                        import js
+
+                        CATEGORIZED_TICKERS = {
+                            "大盤指數": {
+                                "標普500指數": "^GSPC", "納斯達克指數": "^IXIC", "道瓊工業指數": "^DJI", "羅素2000指數": "^RUT",
+                                "FAANG (七巨頭)": "^NYFANG", "BTC比特幣": "BTC-USD", "ETH以太幣": "ETH-USD",
+                            },
+                            "ETF指數": {
+                                "標普500 ETF (SPY)": "SPY", "納斯達克100 ETF (QQQ)": "QQQ", "羅素2000 ETF (IWM)": "IWM",
+                                "羅素1000價值 ETF (IWD)": "IWD", "羅素1000成長 ETF (IWF)": "IWF", "趨勢板塊 ETF (MTUM)": "MTUM",
+                            },
+                            "債卷與貨幣": {
+                                "20年+美債ETF": "TLT", "垃圾債券ETF": "HYG", "VIX恐慌指數": "^VIX", "美元指數": "DX-Y.NYB",
+                                "歐元/美元": "EURUSD=X", "英鎊/美元": "GBPUSD=X", "日圓/美元": "JPY=X", "台幣/美元": "TWDUSD=X", "人民幣/美元": "CNYUSD=X",
+                            },
+                            "成長型": {
+                                "通訊服務 (IXP)": "IXP", "半導體 (SOXX)": "SOXX", "AI科技ETF (AIQ)": "AIQ",
+                                "機器人與AI ETF (BOTZ)": "BOTZ", "量子計算ETF (QTUM)": "QTUM", "科技 (XLK)": "XLK",
+                                "工業 (XLI)": "XLI", "原物料 (XLB)": "XLB", "非必需消費品 (XLY)": "XLY"
+                            },
+                            "價值型": {
+                                "能源 (XLE)": "XLE", "銀行 (KBWB)": "KBWB", "公用事業 (XLU)": "XLU",
+                                "房地產 (IYR)": "IYR", "必需消費品 (XLP)": "XLP", "健康照護 (XLV)": "XLV", "保險(IAK)":"IAK"
+                            },
+                            "大宗商品": {
+                                "黃金期貨": "GC=F", "白銀期貨": "SI=F", "銅期貨": "HG=F", "WTI原油期貨": "CL=F",
+                                "天然氣期貨": "NG=F", "玉米期貨": "ZC=F", "黃豆期貨": "ZS=F"
+                            },
+                            "大型科技權值股 (Mega Cap)": {
+                                "蘋果 (AAPL)": "AAPL", "微軟 (MSFT)": "MSFT", "谷歌 (GOOGL)": "GOOGL", "亞馬遜 (AMZN)": "AMZN",
+                                "輝達 (NVDA)": "NVDA", "META (原Facebook)": "META", "網飛 (NFLX)": "NFLX",
+                            },
+                            "其他": {
+                                "台積電 (TSM)": "TSM", "特斯拉 (TSLA)": "TSLA", "英特爾 (INTC)": "INTC", "高通 (QCOM)": "QCOM",
+                                "AMD (超微)": "AMD", "博通 (AVGO)": "AVGO", "美光 (MU)": "MU", "ASML (荷蘭晶圓廠)": "ASML",
+                                "Adobe (ADBE)": "ADBE", "Salesforce (CRM)": "CRM", "UNH (聯合健康)": "UNH", "Visa (V)": "V",
+                            }
+                        }
+
+                        def get_all_tickers(categorized_tickers):
+                            return [ticker for category in categorized_tickers.values() for ticker in category.values()]
+
+                        def calc_rsi(series, period=14):
+                            delta = series.diff()
+                            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+                            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+                            rs = gain / loss
+                            rsi = 100 - (100 / (1 + rs))
+                            return rsi
+
+                        def fetch_data():
+                            tickers = get_all_tickers(CATEGORIZED_TICKERS)
+                            js.document.getElementById('status').textContent = f"🔍 正在抓取 {len(tickers)} 個標的的每日數據..."
+                            today = datetime.now()
+                            start_of_last_year = today.replace(year=today.year - 1, month=1, day=1)
+                            start_str = start_of_last_year.strftime('%Y-%m-%d')
+                            end_str = (today + timedelta(days=1)).strftime('%Y-%m-%d')
+                            
+                            daily_data = yf.download(tickers, start=start_str, end=end_str, group_by='ticker', auto_adjust=True)
+                            js.document.getElementById('status').textContent = "🔍 數據下載完畢，正在進行計算..."
+                            
+                            results = []
+                            reverse_ticker_map = {v: k for category in CATEGORIZED_TICKERS.values() for k, v in category.items()}
+                            last_day_of_last_year = today.replace(year=today.year - 1, month=12, day=31)
+
+                            for ticker in tickers:
+                                if ticker not in daily_data.columns.levels[0]: continue
+                                hist = daily_data[ticker].dropna()
+                                if len(hist) < 15: continue
+                                
+                                last_price = hist['Close'].iloc[-1]
+                                day_change = (last_price / hist['Close'].iloc[-2] - 1) * 100 if len(hist['Close']) > 1 else 0
+                                price_7_days_ago = hist['Close'].asof(today - timedelta(days=7))
+                                week_change = (last_price / price_7_days_ago - 1) * 100 if price_7_days_ago else 0
+                                price_30_days_ago = hist['Close'].asof(today - timedelta(days=30))
+                                month_change = (last_price / price_30_days_ago - 1) * 100 if price_30_days_ago else 0
+                                price_ytd_start = hist['Close'].asof(last_day_of_last_year)
+                                ytd_change = (last_price / price_ytd_start - 1) * 100 if price_ytd_start else 0
+                                rsi = calc_rsi(hist['Close']).iloc[-1]
+                                name = reverse_ticker_map.get(ticker, ticker)
+                                
+                                results.append({
+                                    "ticker": ticker, "name": name, "price": last_price,
+                                    "day": day_change, "week": week_change, "month": month_change, "ytd": ytd_change,
+                                    "rsi": rsi
+                                })
+                            
+                            df = pd.DataFrame(results)
+                            rankings = {col: {'top3': df.nlargest(3, col)['ticker'].tolist(), 'bottom3': df.nsmallest(3, col)['ticker'].tolist()}
+                                        for col in ['day', 'week', 'month', 'ytd']}
+                            
+                            return pd.Series({'data': df.to_json(orient='records'), 'rankings': rankings}).to_json()
+
+                        data_json = fetch_data()
+                        CATEGORIZED_TICKERS_py = dict(CATEGORIZED_TICKERS)
+                    `);
+                    const result = JSON.parse(pyodide.globals.get('data_json'));
+                    currentData = JSON.parse(result.data);
+                    const rankings = result.rankings;
+                    const categorized_tickers = pyodide.globals.get('CATEGORIZED_TICKERS_py').toJs();
+                    renderTable(currentData, categorized_tickers, rankings);
+                    statusDiv.textContent = '✅ 數據更新完畢！';
+                    exportButton.disabled = false;
+                } catch (error) {
+                    console.error(error);
+                    statusDiv.textContent = `❌ 發生錯誤: ${error.message}`;
+                } finally {
+                    runButton.disabled = false;
+                }
+            });
+
+            exportButton.addEventListener('click', () => {
+                exportToCSV(currentData);
+            });
+        }
+
+        function exportToCSV(data) {
+            const headers = ["監測標的", "目前價位", "1天 (%)", "1週 (%)", "1個月 (%)", "YTD (%)", "RSI(14)"];
+            const csvRows = [headers.join(',')];
+            for (const row of data) {
+                const values = [row.name, row.price, row.day, row.week, row.month, row.ytd, row.rsi];
+                csvRows.push(values.join(','));
+            }
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'market_data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function renderTable(data, categorized_tickers, rankings) {
+            tableHead.innerHTML = `
+                <tr>
+                    <th>監測標的</th>
+                    <th>目前價位</th>
+                    <th>1天 (%)</th>
+                    <th>1週 (%)</th>
+                    <th>1個月 (%)</th>
+                    <th>YTD (%)</th>
+                    <th>RSI(14)</th>
+                </tr>
+            `;
+            tableBody.innerHTML = '';
+
+            const dataMap = new Map(data.map(item => [item.ticker, item]));
+
+            for (const [category, tickers] of categorized_tickers) {
+                const categoryRow = document.createElement('tr');
+                categoryRow.innerHTML = `<td colspan="7" class="fw-bold">▼ ${category}</td>`;
+                categoryRow.style.backgroundColor = '#4A4A4A';
+                tableBody.appendChild(categoryRow);
+
+                for (const [name, ticker] of Object.entries(tickers)) {
+                    const rowData = dataMap.get(ticker);
+                    if (rowData) {
+                        const tr = document.createElement('tr');
+                        
+                        const nameCell = document.createElement('td');
+                        nameCell.textContent = rowData.name;
+                        tr.appendChild(nameCell);
+
+                        const priceCell = document.createElement('td');
+                        priceCell.textContent = rowData.price.toFixed(4);
+                        tr.appendChild(priceCell);
+
+                        ['day', 'week', 'month', 'ytd'].forEach(key => {
+                            const cell = document.createElement('td');
+                            cell.textContent = rowData[key].toFixed(2);
+                            cell.className = rowData[key] >= 0 ? 'positive' : 'negative';
+                            if (rankings[key]['top3'].includes(ticker)) {
+                                cell.classList.add('top-bg');
+                            }
+                            if (rankings[key]['bottom3'].includes(ticker)) {
+                                cell.classList.add('bottom-bg');
+                            }
+                            tr.appendChild(cell);
+                        });
+
+                        const rsiCell = document.createElement('td');
+                        rsiCell.textContent = rowData.rsi.toFixed(2);
+                        tr.appendChild(rsiCell);
+
+                        tableBody.appendChild(tr);
+                    }
+                }
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
