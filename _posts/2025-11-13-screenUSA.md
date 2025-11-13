@@ -23,4 +23,4 @@ tags: [市場監控, React, Web App, JavaScript]
 
 歡迎大家試用全新的儀表板，並期待您的回饋！
 
-**立即體驗：** [市場綜合儀表板](/apps/screenUSA/screenUSA.html)
+**立即體驗：** [市場綜合儀表板](/apps/stock-monitor/screenUSA.html)
