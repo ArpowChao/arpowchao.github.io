@@ -5,566 +5,301 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票市場監控系統</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: #2E2E2E;
-            color: #E0E0E0;
-            font-family: 'Microsoft JhengHei UI', 'PingFang SC', sans-serif;
-            font-size: 12px;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 2px solid #454545;
-            margin-bottom: 20px;
-        }
-
-        header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-            background-color: #3A3A3A;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .control-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        select, button {
-            padding: 8px 12px;
-            background-color: #2E2E2E;
-            color: #E0E0E0;
-            border: 1px solid #454545;
-            border-radius: 4px;
-            font-size: 12px;
-            font-family: inherit;
-            cursor: pointer;
-        }
-
-        button {
-            padding: 10px 20px;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #4A4A4A;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .progress-message {
-            text-align: center;
-            padding: 15px;
-            background-color: #3A3A3A;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-
-        .category-section {
-            margin-bottom: 30px;
-        }
-
-        .category-title {
-            background-color: #3A3A3A;
-            padding: 12px 15px;
-            font-weight: bold;
-            font-size: 14px;
-            border-left: 4px solid #50C878;
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #2E2E2E;
-            border: 1px solid #454545;
-        }
-
-        thead {
-            background-color: #3A3A3A;
-        }
-
-        th {
-            padding: 12px 15px;
-            text-align: left;
-            border: 1px solid #454545;
-            font-weight: bold;
-        }
-
-        td {
-            padding: 10px 15px;
-            border: 1px solid #454545;
-        }
-
-        tr:hover {
-            background-color: #353535;
-        }
-
-        .ticker {
-            font-weight: bold;
-            color: #50C878;
-        }
-
-        .name {
-            color: #B0B0B0;
-            font-size: 11px;
-        }
-
-        .price {
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .change {
-            text-align: right;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .change.positive {
-            color: #50C878;
-            background-color: rgba(80, 200, 120, 0.15);
-        }
-
-        .change.negative {
-            color: #FF5733;
-            background-color: rgba(255, 87, 51, 0.15);
-        }
-
-        .rsi {
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .rsi.overbought {
-            color: #FF5733;
-        }
-
-        .rsi.oversold {
-            color: #50C878;
-        }
-
-        .error {
-            color: #FF5733;
-            padding: 15px;
-            background-color: rgba(255, 87, 51, 0.15);
-            border-left: 4px solid #FF5733;
-            border-radius: 4px;
-        }
-
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background-color: #3A3A3A;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #50C878;
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: #808080;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #50C878;
-        }
-
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-            }
-
-            .control-group {
-                width: 100%;
-            }
-
-            select, button {
-                width: 100%;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: #2E2E2E; color: #E0E0E0; font-family: 'Microsoft JhengHei UI', 'PingFang SC', sans-serif; font-size: 12px; overflow-x: hidden; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; border-bottom: 2px solid #454545; margin-bottom: 20px;}
+        header h1 { font-size: 28px; margin-bottom: 10px; }
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background-color: #3A3A3A; padding: 15px; border-radius: 8px; }
+        .control-group { display: flex; gap: 10px; align-items: center; }
+        label { font-weight: bold; }
+        select, button { padding: 8px 12px; background-color: #2E2E2E; color: #E0E0E0; border: 1px solid #454545; border-radius: 4px; font-size: 12px; font-family: inherit; cursor: pointer; }
+        button { padding: 10px 20px; transition: all 0.3s ease; }
+        button:hover { background-color: #4A4A4A; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .progress-message { text-align: center; padding: 15px; background-color: #3A3A3A; border-radius: 4px; margin-bottom: 15px;}
+        .category-section { margin-bottom: 30px; }
+        .category-title { background-color: #3A3A3A; padding: 12px 15px; font-weight: bold; font-size: 14px; border-left: 4px solid #50C878; margin-bottom: 10px; border-radius: 4px;}
+        table { width: 100%; border-collapse: collapse; background-color: #2E2E2E; border: 1px solid #454545;}
+        thead { background-color: #3A3A3A;}
+        th { padding: 12px 15px; text-align: left; border: 1px solid #454545; font-weight: bold;}
+        td { padding: 10px 15px; border: 1px solid #454545; }
+        tr:hover { background-color: #353535; }
+        .ticker { font-weight: bold; color: #50C878; }
+        .name { color: #B0B0B0; font-size: 11px; }
+        .price { text-align: right; font-weight: bold;}
+        .change { text-align: right; padding: 8px 12px; border-radius: 4px; font-weight: bold;}
+        .change.positive { color: #50C878; background-color: rgba(80, 200, 120, 0.15);}
+        .change.negative { color: #FF5733; background-color: rgba(255, 87, 51, 0.15);}
+        .rsi { text-align: right; font-weight: bold;}
+        .rsi.overbought { color: #FF5733;}
+        .rsi.oversold { color: #50C878;}
+        .error { color: #FF5733; padding: 15px; background-color: rgba(255, 87, 51, 0.15); border-left: 4px solid #FF5733; border-radius: 4px;}
+        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;}
+        .stat-card { background-color: #3A3A3A; padding: 15px; border-radius: 4px; border-left: 4px solid #50C878; text-align: center;}
+        .stat-label { font-size: 11px; color: #808080;}
+        .stat-value { font-size: 20px; font-weight: bold; color: #50C878;}
+        @media (max-width: 768px) { .controls { flex-direction: column; }
+            .control-group { width: 100%; } select, button { width: 100%; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 股票市場監控系統</h1>
-            <p>實時監控美股指數、ETF、加密貨幣與個股表現</p>
-        </header>
+<div class="container">
+    <header>
+        <h1>📊 股票市場監控系統</h1>
+        <p>實時監控美股指數、ETF、加密貨幣與個股表現</p>
+    </header>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="categoryFilter">篩選類別：</label>
-                <select id="categoryFilter">
-                    <option value="">全部類別</option>
-                </select>
-            </div>
-            <button id="loadBtn">🔄 重新載入</button>
-            <button id="exportBtn">💾 匯出 CSV</button>
+    <div class="controls">
+        <div class="control-group">
+            <label for="categoryFilter">篩選類別：</label>
+            <select id="categoryFilter">
+                <option value="">全部類別</option>
+            </select>
         </div>
-
-        <div class="progress-message" id="progressMessage">
-            準備就緒
-        </div>
-
-        <div id="statsBar" class="stats-bar"></div>
-
-        <div id="contentArea"></div>
+        <button id="loadBtn">🔄 重新載入</button>
+        <button id="exportBtn">💾 匯出 CSV</button>
     </div>
 
-    <script>
-        // ==================== 資料配置 ====================
-        const CATEGORIZED_TICKERS = {
-            "大盤指數": {
-                "標普500指數": "^GSPC",
-                "納斯達克指數": "^IXIC",
-                "道瓊工業指數": "^DJI",
-                "羅素2000指數": "^RUT",
-                "BTC比特幣": "BTC-USD",
-                "ETH以太幣": "ETH-USD"
-            },
-            "ETF指數": {
-                "標普500 ETF (SPY)": "SPY",
-                "納斯達克100 ETF (QQQ)": "QQQ",
-                "羅素2000 ETF (IWM)": "IWM",
-                "20年+美債ETF": "TLT",
-                "垃圾債券ETF": "HYG"
-            },
-            "大型科技權值股": {
-                "蘋果 (AAPL)": "AAPL",
-                "微軟 (MSFT)": "MSFT",
-                "谷歌 (GOOGL)": "GOOGL",
-                "亞馬遜 (AMZN)": "AMZN",
-                "輝達 (NVDA)": "NVDA"
-            },
-            "其他": {
-                "台積電 (TSM)": "TSM",
-                "特斯拉 (TSLA)": "TSLA",
-                "英特爾 (INTC)": "INTC"
+    <div class="progress-message" id="progressMessage">
+        準備就緒
+    </div>
+
+    <div id="statsBar" class="stats-bar"></div>
+    <div id="contentArea"></div>
+</div>
+
+<script>
+    // ==================== API 設定 ====================
+    const API_URL = 'https://stock-monitor-backend-tb9x.onrender.com'; // 改成你的 Render 網址
+
+    let allData = [];
+    let filteredData = [];
+
+    // ==================== 工具函數 ====================
+
+    function formatPercent(value) {
+        if (value === null || isNaN(value)) return "N/A";
+        const sign = value >= 0 ? "+" : "";
+        return sign + value.toFixed(2) + "%";
+    }
+
+    function formatPrice(price) {
+        return price.toFixed(2);
+    }
+
+    function getRSIStatus(rsi) {
+        if (rsi === null) return { class: "neutral", label: "N/A" };
+        if (rsi > 70) return { class: "overbought", label: "超買" };
+        if (rsi < 30) return { class: "oversold", label: "超賣" };
+        return { class: "neutral", label: "中性" };
+    }
+
+    async function loadData() {
+        const loadBtn = document.getElementById("loadBtn");
+        loadBtn.disabled = true;
+        loadBtn.textContent = "⏳ 正在連接後端獲取數據...";
+
+        updateProgress("🔍 正在連接後端獲取數據...");
+
+        try {
+            // 調用 Render 後端 API (獲取完整所有類別+所有標的)
+            const response = await fetch(`${API_URL}/api/stocks`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        };
 
-        let allData = [];
-        let filteredData = [];
+            const data = await response.json();
 
-        // ==================== 工具函數 ====================
-
-        function formatPercent(value) {
-            if (value === null || isNaN(value)) return "N/A";
-            const sign = value >= 0 ? "+" : "";
-            return sign + value.toFixed(2) + "%";
-        }
-
-        function formatPrice(price) {
-            return price.toFixed(2);
-        }
-
-        function getRSIStatus(rsi) {
-            if (rsi === null) return { class: "neutral", label: "N/A" };
-            if (rsi > 70) return { class: "overbought", label: "超買" };
-            if (rsi < 30) return { class: "oversold", label: "超賣" };
-            return { class: "neutral", label: "中性" };
-        }
-
-        // ==================== API 調用 ====================
-
-        // 使用 Yahoo Finance 無密鑰 API
-        async function fetchYahooData(ticker) {
-            try {
-                const response = await fetch(
-                    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price`,
-                    {
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0'
-                        }
-                    }
-                );
-                
-                if (!response.ok) return null;
-                
-                const data = await response.json();
-                const priceData = data.quoteSummary?.result?.[0]?.price;
-                
-                if (!priceData) return null;
-
-                return {
-                    price: priceData.regularMarketPrice?.raw || 0,
-                    change: priceData.regularMarketChange?.raw || 0,
-                    changePercent: priceData.regularMarketChangePercent?.raw || 0
-                };
-            } catch (error) {
-                console.error(`Error fetching ${ticker}:`, error);
-                return null;
-            }
-        }
-
-        // ==================== 主程式邏輯 ====================
-
-        async function loadData() {
-            const loadBtn = document.getElementById("loadBtn");
-            loadBtn.disabled = true;
-            loadBtn.textContent = "⏳ 正在載入...";
-
-            updateProgress("🔍 正在獲取股票數據...");
-
-            try {
-                allData = [];
-                let successCount = 0;
-                let totalCount = 0;
-
-                for (const [category, tickers] of Object.entries(CATEGORIZED_TICKERS)) {
-                    for (const [name, ticker] of Object.entries(tickers)) {
-                        totalCount++;
-                        updateProgress(`⏳ 正在載入 ${ticker}... (${successCount}/${totalCount})`);
-
-                        const data = await fetchYahooData(ticker);
-                        
-                        if (data) {
-                            allData.push({
-                                ticker,
-                                name,
-                                category,
-                                price: data.price,
-                                day: data.changePercent,
-                                week: data.changePercent * 0.5, // 估計值
-                                month: data.changePercent * 0.25,
-                                ytd: data.changePercent * 0.1,
-                                rsi: 50 + Math.random() * 20 // 模擬 RSI
-                            });
-                            successCount++;
-                        }
-
-                        // 避免 API 限速
-                        await new Promise(r => setTimeout(r, 300));
-                    }
+            allData = [];
+            // 完全按照你的 Python 分類
+            for (const [category, tickers] of Object.entries(data)) {
+                for (const [ticker, stockData] of Object.entries(tickers)) {
+                    allData.push(stockData);
                 }
-
-                updateProgress(`✅ 數據載入完成！ (${successCount}/${totalCount})`);
-                filterAndDisplay();
-
-            } catch (error) {
-                updateProgress(`❌ 發生錯誤: ${error.message}`);
-                showError(`無法獲取數據: ${error.message}`);
-            } finally {
-                loadBtn.disabled = false;
-                loadBtn.textContent = "🔄 重新載入";
-            }
-        }
-
-        function initCategoryFilter() {
-            const select = document.getElementById("categoryFilter");
-            const categories = [...new Set(allData.map(item => item.category))];
-
-            categories.forEach(category => {
-                const option = document.createElement("option");
-                option.value = category;
-                option.textContent = category;
-                select.appendChild(option);
-            });
-
-            select.addEventListener("change", () => {
-                filterAndDisplay();
-            });
-        }
-
-        function filterAndDisplay() {
-            const categoryFilter = document.getElementById("categoryFilter").value;
-
-            if (categoryFilter) {
-                filteredData = allData.filter(item => item.category === categoryFilter);
-            } else {
-                filteredData = [...allData];
             }
 
-            displayData();
-            updateStats();
+            updateProgress(`✅ 數據載入完成！共 ${allData.length} 個標的`);
+            initCategoryFilter();
+            filterAndDisplay();
+
+        } catch (error) {
+            updateProgress(`❌ 發生錯誤: ${error.message}`);
+            showError(`無法連接後端: ${error.message}\n\n可能原因：\n1. Render 後端尚未啟動（首次訪問需 10-20 秒）\n2. 後端 URL 錯誤\n3. 網路連接問題\n\n當前後端 URL: ${API_URL}`);
+        } finally {
+            loadBtn.disabled = false;
+            loadBtn.textContent = "🔄 重新載入";
         }
+    }
 
-        function displayData() {
-            const contentArea = document.getElementById("contentArea");
-            contentArea.innerHTML = "";
+    function initCategoryFilter() {
+        const select = document.getElementById("categoryFilter");
+        while (select.options.length > 1) select.remove(1);
 
-            if (filteredData.length === 0) {
-                contentArea.innerHTML = "<p style='text-align:center;color:#808080;'>沒有可顯示的數據</p>";
-                return;
-            }
-
-            const grouped = {};
-            filteredData.forEach(item => {
-                if (!grouped[item.category]) grouped[item.category] = [];
-                grouped[item.category].push(item);
-            });
-
-            for (const [category, items] of Object.entries(grouped)) {
-                const section = document.createElement("div");
-                section.className = "category-section";
-
-                const title = document.createElement("div");
-                title.className = "category-title";
-                title.textContent = category + ` (${items.length} 個標的)`;
-                section.appendChild(title);
-
-                const table = document.createElement("table");
-                const thead = document.createElement("thead");
-                const headerRow = document.createElement("tr");
-
-                const headers = ["代碼", "名稱", "現價", "日", "週", "月", "年初至今", "RSI"];
-                headers.forEach(header => {
-                    const th = document.createElement("th");
-                    th.textContent = header;
-                    headerRow.appendChild(th);
-                });
-
-                thead.appendChild(headerRow);
-                table.appendChild(thead);
-
-                const tbody = document.createElement("tbody");
-                items.forEach(item => {
-                    const row = document.createElement("tr");
-
-                    const tickerCell = document.createElement("td");
-                    tickerCell.className = "ticker";
-                    tickerCell.textContent = item.ticker;
-                    row.appendChild(tickerCell);
-
-                    const nameCell = document.createElement("td");
-                    nameCell.className = "name";
-                    nameCell.textContent = item.name;
-                    row.appendChild(nameCell);
-
-                    const priceCell = document.createElement("td");
-                    priceCell.className = "price";
-                    priceCell.textContent = "$" + formatPrice(item.price);
-                    row.appendChild(priceCell);
-
-                    [item.day, item.week, item.month, item.ytd].forEach(change => {
-                        const cell = document.createElement("td");
-                        cell.className = "change " + (change >= 0 ? "positive" : "negative");
-                        cell.textContent = formatPercent(change);
-                        row.appendChild(cell);
-                    });
-
-                    const rsiCell = document.createElement("td");
-                    const rsiStatus = getRSIStatus(item.rsi);
-                    rsiCell.className = "rsi " + rsiStatus.class;
-                    rsiCell.textContent = item.rsi.toFixed(1) + " (" + rsiStatus.label + ")";
-                    row.appendChild(rsiCell);
-
-                    tbody.appendChild(row);
-                });
-
-                table.appendChild(tbody);
-                section.appendChild(table);
-                contentArea.appendChild(section);
-            }
-        }
-
-        function updateStats() {
-            const statsBar = document.getElementById("statsBar");
-            const positiveCount = filteredData.filter(d => d.day >= 0).length;
-            const negativeCount = filteredData.filter(d => d.day < 0).length;
-            const avgDay = filteredData.reduce((sum, d) => sum + d.day, 0) / filteredData.length;
-
-            statsBar.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-label">上漲</div>
-                    <div class="stat-value" style="color: #50C878;">${positiveCount}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">下跌</div>
-                    <div class="stat-value" style="color: #FF5733;">${negativeCount}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">平均漲跌幅</div>
-                    <div class="stat-value" style="color: ${avgDay >= 0 ? '#50C878' : '#FF5733'};">${formatPercent(avgDay)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">總計標的</div>
-                    <div class="stat-value">${filteredData.length}</div>
-                </div>
-            `;
-        }
-
-        function updateProgress(message) {
-            document.getElementById("progressMessage").textContent = message;
-        }
-
-        function showError(message) {
-            const contentArea = document.getElementById("contentArea");
-            const errorDiv = document.createElement("div");
-            errorDiv.className = "error";
-            errorDiv.style.whiteSpace = "pre-wrap";
-            errorDiv.textContent = message;
-            contentArea.innerHTML = "";
-            contentArea.appendChild(errorDiv);
-        }
-
-        function exportToCSV() {
-            if (filteredData.length === 0) {
-                alert("沒有數據可匯出");
-                return;
-            }
-
-            let csv = "代碼,名稱,類別,現價,日漲跌,週漲跌,月漲跌,年初至今,RSI\n";
-            filteredData.forEach(item => {
-                csv += `${item.ticker},"${item.name}","${item.category}",${item.price.toFixed(2)},${item.day.toFixed(2)},${item.week.toFixed(2)},${item.month.toFixed(2)},${item.ytd.toFixed(2)},${item.rsi.toFixed(2)}\n`;
-            });
-
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `stock_market_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
-        }
-
-        // 初始化
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("loadBtn").addEventListener("click", loadData);
-            document.getElementById("exportBtn").addEventListener("click", exportToCSV);
-            
-            loadData();
+        const categories = [...new Set(allData.map(item => item.category))];
+        categories.forEach(category => {
+            const option = document.createElement("option");
+            option.value = category;
+            option.textContent = category;
+            select.appendChild(option);
         });
-    </script>
+
+        select.onchange = filterAndDisplay;
+    }
+
+    function filterAndDisplay() {
+        const categoryFilter = document.getElementById("categoryFilter").value;
+        filteredData = categoryFilter
+            ? allData.filter(item => item.category === categoryFilter)
+            : [...allData];
+        displayData();
+        updateStats();
+    }
+
+    function displayData() {
+        const contentArea = document.getElementById("contentArea");
+        contentArea.innerHTML = "";
+
+        if (filteredData.length === 0) {
+            contentArea.innerHTML = "<p style='text-align:center;color:#808080;'>沒有可顯示的數據</p>";
+            return;
+        }
+
+        // 按類別分組
+        const grouped = {};
+        filteredData.forEach(item => {
+            if (!grouped[item.category]) grouped[item.category] = [];
+            grouped[item.category].push(item);
+        });
+
+        // 為每個類別建立表格
+        for (const [category, items] of Object.entries(grouped)) {
+            const section = document.createElement("div");
+            section.className = "category-section";
+
+            const title = document.createElement("div");
+            title.className = "category-title";
+            title.textContent = category + ` (${items.length} 個標的)`;
+            section.appendChild(title);
+
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+
+            const headers = ["代碼", "名稱", "現價", "日", "週", "月", "年初至今", "RSI"];
+            headers.forEach(header => {
+                const th = document.createElement("th");
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+            items.forEach(item => {
+                const row = document.createElement("tr");
+
+                const tickerCell = document.createElement("td");
+                tickerCell.className = "ticker";
+                tickerCell.textContent = item.ticker;
+                row.appendChild(tickerCell);
+
+                const nameCell = document.createElement("td");
+                nameCell.className = "name";
+                nameCell.textContent = item.name;
+                row.appendChild(nameCell);
+
+                const priceCell = document.createElement("td");
+                priceCell.className = "price";
+                priceCell.textContent = "$" + formatPrice(item.price);
+                row.appendChild(priceCell);
+
+                [item.day, item.week, item.month, item.ytd].forEach(change => {
+                    const cell = document.createElement("td");
+                    cell.className = "change " + (change >= 0 ? "positive" : "negative");
+                    cell.textContent = formatPercent(change);
+                    row.appendChild(cell);
+                });
+
+                const rsiCell = document.createElement("td");
+                const rsiStatus = getRSIStatus(item.rsi);
+                rsiCell.className = "rsi " + rsiStatus.class;
+                rsiCell.textContent = item.rsi !== null ? item.rsi.toFixed(1) + " (" + rsiStatus.label + ")" : "N/A";
+                row.appendChild(rsiCell);
+
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            section.appendChild(table);
+            contentArea.appendChild(section);
+        }
+    }
+
+    function updateStats() {
+        const statsBar = document.getElementById("statsBar");
+        const positiveCount = filteredData.filter(d => d.day >= 0).length;
+        const negativeCount = filteredData.filter(d => d.day < 0).length;
+        const avgDay = filteredData.reduce((sum, d) => sum + d.day, 0) / filteredData.length;
+
+        statsBar.innerHTML = `
+            <div class="stat-card">
+                <div class="stat-label">上漲</div>
+                <div class="stat-value" style="color: #50C878;">${positiveCount}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">下跌</div>
+                <div class="stat-value" style="color: #FF5733;">${negativeCount}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">平均漲跌幅</div>
+                <div class="stat-value" style="color: ${avgDay >= 0 ? '#50C878' : '#FF5733'};">${formatPercent(avgDay)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">總計標的</div>
+                <div class="stat-value">${filteredData.length}</div>
+            </div>
+        `;
+    }
+
+    function updateProgress(message) {
+        document.getElementById("progressMessage").textContent = message;
+    }
+
+    function showError(message) {
+        const contentArea = document.getElementById("contentArea");
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "error";
+        errorDiv.style.whiteSpace = "pre-wrap";
+        errorDiv.textContent = message;
+        contentArea.innerHTML = "";
+        contentArea.appendChild(errorDiv);
+    }
+
+    function exportToCSV() {
+        if (filteredData.length === 0) {
+            alert("沒有數據可匯出");
+            return;
+        }
+        let csv = "代碼,名稱,類別,現價,日漲跌,週漲跌,月漲跌,年初至今,RSI\n";
+        filteredData.forEach(item => {
+            csv += `${item.ticker},"${item.name}","${item.category}",${item.price.toFixed(2)},${item.day.toFixed(2)},${item.week.toFixed(2)},${item.month.toFixed(2)},${item.ytd.toFixed(2)},${item.rsi !== null ? item.rsi.toFixed(2) : "N/A"}\n`;
+        });
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `stock_market_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("loadBtn").addEventListener("click", loadData);
+        document.getElementById("exportBtn").addEventListener("click", exportToCSV);
+        loadData();
+    });
+    setInterval(loadData, 180000);
+</script>
 </body>
 </html>
