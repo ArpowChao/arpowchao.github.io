@@ -1,3 +1,12 @@
 {
-  "recommendations": ["ms-vscode-remote.remote-containers"]
+  "recommendations": [
+    "ms-vscode-remote.remote-containers",
+    "eliostruyf.vscode-front-matter",
+    "sissel.ruby-liquid",
+    "ginfuru.ginfuru-vscode-jekyll-syntax",
+    "ginfuru.vscode-jekyll-snippets",
+    "Dedsec727.jekyll-run",
+    "yzhang.markdown-all-in-one",
+    "mushan.vscode-paste-image"
+  ]
 }

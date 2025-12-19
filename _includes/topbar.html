@@ -1,0 +1,75 @@
+<!-- The Top Bar -->
+
+<header id="topbar-wrapper" class="flex-shrink-0" aria-label="Top Bar">
+  <div
+    id="topbar"
+    class="d-flex align-items-center justify-content-between px-lg-3 h-100"
+  >
+    <!-- Custom Navigation Links -->
+    <nav id="custom-nav" class="d-flex align-items-center gap-3">
+      <a href="{{ '/categories/' | relative_url }}" class="nav-link">Categories</a>
+      <a href="{{ '/tags/' | relative_url }}" class="nav-link">Tags</a>
+      <a href="{{ '/archives/' | relative_url }}" class="nav-link">Archives</a>
+      <a href="{{ '/about/' | relative_url }}" class="nav-link">About</a>
+      
+      <!-- Apps Dropdown -->
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Apps
+        </a>
+        <ul class="dropdown-menu">
+           <li><a class="dropdown-item" href="{{ '/apps/Uncertainty.html' | relative_url }}">Uncertainty</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/alpha.html' | relative_url }}">Alpha</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/inquiry_and_practice.html' | relative_url }}">Inquiry & Practice</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/movable_pulley.html' | relative_url }}">Movable Pulley</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/phy-olympic-wall-bar-move.html' | relative_url }}">Phy Olympic</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/phy-vpython-baseball.html' | relative_url }}">VPython Baseball</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/random_sampler.html' | relative_url }}">Random Sampler</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/semiconductor.html' | relative_url }}">Semiconductor</a></li>
+           <li><a class="dropdown-item" href="{{ '/apps/whiteboard.html' | relative_url }}">Whiteboard</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Original Breadcrumb (Hidden or Optional, keeping simplified) -->
+    <!-- 
+    <nav id="breadcrumb" aria-label="Breadcrumb">
+      ...
+    </nav>
+    -->
+
+    <button type="button" id="sidebar-trigger" class="btn btn-link" aria-label="Sidebar">
+      <i class="fas fa-bars fa-fw"></i>
+    </button>
+
+    <div id="topbar-title">
+      {% if page.layout == 'home' %}
+        {{- site.data.locales[include.lang].title | default: site.title -}}
+      {% elsif page.collection == 'tabs' or page.layout == 'page' %}
+        {%- capture tab_key -%}{{ page.url | split: '/' }}{%- endcapture -%}
+        {{- site.data.locales[include.lang].tabs[tab_key] | default: page.title -}}
+      {% else %}
+        {{- site.data.locales[include.lang].layout[page.layout] | default: page.layout | capitalize -}}
+      {% endif %}
+    </div>
+
+    <button type="button" id="search-trigger" class="btn btn-link" aria-label="Search">
+      <i class="fas fa-search fa-fw"></i>
+    </button>
+
+    <search id="search" class="align-items-center ms-3 ms-lg-0">
+      <i class="fas fa-search fa-fw"></i>
+      <input
+        class="form-control"
+        id="search-input"
+        type="search"
+        aria-label="search"
+        autocomplete="off"
+        placeholder="{{ site.data.locales[include.lang].search.hint | capitalize }}..."
+      >
+    </search>
+    <button type="button" class="btn btn-link text-decoration-none" id="search-cancel">
+      {{- site.data.locales[include.lang].search.cancel -}}
+    </button>
+  </div>
+</header>

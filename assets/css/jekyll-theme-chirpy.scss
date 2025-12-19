@@ -1,0 +1,173 @@
+---
+---
+
+/* Font Imports */
+// @import url('https://fonts.googleapis.com/css2?family=Forum&family=Noto+Serif+TC:wght@400;700&display=swap');
+
+/* Redesign variables for minimalist editorial look */
+:root {
+  /* Color Palette */
+  --main-bg: #ffffff;
+  --text-color: #000000;
+  --heading-color: #000000;
+  --link-color: #000000;
+  --link-hover-color: #555555;
+  
+  /* Sidebar */
+  --sidebar-bg: #ffffff;
+  --sidebar-border-color: #eeeeee;
+  --sidebar-muted-color: #777777;
+  --sidebar-active-color: #000000;
+  --sidebar-hover-bg: #f9f9f9;
+  
+  /* Accents & Borders */
+  --card-bg: #ffffff;
+  --card-border-color: #f0f0f0;
+  --card-box-shadow: 0 2px 15px rgba(0, 0, 0, 0.02);
+  --border-color: #eeeeee;
+}
+
+/* Import Base Theme */
+@import "main";
+
+/* Custom Overrides */
+
+/* Global Typography */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--main-bg);
+  color: var(--text-color);
+  line-height: 1.8;
+}
+
+h1, h2, h3, h4, h5, h6, .site-title, .post-title {
+  font-family: 'Forum', 'Noto Serif TC', serif !important;
+  color: var(--heading-color);
+  letter-spacing: 0.5px;
+  font-weight: 400;
+}
+
+/* Centered Layout Refinement */
+#main-wrapper {
+  background-color: var(--main-bg);
+}
+
+/* Hide Sidebar on Home Page for "Centered Minimalist" Look */
+#sidebar {
+  display: none !important;
+}
+
+#main-wrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+#main {
+  max-width: 900px !important;
+  padding: 0 2rem;
+}
+
+#topbar-wrapper {
+  display: flex !important;
+  justify-content: center !important;
+  border-bottom: 1px solid var(--border-color);
+  left: 0 !important;
+  width: 100% !important;
+}
+
+#topbar {
+  max-width: 900px;
+}
+
+/* Post Cards Refinement */
+.post-preview {
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 3rem 0 !important;
+  transition: opacity 0.3s ease;
+}
+
+.post-preview:hover {
+  opacity: 0.8;
+}
+
+.post-preview .post-title {
+  font-size: 1.8rem !important;
+  margin-top: 1rem !important;
+}
+
+.post-preview .post-excerpt {
+  color: #555555 !important;
+  font-family: 'Noto Serif TC', serif !important;
+}
+
+/* Horizontal line separators */
+header, footer {
+  border-top: 1px solid var(--border-color) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* Editorial Spacing */
+.post-content {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.1rem;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-top: 2rem;
+}
+
+/* Dark Mode Overrides (to stay light) */
+[data-mode="dark"] {
+  --main-bg: #ffffff;
+  --text-color: #000000;
+  --heading-color: #000000;
+}
+
+/* Custom Navigation Styling */
+#custom-nav .nav-link {
+  font-family: 'Forum', 'Noto Serif TC', serif;
+  font-size: 1.1rem;
+  color: var(--heading-color) !important;
+  position: relative;
+  text-decoration: none;
+  padding-bottom: 5px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+#custom-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background-color: var(--heading-color);
+  transition: all 0.3s ease-in-out;
+}
+
+#custom-nav .nav-link:hover {
+  opacity: 1;
+}
+
+#custom-nav .nav-link:hover::after {
+  width: 100%;
+  left: 0;
+}
+
+#custom-nav .dropdown-menu {
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-box-shadow);
+}
+
+#custom-nav .dropdown-item {
+  font-family: 'Noto Serif TC', serif;
+}
+
+#custom-nav .dropdown-item:hover {
+  background-color: var(--sidebar-hover-bg);
+}
