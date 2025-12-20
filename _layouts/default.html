@@ -15,9 +15,10 @@ layout: compress
   {% include head.html %}
 
   <body>
-    <div id="main-wrapper">
-      <div class="container d-flex flex-column px-3 px-md-4 px-lg-5">
-        {% include topbar.html lang=lang %}
+    <div id="main-wrapper" class="d-flex flex-column">
+      {% include topbar.html lang=lang %}
+      
+      <div class="container flex-grow-1 px-3 px-md-4 px-lg-5 mt-4">
 
         <div class="row flex-grow-1 justify-content-center">
           <main aria-label="Main Content" class="col-12 col-md-11 col-lg-10 col-xl-9">
