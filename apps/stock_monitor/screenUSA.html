@@ -173,12 +173,15 @@
 
     async function fetchYahooData(ticker) {
         try {
-            const response = await fetch(
-                `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price`,
-                { headers: { 'User-Agent': 'Mozilla/5.0' } }
-            );
+            const targetUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            
+            const response = await fetch(proxyUrl);
             if (!response.ok) return null;
-            const data = await response.json();
+            
+            const proxyData = await response.json();
+            const data = JSON.parse(proxyData.contents);
+            
             const priceData = data.quoteSummary?.result?.[0]?.price;
             if (!priceData) return null;
             return {
@@ -187,6 +190,7 @@
                 changePercent: priceData.regularMarketChangePercent?.raw || 0
             };
         } catch (error) {
+            console.error("Fetch error for " + ticker + ":", error);
             return null;
         }
     }
