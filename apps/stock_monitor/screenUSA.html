@@ -173,21 +173,30 @@
 
     async function fetchYahooData(ticker) {
         try {
-            const targetUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price`;
+            // v8/finance/chart is more reliable for current price data
+            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
             const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
             
             const response = await fetch(proxyUrl);
             if (!response.ok) return null;
             
             const proxyData = await response.json();
-            const data = JSON.parse(proxyData.contents);
+            if (!proxyData.contents) return null;
             
-            const priceData = data.quoteSummary?.result?.[0]?.price;
-            if (!priceData) return null;
+            const data = JSON.parse(proxyData.contents);
+            const result = data.chart?.result?.[0];
+            if (!result) return null;
+            
+            const meta = result.meta;
+            const price = meta.regularMarketPrice;
+            const prevClose = meta.chartPreviousClose;
+            const change = price - prevClose;
+            const changePercent = prevClose ? (change / prevClose) * 100 : 0;
+
             return {
-                price: priceData.regularMarketPrice?.raw || 0,
-                change: priceData.regularMarketChange?.raw || 0,
-                changePercent: priceData.regularMarketChangePercent?.raw || 0
+                price: price || 0,
+                change: change || 0,
+                changePercent: changePercent || 0
             };
         } catch (error) {
             console.error("Fetch error for " + ticker + ":", error);
@@ -204,35 +213,45 @@
         try {
             allData = [];
             let successCount = 0;
-            let totalCount = 0;
-
+            
+            const allTickers = [];
             for (const [category, tickers] of Object.entries(CATEGORIZED_TICKERS)) {
                 for (const [name, ticker] of Object.entries(tickers)) {
-                    totalCount++;
-                    updateProgress(`⏳ 正在載入 ${ticker}... (${successCount}/${totalCount})`);
-                    const data = await fetchYahooData(ticker);
-                    if (data) {
-                        allData.push({
-                            ticker,
-                            name,
-                            category,
-                            price: data.price,
-                            day: data.changePercent,
-                            week: data.changePercent * 0.6,
-                            month: data.changePercent * 0.3,
-                            ytd: data.changePercent * 0.15,
-                            rsi: 40 + Math.random() * 30
-                        });
-                        successCount++;
-                    }
-                    await new Promise(r => setTimeout(r, 200));
+                    allTickers.push({ category, name, ticker });
                 }
             }
 
+            const totalCount = allTickers.length;
+            initCategoryFilter(); 
+
+            // Fetch and render one by one so the user sees progress
+            for (const item of allTickers) {
+                updateProgress(`⏳ 正在載入 ${item.ticker}... (${successCount}/${totalCount})`);
+                
+                const data = await fetchYahooData(item.ticker);
+                if (data) {
+                    allData.push({
+                        ticker: item.ticker,
+                        name: item.name,
+                        category: item.category,
+                        price: data.price,
+                        day: data.changePercent,
+                        week: data.changePercent * 0.6, // Placeholder math
+                        month: data.changePercent * 0.3,
+                        ytd: data.changePercent * 0.15,
+                        rsi: 40 + Math.random() * 30
+                    });
+                    successCount++;
+                    // Incremental render
+                    filterAndDisplay();
+                }
+                // Small delay to prevent hitting proxy rate limits too hard
+                await new Promise(r => setTimeout(r, 50));
+            }
+
             updateProgress(`✅ 數據載入完成！ (${successCount}/${totalCount})`);
-            initCategoryFilter();
-            filterAndDisplay();
         } catch (error) {
+            console.error("Load process error:", error);
             updateProgress(`❌ 發生錯誤: ${error.message}`);
         } finally {
             loadBtn.disabled = false;
