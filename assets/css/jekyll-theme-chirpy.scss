@@ -47,7 +47,6 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 
 /* Structural Fixes for Centered Layout */
 #sidebar, 
-#panel-wrapper, 
 #sidebar-trigger, 
 #topbar-title, 
 #search-trigger,
@@ -56,15 +55,22 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   display: none !important;
 }
 
+/* Allow Panel Wrapper but hide on small screens */
+#panel-wrapper {
+  display: block !important;
+  margin-top: 2rem;
+}
+
 #main-wrapper {
   margin-left: 0 !important;
   width: 100% !important;
   min-height: 100vh;
   background-color: var(--main-bg) !important;
+  position: relative;
 }
 
 #main-wrapper > .container {
-  max-width: 1000px !important;
+  max-width: 1200px !important; /* Slightly wider to accommodate panel on XL screens */
   width: 100% !important;
   margin: 0 auto !important;
   padding: 0 1.5rem !important;
@@ -77,10 +83,11 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   position: sticky;
   top: 0;
   z-index: 1030;
-  height: 65px;
+  height: 65px; /* Fixed height is critical for stability */
   display: flex !important;
   align-items: center;
 }
+
 
 #topbar {
   width: 100%;

@@ -21,13 +21,26 @@ layout: compress
       <div class="container flex-grow-1 px-3 px-md-4 px-lg-5 mt-4">
 
         <div class="row flex-grow-1 justify-content-center">
-          <main aria-label="Main Content" class="col-12 col-md-11 col-lg-10 col-xl-9">
+          <main aria-label="Main Content" class="col-12 col-lg-8 col-xl-9 px-md-4">
             {% if layout.refactor or layout.layout == 'default' %}
               {% include refactor-content.html content=content lang=lang %}
             {% else %}
               {{ content }}
             {% endif %}
           </main>
+
+          <!-- panel -->
+          <aside aria-label="Panel" id="panel-wrapper" class="col-xl-3 ps-2 text-muted d-none d-xl-block">
+            <div class="access">
+              {% include_cached update-list.html lang=lang %}
+              {% include_cached trending-tags.html lang=lang %}
+            </div>
+
+            {% for _include in layout.panel_includes %}
+              {% assign _include_path = _include | append: '.html' %}
+              {% include {{ _include_path }} lang=lang %}
+            {% endfor %}
+          </aside>
         </div>
 
         <footer class="row mt-5">
