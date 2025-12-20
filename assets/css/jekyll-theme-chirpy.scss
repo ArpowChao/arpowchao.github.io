@@ -1,44 +1,40 @@
 ---
 ---
 
-/* Font Imports */
-// @import url('https://fonts.googleapis.com/css2?family=Forum&family=Noto+Serif+TC:wght@400;700&display=swap');
+/* Font Imports are now handled in _includes/head.html for stability */
 
-/* Redesign variables for minimalist editorial look */
+/* Minimalist Theme Variables */
 :root {
-  /* Color Palette */
   --main-bg: #ffffff;
   --text-color: #000000;
   --heading-color: #000000;
   --link-color: #000000;
   --link-hover-color: #555555;
   
-  /* Sidebar */
+  /* Sidebar variables kept for theme compatibility but hidden */
   --sidebar-bg: #ffffff;
   --sidebar-border-color: #eeeeee;
   --sidebar-muted-color: #777777;
   --sidebar-active-color: #000000;
   --sidebar-hover-bg: #f9f9f9;
   
-  /* Accents & Borders */
   --card-bg: #ffffff;
   --card-border-color: #f0f0f0;
   --card-box-shadow: 0 2px 15px rgba(0, 0, 0, 0.02);
   --border-color: #eeeeee;
 }
 
-/* Import Base Theme */
+/* Import Theme Base */
 @import "main";
 
-/* Custom Overrides */
-
-/* Global Typography */
+/* Global Refinements */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background-color: var(--main-bg);
-  color: var(--text-color);
+  background-color: var(--main-bg) !important;
+  color: var(--text-color) !important;
   line-height: 1.8;
+  margin: 0;
 }
 
 h1, h2, h3, h4, h5, h6, .site-title, .post-title {
@@ -48,94 +44,66 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   font-weight: 400;
 }
 
-/* Centered Layout Refinement */
-#main-wrapper {
-  background-color: var(--main-bg);
-}
-
-/* Hide Sidebar on Home Page for "Centered Minimalist" Look */
-#sidebar {
+/* Structural Fixes for Centered Layout */
+#sidebar, 
+#panel-wrapper, 
+#sidebar-trigger, 
+#topbar-title, 
+#search-trigger,
+#notification,
+.toast {
   display: none !important;
 }
 
 #main-wrapper {
   margin-left: 0 !important;
   width: 100% !important;
+  min-height: 100vh;
   display: flex !important;
   justify-content: center !important;
+  background-color: var(--main-bg) !important;
 }
 
-#main {
-  max-width: 900px !important;
-  padding: 0 2rem;
+#main-wrapper > .container {
+  max-width: 1000px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 1.5rem !important;
+  display: flex;
+  flex-direction: column;
 }
 
 #topbar-wrapper {
-  display: flex !important;
-  justify-content: center !important;
+  background-color: var(--main-bg);
   border-bottom: 1px solid var(--border-color);
-  left: 0 !important;
   width: 100% !important;
+  left: 0 !important;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  height: 65px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center !important;
 }
 
 #topbar {
-  max-width: 900px;
+  width: 100%;
+  max-width: 1000px;
+  display: flex !important;
+  justify-content: center !important;
 }
 
-/* Post Cards Refinement */
-.post-preview {
-  border: none !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  padding: 3rem 0 !important;
-  transition: opacity 0.3s ease;
-}
-
-.post-preview:hover {
-  opacity: 0.8;
-}
-
-.post-preview .post-title {
-  font-size: 1.8rem !important;
-  margin-top: 1rem !important;
-}
-
-.post-preview .post-excerpt {
-  color: #555555 !important;
-  font-family: 'Noto Serif TC', serif !important;
-}
-
-/* Horizontal line separators */
-header, footer {
-  border-top: 1px solid var(--border-color) !important;
-  border-bottom: 1px solid var(--border-color) !important;
-}
-
-/* Editorial Spacing */
-.post-content {
-  font-family: 'Noto Serif TC', serif;
-  font-size: 1.1rem;
-  max-width: 800px;
-  margin: 0 auto;
-  padding-top: 2rem;
-}
-
-/* Dark Mode Overrides (to stay light) */
-[data-mode="dark"] {
-  --main-bg: #ffffff;
-  --text-color: #000000;
-  --heading-color: #000000;
-}
-
-/* Custom Navigation Styling */
+/* Navigation Link Styling */
 #custom-nav .nav-link {
   font-family: 'Forum', 'Noto Serif TC', serif;
   font-size: 1.1rem;
   color: var(--heading-color) !important;
   position: relative;
   text-decoration: none;
-  padding-bottom: 5px;
+  padding: 5px 0;
   font-weight: 500;
-  transition: color 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 #custom-nav .nav-link::after {
@@ -149,56 +117,62 @@ header, footer {
   transition: all 0.3s ease-in-out;
 }
 
-#custom-nav .nav-link:hover {
-  opacity: 1;
-}
-
 #custom-nav .nav-link:hover::after {
   width: 100%;
   left: 0;
 }
 
-#custom-nav .dropdown-menu {
-  border-radius: 0;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--card-box-shadow);
-}
-
-#custom-nav .dropdown-item {
-  font-family: 'Noto Serif TC', serif;
-}
-
-#custom-nav .dropdown-item:hover {
-  background-color: var(--sidebar-hover-bg);
-}
-
-/* Force Centering Override */
-#topbar {
-  justify-content: center !important; 
-}
-
-/* Hide Sidebar Trigger globally since we are no-sidebar */
-#sidebar-trigger {
-  display: none !important;
-}
-
-/* Hide Search on Mobile to prevent clutter */
-#search-trigger {
-  display: none !important;
-}
-
-#topbar-title {
-  display: none !important;
-}
-
-/* Ensure Search box doesn't push Nav */
+/* Search Box Positioning */
 search {
   position: absolute;
-  right: 1rem;
+  right: 2rem;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 900px) {
   search {
     display: none !important;
   }
+  #custom-nav {
+    gap: 1rem !important;
+  }
+}
+
+/* Post List & Card Refinements */
+.post-preview {
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 3rem 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.post-preview:hover {
+  opacity: 0.7;
+}
+
+.post-preview .post-title {
+  font-size: 2rem !important;
+  margin-bottom: 1rem;
+}
+
+.post-content {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.15rem;
+  line-height: 1.9;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Fix for Chirpy's sliding mobile overflow */
+html, body {
+  overflow-x: hidden;
+  height: 100%;
+}
+
+/* Ensure footer is centered */
+footer {
+  border-top: 1px solid var(--border-color);
+  padding: 2rem 0;
+  margin-top: 4rem;
 }
