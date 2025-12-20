@@ -171,3 +171,34 @@ header, footer {
 #custom-nav .dropdown-item:hover {
   background-color: var(--sidebar-hover-bg);
 }
+
+/* Force Centering Override */
+#topbar {
+  justify-content: center !important; 
+}
+
+/* Hide Sidebar Trigger globally since we are no-sidebar */
+#sidebar-trigger {
+  display: none !important;
+}
+
+/* Hide Search on Mobile to prevent clutter */
+#search-trigger {
+  display: none !important;
+}
+
+#topbar-title {
+  display: none !important;
+}
+
+/* Ensure Search box doesn't push Nav */
+search {
+  position: absolute;
+  right: 1rem;
+}
+
+@media (max-width: 850px) {
+  search {
+    display: none !important;
+  }
+}
