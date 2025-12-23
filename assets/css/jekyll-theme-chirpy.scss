@@ -118,6 +118,29 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   text-decoration: none;
   font-weight: 500;
   padding: 5px 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+#custom-nav .nav-link:hover {
+  color: #4080ff !important;
+  transform: translateY(-1px);
+}
+
+#custom-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 1.5px;
+  background: #4080ff;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+#custom-nav .nav-link:hover::after {
+  width: 100%;
 }
 
 /* Pure CSS Dropdown for "Apps" */
@@ -228,12 +251,25 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   display: flex !important;
 }
 
-.post-content {
-  font-family: 'Noto Serif TC', serif;
-  font-size: 1.15rem;
-  line-height: 1.9;
-  max-width: 800px;
-  margin: 0 auto;
+/* Search Bar Aesthetics */
+#search-wrapper {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+#search-wrapper:hover,
+#search-wrapper:focus-within {
+  border-bottom: 1px solid rgba(64, 128, 255, 0.3);
+}
+
+#search-input {
+  background: transparent !important;
+  transition: all 0.3s ease;
+}
+
+#search-input:focus {
+  box-shadow: none !important;
+}
 
   /* Hide Anchor Links (#) */
   h1, h2, h3, h4, h5, h6 {
