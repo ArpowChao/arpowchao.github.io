@@ -42,7 +42,6 @@
     }
   }
 
-  function updateElements() {
     // Target the outermost wrapper for consistent alignment
     const cards = Array.from(document.querySelectorAll('.card-wrapper, .project-card')).map(el => ({ 
       el, type: 'card', rect: el.getBoundingClientRect() 
@@ -107,16 +106,11 @@
         if (currentHovered.type === 'card') {
           // --- Draw unified background highlight ON CANVAS for perfect sync ---
           if (i === 0) { // Only draw once per frame
-            ctx.fillStyle = isDark ? 'rgba(180, 210, 255, 0.08)' : 'rgba(64, 128, 255, 0.06)';
-            const r = 12; // Matches CSS border-radius
+            ctx.fillStyle = isDark ? 'rgba(180, 210, 255, 0.08)' : 'rgba(64, 128, 255, 0.05)';
+            const r = 16; // Rounded corners
             const { x, y, w, h } = currentHovered;
             ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.arcTo(x + w, y, x + w, y + h, r);
-            ctx.arcTo(x + w, y + h, x, y + h, r);
-            ctx.arcTo(x, y + h, x, y, r);
-            ctx.arcTo(x, y, x + w, y, r);
-            ctx.closePath();
+            ctx.roundRect(x, y, w, h, r);
             ctx.fill();
           }
 
@@ -138,8 +132,8 @@
           
           targetX = tx + Math.sin(time + i) * 5;
           targetY = ty + Math.cos(time + i) * 5;
-          p.opacity = p.maxOpacity + 0.3;
-          forceMultiplier = 0.45;
+          p.opacity = p.maxOpacity + 0.35;
+          forceMultiplier = 0.5; // Faster snap
           currentFriction = 0.4;
         } else if (currentHovered.type === 'tag') {
           const angle = (time * 2) + (i * 0.5);
