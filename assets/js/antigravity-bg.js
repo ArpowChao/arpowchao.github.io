@@ -37,7 +37,7 @@
   }
 
   function updateElements() {
-    const cards = Array.from(document.querySelectorAll('.card-wrapper, .post-preview, .project-card')).map(el => ({ 
+    const cards = Array.from(document.querySelectorAll('.post-preview, .project-card')).map(el => ({ 
       el, type: 'card', rect: el.getBoundingClientRect() 
     }));
     const tags = Array.from(document.querySelectorAll('.post-tag, .tag-item')).map(el => ({ 
