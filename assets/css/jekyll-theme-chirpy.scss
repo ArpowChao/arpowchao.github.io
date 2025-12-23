@@ -158,10 +158,8 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 /* 
-   THE UNIFIED CANVAS STRATEGY: 
-   Set ALL card-related layers to transparent. 
-   The highlight background is now drawn directly by JavaScript on the canvas 
-   to ensure 100% perfect synchronization with the particles.
+   THE "ONE BOX" PRINCIPLE - REFINED: 
+   Aggressively reset backgrounds but preserve layout geometry.
 */
 #post-list article.card-wrapper,
 #post-list .card,
@@ -170,22 +168,23 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 #post-list [class*='col-'] {
   background: transparent !important;
   background-color: transparent !important;
-  border: none !important;
   box-shadow: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  border: none !important;
+  transform: none !important; /* Block theme's own lift effects */
 }
 
 article.card-wrapper {
-  margin-bottom: 3rem !important;
+  margin-bottom: 5rem !important; /* Heavy separation to avoid "wrong article" association */
   display: block !important;
+  border: none !important;
 }
 
 .post-preview {
-  display: block !important;
-  padding: 2.2rem !important;
+  display: flex !important;
+  flex-direction: column;
+  padding: 2.5rem !important;
   border-radius: 12px !important;
-  border: 1px solid rgba(var(--text-color-rgb, 128, 128, 128), 0.08) !important;
+  border: 1px solid rgba(var(--text-color-rgb, 128, 128, 128), 0.1) !important;
   position: relative;
   text-decoration: none !important;
   overflow: visible !important;
@@ -194,9 +193,19 @@ article.card-wrapper {
   transition: border-color 0.2s ease;
 }
 
+.post-preview::after {
+  content: "";
+  position: absolute;
+  bottom: -2.5rem; /* Separator line between cards */
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+  opacity: 0.3;
+}
+
 .post-preview:hover {
-  border-color: rgba(64, 128, 255, 0.2) !important;
-  background-color: transparent !important; /* Managed by JS Canvas */
+  border-color: rgba(64, 128, 255, 0.3) !important;
 }
 
 .post-preview .post-title {
