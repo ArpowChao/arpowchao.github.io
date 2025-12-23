@@ -240,12 +240,12 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   font-size: 1.85rem !important;
   font-weight: 700 !important; /* Bold Titles */
   margin-bottom: 1.2rem;
-  color: var(--heading-color) !important;
+  color: #004aad !important; /* Deep Indigo for Light Mode */
   line-height: 1.3;
 }
 
 .post-preview:hover .card-title {
-  color: #4080ff !important;
+  color: #007bff !important;
 }
 
 .post-meta {
@@ -275,18 +275,18 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
     }
     
     .card-title {
-      color: #ffe082 !important; /* Muted Gold / Pale Yellow for static titles */
+      color: #ffe082 !important; /* Pale Gold for static titles */
     }
 
     .post-meta {
-      color: #777777 !important;
+      color: #888888 !important;
     }
 
     &:hover {
       border-color: rgba(255, 202, 40, 0.35) !important; 
       
       .card-title {
-        color: #ffeb3b !important; /* Brilliant yellow on hover */
+        color: #ffeb3b !important; /* Bright Yellow on hover */
       }
     }
   }
