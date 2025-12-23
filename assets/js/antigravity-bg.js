@@ -10,8 +10,14 @@
   const mouse = { x: -1000, y: -1000 };
 
   function init() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.scale(dpr, dpr);
     particles = [];
 
     updateElements();
@@ -37,7 +43,8 @@
   }
 
   function updateElements() {
-    const cards = Array.from(document.querySelectorAll('.post-preview, .project-card')).map(el => ({ 
+    // Target the outermost wrapper for consistent alignment
+    const cards = Array.from(document.querySelectorAll('.card-wrapper, .project-card')).map(el => ({ 
       el, type: 'card', rect: el.getBoundingClientRect() 
     }));
     const tags = Array.from(document.querySelectorAll('.post-tag, .tag-item')).map(el => ({ 
