@@ -167,18 +167,20 @@ article.card-wrapper,
   background-color: transparent !important;
   box-shadow: none !important;
   border: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  /* Removed aggressive margin/padding reset to allow layout flexibility */
+}
+
+article.card-wrapper {
+  margin-bottom: 2.5rem !important; /* Proper spacing between cards */
 }
 
 .post-preview {
   display: block !important;
-  margin: 2rem 0 !important;
-  padding: 2.5rem 2rem !important;
+  padding: 2rem !important;
   border-radius: 12px !important;
-  border: 1px solid rgba(var(--border-color), 0.1) !important;
+  border: 1px solid rgba(var(--border-color, 0, 0, 0), 0.05) !important;
   position: relative;
-  transition: background-color 0.2s ease; /* Fast transition to match JS */
+  transition: background-color 0.2s ease, border-color 0.2s ease;
   text-decoration: none !important;
   overflow: visible !important;
 }
@@ -192,8 +194,17 @@ article.card-wrapper,
 }
 
 .post-preview .post-title {
-  font-size: 2rem !important;
+  font-family: 'Forum', 'Noto Serif TC', serif;
+  font-size: 1.8rem !important;
+  margin-top: 0;
   margin-bottom: 1rem;
+  color: var(--heading-color);
+}
+
+.post-meta {
+  font-size: 0.9rem;
+  color: #888;
+  margin-top: 1.5rem;
 }
 
 .post-content {
