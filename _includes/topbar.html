@@ -7,28 +7,13 @@
   >
     <!-- Custom Navigation Links -->
     <nav id="custom-nav" class="d-flex align-items-center gap-3">
+      <a href="{{ '/' | relative_url }}" class="nav-link">Home</a>
       <a href="{{ '/categories/' | relative_url }}" class="nav-link">Categories</a>
       <a href="{{ '/tags/' | relative_url }}" class="nav-link">Tags</a>
       <a href="{{ '/archives/' | relative_url }}" class="nav-link">Archives</a>
       <a href="{{ '/about/' | relative_url }}" class="nav-link">About</a>
       
-      <!-- Apps Dropdown -->
-      <div class="dropdown">
-        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          Apps
-        </a>
-        <ul class="dropdown-menu">
-           <li><a class="dropdown-item" href="{{ '/apps/Uncertainty.html' | relative_url }}">Uncertainty</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/alpha.html' | relative_url }}">Alpha</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/inquiry_and_practice.html' | relative_url }}">Inquiry & Practice</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/movable_pulley.html' | relative_url }}">Movable Pulley</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/phy-olympic-wall-bar-move.html' | relative_url }}">Phy Olympic</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/phy-vpython-baseball.html' | relative_url }}">VPython Baseball</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/random_sampler.html' | relative_url }}">Random Sampler</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/semiconductor.html' | relative_url }}">Semiconductor</a></li>
-           <li><a class="dropdown-item" href="{{ '/apps/whiteboard.html' | relative_url }}">Whiteboard</a></li>
-        </ul>
-      </div>
+      <a href="{{ '/apps/' | relative_url }}" class="nav-link">Physics_Labs</a>
     </nav>
 
     <!-- Search Box (Right Aligned) -->

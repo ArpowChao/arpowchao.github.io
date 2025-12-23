@@ -1,0 +1,26 @@
+#antigravity-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  background: transparent;
+  display: block;
+}
+
+/* 確保主題背景透明，讓動畫透出來 */
+/* 確保基本容器透明，畫布 (z-index: -1) 才能在背景透出來 */
+body, #main-wrapper, #main, .container, #topbar-wrapper {
+  background-color: transparent !important;
+}
+
+/* 將實際背景色移至 html 層級，確保在畫布之下 */
+html {
+  background-color: var(--main-bg, var(--bg-color, #1e1e22)) !important;
+}
+
+body #antigravity-canvas {
+  opacity: 1 !important;
+}

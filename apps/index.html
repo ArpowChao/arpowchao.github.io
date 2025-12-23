@@ -1,301 +1,410 @@
+---
+layout: compress
+---
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arpow Deep-Learning</title>
+    <title>Physics Lab | Arpow Deep-Learning</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Antigravity Background Assets -->
+    <link rel="stylesheet" href="{{ '/assets/css/antigravity-bg.css' | relative_url }}">
+
     <style>
-        :root {
-            --bg-color: #121212;
-            --surface-color: #1e1e1e;
-            --primary-color: #00aaff;
-            --primary-hover-color: #00c6ff;
-            --text-primary: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --shadow-color: rgba(0, 170, 255, 0.2);
+        :root, html.dark-theme, body.dark-theme {
+            --bg-color: #1e1e22; /* 濃郁的深灰色，適合高級感 */
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-color: #00d2ff;
+            --primary-glow: rgba(0, 210, 255, 0.3);
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0b0;
+            --radius-lg: 20px;
             --radius-md: 12px;
-            --radius-sm: 8px;
+            --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
+
+        html.light-theme, body.light-theme {
+            --bg-color: #f5f7fa;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --primary-color: #0070f3;
+            --primary-glow: rgba(0, 112, 243, 0.2);
+            --text-primary: #111111;
+            --text-secondary: #444455;
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        
+        html {
             background-color: var(--bg-color);
+            transition: background-color 0.3s;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+            background-color: transparent !important;
             color: var(--text-primary);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+            line-height: 1.6;
         }
-        body.light-theme {
-            --bg-color: #f0f2f5;
-            --surface-color: #ffffff;
-            --primary-color: #007bff;
-            --primary-hover-color: #0056b3;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --border-color: rgba(0, 0, 0, 0.1);
-            --shadow-color: rgba(0, 123, 255, 0.2);
+
+        /* Essential for Antigravity BG */
+        #antigravity-canvas {
+            z-index: -1;
         }
+
         .main-layout {
             display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 2.5rem;
-            max-width: 1600px;
+            grid-template-columns: 320px 1fr;
+            gap: 3rem;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 4rem 2rem;
         }
+
+        /* Glassmorphism Sidebar */
         #changelog-sidebar {
-            background-color: var(--surface-color);
-            padding: 1.5rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--glass-border);
             height: fit-content;
             position: sticky;
             top: 4rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
+
         #changelog-sidebar h2 {
             font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-        }
-        #changelog-sidebar ul { list-style: none; padding: 0; }
-        #changelog-sidebar li { margin-bottom: 1.5rem; }
-        #changelog-sidebar .log-date {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.35rem;
-        }
-        #changelog-sidebar .log-entry { font-size: 0.95rem; line-height: 1.6; }
-        header {
-            text-align: center;
             margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .log-item {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 2rem;
+            border-left: 2px solid var(--primary-color);
+        }
+
+        .log-date {
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .log-entry { font-size: 0.95rem; opacity: 0.9; }
+
+        header {
+            margin-bottom: 4rem;
             position: relative;
         }
+
+        .back-nav {
+            margin-bottom: 2rem;
+        }
+
+        .back-btn {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .back-btn:hover { color: var(--primary-color); transform: translateX(-5px); }
+
         header h1 {
-            font-size: 3rem;
+            font-size: 4rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(45deg, var(--primary-hover-color), var(--text-primary));
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--primary-color), var(--text-primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        header p { font-size: 1.1rem; color: var(--text-secondary); }
-        #theme-toggle-btn {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
+
+        /* Search & Filter Bar */
+        .controls-wrapper {
+            margin-bottom: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 1rem 1.5rem 1rem 3rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
             color: var(--text-primary);
-            padding: 0.5rem;
-            border-radius: 50%;
+            backdrop-filter: blur(8px);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .filter-container { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+        .filter-btn {
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
             cursor: pointer;
-            width: 40px;
-            height: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary-color);
+            color: #000;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px var(--primary-glow);
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 2.5rem;
+        }
+
+        /* Glassmorphism Project Card */
+        .project-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .project-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            border-color: var(--primary-color);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 200px;
+            background: #1a1a1e;
+            overflow: hidden;
+        }
+
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .project-card:hover .card-image img { transform: scale(1.1); }
+
+        .card-content { padding: 1.75rem; flex-grow: 1; display: flex; flex-direction: column; }
+
+        .card-category {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .card-content h2 { font-size: 1.6rem; margin-bottom: 0.75rem; font-weight: 700; }
+
+        .description { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; flex-grow: 1; }
+
+        .card-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
+
+        .tag {
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        .cta-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s, border-color 0.3s;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: #000;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            transition: var(--transition);
         }
-        #theme-toggle-btn:hover { background-color: var(--primary-color); }
-        .filter-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 4rem; }
-        .filter-btn { background-color: var(--surface-color); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.3s ease; }
-        .filter-btn:hover { background-color: var(--primary-color); color: #121212; border-color: var(--primary-color); }
-        body.light-theme .filter-btn:hover { color: #fff; }
-        .filter-btn.active { background-color: var(--primary-hover-color); color: #121212; border-color: var(--primary-hover-color); box-shadow: 0 0 15px var(--shadow-color); }
-        body.light-theme .filter-btn.active { color: #fff; }
-        .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2.5rem; }
-        .project-card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; opacity: 0; transform: translateY(20px); animation: card-fade-in 0.6s ease forwards; }
-        .project-card:nth-child(1) { animation-delay: 0.1s; }
-        .project-card:nth-child(2) { animation-delay: 0.2s; }
-        .project-card:nth-child(3) { animation-delay: 0.3s; }
-        .project-card:nth-child(4) { animation-delay: 0.4s; }
-        .project-card:nth-child(5) { animation-delay: 0.5s; }
-        .project-card:hover { transform: translateY(-8px); box-shadow: 0 10px 30px -10px var(--shadow-color); }
-        .project-card.hide { display: none; }
-        .card-image { width: 100%; height: 180px; background-color: #333; }
-        .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
-        .project-card:hover .card-image img { transform: scale(1.05); }
-        .card-content { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; }
-        .card-content h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .card-content .description { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; flex-grow: 1; margin-bottom: 1rem; }
-        .card-tags { margin-bottom: 1.5rem; }
-        .card-tags .tag { display: inline-block; background-color: rgba(0, 170, 255, 0.1); color: var(--primary-color); padding: 0.25rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; margin-right: 0.5rem; margin-top: 0.5rem; }
-        body.light-theme .card-tags .tag { background-color: rgba(0, 123, 255, 0.1); color: var(--primary-color); }
-        .card-footer { margin-top: auto; }
-        .cta-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.8rem 1rem; background-color: var(--primary-color); color: #000; text-decoration: none; font-weight: 700; font-size: 1rem; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; }
-        body.light-theme .cta-btn { color: #fff; }
-        .cta-btn.disabled { background-color: #444; color: #888; cursor: not-allowed; }
-        .cta-btn:not(.disabled):hover { background-color: var(--primary-hover-color); transform: scale(1.02); }
-        .cta-btn:not(.disabled):active { transform: scale(0.98); }
-        .cta-btn svg { width: 1.2em; height: 1.2em; }
-        @keyframes card-fade-in { to { opacity: 1; transform: translateY(0); } }
+
+        .cta-btn.disabled {
+            background-color: #2a2a2e;
+            color: #666;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        #theme-toggle-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            transition: var(--transition);
+        }
+
+        #theme-toggle-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+        @media (max-width: 1024px) {
+            .main-layout { grid-template-columns: 1fr; }
+            #changelog-sidebar { position: static; }
+            header h1 { font-size: 3rem; }
+        }
     </style>
 </head>
-<body>
+<body class="dark-theme">
     <div class="main-layout">
         <aside id="changelog-sidebar">
-            <h2>更新日誌</h2>
-            <ul>
-                <li>
-                    <p class="log-date">2025年11月13日</p>
-                    <p class="log-entry">將「市場綜合儀表板」升級為 React 版本，提升效能與體驗。</p>
-                </li>
-                <li>
-                    <p class="log-date">2025年11月11日</p>
-                    <p class="log-entry">新增「摩擦力模擬」物理模擬，並加入首頁。</p>
-                </li>
-                <li>
-                    <p class="log-date">2025年10月28日</p>
-                    <p class="log-entry">新增網頁版「市場綜合儀表板」，並加入首頁。</p>
-                </li>
-                <li>
-                    <p class="log-date">2025年10月19日</p>
-                    <p class="log-entry">新增「探究與實作」引導工具，並根據回饋完成多次結構與設計優化。</p>
-                </li>
-                <li>
-                    <p class="log-date">2025年10月19日</p>
-                    <p class="log-entry">新增「滑輪組」物理模擬，並完成多次視覺與功能修正。</p>
-                </li>
-                <li>
-                    <p class="log-date">2025年10月19日</p>
-                    <p class="log-entry">新增「隨機數值抽樣」工具頁面，並加入首頁。</p>
-                </li>
-                <li>
-                    <p class="log-date">2025年10月19日</p>
-                    <p class="log-entry">為所有分頁增加了「回首頁」按鈕，提升導覽體驗。</p>
-                </li>
-                 <li>
-                    <p class="log-date">2025年10月19日</p>
-                    <p class="log-entry">為首頁增加了淺色/深色模式切換功能。</p>
-                </li>
-            </ul>
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                更新日誌
+            </h2>
+            <div class="log-list">
+                {% for log in site.data.apps.changelog %}
+                <div class="log-item">
+                    <p class="log-date">{{ log.date }}</p>
+                    <p class="log-entry">{{ log.entry }}</p>
+                </div>
+                {% endfor %}
+            </div>
         </aside>
+
         <main id="content-area">
             <header>
-                <h1>Arpow's track</h1>
-                <p>record the data of the self-learning</p>
-                <button id="theme-toggle-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
+                <div class="back-nav">
+                    <a href="/" class="back-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        返回部落格
+                    </a>
+                </div>
+                <h1>Physics Lab</h1>
+                <p>探索物理之美，互動式學習工具集</p>
             </header>
 
-            <div class="filter-container" id="filter-container"></div>
+            <div class="controls-wrapper">
+                <div class="search-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="app-search" placeholder="搜尋實驗名稱或描述...">
+                </div>
+                <div class="filter-container" id="filter-container">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    {% assign categories = site.data.apps.projects | map: 'category' | uniq %}
+                    {% for cat in categories %}
+                    <button class="filter-btn" data-filter="{{ cat }}">{{ cat }}</button>
+                    {% endfor %}
+                </div>
+            </div>
 
             <div class="project-grid" id="project-grid">
-                <article class="project-card" data-tags="Physics Simulation Friction">
-                    <div class="card-image"><img src="https://i.meee.com.tw/NaAMPIY.png" alt="摩擦力模擬專案預覽圖"></div>
+                {% for p in site.data.apps.projects %}
+                <article class="project-card" data-category="{{ p.category }}" data-title="{{ p.title }}" data-desc="{{ p.description }}">
+                    <div class="card-image">
+                        <img src="{{ p.image | relative_url }}" alt="{{ p.title }} 預覽">
+                    </div>
                     <div class="card-content">
-                        <h2>摩擦力模擬</h2>
-                        <p class="description">一個探索靜摩擦力與動摩擦力概念的互動模擬。</p>
-                        <div class="card-tags"><span class="tag">Physics</span><span class="tag">Simulation</span><span class="tag">Friction</span></div>
-                        <div class="card-footer"><a href="friction-simulation/index.html" class="cta-btn"><span>Explore!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
+                        <span class="card-category">{{ p.category }}</span>
+                        <h2>{{ p.title }}</h2>
+                        <p class="description">{{ p.description }}</p>
+                        <div class="card-tags">
+                            {% for tag in p.tags %}
+                            <span class="tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ p.url | relative_url }}" class="cta-btn {% if p.disabled %}disabled{% endif %}">
+                                <span>{% if p.disabled %}施工中{% else %}立即進入{% endif %}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    {% if p.disabled %}
+                                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    {% else %}
+                                    <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+                                    {% endif %}
+                                </svg>
+                            </a>
+                        </div>
                     </div>
                 </article>
-                <article class="project-card" data-tags="Simulation Vpython Physics">
-                    <div class="card-image"><img src="https://i.postimg.cc/bv0dm6VV/vpython-baseball-simulation.png" alt="物理模擬專案預覽圖"></div>
-                    <div class="card-content">
-                        <h2>Pitcher's Baseball simulation</h2>
-                        <p class="description">使用 GlowScript 製作的棒球投球軌跡物理模擬器，展示馬格努斯效應與空氣阻力。</p>
-                        <div class="card-tags"><span class="tag">Simulation</span><span class="tag">Vpython</span><span class="tag">Physics</span></div>
-                        <div class="card-footer"><a href="phy-vpython-baseball.html" class="cta-btn"><span>Play!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Olympic 力學能手恆 轉動 牛頓定律 Physics">
-                    <div class="card-image"><img src="https://i.postimg.cc/Cx7xDZRX/olympic-bar-wall.png" alt="題目參考圖"></div>
-                    <div class="card-content">
-                        <h2>競賽題-棒子滑落</h2>
-                        <p class="description">使用守恆定律與牛頓定律來進行運動分析</p>
-                        <div class="card-tags"><span class="tag">Olympic</span><span class="tag">力學能手恆</span><span class="tag">轉動</span><span class="tag">牛頓定律</span><span class="tag">Physics</span></div>
-                        <div class="card-footer"><a href="phy-olympic-wall-bar-move.html" class="cta-btn"><span>Together~Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="art paint">
-                    <div class="card-image"><img src="https://i.meee.com.tw/ajp130Y.png" alt="whiteboard"></div>
-                    <div class="card-content">
-                        <h2>WhiteBoard</h2>
-                        <p class="description">在瀏覽器中直接當畫布使用，進行簡易繪圖。</p>
-                        <div class="card-tags"><span class="tag">art</span><span class="tag">paint</span></div>
-                        <div class="card-footer"><a href="whiteboard.html" class="cta-btn"><span>Let's Painting!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Uncertainty Physics">
-                    <div class="card-image"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtkYQzWiKFODPPeenAEccC5y-wXTjRfZH3xQ&s" alt="Uncertainty"></div>
-                    <div class="card-content">
-                        <h2>Uncertainty</h2>
-                        <p class="description">透過微積分探討不確定度的相關概念與證明。</p>
-                        <div class="card-tags"><span class="tag">Uncertainty</span><span class="tag">Physics</span></div>
-                        <div class="card-footer"><a href="Uncertainty.html" class="cta-btn"><span>Together~Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Semiconductor Physics">
-                    <div class="card-image"><img src="https://i.postimg.cc/Cx72XC0X/2025-10-19-132907.png" alt="Semiconductor"></div>
-                    <div class="card-content">
-                        <h2>Semiconductor</h2>
-                        <p class="description">An introduction to semiconductor physics.</p>
-                        <div class="card-tags"><span class="tag">Semiconductor</span><span class="tag">Physics</span></div>
-                        <div class="card-footer"><a href="semiconductor.html" class="cta-btn"><span>Together~Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Utility Statistics Generator">
-                    <div class="card-image"><img src="https://i.postimg.cc/2618V8Tf/2025-10-19-134155.png" alt="隨機數值抽樣產生器"></div>
-                    <div class="card-content">
-                        <h2>隨機數值抽樣產生器</h2>
-                        <p class="description">一個可以生成指定範圍內隨機數值，並進行統計分析的工具。</p>
-                        <div class="card-tags"><span class="tag">Utility</span><span class="tag">Statistics</span><span class="tag">Generator</span></div>
-                        <div class="card-footer"><a href="random_sampler.html" class="cta-btn"><span>Try it!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Physics Simulation Interactive Pulley">
-                    <div class="card-image"><img src="https://i.postimg.cc/fy4D24np/2025-10-19-151256.png" alt="動滑輪與定滑輪組合"></div>
-                    <div class="card-content">
-                        <h2>動滑輪與定滑輪組合</h2>
-                        <p class="description">比較動滑輪與定滑輪的加速度差異，並學習力學優勢。</p>
-                        <div class="card-tags"><span class="tag">Physics</span><span class="tag">Simulation</span><span class="tag">Interactive</span><span class="tag">Pulley</span></div>
-                        <div class="card-footer"><a href="movable_pulley.html" class="cta-btn"><span>Learn!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Inquiry Physics Education">
-                    <div class="card-image"><img src="https://prepwithharshita.com/wp-content/uploads/2023/09/Beige-Orange-Abstract-Playful-Self-Care-Brainstorm.png" alt="探究與實作專案預覽圖"></div>
-                    <div class="card-content">
-                        <h2>探究與實作流程產生器</h2>
-                        <p class="description">一個引導使用者從觀察、提問到規劃實驗的完整探究流程工具。</p>
-                        <div class="card-tags"><span class="tag">Inquiry</span><span class="tag">Physics</span><span class="tag">Education</span></div>
-                        <div class="card-footer"><a href="inquiry_and_practice.html" class="cta-btn"><span>Start Inquiry!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Utility Finance Stock Market">
-                    <div class="card-image"><img src="https://i.meee.com.tw/Rq8z1Bb.png" alt="市場綜合儀表板專案預覽圖"></div>
-                    <div class="card-content">
-                        <h2>市場綜合儀表板</h2>
-                        <p class="description">一個使用 React 重構的市場監測工具，提供更流暢的效能與體驗。</p>
-                        <div class="card-tags"><span class="tag">Utility</span><span class="tag">Finance</span><span class="tag">Stock</span><span class="tag">Market</span><span class="tag">React</span></div>
-                        <div class="card-footer"><a href="stock_monitor/screenUSA.html" class="cta-btn"><span>Launch!</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a></div>
-                    </div>
-                </article>
-                <article class="project-card" data-tags="Utility In Progress">
-                    <div class="card-image"><img src="https://i.postimg.cc/vHrr0xSW/Gemini-Generated-Image-xgx7wxgx7wxgx7wx.png" alt="待辦事項專案預覽圖" style="object-fit: contain;"></div>
-                    <div class="card-content">
-                        <h2>待辦事項清單</h2>
-                        <p class="description">尚未完工的頁面，還需要時間精力，我的...肝</p>
-                        <div class="card-tags"><span class="tag">Utility</span><span class="tag">In Progress</span></div>
-                        <div class="card-footer"><a href="#" class="cta-btn disabled"><span>施工中</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></a></div>
-                    </div>
-                </article>
+                {% endfor %}
             </div>
         </main>
     </div>
 
+    <button id="theme-toggle-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+
+    <!-- Global Background Animation -->
+    <script src="{{ '/assets/js/antigravity-bg.js' | relative_url }}"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const filterContainer = document.getElementById('filter-container');
-            const projectGrid = document.getElementById('project-grid');
+            const searchInput = document.getElementById('app-search');
+            const filterButtons = document.querySelectorAll('.filter-btn');
             const projectCards = document.querySelectorAll('.project-card');
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
             const body = document.body;
@@ -303,56 +412,59 @@
             // --- Theme Switcher ---
             const applyTheme = (theme) => {
                 if (theme === 'light') {
+                    body.classList.remove('dark-theme');
                     body.classList.add('light-theme');
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('light-theme');
                 } else {
                     body.classList.remove('light-theme');
+                    body.classList.add('dark-theme');
+                    document.documentElement.classList.remove('light-theme');
+                    document.documentElement.classList.add('dark-theme');
                 }
             };
 
-            const toggleTheme = () => {
-                const currentTheme = localStorage.getItem('theme') || 'dark';
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = body.classList.contains('light-theme') ? 'light' : 'dark';
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
+                localStorage.setItem('lab-theme', newTheme);
                 applyTheme(newTheme);
+            });
+
+            // Initial Theme
+            const savedTheme = localStorage.getItem('lab-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+            applyTheme(savedTheme);
+
+            // --- Dynamic Filtering ---
+            const filterApps = () => {
+                const query = searchInput.value.toLowerCase();
+                const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+
+                projectCards.forEach(card => {
+                    const title = card.dataset.title.toLowerCase();
+                    const desc = card.dataset.desc.toLowerCase();
+                    const category = card.dataset.category;
+
+                    const matchesSearch = title.includes(query) || desc.includes(query);
+                    const matchesFilter = activeFilter === 'all' || category === activeFilter;
+
+                    if (matchesSearch && matchesFilter) {
+                        card.style.display = 'flex';
+                        setTimeout(() => card.style.opacity = '1', 10);
+                    } else {
+                        card.style.opacity = '0';
+                        setTimeout(() => card.style.display = 'none', 300);
+                    }
+                });
             };
 
-            themeToggleBtn.addEventListener('click', toggleTheme);
+            searchInput.addEventListener('input', filterApps);
 
-            // Apply saved theme on initial load
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                applyTheme(savedTheme);
-            }
-
-            // --- Project Filter ---
-            const tags = new Set();
-            projectCards.forEach(card => {
-                const cardTags = card.dataset.tags.split(' ');
-                cardTags.forEach(tag => tags.add(tag));
-            });
-
-            let filterButtonsHTML = '<button class="filter-btn active" data-filter="all">All</button>';
-            tags.forEach(tag => {
-                filterButtonsHTML += `<button class="filter-btn" data-filter="${tag}">${tag}</button>`;
-            });
-            filterContainer.innerHTML = filterButtonsHTML;
-
-            const filterButtons = filterContainer.querySelectorAll('.filter-btn');
-
-            filterButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-
-                    const filterValue = button.dataset.filter;
-
-                    projectCards.forEach(card => {
-                        if (filterValue === 'all' || card.dataset.tags.includes(filterValue)) {
-                            card.classList.remove('hide');
-                        } else {
-                            card.classList.add('hide');
-                        }
-                    });
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    filterApps();
                 });
             });
         });
