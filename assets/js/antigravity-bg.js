@@ -150,8 +150,10 @@
       p.x += p.vx;
       p.y += p.vy;
 
+      const sX = window.scrollX || window.pageXOffset;
+      const sY = window.scrollY || window.pageYOffset;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(0.1, p.size), 0, Math.PI * 2);
+      ctx.arc(p.x - sX, p.y - sY, Math.max(0.1, p.size), 0, Math.PI * 2);
       ctx.fillStyle = `rgba(${baseColor}, ${Math.min(1, p.opacity)})`;
       ctx.fill();
     });
