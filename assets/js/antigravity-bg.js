@@ -43,8 +43,8 @@
   }
 
   function updateElements() {
-    // Target the outermost wrapper for consistent alignment
-    const cards = Array.from(document.querySelectorAll('.card-wrapper, .project-card')).map(el => ({ 
+    // Re-targeting the actual clickable area for 1:1 visual match
+    const cards = Array.from(document.querySelectorAll('.post-preview, .project-card')).map(el => ({ 
       el, type: 'card', rect: el.getBoundingClientRect() 
     }));
     const tags = Array.from(document.querySelectorAll('.post-tag, .tag-item')).map(el => ({ 
@@ -107,11 +107,16 @@
         if (currentHovered.type === 'card') {
           // --- Draw unified background highlight ON CANVAS for perfect sync ---
           if (i === 0) { // Only draw once per frame
-            ctx.fillStyle = isDark ? 'rgba(180, 210, 255, 0.08)' : 'rgba(64, 128, 255, 0.05)';
-            const r = 16; // Rounded corners
+            ctx.fillStyle = isDark ? 'rgba(180, 210, 255, 0.12)' : 'rgba(64, 128, 255, 0.08)';
+            const r = 16; 
             const { x, y, w, h } = currentHovered;
             ctx.beginPath();
-            ctx.roundRect(x, y, w, h, r);
+            if (ctx.roundRect) {
+              ctx.roundRect(x, y, w, h, r);
+            } else {
+              // Fallback for older browsers
+              ctx.rect(x, y, w, h);
+            }
             ctx.fill();
           }
 
