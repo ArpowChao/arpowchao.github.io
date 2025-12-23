@@ -271,11 +271,11 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
     border-color: rgba(255, 255, 255, 0.08) !important;
     
     p {
-      color: #909090 !important; /* Muted summary */
+      color: #909090 !important;
     }
     
-    .card-title {
-      color: #ffe082 !important; /* Pale Gold for static titles */
+    h1.card-title {
+      color: #ffe082 !important; /* Forces Pale Gold */
     }
 
     .post-meta {
@@ -285,8 +285,8 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
     &:hover {
       border-color: rgba(255, 202, 40, 0.35) !important; 
       
-      .card-title {
-        color: #ffeb3b !important; /* Bright Yellow on hover */
+      h1.card-title {
+        color: #ffeb3b !important;
       }
     }
   }
