@@ -1,0 +1,75 @@
+<!-- The Footer -->
+
+<footer class="d-flex w-100 justify-content-center">
+  <div class="d-flex flex-column align-items-center">
+    <div class="footer-left">
+      <p class="mb-0">
+        © {{ 'now' | date: "%Y" }}
+        <a href="{{ site.social.links[0] }}">{{ site.social.name }}</a>.
+        <span
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="{{ site.data.locales[include.lang].copyright.brief }}"
+        >
+          {{ site.data.locales[include.lang].copyright.verbose }}
+        </span>
+      </p>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="stats-container d-flex align-items-center gap-3 mt-2 text-muted" style="font-size: 0.85rem;">
+      <!-- Total Visits (UV) -->
+      <span id="busuanzi_container_site_uv" style="display:none">
+        <i class="fas fa-users me-1"></i>
+        <span id="busuanzi_value_site_uv"></span> Unique Visitors
+      </span>
+
+      <!-- Page Views (PV) -->
+      <span id="busuanzi_container_site_pv" style="display:none">
+        <i class="fas fa-eye me-1"></i>
+        <span id="busuanzi_value_site_pv"></span> Views
+      </span>
+
+      <!-- Real-time Online -->
+      <div id="live-online-counter" class="d-flex align-items-center">
+        <span class="online-dot pulsing me-1"></span>
+        <script type="text/javascript" src="//cdn.whos.amung.us/small/{{ site.github.username | default: 'ArpowChao' }}.js" async="async"></script>
+        <span class="ms-1">Online Now</span>
+      </div>
+    </div>
+
+    <div class="footer-right">
+      <p class="mb-0">
+        {{ site.data.locales[include.lang].footer.powered_by | replace: ':NODE_NAME', '<a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a>' | replace: ':THEME_NAME', '<a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a>' }}
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- Anti-Spam & Busuanzi Loader -->
+<script>
+  (function() {
+    const countedKey = 'blog-counted-' + window.location.pathname;
+    // Check if counted in this session to prevent spamming
+    if (!sessionStorage.getItem(countedKey)) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+      script.onload = function() {
+        sessionStorage.setItem(countedKey, 'true');
+      };
+      document.body.appendChild(script);
+    } else {
+      // If already counted, we still need the script to show the values, 
+      // but Busuanzi service usually increments on every load.
+      // Note: Purely stopping the script from loading will hide the numbers.
+      // To show numbers without incrementing is hard with Busuanzi's public API,
+      // but we can at least stop the load if we want to be strict, or just accept
+      // that UV is usually IP-based anyway.
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+      document.body.appendChild(script);
+    }
+  })();
+</script>

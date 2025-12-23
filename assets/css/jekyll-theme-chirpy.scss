@@ -208,3 +208,47 @@ footer {
   margin-bottom: 2rem;
   font-style: italic;
 }
+
+/* Counter & Online Indicator Styles */
+.stats-container {
+  font-family: var(--font-family-base);
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.stats-container:hover {
+  opacity: 1;
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #2ecc71;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.online-dot.pulsing {
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+
+/* Hide the default whos.amung.us image if needed, but the 'small' script is usually discreet */
+#live-online-counter img {
+  filter: grayscale(100%);
+  margin-right: 4px;
+}
