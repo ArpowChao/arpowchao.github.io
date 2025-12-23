@@ -42,6 +42,7 @@
     }
   }
 
+  function updateElements() {
     // Target the outermost wrapper for consistent alignment
     const cards = Array.from(document.querySelectorAll('.card-wrapper, .project-card')).map(el => ({ 
       el, type: 'card', rect: el.getBoundingClientRect() 
@@ -55,7 +56,7 @@
     const navLinks = Array.from(document.querySelectorAll('#custom-nav .nav-link')).map(el => ({ 
       el, type: 'nav', rect: el.getBoundingClientRect() 
     }));
-
+ 
     interactiveElements = [...cards, ...tags, ...updates, ...navLinks].map(item => ({
       type: item.type,
       x: item.rect.left,
