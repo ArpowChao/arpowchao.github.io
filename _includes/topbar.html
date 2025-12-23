@@ -18,7 +18,7 @@
 
     <!-- Theme Switcher & Search Box -->
     <div class="d-flex align-items-center gap-2">
-      <button id="custom-mode-toggle" class="btn btn-link nav-link px-2" aria-label="Toggle Mode" style="border: none; background: transparent;">
+      <button id="mode-toggle" class="btn btn-link nav-link px-2" aria-label="Toggle Mode" style="border: none; background: transparent;">
         <i class="fas fa-sun"></i>
       </button>
 
@@ -41,14 +41,11 @@
 
   <script>
     (function() {
-      const modeToggle = document.getElementById('custom-mode-toggle');
-      if (!modeToggle) return;
-
+      const modeToggle = document.getElementById('mode-toggle');
       const html = document.documentElement;
       const icon = modeToggle.querySelector('i');
 
       function updateIcon(mode) {
-        if (!icon) return;
         if (mode === 'dark') {
           icon.className = 'fas fa-moon';
         } else {
@@ -57,33 +54,19 @@
       }
 
       // Sync icon with current mode on load
-      const initialMode = html.getAttribute('data-mode') || localStorage.getItem('mode') || 'light';
-      updateIcon(initialMode);
+      updateIcon(html.getAttribute('data-mode'));
 
-      modeToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        const currentMode = html.getAttribute('data-mode') || 'light';
+      modeToggle.addEventListener('click', () => {
+        const currentMode = html.getAttribute('data-mode');
         const newMode = currentMode === 'dark' ? 'light' : 'dark';
-        
-        console.log('Switching to mode:', newMode);
         
         html.setAttribute('data-mode', newMode);
         localStorage.setItem('mode', newMode);
         updateIcon(newMode);
         
-        // Signal background animation to update colors
+        // Dispatch event for other listeners (like particles)
         window.dispatchEvent(new Event('storage'));
       });
-
-      // Listen for external mode changes (e.g. from other theme scripts)
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.attributeName === 'data-mode') {
-            updateIcon(html.getAttribute('data-mode'));
-          }
-        });
-      });
-      observer.observe(html, { attributes: true });
     })();
   </script>
 </header>
