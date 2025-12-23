@@ -161,18 +161,17 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 .post-preview {
   border: none !important;
   border-bottom: 1px solid var(--border-color) !important;
-  padding: 3rem 2rem !important; /* Added side padding for cleaner container */
+  padding: 3rem 1.5rem !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  border-radius: 12px !important;
-  margin: 0 -1rem; /* Offset padding for alignment */
+  transition: transform 0.4s ease, background-color 0.4s ease;
+  border-radius: 8px !important;
+  position: relative;
 }
 
 .post-preview:hover {
-  transform: translateY(-5px);
-  background-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03) !important;
+  transform: translateX(8px); /* Subtle slide forward */
+  background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.02) !important;
 }
 
 .post-preview .post-title {

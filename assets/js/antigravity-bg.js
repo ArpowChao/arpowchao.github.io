@@ -97,16 +97,12 @@
         p.opacity = p.maxOpacity + 0.3;
         
         if (hoveredEl.type === 'card') {
-          // --- Organic Clustering instead of rigid box ---
-          const angle = (time * 0.5) + (i * 0.1);
-          const margin = 10;
-          // Particles "flow" around the card's boundary
-          targetX = hoveredEl.x + (i * 137 % hoveredEl.w);
-          targetY = (i % 2 === 0) ? hoveredEl.y - margin : hoveredEl.y + hoveredEl.h + margin;
-          
-          // Add some slight wandering
-          targetX += Math.sin(time + i) * 15;
-          targetY += Math.cos(time + i) * 5;
+          // --- Orbital Swirl instead of rigid box ---
+          const angle = (time * 0.4) + (i * 0.1);
+          const radius = Math.min(hoveredEl.w, hoveredEl.h) * 0.35;
+          targetX = hoveredEl.centerX + Math.cos(angle) * (radius + Math.sin(time + i) * 40);
+          targetY = hoveredEl.centerY + Math.sin(angle) * (radius + Math.cos(time + i) * 40);
+          p.opacity = p.maxOpacity + 0.2;
         } else if (hoveredEl.type === 'tag') {
           const angle = (time * 2) + (i * 0.5);
           targetX = hoveredEl.centerX + Math.cos(angle) * (hoveredEl.w / 2 + 10);
