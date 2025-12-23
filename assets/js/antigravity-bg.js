@@ -107,7 +107,7 @@
         if (currentHovered.type === 'card') {
           // --- Draw unified background highlight ON CANVAS for perfect sync ---
           if (i === 0) { // Only draw once per frame
-            ctx.fillStyle = isDark ? 'rgba(180, 210, 255, 0.12)' : 'rgba(64, 128, 255, 0.08)';
+            ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(64, 128, 255, 0.08)';
             const r = 16; 
             const { x, y, w, h } = currentHovered;
             ctx.beginPath();

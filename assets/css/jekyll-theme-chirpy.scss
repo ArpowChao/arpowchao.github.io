@@ -248,6 +248,47 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   opacity: 0.8;
 }
 
+/* 
+   DARK MODE REFINEMENTS 
+   Ensure text is readable and interactive elements pop against dark background.
+*/
+[data-mode='dark'] {
+  --heading-color: #f0f0f0;
+  --text-color: #d0d0d0;
+  --text-muted-color: #a0a0a0;
+  --bg-color-rgb: 27, 27, 30;
+  --border-color: rgba(255, 255, 255, 0.1);
+  
+  .post-preview {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    
+    p {
+      color: #909090 !important; /* Lighter summary text */
+    }
+    
+    .card-title {
+      color: var(--heading-color) !important;
+    }
+
+    .post-meta {
+      color: #777777 !important;
+    }
+
+    &:hover {
+      border-color: rgba(64, 128, 255, 0.4) !important;
+      
+      .card-title {
+        color: #60a0ff !important;
+      }
+    }
+  }
+
+  /* Footer meta adjustment */
+  .stats-container {
+    color: #888 !important;
+  }
+}
+
 /* Search Bar Aesthetics */
 #search-wrapper {
   transition: all 0.3s ease;
@@ -299,7 +340,13 @@ html, body {
 }
 
 [data-mode='dark'] #topbar-wrapper {
-  background: rgba(27, 27, 30, 0.65) !important;
+  background: rgba(27, 27, 30, 0.75) !important; /* Slightly more opaque for better legibility */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+[data-mode='dark'] #search-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Ensure footer is centered */
