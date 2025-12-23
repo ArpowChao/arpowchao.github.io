@@ -158,31 +158,33 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 /* THE "ONE BOX" PRINCIPLE: Force every card layer to be transparent except the link */
-article.card-wrapper, 
-.card, 
-.card-body,
-.row.g-0,
-[class*='col-'] {
+#post-list article,
+#post-list .card, 
+#post-list .card-body,
+#post-list .row,
+#post-list [class*='col-'] {
   background: transparent !important;
   background-color: transparent !important;
   box-shadow: none !important;
   border: none !important;
-  /* Removed aggressive margin/padding reset to allow layout flexibility */
 }
 
 article.card-wrapper {
   margin-bottom: 2.5rem !important; /* Proper spacing between cards */
+  display: block !important;
+  background: transparent !important;
 }
 
 .post-preview {
   display: block !important;
-  padding: 2rem !important;
+  padding: 2.5rem 2.2rem !important;
   border-radius: 12px !important;
-  border: 1px solid rgba(var(--border-color, 0, 0, 0), 0.05) !important;
+  border: 1px solid rgba(var(--border-color), 0.1) !important;
   position: relative;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease;
   text-decoration: none !important;
   overflow: visible !important;
+  background-color: transparent !important;
 }
 
 .post-preview:hover {
