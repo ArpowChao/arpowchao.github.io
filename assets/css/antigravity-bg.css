@@ -10,12 +10,10 @@
   display: block;
 }
 
-/* 確保主題背景透明，讓動畫透出來 */
 body, 
 #main-wrapper, 
 #main, 
 .container,
-#topbar-wrapper,
 #sidebar,
 #footer,
 .post-navigation {

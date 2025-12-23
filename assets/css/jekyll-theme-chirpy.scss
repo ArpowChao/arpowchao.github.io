@@ -243,6 +243,18 @@ html, body {
   height: 100%;
 }
 
+/* Glassmorphism Header - Background color present but letting particles through */
+#topbar-wrapper {
+  background: rgba(var(--bg-color-rgb, 255, 255, 255), 0.7) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid rgba(var(--text-color-rgb, 128, 128, 128), 0.08) !important;
+}
+
+[data-mode='dark'] #topbar-wrapper {
+  background: rgba(27, 27, 30, 0.7) !important; /* Dark theme translucent */
+}
+
 /* Ensure footer is centered */
 footer {
   border-top: 1px solid var(--border-color);
