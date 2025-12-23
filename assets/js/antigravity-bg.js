@@ -97,12 +97,28 @@
         p.opacity = p.maxOpacity + 0.3;
         
         if (hoveredEl.type === 'card') {
-          // --- Orbital Swirl instead of rigid box ---
-          const angle = (time * 0.4) + (i * 0.1);
-          const radius = Math.min(hoveredEl.w, hoveredEl.h) * 0.35;
-          targetX = hoveredEl.centerX + Math.cos(angle) * (radius + Math.sin(time + i) * 40);
-          targetY = hoveredEl.centerY + Math.sin(angle) * (radius + Math.cos(time + i) * 40);
-          p.opacity = p.maxOpacity + 0.2;
+          // --- Flowing Square Path instead of rigid box or circle ---
+          const perimeter = 2 * (hoveredEl.w + hoveredEl.h);
+          const speed = 0.0015;
+          const progress = ( (time * perimeter * speed) + (i * 0.05 * perimeter) ) % perimeter;
+          
+          let tx, ty;
+          if (progress < hoveredEl.w) {
+            tx = hoveredEl.x + progress; ty = hoveredEl.y;
+          } else if (progress < hoveredEl.w + hoveredEl.h) {
+            tx = hoveredEl.x + hoveredEl.w; ty = hoveredEl.y + (progress - hoveredEl.w);
+          } else if (progress < 2 * hoveredEl.w + hoveredEl.h) {
+            tx = hoveredEl.x + hoveredEl.w - (progress - (hoveredEl.w + hoveredEl.h)); ty = hoveredEl.y + hoveredEl.h;
+          } else {
+            tx = hoveredEl.x; ty = hoveredEl.y + hoveredEl.h - (progress - (2 * hoveredEl.w + hoveredEl.h));
+          }
+          
+          // Add some organic "floating" vibration
+          targetX = tx + Math.sin(time + i) * 5;
+          targetY = ty + Math.cos(time + i) * 5;
+          p.opacity = p.maxOpacity + 0.3;
+          forceMultiplier = 0.45; // Faster snap
+          currentFriction = 0.4;  // Better stability
         } else if (hoveredEl.type === 'tag') {
           const angle = (time * 2) + (i * 0.5);
           targetX = hoveredEl.centerX + Math.cos(angle) * (hoveredEl.w / 2 + 10);

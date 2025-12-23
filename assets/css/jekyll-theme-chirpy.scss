@@ -170,8 +170,7 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 .post-preview:hover {
-  transform: translateX(8px); /* Subtle slide forward */
-  background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.02) !important;
+  background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.03) !important;
 }
 
 .post-preview .post-title {
