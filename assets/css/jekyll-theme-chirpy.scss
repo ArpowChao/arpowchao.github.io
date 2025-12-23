@@ -32,7 +32,7 @@
 */
 html:not([data-mode]), 
 html[data-mode='light'] {
-  --heading-color: #004aad !important; /* Forces Deep Indigo */
+  --heading-color: #b79210 !important;
 }
 
 /* Import Theme Base */
@@ -256,7 +256,7 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 .post-preview:hover .card-title {
-  color: #007bff !important;
+  color: #ffca28 !important; /* Rich Amber on hover */
 }
 
 .post-meta {
