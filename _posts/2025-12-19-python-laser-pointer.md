@@ -145,7 +145,7 @@ _自訂雷射筆與標註方框的樣式。_
 
 您可以從以下連結下載打包好的執行檔 (Windows)：
 
-[**立即下載：Python 螢幕雷射筆 v1.0**](/assets/downloads/laser-pointer-v1.0.zip)
+[**立即下載：Python 螢幕雷射筆 v1.0 (GitHub Release)**](https://github.com/ArpowChao/arpowchao.github.io/releases/latest/download/laser-pointer-v1.0.zip)
 
 ---
 
