@@ -12,7 +12,7 @@
 
 /* 確保主題背景透明，讓動畫透出來 */
 /* 確保基本容器透明，畫布 (z-index: -1) 才能在背景透出來 */
-body, #main-wrapper, #main, .container, #topbar-wrapper {
+body, #main-wrapper, #main, .container {
   background-color: transparent !important;
 }
 

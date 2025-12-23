@@ -66,6 +66,9 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   min-height: 100vh;
   background-color: var(--main-bg) !important;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-top: 65px; /* Offset for fixed topbar */
 }
 
 #main-wrapper > .container {
@@ -76,15 +79,18 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 #topbar-wrapper {
-  background-color: var(--main-bg);
-  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+  backdrop-filter: blur(12px); /* Glassmorphism blur */
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   width: 100% !important;
-  position: sticky;
+  position: fixed;
   top: 0;
   z-index: 1030;
-  height: 65px; /* Fixed height is critical for stability */
+  height: 65px;
   display: flex !important;
   align-items: center;
+  transition: background-color 0.3s ease;
 }
 
 
