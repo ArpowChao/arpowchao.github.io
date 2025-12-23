@@ -62,7 +62,9 @@
   }
 
   function draw() {
+    updateElements(); // Dynamic update every frame for perfect sync
     ctx.clearRect(0, 0, width, height);
+
     const mode = document.documentElement.getAttribute('data-mode') || 
                  (document.body.classList.contains('light-theme') ? 'light' : 'dark');
     const isDark = mode !== 'light';
@@ -156,7 +158,7 @@
     requestAnimationFrame(draw);
   }
 
-  setInterval(updateElements, 4000);
+  // setInterval(updateElements, 4000); // No longer needed as we update in draw()
   window.addEventListener('resize', init);
   window.addEventListener('scroll', updateElements); // Keep positions synchronized
   window.addEventListener('mousemove', e => {

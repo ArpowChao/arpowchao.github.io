@@ -157,34 +157,33 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   background-color: #f8f9fa;
 }
 
-/* Unified Card Highlight - Destroying the "Double Box" */
-.post-preview, 
-.post-preview *, 
-.card, 
-.card-wrapper, 
-.card-body {
+/* Unified Card Highlight - DESTROYING THE DOUBLE BOX FOR GOOD */
+article.card-wrapper,
+.card,
+.card-body,
+.post-preview,
+.post-preview * {
   background-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
-  outline: none !important;
+  margin: 0 !important;
+  padding: 0;
 }
 
 .post-preview {
-  display: flex !important;
-  flex-direction: column;
+  display: block !important;
   padding: 2.5rem 2rem !important;
-  margin-bottom: 1rem;
+  margin: 1.5rem 0 !important; /* Spacing between cards */
   border-radius: 12px !important;
-  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: background-color 0.3s ease;
   border-bottom: 1px solid var(--border-color) !important;
   position: relative;
-  overflow: visible !important; /* Allow particles to show around edges */
+  overflow: visible !important;
 }
 
-/* The ONLY element allowed to have a background color on hover */
 .post-preview:hover {
-  background-color: rgba(var(--text-color-rgb, 100, 149, 237), 0.06) !important;
+  background-color: rgba(64, 128, 255, 0.06) !important;
 }
 
 [data-mode='dark'] .post-preview:hover {
