@@ -1,10 +1,10 @@
 ---
 layout: post
-title: "Python 螢幕雷射筆工具 | Python Screen Laser Pointer Tool (PyQt6 + Win32API)"
+title: "Python Screen Laser Pointer Tool (PyQt6 + Win32API)"
 date: 2025-12-19 16:30:00 +0800
 categories: [Programming, Python]
 tags: [python, pyqt6, desktop-app]
-description: 一個使用 Python 與 PyQt6 開發的桌面螢幕繪圖工具，支援雷射筆軌跡與即時標註。 | A desktop screen drawing tool developed with Python and PyQt6, supporting laser pointer trails and real-time annotations.
+description: A desktop screen drawing tool developed with Python and PyQt6, supporting laser pointer trails and real-time annotations.
 ---
 
 這個專案是一個輕量級的桌面輔助工具，主要功能是在螢幕上繪製「雷射筆」軌跡與幾何圖形（方框、圓形），適合線上教學或簡報時使用。
