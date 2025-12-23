@@ -97,13 +97,16 @@
         p.opacity = p.maxOpacity + 0.3;
         
         if (hoveredEl.type === 'card') {
-          const seed = i % 4;
-          const m = 3;
-          const rand = (i * 137 % 100) / 100;
-          if (seed === 0) { targetX = hoveredEl.x + rand * hoveredEl.w; targetY = hoveredEl.y - m; }
-          else if (seed === 1) { targetX = hoveredEl.x + rand * hoveredEl.w; targetY = hoveredEl.y + hoveredEl.h + m; }
-          else if (seed === 2) { targetX = hoveredEl.x - m; targetY = hoveredEl.y + rand * hoveredEl.h; }
-          else { targetX = hoveredEl.x + hoveredEl.w + m; targetY = hoveredEl.y + rand * hoveredEl.h; }
+          // --- Organic Clustering instead of rigid box ---
+          const angle = (time * 0.5) + (i * 0.1);
+          const margin = 10;
+          // Particles "flow" around the card's boundary
+          targetX = hoveredEl.x + (i * 137 % hoveredEl.w);
+          targetY = (i % 2 === 0) ? hoveredEl.y - margin : hoveredEl.y + hoveredEl.h + margin;
+          
+          // Add some slight wandering
+          targetX += Math.sin(time + i) * 15;
+          targetY += Math.cos(time + i) * 5;
         } else if (hoveredEl.type === 'tag') {
           const angle = (time * 2) + (i * 0.5);
           targetX = hoveredEl.centerX + Math.cos(angle) * (hoveredEl.w / 2 + 10);
@@ -146,6 +149,7 @@
 
   setInterval(updateElements, 4000);
   window.addEventListener('resize', init);
+  window.addEventListener('scroll', updateElements); // Keep positions synchronized
   window.addEventListener('mousemove', e => {
     mouse.x = e.clientX + (window.scrollX || window.pageXOffset);
     mouse.y = e.clientY + (window.scrollY || window.pageYOffset);
