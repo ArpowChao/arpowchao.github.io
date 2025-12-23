@@ -106,11 +106,13 @@ for i, screen in enumerate(screens):
 ### 1. 系統列選單 (System Tray)
 
 ![Tray Menu](/assets/img/posts/laser-pointer/tray_menu.png)
+
 _透過系統列選單，可以快速開關功能、進入設定頁面或退出程式。_
 
 ### 2. 一般設定 (General Settings)
 
 ![General Settings](/assets/img/posts/laser-pointer/settings_general.png)
+
 _在這裡可以調整更新率 (FPS)、平滑度以及預定義的快捷鍵。_
 
 - **FPS**: 支援高達 240 FPS，確保軌跡極度流暢。
@@ -120,6 +122,7 @@ _在這裡可以調整更新率 (FPS)、平滑度以及預定義的快捷鍵。_
 ### 3. 視覺效果設定 (Visual Settings)
 
 ![Visual Settings](/assets/img/posts/laser-pointer/settings_visuals.png)
+
 _自訂雷射筆與標註方框的樣式。_
 
 - **Cursor Style**: 提供不同的鼠標樣式（如點狀、十字等）。
