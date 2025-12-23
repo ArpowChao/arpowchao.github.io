@@ -50,17 +50,14 @@
       el, type: 'nav', rect: el.getBoundingClientRect() 
     }));
 
-    const scrollX = window.scrollX || window.pageXOffset;
-    const scrollY = window.scrollY || window.pageYOffset;
-
     interactiveElements = [...cards, ...tags, ...updates, ...navLinks].map(item => ({
       type: item.type,
-      x: item.rect.left + scrollX,
-      y: item.rect.top + scrollY,
+      x: item.rect.left,
+      y: item.rect.top,
       w: item.rect.width,
       h: item.rect.height,
-      centerX: item.rect.left + scrollX + item.rect.width / 2,
-      centerY: item.rect.top + scrollY + item.rect.height / 2
+      centerX: item.rect.left + item.rect.width / 2,
+      centerY: item.rect.top + item.rect.height / 2
     }));
   }
 
@@ -150,10 +147,8 @@
       p.x += p.vx;
       p.y += p.vy;
 
-      const sX = window.scrollX || window.pageXOffset;
-      const sY = window.scrollY || window.pageYOffset;
       ctx.beginPath();
-      ctx.arc(p.x - sX, p.y - sY, Math.max(0.1, p.size), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(0.1, p.size), 0, Math.PI * 2);
       ctx.fillStyle = `rgba(${baseColor}, ${Math.min(1, p.opacity)})`;
       ctx.fill();
     });
@@ -165,8 +160,8 @@
   window.addEventListener('resize', init);
   window.addEventListener('scroll', updateElements); // Keep positions synchronized
   window.addEventListener('mousemove', e => {
-    mouse.x = e.clientX + (window.scrollX || window.pageXOffset);
-    mouse.y = e.clientY + (window.scrollY || window.pageYOffset);
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
   });
 
   init();

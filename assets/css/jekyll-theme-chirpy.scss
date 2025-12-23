@@ -157,8 +157,15 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   background-color: #f8f9fa;
 }
 
-.card-wrapper, .card, .post-preview, .project-card, .card-body {
+/* Post List & Card Refinements - Force Transparency to avoid "Double Box" */
+article.card-wrapper, 
+.card, 
+.post-preview, 
+.project-card, 
+.card-body,
+#post-list article {
   background-color: transparent !important;
+  background: transparent !important;
   box-shadow: none !important;
   border: none !important;
 }
@@ -170,11 +177,11 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   border-radius: 8px !important;
   position: relative;
   overflow: hidden;
-  display: flex !important; /* Ensure it behaves as a container */
+  display: flex !important;
 }
 
 .post-preview:hover {
-  background-color: rgba(120, 160, 255, 0.05) !important; /* Light blue tint for premium feel */
+  background-color: rgba(var(--text-color-rgb, 120, 160, 255), 0.08) !important; 
 }
 
 .post-preview .post-title {
