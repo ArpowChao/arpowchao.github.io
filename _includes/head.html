@@ -120,7 +120,8 @@
       {% capture str %}{{ analytics }}{% endcapture %}
       {% assign platform = str | split: '{' | first %}
       {% if site.analytics[platform].id and site.analytics[platform].id != empty %}
-        {% include analytics/{{ platform }}.html %}
+        {% capture analytics_path %}analytics/{{ platform }}.html{% endcapture %}
+        {% include {{ analytics_path }} %}
       {% endif %}
     {% endfor %}
   {% endif %}
