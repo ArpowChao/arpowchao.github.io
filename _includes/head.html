@@ -127,30 +127,4 @@
   {% endif %}
 
   {% include metadata-hook.html %}
-
-  <!-- Custom CSS Overrides - Forced for Visibility -->
-  <style>
-    /* Article Titles - Light Mode */
-    [data-mode='light'] .post-preview h1.card-title,
-    [data-mode='light'] .post-preview .card-title {
-      color: #004aad !important; /* Deep Indigo */
-    }
-    [data-mode='light'] .post-preview:hover h1.card-title {
-      color: #007bff !important; /* Brighter blue on hover */
-    }
-
-    /* Article Titles - Dark Mode */
-    [data-mode='dark'] .post-preview h1.card-title,
-    [data-mode='dark'] .post-preview .card-title {
-      color: #ffe082 !important; /* Pale Gold */
-    }
-    [data-mode='dark'] .post-preview:hover h1.card-title {
-      color: #ffca28 !important; /* Rich Amber on hover */
-    }
-
-    /* Summary Contrast Fix */
-    [data-mode='dark'] .post-preview p {
-      color: #909090 !important;
-    }
-  </style>
 </head>

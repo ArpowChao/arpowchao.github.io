@@ -7,10 +7,12 @@
 :root {
   --main-bg: #ffffff;
   --text-color: #000000;
-  --heading-color: #000000;
+  --heading-color: #b79210;
+  --nav-link-color: #000000; /* Dedicated Nav Color */
   --link-color: #000000;
   --link-hover-color: #555555;
-  
+  --bs-body-color: #6a6a6a;
+
   /* Sidebar variables kept for theme compatibility but hidden */
   --sidebar-bg: #ffffff;
   --sidebar-border-color: #eeeeee;
@@ -114,7 +116,7 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 #custom-nav .nav-link {
   font-family: 'Forum', 'Noto Serif TC', serif;
   font-size: 1.1rem;
-  color: var(--heading-color) !important;
+  color: var(--nav-link-color) !important;
   text-decoration: none;
   font-weight: 500;
   padding: 5px 0;
@@ -240,7 +242,7 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   font-size: 1.85rem !important;
   font-weight: 700 !important; /* Bold Titles */
   margin-bottom: 1.2rem;
-  color: #004aad !important; /* Deep Indigo for Light Mode */
+  color: var(--heading-color) !important;
   line-height: 1.3;
 }
 
@@ -261,7 +263,8 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
    Ensure text is readable and interactive elements pop against dark background.
 */
 [data-mode='dark'] {
-  --heading-color: #f0f0f0;
+  --heading-color: #ffe082; /* Pale Gold for Dark Mode Titles */
+  --nav-link-color: #f0f0f0;  /* Dedicated Nav Color */
   --text-color: #d0d0d0;
   --text-muted-color: #a0a0a0;
   --bg-color-rgb: 27, 27, 30;
@@ -275,7 +278,7 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
     }
     
     h1.card-title {
-      color: #ffe082 !important; /* Forces Pale Gold */
+      color: var(--heading-color) !important;
     }
 
     .post-meta {
