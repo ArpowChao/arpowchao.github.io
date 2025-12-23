@@ -123,8 +123,12 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 #custom-nav .nav-link:hover {
-  color: #4080ff !important;
+  color: #ffca28 !important; /* Match dark mode amber */
   transform: translateY(-1px);
+}
+
+[data-mode='light'] #custom-nav .nav-link:hover {
+  color: #4080ff !important;
 }
 
 #custom-nav .nav-link::after {
@@ -134,9 +138,13 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   left: 50%;
   width: 0;
   height: 1.5px;
-  background: #4080ff;
+  background: #ffca28;
   transition: all 0.3s ease;
   transform: translateX(-50%);
+}
+
+[data-mode='light'] #custom-nav .nav-link::after {
+  background: #4080ff;
 }
 
 #custom-nav .nav-link:hover::after {
@@ -275,10 +283,10 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
     }
 
     &:hover {
-      border-color: rgba(64, 128, 255, 0.4) !important;
+      border-color: rgba(255, 202, 40, 0.35) !important; /* Soft Amber highlight */
       
       .card-title {
-        color: #60a0ff !important;
+        color: #ffca28 !important; /* Stand out more than blue */
       }
     }
   }
