@@ -141,4 +141,12 @@ _自訂雷射筆與標註方框的樣式。_
 
 ---
 
+## 下載與安裝 (Download)
+
+您可以從以下連結下載打包好的執行檔 (Windows)：
+
+[**立即下載：Python 螢幕雷射筆 v1.0**](/assets/downloads/laser-pointer-v1.0.zip)
+
+---
+
 這個專案展現了如何結合 PyQt 的繪圖能力與底層 Windows API 來製作實用的桌面工具。
