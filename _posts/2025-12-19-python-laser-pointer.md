@@ -13,9 +13,9 @@ description: 一個使用 Python 與 PyQt6 開發的桌面螢幕繪圖工具，�
 
 專案使用 **Python 3** 撰寫，主要依賴以下技術：
 
-1.  **PyQt6**: 用於建立透明覆蓋視窗 (Overlay) 與圖形繪製。
-2.  **Win32 API (pywin32)**: 用於控制視窗的「滑鼠穿透」屬性，讓使用者在不繪圖時可以正常操作電腦。
-3.  **QPainter**: 處理雷射筆的發光效果與路徑平滑。
+1. **PyQt6**: 用於建立透明覆蓋視窗 (Overlay) 與圖形繪製。
+2. **Win32 API (pywin32)**: 用於控制視窗的「滑鼠穿透」屬性，讓使用者在不繪圖時可以正常操作電腦。
+3. **QPainter**: 處理雷射筆的發光效果與路徑平滑。
 
 ## 程式碼架構解析
 
@@ -95,6 +95,47 @@ for i, screen in enumerate(screens):
 - **雷射筆模式**：滑鼠移動會留下會自動消失的軌跡。
 - **方框模式**：支援繪製矩形、圓角矩形或圓形標註。
 - **系統列常駐**：程式最小化至系統列，不佔用工具列空間。
-- **高度客製化**：透過 `config.json` 可以調整顏色、粗細、快速鍵與平滑度。
+- **高度客製化**：透過 `config.json` 或 UI 設定介面調整顏色、粗細、快速鍵與平滑度。
+
+---
+
+## 使用者介面與設定 (UI & Settings)
+
+這個工具提供了直覺的圖形化設定介面，讓使用者可以根據需求自訂雷射筆與方框的外觀。
+
+### 1. 系統列選單 (System Tray)
+
+![Tray Menu](/assets/img/posts/laser-pointer/tray_menu.png)
+_透過系統列選單，可以快速開關功能、進入設定頁面或退出程式。_
+
+### 2. 一般設定 (General Settings)
+
+![General Settings](/assets/img/posts/laser-pointer/settings_general.png)
+_在這裡可以調整更新率 (FPS)、平滑度以及預定義的快捷鍵。_
+
+- **FPS**: 支援高達 240 FPS，確保軌跡極度流暢。
+- **Smoothing**: 平滑處理滑鼠軌跡，消除抖動。
+- **Ink Duration**: 控制雷射筆留下的軌跡長度。
+
+### 3. 視覺效果設定 (Visual Settings)
+
+![Visual Settings](/assets/img/posts/laser-pointer/settings_visuals.png)
+_自訂雷射筆與標註方框的樣式。_
+
+- **Cursor Style**: 提供不同的鼠標樣式（如點狀、十字等）。
+- **Rainbow Gradient**: 讓軌跡呈現漸層彩虹色，增加視覺動態感。
+- **Glow Strength**: 調整軌跡的外暈亮度，模擬真空管或雷射的效果。
+
+---
+
+## 如何使用 (How to Use)
+
+1. **啟動**: 執行 `main.py` 或打包好的 `.exe`。
+2. **繪製**:
+   - 按住 `Alt` (預設) 並移動滑鼠：繪製**雷射筆軌跡**。
+   - 按住 `Ctrl` (預設) 並拖曳：繪製**方框標註**。
+3. **清除**: 軌跡會依據設定時間自動消失，無需手動清除。
+
+---
 
 這個專案展現了如何結合 PyQt 的繪圖能力與底層 Windows API 來製作實用的桌面工具。
