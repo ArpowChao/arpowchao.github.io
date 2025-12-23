@@ -182,20 +182,10 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   max-width: 800px;
   margin: 0 auto;
 
-  /* Refine Anchor Links (#) */
+  /* Hide Anchor Links (#) */
   h1, h2, h3, h4, h5, h6 {
     .anchorjs-link {
-      font-size: 0.8em !important;
-      color: #ccc !important;
-      margin-left: 0.5rem;
-      vertical-align: middle;
-      text-decoration: none !important;
-      opacity: 0.3;
-      transition: opacity 0.2s ease;
-    }
-
-    &:hover .anchorjs-link {
-      opacity: 1;
+      display: none !important;
     }
   }
 }
