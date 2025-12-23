@@ -80,6 +80,9 @@
     });
 
     particles.forEach((p, i) => {
+      // Find house element for this particle's neighbors
+      let currentHovered = hoveredEl;
+      
       const dxMouse = mouse.x - p.x;
       const dyMouse = mouse.y - p.y;
       const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
@@ -89,47 +92,61 @@
       let forceMultiplier = 0.003; 
       let currentFriction = p.friction;
 
-      if (hoveredEl) {
-        // --- 超強吸引力 + 高阻尼 = 瞬間到位無震盪 ---
+      if (currentHovered) {
         forceMultiplier = 0.35; 
         currentFriction = 0.45; 
         p.opacity = p.maxOpacity + 0.3;
         
-        if (hoveredEl.type === 'card') {
-          // --- Flowing Square Path instead of rigid box or circle ---
-          const perimeter = 2 * (hoveredEl.w + hoveredEl.h);
+        if (currentHovered.type === 'card') {
+          // --- Draw unified background highlight ON CANVAS for perfect sync ---
+          if (i === 0) { // Only draw once per frame
+            ctx.fillStyle = isDark ? 'rgba(180, 210, 255, 0.08)' : 'rgba(64, 128, 255, 0.06)';
+            const r = 12; // Matches CSS border-radius
+            const { x, y, w, h } = currentHovered;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // --- Flowing Square Path ---
+          const perimeter = 2 * (currentHovered.w + currentHovered.h);
           const speed = 0.0015;
           const progress = ( (time * perimeter * speed) + (i * 0.05 * perimeter) ) % perimeter;
           
           let tx, ty;
-          if (progress < hoveredEl.w) {
-            tx = hoveredEl.x + progress; ty = hoveredEl.y;
-          } else if (progress < hoveredEl.w + hoveredEl.h) {
-            tx = hoveredEl.x + hoveredEl.w; ty = hoveredEl.y + (progress - hoveredEl.w);
-          } else if (progress < 2 * hoveredEl.w + hoveredEl.h) {
-            tx = hoveredEl.x + hoveredEl.w - (progress - (hoveredEl.w + hoveredEl.h)); ty = hoveredEl.y + hoveredEl.h;
+          if (progress < currentHovered.w) {
+            tx = currentHovered.x + progress; ty = currentHovered.y;
+          } else if (progress < currentHovered.w + currentHovered.h) {
+            tx = currentHovered.x + currentHovered.w; ty = currentHovered.y + (progress - currentHovered.w);
+          } else if (progress < 2 * currentHovered.w + currentHovered.h) {
+            tx = currentHovered.x + currentHovered.w - (progress - (currentHovered.w + currentHovered.h)); ty = currentHovered.y + currentHovered.h;
           } else {
-            tx = hoveredEl.x; ty = hoveredEl.y + hoveredEl.h - (progress - (2 * hoveredEl.w + hoveredEl.h));
+            tx = currentHovered.x; ty = currentHovered.y + currentHovered.h - (progress - (2 * currentHovered.w + currentHovered.h));
           }
           
-          // Add some organic "floating" vibration
           targetX = tx + Math.sin(time + i) * 5;
           targetY = ty + Math.cos(time + i) * 5;
           p.opacity = p.maxOpacity + 0.3;
-          forceMultiplier = 0.45; // Faster snap
-          currentFriction = 0.4;  // Better stability
-        } else if (hoveredEl.type === 'tag') {
+          forceMultiplier = 0.45;
+          currentFriction = 0.4;
+        } else if (currentHovered.type === 'tag') {
           const angle = (time * 2) + (i * 0.5);
-          targetX = hoveredEl.centerX + Math.cos(angle) * (hoveredEl.w / 2 + 10);
-          targetY = hoveredEl.centerY + Math.sin(angle) * (hoveredEl.h / 2 + 10);
-        } else if (hoveredEl.type === 'update') {
-          targetX = hoveredEl.x - 12;
-          targetY = hoveredEl.y + (i * 17 % hoveredEl.h);
-        } else if (hoveredEl.type === 'nav') {
-          targetX = hoveredEl.x + (i * 59 % hoveredEl.w);
-          targetY = hoveredEl.y + hoveredEl.h + 2;
+          targetX = currentHovered.centerX + Math.cos(angle) * (currentHovered.w / 2 + 10);
+          targetY = currentHovered.centerY + Math.sin(angle) * (currentHovered.h / 2 + 10);
+        } else if (currentHovered.type === 'update') {
+          targetX = currentHovered.x - 12;
+          targetY = currentHovered.y + (i * 17 % currentHovered.h);
+        } else if (currentHovered.type === 'nav') {
+          targetX = currentHovered.x + (i * 59 % currentHovered.w);
+          targetY = currentHovered.y + currentHovered.h + 2;
         }
       } else if (distMouse < 220) {
+        // ... existence logic ...
         const f = (220 - distMouse) / 220;
         p.size = p.baseSize * (1 + Math.sin(distMouse * 0.06 - time * 3) * 1.5 * f);
         p.opacity = p.maxOpacity + f * 0.4;
