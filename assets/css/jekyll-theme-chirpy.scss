@@ -157,31 +157,38 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   background-color: #f8f9fa;
 }
 
-/* Post List & Card Refinements - Force Transparency to avoid "Double Box" */
-article.card-wrapper, 
-.card, 
+/* Unified Card Highlight - Destroying the "Double Box" */
 .post-preview, 
-.project-card, 
-.card-body,
-#post-list article {
+.post-preview *, 
+.card, 
+.card-wrapper, 
+.card-body {
   background-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
+  outline: none !important;
 }
 
 .post-preview {
-  border-bottom: 1px solid var(--border-color) !important;
-  padding: 3rem 1.5rem !important;
-  transition: background-color 0.4s ease;
-  border-radius: 8px !important;
-  position: relative;
-  overflow: hidden;
   display: flex !important;
+  flex-direction: column;
+  padding: 2.5rem 2rem !important;
+  margin-bottom: 1rem;
+  border-radius: 12px !important;
+  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-bottom: 1px solid var(--border-color) !important;
+  position: relative;
+  overflow: visible !important; /* Allow particles to show around edges */
 }
 
+/* The ONLY element allowed to have a background color on hover */
 .post-preview:hover {
-  background-color: rgba(var(--text-color-rgb, 120, 160, 255), 0.08) !important; 
+  background-color: rgba(var(--text-color-rgb, 100, 149, 237), 0.06) !important;
+}
+
+[data-mode='dark'] .post-preview:hover {
+  background-color: rgba(180, 210, 255, 0.08) !important;
 }
 
 .post-preview .post-title {
