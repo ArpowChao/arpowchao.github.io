@@ -16,20 +16,57 @@
       <a href="{{ '/apps/' | relative_url }}" class="nav-link">Physics_Labs</a>
     </nav>
 
-    <!-- Search Box (Right Aligned) -->
-    <search id="search" class="align-items-center ms-3 ms-lg-0">
-      <i class="fas fa-search fa-fw"></i>
-      <input
-        class="form-control"
-        id="search-input"
-        type="search"
-        aria-label="search"
-        autocomplete="off"
-        placeholder="{{ site.data.locales[include.lang].search.hint | capitalize }}..."
-      >
-    </search>
-    <button type="button" class="btn btn-link text-decoration-none" id="search-cancel">
-      {{- site.data.locales[include.lang].search.cancel -}}
-    </button>
+    <!-- Theme Switcher & Search Box -->
+    <div class="d-flex align-items-center gap-2">
+      <button id="mode-toggle" class="btn btn-link nav-link px-2" aria-label="Toggle Mode" style="border: none; background: transparent;">
+        <i class="fas fa-sun"></i>
+      </button>
+
+      <search id="search" class="align-items-center ms-2">
+        <i class="fas fa-search fa-fw"></i>
+        <input
+          class="form-control"
+          id="search-input"
+          type="search"
+          aria-label="search"
+          autocomplete="off"
+          placeholder="{{ site.data.locales[include.lang].search.hint | capitalize }}..."
+        >
+      </search>
+      <button type="button" class="btn btn-link text-decoration-none d-none" id="search-cancel">
+        {{- site.data.locales[include.lang].search.cancel -}}
+      </button>
+    </div>
   </div>
+
+  <script>
+    (function() {
+      const modeToggle = document.getElementById('mode-toggle');
+      const html = document.documentElement;
+      const icon = modeToggle.querySelector('i');
+
+      function updateIcon(mode) {
+        if (mode === 'dark') {
+          icon.className = 'fas fa-moon';
+        } else {
+          icon.className = 'fas fa-sun';
+        }
+      }
+
+      // Sync icon with current mode on load
+      updateIcon(html.getAttribute('data-mode'));
+
+      modeToggle.addEventListener('click', () => {
+        const currentMode = html.getAttribute('data-mode');
+        const newMode = currentMode === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-mode', newMode);
+        localStorage.setItem('mode', newMode);
+        updateIcon(newMode);
+        
+        // Dispatch event for other listeners (like particles)
+        window.dispatchEvent(new Event('storage'));
+      });
+    })();
+  </script>
 </header>
