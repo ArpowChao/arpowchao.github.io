@@ -157,37 +157,38 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   background-color: #f8f9fa;
 }
 
-/* Unified Card Highlight - DESTROYING THE DOUBLE BOX FOR GOOD */
-article.card-wrapper,
-.card,
+/* THE "ONE BOX" PRINCIPLE: Force every card layer to be transparent except the link */
+article.card-wrapper, 
+.card, 
 .card-body,
-.post-preview,
-.post-preview * {
-  background-color: transparent !important;
+.row.g-0,
+[class*='col-'] {
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
   border: none !important;
   margin: 0 !important;
-  padding: 0;
+  padding: 0 !important;
 }
 
 .post-preview {
   display: block !important;
+  margin: 2rem 0 !important;
   padding: 2.5rem 2rem !important;
-  margin: 1.5rem 0 !important; /* Spacing between cards */
   border-radius: 12px !important;
-  transition: background-color 0.3s ease;
-  border-bottom: 1px solid var(--border-color) !important;
+  border: 1px solid rgba(var(--border-color), 0.1) !important;
   position: relative;
+  transition: background-color 0.2s ease; /* Fast transition to match JS */
+  text-decoration: none !important;
   overflow: visible !important;
 }
 
 .post-preview:hover {
-  background-color: rgba(64, 128, 255, 0.06) !important;
+  background-color: rgba(64, 128, 255, 0.08) !important;
 }
 
 [data-mode='dark'] .post-preview:hover {
-  background-color: rgba(180, 210, 255, 0.08) !important;
+  background-color: rgba(180, 210, 255, 0.1) !important;
 }
 
 .post-preview .post-title {
