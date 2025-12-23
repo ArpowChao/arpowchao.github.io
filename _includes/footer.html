@@ -33,7 +33,7 @@
       <!-- Real-time Online -->
       <div id="live-online-counter" class="d-flex align-items-center">
         <span class="online-dot pulsing me-1"></span>
-        <script type="text/javascript" src="//cdn.whos.amung.us/small/{{ site.github.username | default: 'ArpowChao' }}.js" async="async"></script>
+        <script type="text/javascript" src="https://cdn.whos.amung.us/small/{{ site.github.username | default: 'ArpowChao' }}.js" async="async"></script>
         <span class="ms-1">Online Now</span>
       </div>
     </div>
@@ -54,7 +54,7 @@
     if (!sessionStorage.getItem(countedKey)) {
       const script = document.createElement('script');
       script.async = true;
-      script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+      script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
       script.onload = function() {
         sessionStorage.setItem(countedKey, 'true');
       };
@@ -68,7 +68,7 @@
       // that UV is usually IP-based anyway.
       const script = document.createElement('script');
       script.async = true;
-      script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+      script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
       document.body.appendChild(script);
     }
   })();
