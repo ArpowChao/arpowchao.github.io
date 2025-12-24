@@ -344,6 +344,28 @@ layout: compress
                     box-shadow: 0 4px 12px var(--primary-glow);
                 }
             </style>
+
+            <div class="sidebar-divider" style="height: 1px; background: var(--glass-border); margin: 2rem 0;"></div>
+
+            <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; color: var(--text-secondary);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                更新日誌
+            </h2>
+            <div class="log-list" style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                <!-- Custom Scrollbar Style for Webkit -->
+                <style>
+                    .log-list::-webkit-scrollbar { width: 4px; }
+                    .log-list::-webkit-scrollbar-track { background: transparent; }
+                    .log-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+                    .log-list::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+                </style>
+                {% for log in site.data.apps.changelog %}
+                <div class="log-item" style="margin-bottom: 1.5rem; padding-left: 1rem; border-left: 2px solid var(--glass-border);">
+                    <p class="log-date" style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; margin-bottom: 0.2rem;">{{ log.date }}</p>
+                    <p class="log-entry" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">{{ log.entry }}</p>
+                </div>
+                {% endfor %}
+            </div>
         </aside>
 
         <main id="content-area">
