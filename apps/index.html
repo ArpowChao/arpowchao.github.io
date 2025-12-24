@@ -31,7 +31,7 @@ layout: compress
         html.light-theme, body.light-theme {
             --bg-color: #f5f7fa;
             --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-border: rgba(0, 0, 0, 0.05); /* 淺色模式邊框加深一點 */
             --primary-color: #0070f3;
             --primary-glow: rgba(0, 112, 243, 0.2);
             --text-primary: #111111;
@@ -310,9 +310,21 @@ layout: compress
 
         #theme-toggle-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
 
+        /* Icon Toggling Logic */
+        .sun { display: none; }
+        .moon { display: block; }
+
+        /* Light Mode: Show Moon (to go Dark), Hide Sun */
+        html.light-theme .sun { display: none; }
+        html.light-theme .moon { display: block; }
+        
+        /* Dark Mode: Show Sun (to go Light), Hide Moon */
+        html.dark-theme .sun { display: block; }
+        html.dark-theme .moon { display: none; }
+
         @media (max-width: 1024px) {
             .main-layout { grid-template-columns: 1fr; }
-            #changelog-sidebar { position: static; }
+            #category-sidebar { position: static; }
             header h1 { font-size: 3rem; }
         }
     </style>
@@ -432,8 +444,10 @@ layout: compress
         </main>
     </div>
 
+    <!-- Theme Toggle Button with Both Icons -->
     <button id="theme-toggle-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
     </button>
 
     <!-- Global Background Animation -->
@@ -447,7 +461,8 @@ layout: compress
             const navItems = document.querySelectorAll('.nav-item');
             const sections = document.querySelectorAll('.category-section');
 
-            // --- Theme Switcher (Sync with Main Site) ---
+            /* --- Theme Switcher (Sync with Main Site) --- */
+            /* Using localStorage 'mode' to stay consistent with Chirpy theme */
             const applyTheme = (theme) => {
                 if (theme === 'light') {
                     body.classList.remove('dark-theme');
@@ -465,20 +480,20 @@ layout: compress
             themeToggleBtn.addEventListener('click', () => {
                 const currentTheme = body.classList.contains('light-theme') ? 'light' : 'dark';
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('mode', newTheme); // Sync key with main site
+                localStorage.setItem('mode', newTheme);
                 applyTheme(newTheme);
             });
 
-            // Initial Theme Load
-            // Prioritize localStorage 'mode' (from main site), then system preference
+            /* Initial Theme Load */
+            /* Check localStorage -> System Preference */
             const savedTheme = localStorage.getItem('mode') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
             applyTheme(savedTheme);
 
-            // --- Sidebar Smooth Scroll & Active State ---
+            /* --- Sidebar Smooth Scroll & Active State --- */
             navItems.forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
-                    // Update Active Class
+                    /* Update Active Class */
                     navItems.forEach(n => n.classList.remove('active'));
                     item.classList.add('active');
 
@@ -489,7 +504,7 @@ layout: compress
                     } else {
                         const section = document.getElementById(targetId);
                         if (section) {
-                            const offset = 100; // Header height buffer
+                            const offset = 100; /* Header height buffer */
                             const bodyRect = document.body.getBoundingClientRect().top;
                             const elementRect = section.getBoundingClientRect().top;
                             const elementPosition = elementRect - bodyRect;
@@ -504,7 +519,7 @@ layout: compress
                 });
             });
 
-            // --- Real-time Search with Section Hiding ---
+            /* --- Real-time Search with Section Hiding --- */
             const filterApps = () => {
                 const query = searchInput.value.toLowerCase().trim();
                 
@@ -527,7 +542,7 @@ layout: compress
                         }
                     });
 
-                    // Hide entire section if no cards match
+                    /* Hide entire section if no cards match */
                     if (hasVisibleCards) {
                         section.style.display = 'block';
                     } else {
