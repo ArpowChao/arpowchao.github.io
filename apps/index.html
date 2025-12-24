@@ -60,9 +60,9 @@ layout: compress
 
         .main-layout {
             display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 3rem;
-            max-width: 1400px;
+            grid-template-columns: 260px 1fr;
+            gap: 2rem;
+            max-width: 1800px;
             margin: 0 auto;
             padding: 4rem 2rem;
         }
@@ -427,12 +427,13 @@ layout: compress
             themeToggleBtn.addEventListener('click', () => {
                 const currentTheme = body.classList.contains('light-theme') ? 'light' : 'dark';
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('lab-theme', newTheme);
+                localStorage.setItem('mode', newTheme);
                 applyTheme(newTheme);
             });
 
             // Initial Theme
-            const savedTheme = localStorage.getItem('lab-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+            // Initial Theme
+            const savedTheme = localStorage.getItem('mode') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
             applyTheme(savedTheme);
 
             // --- Dynamic Filtering ---
