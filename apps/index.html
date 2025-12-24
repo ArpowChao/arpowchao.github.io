@@ -23,6 +23,7 @@ layout: compress
             --primary-glow: rgba(0, 210, 255, 0.3);
             --text-primary: #f0f0f5;
             --text-secondary: #a0a0b0;
+            --btn-text-color: #000000; /* Dark Mode (Cyan bg) -> Black text */
             --radius-lg: 20px;
             --radius-md: 12px;
             --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -36,6 +37,7 @@ layout: compress
             --primary-glow: rgba(0, 112, 243, 0.2);
             --text-primary: #111111;
             --text-secondary: #444455;
+            --btn-text-color: #ffffff; /* Light Mode (Blue bg) -> White text */
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -274,7 +276,7 @@ layout: compress
             width: 100%;
             padding: 1rem;
             background: var(--primary-color);
-            color: #000;
+            color: var(--btn-text-color);
             text-decoration: none;
             font-weight: 700;
             border-radius: var(--radius-md);
@@ -351,7 +353,7 @@ layout: compress
             <style>
                 .nav-item:hover, .nav-item.active {
                     background: var(--primary-color) !important;
-                    color: #000 !important;
+                    color: var(--btn-text-color) !important;
                     transform: translateX(5px);
                     box-shadow: 0 4px 12px var(--primary-glow);
                 }
