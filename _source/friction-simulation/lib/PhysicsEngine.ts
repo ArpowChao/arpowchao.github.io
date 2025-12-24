@@ -209,24 +209,21 @@ export class PhysicsEngine {
     ctx.fillStyle = '#f3f4f6';
     ctx.fillRect(0, 0, this.WIDTH, this.HEIGHT);
 
-    // --- Draw Table ---
+    // --- Draw Table (Batch Render) ---
     ctx.fillStyle = '#3b82f6';
     ctx.strokeStyle = '#2563eb';
     ctx.lineWidth = 0.5;
     
-    // Batch draw? arc() is slow if called thousands of times individually.
-    // Optimization: Path2D?
-    // For < 1000 atoms, individual calls are fine on modern PC/Mobile.
-    // Matrix optimization: use instanced rendering in WebGL. But for 2D Canvas:
-    
+    ctx.beginPath();
     for (let i = 0; i < this.tableCount; i++) {
         const x = this.tableAtoms[i * 2];
         const y = this.tableAtoms[i * 2 + 1];
-        ctx.beginPath();
+        // Move to start of arc to avoid connecting lines
+        ctx.moveTo(x + this.ATOM_RADIUS, y);
         ctx.arc(x, y, this.ATOM_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
     }
+    ctx.fill();
+    ctx.stroke();
     
     // Table Label
     ctx.font = "bold 24px 'Outfit', sans-serif";
@@ -239,30 +236,31 @@ export class PhysicsEngine {
         ctx.fillStyle = '#10b981';
         ctx.strokeStyle = '#059669';
         
-        // Draw only tip atoms at the broken position
         ctx.save();
         ctx.translate(this.brokenTipPosition, 0);
         
+        ctx.beginPath();
         for (let i = 0; i < this.tipAtomIndices.length; i++) {
             const idx = this.tipAtomIndices[i];
             const x = this.blockAtoms[idx * 2];
             const y = this.blockAtoms[idx * 2 + 1];
             
-            ctx.beginPath();
+            ctx.moveTo(x + this.ATOM_RADIUS, y);
             ctx.arc(x, y, this.ATOM_RADIUS, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
         }
+        ctx.fill();
+        ctx.stroke();
         ctx.restore();
     }
 
-    // --- Draw Block ---
+    // --- Draw Block (Batch Render) ---
     ctx.fillStyle = '#10b981';
     ctx.strokeStyle = '#059669';
     
     ctx.save();
     ctx.translate(this.blockPosition, 0);
 
+    ctx.beginPath();
     for (let i = 0; i < this.blockCount; i++) {
         const type = this.blockAtomTypes[i];
         
@@ -272,11 +270,11 @@ export class PhysicsEngine {
         const x = this.blockAtoms[i * 2];
         const y = this.blockAtoms[i * 2 + 1];
         
-        ctx.beginPath();
+        ctx.moveTo(x + this.ATOM_RADIUS, y);
         ctx.arc(x, y, this.ATOM_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
     }
+    ctx.fill();
+    ctx.stroke();
 
     // Block Label
     ctx.font = "bold 32px 'Outfit', sans-serif";
