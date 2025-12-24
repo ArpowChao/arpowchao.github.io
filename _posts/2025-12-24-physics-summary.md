@@ -67,7 +67,7 @@ mermaid: true
 
 ### **物理關係式**
 
-<details>
+<details markdown="1">
   <summary>展開查看：常用物理關係式表</summary>
 
 |  學門  |                                             關係式                                              |                                          代數說明                                           | 說明                                                   |
@@ -183,7 +183,7 @@ SI制單位之間的轉換係數都是1，因此使用SI制可以簡化數學轉
 ## 物質的組成
 {: #composition-of-matter .section-header}
 
-<details>
+<details markdown="1">
   <summary>展開查看：西方物理科學起源</summary>
   
   > 早期在柏拉圖著作就有寫到這個世界是由「三角形」構成
@@ -371,7 +371,7 @@ SI制單位之間的轉換係數都是1，因此使用SI制可以簡化數學轉
   * **實驗**：雷納實驗歸納
     * 透過逆向電壓（截止電壓 $V_s$）觀測電子最大動能 ($K_{\text{max}} = eV_s$)，透過光電流 $I$ 觀測單位時間噴出的電子數。
 
-    <details>
+    <details markdown="1">
   <summary>展開查看：雷納光電效應實驗數據比較表</summary>
 
 | 操縱變因 (變大) |  控制變因   |   截止電壓 $V_s$ (動能)    |         光電流 $I$          | 與古典物理之衝突                             |
