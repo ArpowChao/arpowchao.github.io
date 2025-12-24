@@ -5,6 +5,10 @@
     id="topbar"
     class="d-flex align-items-center justify-content-between px-lg-3 h-100"
   >
+    <!-- Dummy elements to satisfy Chirpy's native scripts (prevents JS crash) -->
+    <button id="sidebar-trigger" class="d-none"></button>
+    <button id="search-trigger" class="d-none"></button>
+
     <!-- Custom Navigation Links -->
     <nav id="custom-nav" class="d-flex align-items-center gap-3">
       <a href="{{ '/' | relative_url }}" class="nav-link">Home</a>
