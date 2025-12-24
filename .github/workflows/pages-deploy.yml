@@ -45,6 +45,18 @@ jobs:
           ruby-version: 3.3
           bundler-cache: true
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Friction Simulation
+        run: |
+          cd _source/friction-simulation
+          npm install
+          npm run build
+          cd ../..
+
       - name: Build site
         run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
         env:
