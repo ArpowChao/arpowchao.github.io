@@ -335,13 +335,13 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   font-family: 'Noto Serif TC', serif;
   font-size: 1.15rem;
   line-height: 1.9;
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: auto;
+  margin: 10px 0;
+}
 
-  h1, h2, h3, h4, h5, h6 {
-    .anchorjs-link {
-      display: none !important;
-    }
+h1, h2, h3, h4, h5, h6 {
+  .anchorjs-link {
+    display: none !important;
   }
 }
 
@@ -460,4 +460,59 @@ footer {
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;
+}
+
+/* Premium Collapsible Styles (HackMD Replacement) */
+details {
+  border: 1px solid rgba(183, 146, 16, 0.2);
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(var(--card-bg-rgb, 255, 255, 255), 0.05);
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+
+  &[open] {
+    padding-bottom: 1rem;
+    border-color: #b79210;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    
+    summary {
+      border-bottom: 1px solid rgba(183, 146, 16, 0.1);
+      margin-bottom: 1rem;
+      color: #b79210;
+    }
+  }
+
+  summary {
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    outline: none;
+    color: var(--text-color);
+    list-style: none; /* Hide default arrow */
+    display: flex;
+    align-items: center;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: '▶';
+      display: inline-block;
+      margin-right: 0.8rem;
+      font-size: 0.8rem;
+      transition: transform 0.3s ease;
+      color: #b79210;
+    }
+
+    &:hover {
+      color: #b79210;
+    }
+  }
+
+  &[open] summary::before {
+    transform: rotate(90deg);
+  }
 }
