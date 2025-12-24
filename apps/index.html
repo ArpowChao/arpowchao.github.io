@@ -319,19 +319,31 @@ layout: compress
 </head>
 <body class="dark-theme">
     <div class="main-layout">
-        <aside id="changelog-sidebar">
-            <h2>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                更新日誌
+        <!-- New Sidebar: Category Navigation -->
+        <aside id="category-sidebar">
+            <h2 style="font-size: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8 8 16.2"/><path d="M7.8 7.8l8.4 8.4"/></svg>
+                快速導航
             </h2>
-            <div class="log-list">
-                {% for log in site.data.apps.changelog %}
-                <div class="log-item">
-                    <p class="log-date">{{ log.date }}</p>
-                    <p class="log-entry">{{ log.entry }}</p>
-                </div>
+            <nav class="nav-menu" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <a href="#all" class="nav-item active" data-target="all" style="display: flex; align-items: center; padding: 0.8rem 1rem; border-radius: 12px; color: var(--text-secondary); text-decoration: none; transition: all 0.3s; background: rgba(255,255,255,0.03);">
+                    <span>全部總覽</span>
+                </a>
+                {% assign categories = site.data.apps.projects | map: 'category' | uniq %}
+                {% for cat in categories %}
+                <a href="#{{ cat }}" class="nav-item" data-target="{{ cat }}" style="display: flex; align-items: center; padding: 0.8rem 1rem; border-radius: 12px; color: var(--text-secondary); text-decoration: none; transition: all 0.3s; background: rgba(255,255,255,0.03);">
+                    <span>{{ cat }}</span>
+                </a>
                 {% endfor %}
-            </div>
+            </nav>
+            <style>
+                .nav-item:hover, .nav-item.active {
+                    background: var(--primary-color) !important;
+                    color: #000 !important;
+                    transform: translateX(5px);
+                    box-shadow: 0 4px 12px var(--primary-glow);
+                }
+            </style>
         </aside>
 
         <main id="content-area">
@@ -351,44 +363,48 @@ layout: compress
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     <input type="text" id="app-search" placeholder="搜尋實驗名稱或描述...">
                 </div>
-                <div class="filter-container" id="filter-container">
-                    <button class="filter-btn active" data-filter="all">全部</button>
-                    {% assign categories = site.data.apps.projects | map: 'category' | uniq %}
-                    {% for cat in categories %}
-                    <button class="filter-btn" data-filter="{{ cat }}">{{ cat }}</button>
-                    {% endfor %}
-                </div>
             </div>
 
-            <div class="project-grid" id="project-grid">
-                {% for p in site.data.apps.projects %}
-                <article class="project-card" data-category="{{ p.category }}" data-title="{{ p.title }}" data-desc="{{ p.description }}">
-                    <div class="card-image">
-                        <img src="{{ p.image | relative_url }}" alt="{{ p.title }} 預覽">
+            <div id="projects-container">
+                <!-- Grouped Sections -->
+                {% assign categories = site.data.apps.projects | map: 'category' | uniq %}
+                {% for cat in categories %}
+                <section class="category-section" id="{{ cat }}" style="margin-bottom: 4rem;">
+                    <h3 class="section-title" style="font-size: 2rem; margin-bottom: 1.5rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                        <span style="opacity: 0.5;">#</span> {{ cat }}
+                    </h3>
+                    <div class="project-grid">
+                        {% assign filtered_projects = site.data.apps.projects | where: "category", cat %}
+                        {% for p in filtered_projects %}
+                        <article class="project-card" data-category="{{ p.category }}" data-title="{{ p.title }}" data-desc="{{ p.description }}">
+                            <div class="card-image">
+                                <img src="{{ p.image | relative_url }}" alt="{{ p.title }} 預覽">
+                            </div>
+                            <div class="card-content">
+                                <h2>{{ p.title }}</h2>
+                                <p class="description">{{ p.description }}</p>
+                                <div class="card-tags">
+                                    {% for tag in p.tags %}
+                                    <span class="tag">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="card-footer">
+                                    <a href="{{ p.url | relative_url }}" class="cta-btn {% if p.disabled %}disabled{% endif %}">
+                                        <span>{% if p.disabled %}施工中{% else %}立即進入{% endif %}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            {% if p.disabled %}
+                                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            {% else %}
+                                            <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+                                            {% endif %}
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                        {% endfor %}
                     </div>
-                    <div class="card-content">
-                        <span class="card-category">{{ p.category }}</span>
-                        <h2>{{ p.title }}</h2>
-                        <p class="description">{{ p.description }}</p>
-                        <div class="card-tags">
-                            {% for tag in p.tags %}
-                            <span class="tag">{{ tag }}</span>
-                            {% endfor %}
-                        </div>
-                        <div class="card-footer">
-                            <a href="{{ p.url | relative_url }}" class="cta-btn {% if p.disabled %}disabled{% endif %}">
-                                <span>{% if p.disabled %}施工中{% else %}立即進入{% endif %}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    {% if p.disabled %}
-                                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                                    {% else %}
-                                    <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
-                                    {% endif %}
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-                </article>
+                </section>
                 {% endfor %}
             </div>
         </main>
