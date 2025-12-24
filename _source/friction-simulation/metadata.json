@@ -1,0 +1,5 @@
+{
+  "name": "Interactive Friction Simulation",
+  "description": "An interactive web application for students to understand friction at a microscopic level. Visualize the transition from static friction to kinetic friction by applying force to an object and observing the results in a real-time graph.",
+  "requestFramePermissions": []
+}
