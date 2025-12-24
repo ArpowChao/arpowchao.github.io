@@ -68,7 +68,7 @@ layout: compress
         }
 
         /* Glassmorphism Sidebar */
-        #changelog-sidebar {
+        #category-sidebar {
             background: var(--glass-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -420,12 +420,12 @@ layout: compress
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('app-search');
-            const filterButtons = document.querySelectorAll('.filter-btn');
-            const projectCards = document.querySelectorAll('.project-card');
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
             const body = document.body;
+            const navItems = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('.category-section');
 
-            // --- Theme Switcher ---
+            // --- Theme Switcher (Sync with Main Site) ---
             const applyTheme = (theme) => {
                 if (theme === 'light') {
                     body.classList.remove('dark-theme');
@@ -443,47 +443,78 @@ layout: compress
             themeToggleBtn.addEventListener('click', () => {
                 const currentTheme = body.classList.contains('light-theme') ? 'light' : 'dark';
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('mode', newTheme);
+                localStorage.setItem('mode', newTheme); // Sync key with main site
                 applyTheme(newTheme);
             });
 
-            // Initial Theme
-            // Initial Theme
+            // Initial Theme Load
+            // Prioritize localStorage 'mode' (from main site), then system preference
             const savedTheme = localStorage.getItem('mode') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
             applyTheme(savedTheme);
 
-            // --- Dynamic Filtering ---
-            const filterApps = () => {
-                const query = searchInput.value.toLowerCase();
-                const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            // --- Sidebar Smooth Scroll & Active State ---
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    // Update Active Class
+                    navItems.forEach(n => n.classList.remove('active'));
+                    item.classList.add('active');
 
-                projectCards.forEach(card => {
-                    const title = card.dataset.title.toLowerCase();
-                    const desc = card.dataset.desc.toLowerCase();
-                    const category = card.dataset.category;
-
-                    const matchesSearch = title.includes(query) || desc.includes(query);
-                    const matchesFilter = activeFilter === 'all' || category === activeFilter;
-
-                    if (matchesSearch && matchesFilter) {
-                        card.style.display = 'flex';
-                        setTimeout(() => card.style.opacity = '1', 10);
+                    const targetId = item.dataset.target;
+                    
+                    if (targetId === 'all') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     } else {
-                        card.style.opacity = '0';
-                        setTimeout(() => card.style.display = 'none', 300);
+                        const section = document.getElementById(targetId);
+                        if (section) {
+                            const offset = 100; // Header height buffer
+                            const bodyRect = document.body.getBoundingClientRect().top;
+                            const elementRect = section.getBoundingClientRect().top;
+                            const elementPosition = elementRect - bodyRect;
+                            const offsetPosition = elementPosition - offset;
+
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: "smooth"
+                            });
+                        }
+                    }
+                });
+            });
+
+            // --- Real-time Search with Section Hiding ---
+            const filterApps = () => {
+                const query = searchInput.value.toLowerCase().trim();
+                
+                sections.forEach(section => {
+                    let hasVisibleCards = false;
+                    const cards = section.querySelectorAll('.project-card');
+                    
+                    cards.forEach(card => {
+                        const title = card.dataset.title.toLowerCase();
+                        const desc = card.dataset.desc.toLowerCase();
+                        const matches = title.includes(query) || desc.includes(query);
+                        
+                        if (matches) {
+                            card.style.display = 'flex';
+                            setTimeout(() => card.style.opacity = '1', 10);
+                            hasVisibleCards = true;
+                        } else {
+                            card.style.opacity = '0';
+                            setTimeout(() => card.style.display = 'none', 300);
+                        }
+                    });
+
+                    // Hide entire section if no cards match
+                    if (hasVisibleCards) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
                     }
                 });
             };
 
             searchInput.addEventListener('input', filterApps);
-
-            filterButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    filterButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    filterApps();
-                });
-            });
         });
     </script>
 </body>
