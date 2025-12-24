@@ -439,3 +439,25 @@ footer {
   filter: grayscale(100%);
   margin-right: 4px;
 }
+/* Post Specific Styles */
+.small-img {
+  width: 50% !important;
+  height: auto !important;
+}
+.medium-img {
+  width: 500px !important;
+  height: auto !important;
+}
+.large-img {
+  width: 100% !important;
+  height: auto !important;
+}
+.section-header {
+  background: rgba(0, 255, 255, 0.05) !important;
+  border-left: 5px solid #00FFFF !important;
+  padding: 10px 20px !important;
+  margin: 25px 0 15px 0 !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}

@@ -11,30 +11,6 @@ mermaid: true
 
 最後更新日期：2023/9/6
 
-<style>
-    .small-img {
-        width: 50%;
-        height: auto;
-    }
-    .medium-img {
-        width: 500px;
-        height: auto;
-    }
-    .large-img {
-        width: 100%;
-        height: auto;
-    }
-    .section-header {
-        background: rgba(0, 255, 255, 0.05);
-        border-left: 5px solid #00FFFF;
-        padding: 10px 20px;
-        margin: 25px 0 15px 0;
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
-    }
-</style>
-
 ---
 
 ## 章節主題
@@ -206,7 +182,9 @@ SI制單位之間的轉換係數都是1，因此使用SI制可以簡化數學轉
 > 早期在柏拉圖著作就有寫到這個世界是由「三角形」構成
 ，因此古希臘時期就有人在探討萬物是由何種基本物質構成的。
 > - 西方：四元素說（地、水、火、風）、五元素說（加入「乙太」）
-> ![](https://hackmd.io/_uploads/B1-ynzlA3.png)
+> 
+> ![物質的組成概念圖](https://hackmd.io/_uploads/B1-ynzlA3.png)
+> 
 > - 東方：五行（金、木、水、火、土）
 
 | 基本粒子發展史 | 說明                                               | 相關證據                                                                                                                                      |
