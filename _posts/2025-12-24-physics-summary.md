@@ -1,6 +1,6 @@
 ---
-title: 【高中物理】學測學科知識總整理（高一）
-date: 2025-12-24 10:20:00 +0800
+title: 高中物理學測知識總整理
+date: 2025-12-23 10:20:00 +0800
 categories: [Physics, Education]
 tags: [高中物理, 學測, 筆記, SI單位, 力學, 電磁學, 近代物理]
 math: true
