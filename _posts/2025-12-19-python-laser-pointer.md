@@ -123,7 +123,7 @@ _Customize styles for the laser pointer and annotation boxes._
 
 You can download the compiled executable (Windows) from the link below:
 
-[**Download Now: Python Screen Laser Pointer v1.0 (GitHub Release)**](https://github.com/ArpowChao/arpowchao.github.io/releases/latest/download/laser-pointer-v1.0.zip)
+[**Download Now: Python Screen Laser Pointer v1.1 (GitHub Release)**](https://github.com/ArpowChao/arpowchao.github.io/releases/download/v1.1/Laser-Pointer-v1.1.zip)
 
 ---
 
