@@ -78,9 +78,8 @@
 
   <!-- Theme style -->
   <link rel="stylesheet" href="{{ '/assets/css/:THEME.css' | replace: ':THEME', site.theme | relative_url }}">
-  <!-- Custom Nature Theme Override (Commented out) -->
-  <!-- <link rel="stylesheet" href="{{ '/assets/css/nature-theme.css' | relative_url }}"> -->
-  <!-- Custom Lavender Theme Override -->
+  <!-- Custom Theme Overrides -->
+  <link rel="stylesheet" href="{{ '/assets/css/nature-theme.css' | relative_url }}">
   <link rel="stylesheet" href="{{ '/assets/css/lavender-theme.css' | relative_url }}">
 
   <!-- Web Font -->
@@ -107,6 +106,7 @@
   <!-- Scripts -->
 
   <script src="{{ '/assets/js/dist/theme.min.js' | relative_url }}"></script>
+  <script src="{{ '/assets/js/theme-switcher.js' | relative_url }}"></script>
 
   {% include js-selector.html lang=lang %}
 

@@ -5,7 +5,7 @@
   Accent (10%): #575024 (Dark Olive Text) / #2f400c (Deep Green Headings)
 */
 
-[data-mode="light"] {
+[data-mode="light"][data-color-scheme="nature"] {
   /* --- Backgrounds --- */
   --body-bg: #d2edd9;
   --sidebar-bg: #d2edd9;

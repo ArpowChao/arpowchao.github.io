@@ -5,7 +5,7 @@
   Accent (10%): #29281f (Deep Grey)
 */
 
-[data-mode="light"] {
+[data-mode="light"][data-color-scheme="lavender"] {
   /* --- Backgrounds --- */
   --body-bg: #dadeed;
   --sidebar-bg: #dadeed;
