@@ -1,0 +1,42 @@
+/* 
+  Lavender Mist Theme
+  Primary (60%): #dadeed (Lavender/Light Blue Grey)
+  Secondary (30%): #5b6b66 (Slate Green)
+  Accent (10%): #29281f (Deep Grey)
+*/
+
+[data-mode="light"] {
+  /* --- Backgrounds --- */
+  --body-bg: #dadeed;
+  --sidebar-bg: #dadeed;
+  --topbar-wrapper-bg: #dadeed;
+  --search-wrapper-bg: #e8ebf5;
+  --card-bg: #ffffff;
+  --mask-bg: #dadeed;
+
+  /* --- Text Colors --- */
+  --text-color: #29281f; 
+  --heading-color: #29281f;
+  --text-muted: #6b6b75; 
+  
+  /* --- Links and Interactive --- */
+  --link-color: #4a5955; /* Darker version of secondary for contrast */
+  --link-hover-color: #5b6b66; 
+  
+  --btn-primary-bg: #5b6b66;
+  --btn-primary-hover-bg: #4a5955;
+  --btn-primary-border-color: #5b6b66;
+
+  /* --- Sidebar Specifics --- */
+  --sidebar-active-color: #29281f;
+  --nav-cursor-color: #c4c9d9;
+  --sidebar-btn-bg: #dadeed;
+  
+  /* --- Borders --- */
+  --main-border-color: #c4c9d9;
+  
+  /* --- Tags/Badges --- */
+  --tag-bg: #e8ebf5;
+  --tag-border: #c4c9d9;
+  --tag-hover: #d1d6e6;
+}
