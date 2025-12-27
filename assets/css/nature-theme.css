@@ -1,0 +1,45 @@
+/* 
+  Nature Theme (60-30-10 Rule) 
+  Primary (60%): #d2edd9 (Light Green BG)
+  Secondary (30%): #7bc200 (Lime Green Accents)
+  Accent (10%): #575024 (Dark Olive Text) / #2f400c (Deep Green Headings)
+*/
+
+[data-mode="light"] {
+  /* --- Backgrounds --- */
+  --body-bg: #d2edd9;
+  --sidebar-bg: #d2edd9;
+  --topbar-wrapper-bg: #d2edd9; 
+  --search-wrapper-bg: #e6f7eb; /* Slightly lighter for input fields */
+  --card-bg: #ffffff; /* Keep cards white for readability on green bg */
+  --mask-bg: #d2edd9;
+
+  /* --- Text Colors --- */
+  --text-color: #575024; /* Dark Olive */
+  --heading-color: #2f400c; /* Deep Green */
+  --text-muted: #6b6645; /* Muted version */
+  
+  /* --- Links and Interactive --- */
+  --link-color: #558a00; /* Darker lime for readability on light BG */
+  --link-hover-color: #7bc200; /* Vibrant lime on hover */
+  
+  --btn-primary-bg: #7bc200;
+  --btn-primary-hover-bg: #6aa800;
+  --btn-primary-border-color: #7bc200;
+
+  /* --- Sidebar Specifics --- */
+  --sidebar-active-color: #575024;
+  --nav-cursor-color: #b8e6c4; /* Lighter shade for active item bg */
+  --sidebar-btn-bg: #d2edd9;
+  
+  /* --- Borders --- */
+  --main-border-color: #c0dec5;
+  
+  /* --- Tags/Badges --- */
+  --tag-bg: #e6f7eb;
+  --tag-border: #b8e6c4;
+  --tag-hover: #ccebd5;
+}
+
+/* Optional: Tweaks for dark mode if user switches, 
+   but for now we focus on the requested light theme override */
