@@ -2,6 +2,7 @@
 layout: page
 title: 工具 (Tools)
 icon: fas fa-toolbox
+permalink: /tools/
 order: 5
 ---
 
