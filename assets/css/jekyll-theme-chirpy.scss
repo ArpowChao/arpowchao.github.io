@@ -7,10 +7,11 @@
 :root {
   --main-bg: #ffffff;
   --text-color: #000000;
-  --heading-color: #b79210;
-  --nav-link-color: #000000; /* Dedicated Nav Color */
-  --link-color: #000000;
-  --link-hover-color: #555555;
+  --heading-color: #304210; /* Default Nature Green */
+  --nav-link-color: #554d29;
+  --link-color: #6da300;
+  --link-hover-color: #84bd00;
+
   --bs-body-color: #6a6a6a;
 
   /* Sidebar variables kept for theme compatibility but hidden */
@@ -26,21 +27,19 @@
   --border-color: #eeeeee;
 }
 
+
 /* 
-   LIGHT MODE OVERRIDES 
-   Force our custom colors over theme defaults.
+   The theme colors are now managed by nature-theme.css and lavender-theme.css
+   via #theme-nature and #theme-lavender IDs.
 */
-html:not([data-mode]), 
-html[data-mode='light'] {
-  --heading-color: #b79210 !important;
-}
+
 
 /* Import Theme Base */
 @import "main";
 
 /* Global Refinements */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Quicksand', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   background-color: var(--main-bg) !important;
   color: var(--text-color) !important;
@@ -50,12 +49,13 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6, .site-title, .post-title {
-  font-family: 'Forum', 'Noto Serif TC', serif !important;
+  font-family: 'Quicksand', 'Noto Sans TC', sans-serif !important;
   color: var(--heading-color);
-  letter-spacing: 0.5px;
-  font-weight: 400;
-  scroll-margin-top: 85px; /* Prevention from being hidden by fixed header */
+  letter-spacing: 0.1px;
+  font-weight: 600;
+  scroll-margin-top: 85px; 
 }
+
 
 /* Structural Fixes for Centered Layout */
 #sidebar, 
@@ -134,12 +134,12 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 #custom-nav .nav-link:hover {
-  color: #ffca28 !important; /* Match dark mode amber */
+  color: var(--link-hover-color) !important;
   transform: translateY(-1px);
 }
 
 [data-mode='light'] #custom-nav .nav-link:hover {
-  color: #4080ff !important;
+  color: var(--link-hover-color) !important;
 }
 
 #custom-nav .nav-link::after {
@@ -149,13 +149,13 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   left: 50%;
   width: 0;
   height: 1.5px;
-  background: #ffca28;
+  background: var(--link-hover-color);
   transition: all 0.3s ease;
   transform: translateX(-50%);
 }
 
 [data-mode='light'] #custom-nav .nav-link::after {
-  background: #4080ff;
+  background: var(--link-hover-color);
 }
 
 #custom-nav .nav-link:hover::after {
@@ -225,7 +225,7 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
   text-decoration: none !important;
   color: inherit !important;
   border: 1px solid rgba(128, 128, 128, 0.1) !important;
-  border-radius: 12px !important;
+  border-radius: 20px !important;
   background: transparent !important;
   transition: all 0.2s ease;
   position: relative;
@@ -243,20 +243,21 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 .post-preview:hover {
-  border-color: rgba(64, 128, 255, 0.3) !important;
+  border-color: var(--link-hover-color) !important;
 }
 
 .post-preview .card-title {
-  font-family: 'Forum', 'Noto Serif TC', serif;
+  font-family: 'Quicksand', 'Noto Sans TC', sans-serif !important;
   font-size: 1.85rem !important;
-  font-weight: 700 !important; /* Bold Titles */
+  font-weight: 600 !important; 
   margin-bottom: 1.2rem;
-  color: var(--heading-color) !important;
+  color: var(--post-title-color, var(--heading-color));
   line-height: 1.3;
 }
 
+
 .post-preview:hover .card-title {
-  color: #ffca28 !important; /* Rich Amber on hover */
+  color: var(--link-hover-color) !important;
 }
 
 .post-meta {
@@ -325,19 +326,20 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 #search-input:focus {
-  background: rgba(64, 128, 255, 0.05) !important;
-  border-color: rgba(64, 128, 255, 0.3) !important;
-  box-shadow: 0 0 10px rgba(64, 128, 255, 0.1) !important;
+  background: rgba(var(--particle-color), 0.05) !important;
+  border-color: var(--link-hover-color) !important;
+  box-shadow: 0 0 10px rgba(var(--particle-color), 0.1) !important;
 }
 
 /* Post Content & Anchor Adjustment */
 .post-content {
-  font-family: 'Noto Serif TC', serif;
+  font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
   font-size: 1.15rem;
   line-height: 1.9;
   max-width: auto;
   margin: 10px 0;
 }
+
 
 h1, h2, h3, h4, h5, h6 {
   .anchorjs-link {
@@ -464,7 +466,7 @@ footer {
 
 /* Premium Collapsible Styles (HackMD Replacement) */
 details {
-  border: 1px solid rgba(183, 146, 16, 0.2);
+  border: 1px solid var(--main-border-color);
   border-radius: 12px;
   padding: 0.5rem 1rem;
   margin-bottom: 1.5rem;
@@ -474,13 +476,13 @@ details {
 
   &[open] {
     padding-bottom: 1rem;
-    border-color: #b79210;
+    border-color: var(--link-hover-color);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     
     summary {
-      border-bottom: 1px solid rgba(183, 146, 16, 0.1);
+      border-bottom: 1px solid rgba(128, 128, 128, 0.1);
       margin-bottom: 1rem;
-      color: #b79210;
+      color: var(--link-hover-color);
     }
   }
 
@@ -504,11 +506,11 @@ details {
       margin-right: 0.8rem;
       font-size: 0.8rem;
       transition: transform 0.3s ease;
-      color: #b79210;
+      color: var(--link-hover-color);
     }
 
     &:hover {
-      color: #b79210;
+      color: var(--link-hover-color);
     }
   }
 
@@ -516,3 +518,83 @@ details {
     transform: rotate(90deg);
   }
 }
+
+/* 
+   ==========================================================================
+   Aesthetic Force Overrides (The "Nuclear Option")
+   Ensures no default Chirpy blue/amber remains on interactive elements.
+   ==========================================================================
+*/
+
+.post-tag, 
+.tag-item,
+.tag-link,
+.btn-primary,
+.btn-outline-primary,
+.pagination .page-item.active .page-link {
+  background-color: var(--tag-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--tag-border) !important;
+  border-radius: 20px !important; /* Extra rounded */
+  transition: all 0.2s ease;
+}
+
+
+.post-tag:hover, 
+.tag-item:hover,
+.tag-link:hover,
+.btn-primary:hover,
+.pagination .page-item:hover .page-link {
+  background-color: var(--link-hover-color) !important;
+  color: #fff !important; /* Force white text on hover for contrast */
+  border-color: var(--link-hover-color) !important;
+}
+
+/* Sidebar Branding & Active Items */
+#sidebar #nav-wrapper .nav-item.active > a,
+#sidebar #nav-wrapper .nav-item.active > i {
+  color: var(--sidebar-active-color) !important;
+}
+
+/* Fix for any remaining blue focus rings */
+*:focus {
+  outline-color: var(--link-hover-color) !important;
+}
+
+/* --- Decorative Sectional Imagery --- */
+.theme-sectional-hero {
+  width: 100%;
+  height: 140px;
+  background-image: var(--theme-update-img);
+  background-size: cover;
+  background-position: center right; /* Focus on the prism/right side */
+  background-repeat: no-repeat;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+  opacity: 1;
+  border: 1px solid var(--main-border-color);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  display: block;
+  transition: all 0.5s ease;
+}
+
+#theme-prism .theme-sectional-hero {
+  background-position: 85% center; /* Precisely focus on the prism for this image */
+}
+
+/* --- Decorative Sectional Imagery --- */
+.theme-sectional-hero {
+  width: 100%;
+  height: 120px;
+  background-image: var(--theme-update-img);
+  background-size: cover;
+  background-position: center;
+  border-radius: 15px;
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+  border: 1px solid var(--main-border-color);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  display: block;
+}
+
+

@@ -5,38 +5,47 @@
   Accent (10%): #29281f (Deep Grey)
 */
 
-[data-mode="light"][data-color-scheme="lavender"] {
+#theme-lavender {
   /* --- Backgrounds --- */
   --body-bg: #dadeed;
+  --main-bg: #dadeed;
+  --bg-color: #dadeed;
+  --bg-color-rgb: 218, 222, 237;
   --sidebar-bg: #dadeed;
   --topbar-wrapper-bg: #dadeed;
   --search-wrapper-bg: #e8ebf5;
   --card-bg: #ffffff;
   --mask-bg: #dadeed;
+  --theme-update-img: url('/assets/img/themes/lavender-bg.png');
 
-  /* --- Text Colors --- */
-  --text-color: #29281f; 
-  --heading-color: #29281f;
-  --text-muted: #6b6b75; 
+  --text-color: #6b6b75; /* Lavender Grey/Muted Slate */
+  --heading-color: #24251f; /* Near Black */
+  --post-title-color: #24251f;
+  --text-muted-color: #b2b8cc; /* The 5th color: Dusty Blue-Grey */
+  --nav-link-color: #24251f;
   
   /* --- Links and Interactive --- */
-  --link-color: #4a5955; /* Darker version of secondary for contrast */
-  --link-hover-color: #5b6b66; 
+  --link-color: #4a5955; 
+  --link-hover-color: #5b6b66; /* Precise Slate Green */
   
   --btn-primary-bg: #5b6b66;
   --btn-primary-hover-bg: #4a5955;
   --btn-primary-border-color: #5b6b66;
 
+  /* --- Particle Animation --- */
+  --particle-color: 255, 255, 255; /* White for Mist effect */
+  --particle-highlight: 91, 107, 102; /* Slate Green highlight: #5b6b66 */
+
   /* --- Sidebar Specifics --- */
-  --sidebar-active-color: #29281f;
-  --nav-cursor-color: #c4c9d9;
+  --sidebar-active-color: #24251f;
+  --nav-cursor-color: #ced2e0;
   --sidebar-btn-bg: #dadeed;
   
   /* --- Borders --- */
-  --main-border-color: #c4c9d9;
+  --main-border-color: #b2b8cc; /* Dusty Blue swatch */
   
   /* --- Tags/Badges --- */
   --tag-bg: #e8ebf5;
-  --tag-border: #c4c9d9;
+  --tag-border: #b2b8cc;
   --tag-hover: #d1d6e6;
 }
