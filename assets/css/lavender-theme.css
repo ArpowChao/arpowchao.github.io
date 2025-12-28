@@ -18,11 +18,11 @@
   --mask-bg: #dadeed;
   --theme-update-img: url('/assets/img/themes/lavender-bg.png');
 
-  --text-color: #6b6b75; /* Lavender Grey/Muted Slate */
-  --heading-color: #24251f; /* Near Black */
-  --post-title-color: #24251f;
+  --text-color: #5b6b66; /* Slate Green */
+  --heading-color: #29281f; /* Deep Grey Emphasis */
+  --post-title-color: #29281f;
   --text-muted-color: #b2b8cc; /* The 5th color: Dusty Blue-Grey */
-  --nav-link-color: #24251f;
+  --nav-link-color: #29281f;
   
   /* --- Links and Interactive --- */
   --link-color: #4a5955; 

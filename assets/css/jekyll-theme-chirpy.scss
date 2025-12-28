@@ -624,6 +624,11 @@ details {
     border: 1px solid rgba(0, 0, 0, 0.05);
   }
   
+  /* Emphasis: Deep Grey for bold text */
+  strong, b {
+    color: #29281f !important;
+  }
+  
   /* TOC Active Item: Dark Green */
   .toc-link.is-active-link {
     color: #1a301a !important; /* Deep Forest Green */
