@@ -606,9 +606,6 @@ details {
 */
 
 [data-mode='light'] {
-  --heading-color: #b79210 !important; /* 金色系 */
-  --nav-link-color: #004aad !important; /* 深藍色 */
-
   .highlight {
     background-color: #fdfaf3 !important; /* 淡土色背景 */
     border: 1px solid rgba(183, 146, 16, 0.1);
@@ -616,8 +613,6 @@ details {
 }
 
 [data-mode='dark'] {
-  --heading-color: #ffe082 !important; /* 亮金色 */
-  
   .highlight {
     background-color: #f8f8f8 !important; /* 淡灰色背景 */
     border: 1px solid rgba(0, 0, 0, 0.05);
