@@ -7,20 +7,20 @@
 
 #theme-nature {
   /* --- Backgrounds --- */
-  --body-bg: #f2ede0;
-  --main-bg: #f2ede0;
-  --bg-color: #f2ede0;
-  --bg-color-rgb: 242, 237, 224;
-  --sidebar-bg: #f2ede0;
-  --topbar-wrapper-bg: rgba(215, 208, 185, 0.9); /* Earthy darkened topbar */
-  --search-wrapper-bg: #faf7f0;
+  --body-bg: #d9ead6;
+  --main-bg: #d9ead6;
+  --bg-color: #d9ead6;
+  --bg-color-rgb: 217, 234, 214;
+  --sidebar-bg: #d9ead6;
+  --topbar-wrapper-bg: rgba(175, 198, 172, 0.9); /* More aggressive darkening for Nature */
+  --search-wrapper-bg: #e8f3e5;
   --card-bg: #ffffff;
-  --mask-bg: #f2ede0;
+  --mask-bg: #d9ead6;
   --theme-update-img: url('/assets/img/themes/nature-bg.jpg');
 
-  --text-color: #554d29; 
-  --heading-color: #b79210; /* As requested in screenshot */
-  --post-title-color: #b79210;
+  --text-color: #554d29; /* Earthy Brown/Bark */
+  --heading-color: #304210; /* Deep Olive */
+  --post-title-color: #304210;
   --text-muted-color: #7a755d; /* Muted Moss */
   --nav-link-color: #304210;
   --accent-color: #ced8ce; /* The 5th color: Sandy Grey */

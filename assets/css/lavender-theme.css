@@ -7,20 +7,20 @@
 
 #theme-lavender {
   /* --- Backgrounds --- */
-  --body-bg: #f4f4f4;
-  --main-bg: #f4f4f4;
-  --bg-color: #f4f4f4;
-  --bg-color-rgb: 244, 244, 244;
-  --sidebar-bg: #f4f4f4;
-  --topbar-wrapper-bg: rgba(220, 220, 220, 0.9); /* Neutral grey darkened topbar */
-  --search-wrapper-bg: #fafafa;
+  --body-bg: #dadeed;
+  --main-bg: #dadeed;
+  --bg-color: #dadeed;
+  --bg-color-rgb: 218, 222, 237;
+  --sidebar-bg: #dadeed;
+  --topbar-wrapper-bg: rgba(185, 190, 212, 0.9); /* More aggressive darkening for Lavender */
+  --search-wrapper-bg: #e8ebf5;
   --card-bg: #ffffff;
-  --mask-bg: #f4f4f4;
+  --mask-bg: #dadeed;
   --theme-update-img: url('/assets/img/themes/lavender-bg.png');
 
-  --text-color: #666666;
-  --heading-color: #333333;
-  --post-title-color: #333333;
+  --text-color: #6b6b75; /* Lavender Grey/Muted Slate */
+  --heading-color: #24251f; /* Near Black */
+  --post-title-color: #24251f;
   --text-muted-color: #b2b8cc; /* The 5th color: Dusty Blue-Grey */
   --nav-link-color: #24251f;
   
