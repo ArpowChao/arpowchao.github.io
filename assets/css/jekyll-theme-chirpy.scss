@@ -605,22 +605,30 @@ details {
    ==========================================================================
 */
 
-[data-mode='light'] {
+#theme-nature {
   .highlight {
     background-color: #fdfaf3 !important; /* 淡土色背景 */
     border: 1px solid rgba(183, 146, 16, 0.1);
   }
 }
 
-[data-mode='dark'] {
+#theme-lavender {
   .highlight {
     background-color: #f8f8f8 !important; /* 淡灰色背景 */
     border: 1px solid rgba(0, 0, 0, 0.05);
   }
   
-  /* Ensure code text remains readable on light background in dark mode */
+  /* Ensure code text remains black for high contrast on light-grey block */
   .highlight pre, .highlight code, .highlight span {
      color: #333 !important;
      text-shadow: none !important;
+  }
+}
+
+[data-mode='dark'] {
+  /* Default dark mode code block (Prism/Standard) */
+  &:not(#theme-lavender) .highlight {
+    background-color: #1e1e1e !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 }
