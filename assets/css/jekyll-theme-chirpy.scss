@@ -124,19 +124,21 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 #custom-nav .nav-link {
-  font-family: 'Forum', 'Noto Serif TC', serif;
-  font-size: 1.1rem;
+  font-family: 'Quicksand', 'Noto Sans TC', sans-serif !important;
+  font-size: 1.05rem;
   color: var(--nav-link-color) !important;
   text-decoration: none;
   font-weight: 500;
   padding: 5px 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  letter-spacing: 0.2px;
 }
 
 #custom-nav .nav-link:hover {
   color: var(--link-hover-color) !important;
   transform: translateY(-1px);
+  font-weight: 600; /* Subtle rounding effect on hover bolding */
 }
 
 [data-mode='light'] #custom-nav .nav-link:hover {
@@ -614,7 +616,8 @@ details {
   /* TOC Active Item: Earth Color */
   .toc-link.is-active-link {
     color: #554d29 !important; /* Earthy Brown */
-    font-weight: 700 !important;
+    font-weight: 600 !important; /* Rounded Boldness */
+    font-family: 'Quicksand', 'Noto Sans TC', sans-serif !important;
   }
 }
 
@@ -632,7 +635,8 @@ details {
   /* TOC Active Item: Dark Green */
   .toc-link.is-active-link {
     color: #1a301a !important; /* Deep Forest Green */
-    font-weight: 700 !important;
+    font-weight: 600 !important; /* Rounded Boldness */
+    font-family: 'Quicksand', 'Noto Sans TC', sans-serif !important;
   }
   
   /* Ensure code text remains black for high contrast on light-grey block */
