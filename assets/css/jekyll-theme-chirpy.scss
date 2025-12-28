@@ -91,10 +91,11 @@ h1, h2, h3, h4, h5, h6, .site-title, .post-title {
 }
 
 #topbar-wrapper {
-  background-color: var(--topbar-wrapper-bg, rgba(255, 255, 255, 0.7)); /* Use theme variable with fallback */
-  backdrop-filter: blur(12px) saturate(120%); /* Enhanced Glassmorphism blur */
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Slightly stronger border for depth */
+  background-color: var(--topbar-wrapper-bg, rgba(255, 255, 255, 0.85)); /* Slightly higher opacity for better isolation */
+  backdrop-filter: blur(14px) saturate(150%); /* More aggressive blur/saturation for a premium feel */
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12); /* Stronger border line */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Soft drop shadow for elevation */
   width: 100% !important;
   position: fixed;
   top: 0;

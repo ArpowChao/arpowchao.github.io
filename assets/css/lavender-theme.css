@@ -12,7 +12,7 @@
   --bg-color: #dadeed;
   --bg-color-rgb: 218, 222, 237;
   --sidebar-bg: #dadeed;
-  --topbar-wrapper-bg: rgba(205, 209, 226, 0.85); /* Slightly darker tinted lavender for contrast */
+  --topbar-wrapper-bg: rgba(185, 190, 212, 0.9); /* More aggressive darkening for Lavender */
   --search-wrapper-bg: #e8ebf5;
   --card-bg: #ffffff;
   --mask-bg: #dadeed;
