@@ -1,0 +1,98 @@
+/* 
+  Prism (Optics) -> Refined to "Harmonious Dusk"
+  Bridging logic:
+  - Background Gradient provides the soul (Blue/Purple).
+  - Cards use desaturated green with high transparency to "absorb" background colors.
+  - Accents (Buttons/Trails) unified to Sunset Orange/Gold.
+*/
+
+#theme-prism {
+  /* --- Sunset Foundation --- */
+  --body-bg: #377abc; 
+  --main-bg: transparent;
+  --bg-color-rgb: 55, 122, 188;
+
+  /* --- Refined Card (Harmony Pass) --- */
+  /* Using 50% opacity Emerald Green mixed with background blues */
+  --card-bg: rgba(59, 98, 55, 0.45); 
+  --glass-border: rgba(255, 255, 255, 0.15);
+  
+  /* --- Unified Typography --- */
+  --text-color: #fcebb6; /* Brighter Barley Yellow for better legibility */
+  --heading-color: #ffffff; 
+  --post-title-color: #ffffff;
+  --text-muted-color: #b7adba; 
+  --nav-link-color: #ffffff; 
+  --accent-color: #e76e28; /* Shifted to Orange for harmony */
+  --link-color: #f9d885;
+  
+  /* --- Unified Action (Sunset Orange) --- */
+  --btn-primary-bg: #e76e28; 
+  --btn-primary-hover: #f9a825;
+  
+  /* --- Trail Colors --- */
+  --spectral-red: 200, 46, 64;   /* #c82e40 */
+  --spectral-orange: 231, 110, 40; /* #e76e28 */
+  --spectral-white: 255, 235, 180; /* Warm White */
+}
+
+/* Force Static Gradient on HTML */
+html#theme-prism {
+  background: linear-gradient(135deg, #377abc 0%, #af95b9 100%) fixed !important;
+}
+
+#theme-prism body, #theme-prism #main-wrapper, #theme-prism #sidebar, #theme-prism .panel-wrapper {
+  background: transparent !important;
+}
+
+/* --- Atmospheric UI Components --- */
+#theme-prism .card, 
+#theme-prism .project-card, 
+#theme-prism .post-preview, 
+#theme-prism #category-sidebar,
+#theme-prism .log-item {
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(25px) saturate(120%);
+  -webkit-backdrop-filter: blur(25px) saturate(120%);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+#theme-prism .card:hover, #theme-prism .project-card:hover {
+  transform: translateY(-8px);
+  background: rgba(59, 98, 55, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4) !important;
+}
+
+#theme-prism h1, #theme-prism h2, #theme-prism h3, #theme-prism .card-title, #theme-prism .project-card h2 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+#theme-prism .description, #theme-prism p, #theme-prism .log-entry {
+  color: #fcebb6 !important;
+  line-height: 1.7;
+}
+
+#theme-prism .cta-btn {
+  background: linear-gradient(135deg, #e76e28, #f9a825) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 14px !important;
+  padding: 0.8rem 1.8rem !important;
+  box-shadow: 0 4px 15px rgba(231, 110, 40, 0.3);
+}
+
+#theme-prism .cta-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(231, 110, 40, 0.5);
+}
+
+#theme-prism .post-tag {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(5px);
+}

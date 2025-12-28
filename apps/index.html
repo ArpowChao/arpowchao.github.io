@@ -2,440 +2,264 @@
 layout: compress
 ---
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" id="theme-prism">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Physics Lab | Arpow Deep-Learning</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     
-    <!-- Antigravity Background Assets -->
     <link rel="stylesheet" href="{{ '/assets/css/antigravity-bg.css' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/assets/css/prism-theme.css' | relative_url }}">
 
     <style>
-        :root, html.dark-theme, body.dark-theme {
-            --bg-color: #1e1e22; /* 濃郁的深灰色，適合高級感 */
-            --glass-bg: rgba(255, 255, 255, 0.04);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --primary-color: #00d2ff;
-            --primary-glow: rgba(0, 210, 255, 0.3);
-            --text-primary: #f0f0f5;
-            --text-secondary: #a0a0b0;
-            --btn-text-color: #000000; /* Dark Mode (Cyan bg) -> Black text */
-            --radius-lg: 20px;
-            --radius-md: 12px;
-            --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        :root {
+            --radius-lg: 24px;
+            --radius-md: 14px;
+            --transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+
+            /* Harmonious Dusk Palette */
+            --sunset-blue: #377abc;
+            --sunset-purple: #af95b9;
+            --emerald-glass: rgba(59, 98, 55, 0.45); 
+            --barley-glow: #fcebb6;
+            --action-orange: #e76e28;
+            --action-gold: #f9a825;
+            
+            --text-primary: #ffffff;
+            --text-content: var(--barley-glow);
         }
 
-        html.light-theme, body.light-theme {
-            --bg-color: #f5f7fa;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(0, 0, 0, 0.05); /* 淺色模式邊框加深一點 */
-            --primary-color: #0070f3;
-            --primary-glow: rgba(0, 112, 243, 0.2);
-            --text-primary: #111111;
-            --text-secondary: #444455;
-            --btn-text-color: #ffffff; /* Light Mode (Blue bg) -> White text */
+        html#theme-prism {
+            background: linear-gradient(135deg, var(--sunset-blue) 0%, var(--sunset-purple) 100%) fixed !important;
         }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         
-        html {
-            background-color: var(--bg-color);
-            transition: background-color 0.3s;
-        }
-
         body {
-            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
-            background-color: transparent !important;
-            color: var(--text-primary);
+            font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
+            background: transparent !important;
+            margin: 0; padding: 0; min-height: 100vh;
+            color: var(--text-content);
             overflow-x: hidden;
-            line-height: 1.6;
         }
 
-        /* Essential for Antigravity BG */
         #antigravity-canvas {
             z-index: -1;
+            background: transparent !important;
+            pointer-events: none;
         }
 
         .main-layout {
             display: grid;
-            grid-template-columns: 260px 1fr;
-            gap: 2rem;
-            max-width: 1800px;
+            grid-template-columns: 280px 1fr;
+            gap: 4rem;
+            max-width: 1440px;
             margin: 0 auto;
             padding: 4rem 2rem;
         }
 
-        /* Glassmorphism Sidebar */
-        #category-sidebar {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 2rem;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--glass-border);
-            height: fit-content;
-            position: sticky;
-            top: 4rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        }
-
-        #changelog-sidebar h2 {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
+        /* --- Header Hero --- */
+        .hero-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-        }
-
-        .log-item {
-            position: relative;
-            padding-left: 1.5rem;
-            margin-bottom: 2rem;
-            border-left: 2px solid var(--primary-color);
-        }
-
-        .log-date {
-            font-size: 0.8rem;
-            color: var(--primary-color);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        .log-entry { font-size: 0.95rem; opacity: 0.9; }
-
-        header {
-            margin-bottom: 4rem;
-            position: relative;
-        }
-
-        .back-nav {
+            justify-content: space-between;
+            gap: 2rem;
             margin-bottom: 2rem;
         }
 
-        .back-btn {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: var(--transition);
-        }
-
-        .back-btn:hover { color: var(--primary-color); transform: translateX(-5px); }
-
-        header h1 {
-            font-size: 4rem;
-            font-weight: 700;
-            letter-spacing: -1px;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, var(--primary-color), var(--text-primary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Search & Filter Bar */
-        .controls-wrapper {
-            margin-bottom: 3rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .search-box {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 1rem 1.5rem 1rem 3rem;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            backdrop-filter: blur(8px);
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
-
-        .search-box svg {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        .filter-container { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-
-        .filter-btn {
-            background: var(--glass-bg);
-            color: var(--text-secondary);
-            border: 1px solid var(--glass-border);
-            padding: 0.6rem 1.5rem;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .filter-btn:hover, .filter-btn.active {
-            background: var(--primary-color);
-            color: #000;
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px var(--primary-glow);
-        }
-
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 2.5rem;
-        }
-
-        /* Glassmorphism Project Card */
-        .project-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(16px);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: var(--transition);
+        .hero-image-wrapper {
+            flex-shrink: 0;
             position: relative;
         }
 
-        .project-card:hover {
-            transform: translateY(-12px) scale(1.02);
-            border-color: var(--primary-color);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .card-image {
-            width: 100%;
-            height: 200px;
-            background: #1a1a1e;
-            overflow: hidden;
-        }
-
-        .card-image img {
-            width: 100%;
-            height: 100%;
+        .hero-image-wrapper img {
+            width: 480px;
+            height: 300px;
             object-fit: cover;
-            transition: transform 0.6s ease;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            animation: float 6s ease-in-out infinite;
         }
 
-        .project-card:hover .card-image img { transform: scale(1.1); }
-
-        .card-content { padding: 1.75rem; flex-grow: 1; display: flex; flex-direction: column; }
-
-        .card-category {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-            font-weight: 700;
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
 
-        .card-content h2 { font-size: 1.6rem; margin-bottom: 0.75rem; font-weight: 700; }
-
-        .description { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; flex-grow: 1; }
-
-        .card-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
-
-        .tag {
-            font-size: 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 0.3rem 0.8rem;
-            border-radius: 4px;
-            color: var(--text-secondary);
+        /* --- Sidebar Optimized --- */
+        #category-sidebar {
+            background: var(--emerald-glass) !important;
+            backdrop-filter: blur(25px) saturate(120%);
+            -webkit-backdrop-filter: blur(25px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: var(--radius-lg);
+            padding: 1.8rem 1.4rem;
+            position: sticky; top: 2rem;
+            height: fit-content;
+            max-height: calc(100vh - 4rem);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
         }
+
+        .nav-menu { overflow-y: auto; flex-shrink: 0; padding-right: 0.5rem; }
+        #category-sidebar ::-webkit-scrollbar { width: 4px; }
+        #category-sidebar ::-webkit-scrollbar-track { background: transparent; }
+        #category-sidebar ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+        .nav-item {
+            display: block; padding: 0.7rem 1rem; margin-bottom: 0.4rem;
+            border-radius: 12px; color: #ffffff !important;
+            text-decoration: none; transition: var(--transition);
+            font-weight: 500; font-size: 0.95rem;
+        }
+
+        .nav-item.active, .nav-item:hover {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: var(--barley-glow) !important;
+            transform: translateX(6px);
+        }
+
+        /* --- Project Card --- */
+        .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 3rem; }
+        .project-card {
+            background: var(--emerald-glass) !important;
+            backdrop-filter: blur(30px) saturate(110%);
+            -webkit-backdrop-filter: blur(30px) saturate(110%);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            overflow: hidden; display: flex; flex-direction: column;
+            transition: var(--transition); box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        .project-card:hover { 
+            transform: translateY(-12px); background: rgba(59, 98, 55, 0.55) !important;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.3) !important;
+        }
+        .card-image { width: 100%; height: 210px; background: #000; overflow: hidden; }
+        .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; opacity: 0.85; }
+        .project-card:hover .card-image img { transform: scale(1.05); opacity: 1; }
+
+        .card-content { padding: 1.8rem; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-content h2 { font-size: 1.5rem; color: #ffffff !important; margin-bottom: 0.75rem; font-weight: 700; text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .description { font-size: 0.95rem; color: var(--barley-glow) !important; line-height: 1.7; margin-bottom: 2rem; flex-grow: 1; }
+        .tag { font-size: 0.75rem; padding: 0.3rem 0.8rem; background: rgba(255,255,255,0.08); color: #fff; border-radius: 8px; margin-right: 0.5rem; }
 
         .cta-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary-color);
-            color: var(--btn-text-color);
-            text-decoration: none;
-            font-weight: 700;
-            border-radius: var(--radius-md);
-            transition: var(--transition);
+            background: linear-gradient(135deg, var(--action-orange), var(--action-gold)) !important;
+            color: #ffffff !important; padding: 0.9rem 1.6rem; border-radius: 12px;
+            text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 0.6rem;
+            transition: var(--transition); width: fit-content;
         }
+        .cta-btn:hover { background: var(--sunset-orange) !important; box-shadow: 0 5px 20px rgba(231, 110, 40, 0.4); transform: translateY(-3px); }
 
-        .cta-btn.disabled {
-            background-color: #2a2a2e;
-            color: #666;
-            cursor: not-allowed;
-            pointer-events: none;
+        header h1 { font-size: 4.5rem; color: #ffffff !important; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -1.5px; }
+        header p { color: var(--barley-glow); font-size: 1.4rem; opacity: 0.8; line-height: 1.4; max-width: 600px; }
+
+        .search-box { position: relative; margin: 2rem 0; width: 100%; max-width: 500px; }
+        .search-box input {
+            width: 100%; padding: 1rem 1.5rem 1rem 3.5rem;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; color: #ffffff; backdrop-filter: blur(15px);
+            font-size: 1rem; transition: var(--transition);
         }
+        .search-box input:focus { outline: none; border-color: var(--action-gold); background: rgba(255, 255, 255, 0.1); }
 
-        #theme-toggle-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-            transition: var(--transition);
-        }
-
-        #theme-toggle-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-
-        /* Icon Toggling Logic */
-        .sun { display: none; }
-        .moon { display: block; }
-
-        /* Light Mode: Show Moon (to go Dark), Hide Sun */
-        html.light-theme .sun { display: none; }
-        html.light-theme .moon { display: block; }
-        
-        /* Dark Mode: Show Sun (to go Light), Hide Moon */
-        html.dark-theme .sun { display: block; }
-        html.dark-theme .moon { display: none; }
+        .section-title { font-size: 2rem; margin: 4rem 0 2rem; color: #ffffff !important; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.2rem; }
 
         @media (max-width: 1024px) {
-            .main-layout { grid-template-columns: 1fr; }
-            #category-sidebar { position: static; }
+            .main-layout { grid-template-columns: 1fr; padding: 2rem 1.2rem; }
+            #category-sidebar { position: static; max-height: none; margin-bottom: 3rem; }
+            .hero-header { flex-direction: column; text-align: center; }
+            .hero-image-wrapper { order: -1; margin-bottom: 2rem; }
+            .hero-image-wrapper img { width: 240px; height: 240px; }
             header h1 { font-size: 3rem; }
+            header p { margin: 0 auto; }
         }
     </style>
 </head>
-<body class="dark-theme">
+<body id="theme-prism-body">
     <div class="main-layout">
-        <!-- New Sidebar: Category Navigation -->
         <aside id="category-sidebar">
-            <h2 style="font-size: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8 8 16.2"/><path d="M7.8 7.8l8.4 8.4"/></svg>
-                快速導航
+            <h2 style="font-size: 1.2rem; color: #ffffff; margin-bottom: 1.4rem; display: flex; align-items: center; gap: 0.6rem; font-weight: 700;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8 8 16.2"/><path d="M7.8 7.8l8.4 8.4"/></svg>
+                快速導覽
             </h2>
-            <nav class="nav-menu" style="display: flex; flex-direction: column; gap: 0.8rem;">
-                <a href="#all" class="nav-item active" data-target="all" style="display: flex; align-items: center; padding: 0.8rem 1rem; border-radius: 12px; color: var(--text-secondary); text-decoration: none; transition: all 0.3s; background: rgba(255,255,255,0.03);">
-                    <span>全部總覽</span>
-                </a>
+            <nav class="nav-menu">
+                <a href="#all" class="nav-item active" data-target="all">全部總覽</a>
                 {% assign categories = site.data.apps.projects | map: 'category' | uniq %}
                 {% for cat in categories %}
-                <a href="#{{ cat }}" class="nav-item" data-target="{{ cat }}" style="display: flex; align-items: center; padding: 0.8rem 1rem; border-radius: 12px; color: var(--text-secondary); text-decoration: none; transition: all 0.3s; background: rgba(255,255,255,0.03);">
-                    <span>{{ cat }}</span>
-                </a>
+                <a href="#{{ cat }}" class="nav-item" data-target="{{ cat }}">{{ cat }}</a>
                 {% endfor %}
             </nav>
-            <style>
-                .nav-item:hover, .nav-item.active {
-                    background: var(--primary-color) !important;
-                    color: var(--btn-text-color) !important;
-                    transform: translateX(5px);
-                    box-shadow: 0 4px 12px var(--primary-glow);
-                }
-            </style>
-
-            <div class="sidebar-divider" style="height: 1px; background: var(--glass-border); margin: 2rem 0;"></div>
-
-            <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; color: var(--text-secondary);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 1.5rem 0; flex-shrink: 0;"></div>
+            <h2 style="font-size: 1rem; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; opacity: 0.7; flex-shrink: 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                 更新日誌
             </h2>
-            <div class="log-list" style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
-                <!-- Custom Scrollbar Style for Webkit -->
-                <style>
-                    .log-list::-webkit-scrollbar { width: 4px; }
-                    .log-list::-webkit-scrollbar-track { background: transparent; }
-                    .log-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
-                    .log-list::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-                </style>
+            <div class="log-list" style="overflow-y: auto; flex-grow: 1; min-height: 200px;">
                 {% for log in site.data.apps.changelog %}
-                <div class="log-item" style="margin-bottom: 1.5rem; padding-left: 1rem; border-left: 2px solid var(--glass-border);">
-                    <p class="log-date" style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; margin-bottom: 0.2rem;">{{ log.date }}</p>
-                    <p class="log-entry" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">{{ log.entry }}</p>
+                <div class="log-item" style="margin-bottom: 1rem; padding: 1.2rem; background: rgba(0,0,0,0.1) !important;">
+                    <p style="font-size: 0.8rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;">{{ log.date }}</p>
+                    <p style="line-height: 1.5; font-size: 0.85rem;">{{ log.entry }}</p>
                 </div>
                 {% endfor %}
             </div>
         </aside>
 
         <main id="content-area">
-            <header id="all">
-                <div class="back-nav">
-                    <a href="/" class="back-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                        返回部落格
-                    </a>
+            <header id="all" class="hero-header">
+                <div class="header-text-group">
+                    <div style="margin-bottom: 1.5rem;">
+                        <a href="/" class="nav-item" style="display: inline-flex; width: fit-content; padding: 0.6rem 1rem; background: rgba(255,255,255,0.05);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            返回部落格
+                        </a>
+                    </div>
+                    <h1>Physics Lab</h1>
+                    <p>探索物理之美，互動式學習工具集。這裡不僅是理論的驗證場所，更是直覺與邏輯交匯的實驗空間。</p>
                 </div>
-                <h1>Physics Lab</h1>
-                <p>探索物理之美，互動式學習工具集</p>
+                <div class="hero-image-wrapper">
+                    <img src="{{ '/assets/img/hero/city-sunset-hero.jpg' | relative_url }}" alt="Physics Lab City Dusk">
+                </div>
             </header>
 
-            <div class="controls-wrapper">
-                <div class="search-box">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" id="app-search" placeholder="搜尋實驗名稱或描述...">
-                </div>
+            <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 1.2rem; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="app-search" placeholder="搜尋實驗名稱或描述...">
             </div>
 
             <div id="projects-container">
-                <!-- Grouped Sections -->
                 {% assign categories = site.data.apps.projects | map: 'category' | uniq %}
                 {% for cat in categories %}
-                <section class="category-section" id="{{ cat }}" style="margin-bottom: 4rem;">
-                    <h3 class="section-title" style="font-size: 2rem; margin-bottom: 1.5rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
-                        <span style="opacity: 0.5;">#</span> {{ cat }}
+                <section class="category-section" id="{{ cat }}">
+                    <h3 class="section-title">
+                        <span style="opacity: 0.3;">#</span> {{ cat }}
                     </h3>
                     <div class="project-grid">
                         {% assign filtered_projects = site.data.apps.projects | where: "category", cat %}
                         {% for p in filtered_projects %}
                         <article class="project-card" data-category="{{ p.category }}" data-title="{{ p.title }}" data-desc="{{ p.description }}">
                             <div class="card-image">
-                                <img src="{{ p.image | relative_url }}" alt="{{ p.title }} 預覽">
+                                <img src="{{ p.image | relative_url }}" alt="{{ p.title }}">
                             </div>
                             <div class="card-content">
                                 <h2>{{ p.title }}</h2>
                                 <p class="description">{{ p.description }}</p>
-                                <div class="card-tags">
+                                <div style="margin-bottom: 2rem;">
                                     {% for tag in p.tags %}
                                     <span class="tag">{{ tag }}</span>
                                     {% endfor %}
                                 </div>
-                                <div class="card-footer">
-                                    <a href="{{ p.url | relative_url }}" class="cta-btn {% if p.disabled %}disabled{% endif %}">
-                                        <span>{% if p.disabled %}施工中{% else %}立即進入{% endif %}</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            {% if p.disabled %}
-                                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                                            {% else %}
-                                            <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
-                                            {% endif %}
-                                        </svg>
-                                    </a>
-                                </div>
+                                <a href="{{ p.url | relative_url }}" class="cta-btn {% if p.disabled %}disabled{% endif %}">
+                                    <span>{% if p.disabled %}施工中{% else %}立即進入{% endif %}</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+                                    </svg>
+                                </a>
                             </div>
                         </article>
                         {% endfor %}
@@ -446,114 +270,44 @@ layout: compress
         </main>
     </div>
 
-    <!-- Theme Toggle Button with Both Icons -->
-    <button id="theme-toggle-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-    </button>
-
-    <!-- Global Background Animation -->
+    <!-- Background Scripts -->
     <script src="{{ '/assets/js/antigravity-bg.js' | relative_url }}"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('app-search');
-            const themeToggleBtn = document.getElementById('theme-toggle-btn');
-            const body = document.body;
             const navItems = document.querySelectorAll('.nav-item');
             const sections = document.querySelectorAll('.category-section');
 
-            /* --- Theme Switcher (Sync with Main Site) --- */
-            /* Using localStorage 'mode' to stay consistent with Chirpy theme */
-            const applyTheme = (theme) => {
-                if (theme === 'light') {
-                    body.classList.remove('dark-theme');
-                    body.classList.add('light-theme');
-                    document.documentElement.classList.remove('dark-theme');
-                    document.documentElement.classList.add('light-theme');
-                } else {
-                    body.classList.remove('light-theme');
-                    body.classList.add('dark-theme');
-                    document.documentElement.classList.remove('light-theme');
-                    document.documentElement.classList.add('dark-theme');
-                }
-            };
-
-            themeToggleBtn.addEventListener('click', () => {
-                const currentTheme = body.classList.contains('light-theme') ? 'light' : 'dark';
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('mode', newTheme);
-                applyTheme(newTheme);
-            });
-
-            /* Initial Theme Load */
-            /* Check localStorage -> System Preference */
-            const savedTheme = localStorage.getItem('mode') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-            applyTheme(savedTheme);
-
-            /* --- Sidebar Smooth Scroll & Active State --- */
             navItems.forEach(item => {
                 item.addEventListener('click', (e) => {
+                    const targetId = item.dataset.target;
+                    if (!targetId) return;
                     e.preventDefault();
-                    /* Update Active Class */
                     navItems.forEach(n => n.classList.remove('active'));
                     item.classList.add('active');
-
-                    const targetId = item.dataset.target;
-                    
                     if (targetId === 'all') {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } else {
                         const section = document.getElementById(targetId);
                         if (section) {
-                            const offset = 100; /* Header height buffer */
-                            const bodyRect = document.body.getBoundingClientRect().top;
-                            const elementRect = section.getBoundingClientRect().top;
-                            const elementPosition = elementRect - bodyRect;
-                            const offsetPosition = elementPosition - offset;
-
-                            window.scrollTo({
-                                top: offsetPosition,
-                                behavior: "smooth"
-                            });
+                            window.scrollTo({ top: section.offsetTop - 80, behavior: "smooth" });
                         }
                     }
                 });
             });
 
-            /* --- Real-time Search with Section Hiding --- */
-            const filterApps = () => {
+            searchInput.addEventListener('input', () => {
                 const query = searchInput.value.toLowerCase().trim();
-                
                 sections.forEach(section => {
-                    let hasVisibleCards = false;
-                    const cards = section.querySelectorAll('.project-card');
-                    
-                    cards.forEach(card => {
-                        const title = card.dataset.title.toLowerCase();
-                        const desc = card.dataset.desc.toLowerCase();
-                        const matches = title.includes(query) || desc.includes(query);
-                        
-                        if (matches) {
-                            card.style.display = 'flex';
-                            setTimeout(() => card.style.opacity = '1', 10);
-                            hasVisibleCards = true;
-                        } else {
-                            card.style.opacity = '0';
-                            setTimeout(() => card.style.display = 'none', 300);
-                        }
+                    let hasVisible = false;
+                    section.querySelectorAll('.project-card').forEach(card => {
+                        const matches = card.dataset.title.toLowerCase().includes(query) || card.dataset.desc.toLowerCase().includes(query);
+                        card.style.display = matches ? 'flex' : 'none';
+                        if (matches) hasVisible = true;
                     });
-
-                    /* Hide entire section if no cards match */
-                    if (hasVisibleCards) {
-                        section.style.display = 'block';
-                    } else {
-                        section.style.display = 'none';
-                    }
+                    section.style.display = hasVisible ? 'block' : 'none';
                 });
-            };
-
-            searchInput.addEventListener('input', filterApps);
+            });
         });
     </script>
 </body>

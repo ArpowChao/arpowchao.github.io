@@ -4,43 +4,64 @@
  */
 
 document.addEventListener("DOMContentLoaded", function() {
-  const THEMES = ["default", "nature", "lavender"];
+  const THEMES = ["nature", "lavender"];
   const STORAGE_KEY = "user-color-scheme";
+  const html = document.documentElement;
   
   // 1. Initialize State
-  let currentTheme = localStorage.getItem(STORAGE_KEY) || "default";
+  let currentTheme = localStorage.getItem(STORAGE_KEY);
+  if (!THEMES.includes(currentTheme)) currentTheme = "nature";
+  
+  console.log("🎨 Theme Switcher Init:", currentTheme);
   applyTheme(currentTheme);
   
   // 2. Setup Button
   const btn = document.getElementById("theme-cycle-btn");
   if (btn) {
-    updateButtonIcon(btn, currentTheme);
-    
-    btn.addEventListener("click", () => {
-      // Find next theme index
+    console.log("🎨 Theme Button found");
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      
       const currentIndex = THEMES.indexOf(currentTheme);
       const nextIndex = (currentIndex + 1) % THEMES.length;
       currentTheme = THEMES[nextIndex];
       
-      // Apply and Save
+      console.log("🎨 Switching theme to:", currentTheme);
+      
       applyTheme(currentTheme);
       localStorage.setItem(STORAGE_KEY, currentTheme);
       updateButtonIcon(btn, currentTheme);
     });
+  } else {
+    console.warn("🎨 Theme Button NOT found (#theme-cycle-btn)");
   }
   
   function applyTheme(theme) {
-    const html = document.documentElement;
-    if (theme === "default") {
-      html.removeAttribute("data-color-scheme");
-    } else {
-      html.setAttribute("data-color-scheme", theme);
+    // 1. Sync ID for CSS specificity
+    html.id = `theme-${theme}`;
+    
+    // 2. Sync Attribute for logic
+    html.setAttribute("data-color-scheme", theme);
+    
+    // 3. Ensure base mode is set (required for Chirpy variables)
+    if (!html.hasAttribute("data-mode")) {
+      html.setAttribute("data-mode", "light");
     }
+    
+    // 4. Update Meta Theme Color
+    const colorMap = {
+      'nature': '#d2edd9',
+      'lavender': '#dadeed'
+    };
+
+    const color = colorMap[theme] || '#f7f7f7';
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', color);
+    
+    console.log("🎨 Theme Applied:", theme, "HTML ID:", html.id);
   }
   
   function updateButtonIcon(btn, theme) {
-    // Optional: Tooltip or icon change based on theme
-    // For now, static icon is fine, but we could rotate it or change color
-    btn.setAttribute("title", `Current Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
+    btn.setAttribute("title", `Theme: ${theme.toUpperCase()}`);
   }
 });
