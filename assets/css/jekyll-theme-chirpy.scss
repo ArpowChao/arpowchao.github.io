@@ -610,12 +610,24 @@ details {
     background-color: #fdfaf3 !important; /* 淡土色背景 */
     border: 1px solid rgba(183, 146, 16, 0.1);
   }
+  
+  /* TOC Active Item: Earth Color */
+  .toc-link.is-active-link {
+    color: #554d29 !important; /* Earthy Brown */
+    font-weight: 700 !important;
+  }
 }
 
 #theme-lavender {
   .highlight {
     background-color: #f8f8f8 !important; /* 淡灰色背景 */
     border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  /* TOC Active Item: Dark Green */
+  .toc-link.is-active-link {
+    color: #1a301a !important; /* Deep Forest Green */
+    font-weight: 700 !important;
   }
   
   /* Ensure code text remains black for high contrast on light-grey block */
