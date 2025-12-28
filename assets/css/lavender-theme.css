@@ -48,4 +48,33 @@
   --tag-bg: #e8ebf5;
   --tag-border: #b2b8cc;
   --tag-hover: #d1d6e6;
+
+/* Enhanced Styling for Content */
+#theme-lavender .section-header {
+  background: rgba(91, 107, 102, 0.1) !important; /* Slate Green tint */
+  border-left: 5px solid #5b6b66 !important; /* Solid Slate Green */
+  color: #29281f !important;
+}
+
+#theme-lavender table {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+#theme-lavender table th {
+  background-color: #b9bed4 !important; /* Distinct Lavender Header */
+  color: #29281f !important;
+  border: 1px solid #b2b8cc;
+  padding: 10px;
+}
+
+#theme-lavender table td {
+  border: 1px solid #b2b8cc;
+  padding: 10px;
+}
+
+#theme-lavender table tr:nth-child(even) {
+  background-color: rgba(218, 222, 237, 0.3); /* Transparent Lavender striping */
 }

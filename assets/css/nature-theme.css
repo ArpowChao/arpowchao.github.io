@@ -50,4 +50,33 @@
   --tag-bg: #f0f7f0;
   --tag-border: #ced8ce;
   --tag-hover: #e2f0e0;
+
+/* Enhanced Styling for Content (Nature Theme) */
+#theme-nature .section-header {
+  background: rgba(123, 194, 0, 0.1) !important; /* Lime Green tint */
+  border-left: 5px solid #7bc200 !important; /* Solid Lime Green */
+  color: #304210 !important;
+}
+
+#theme-nature table {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+#theme-nature table th {
+  background-color: #ced8ce !important; /* Sandy Grey Header */
+  color: #304210 !important; /* Deep Olive Text */
+  border: 1px solid #b7c7b7;
+  padding: 10px;
+}
+
+#theme-nature table td {
+  border: 1px solid #b7c7b7;
+  padding: 10px;
+}
+
+#theme-nature table tr:nth-child(even) {
+  background-color: rgba(217, 234, 214, 0.4); /* Transparent Main Green striping */
 }

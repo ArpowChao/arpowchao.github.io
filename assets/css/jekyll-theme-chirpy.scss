@@ -457,15 +457,84 @@ footer {
   width: 100% !important;
   height: auto !important;
 }
-.section-header {
-  background: rgba(0, 255, 255, 0.05) !important;
-  border-left: 5px solid #00FFFF !important;
-  padding: 10px 20px !important;
-  margin: 25px 0 15px 0 !important;
-  display: block !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+
+/* --- Nature Theme Specifics --- */
+#theme-nature {
+  .section-header {
+    background: rgba(123, 194, 0, 0.1) !important;
+    border-left: 5px solid #7bc200 !important;
+    border-radius: 4px;
+    padding: 10px 20px !important;
+    margin: 25px 0 15px 0 !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    color: #304210 !important;
+  }
+
+  table {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    
+    th {
+      background-color: #ced8ce !important;
+      color: #304210 !important;
+      border: 1px solid #b7c7b7;
+      padding: 10px;
+    }
+
+    td {
+      border: 1px solid #b7c7b7;
+      padding: 10px;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(217, 234, 214, 0.4);
+    }
+  }
 }
+
+/* --- Lavender Theme Specifics --- */
+#theme-lavender {
+  .section-header {
+    background: rgba(91, 107, 102, 0.1) !important; /* Slate Green tint */
+    border-left: 5px solid #5b6b66 !important; /* Slate Green */
+    border-radius: 4px;
+    padding: 10px 20px !important;
+    margin: 25px 0 15px 0 !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    color: #29281f !important;
+  }
+
+  table {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    
+    th {
+      background-color: #b9bed4 !important; /* Lavender Header */
+      color: #29281f !important;
+      border: 1px solid #b2b8cc;
+      padding: 10px;
+    }
+
+    td {
+      border: 1px solid #b2b8cc;
+      padding: 10px;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(218, 222, 237, 0.3); /* Lavender Stripe */
+    }
+  }
+}
+
+
 
 /* Premium Collapsible Styles (HackMD Replacement) */
 details {
