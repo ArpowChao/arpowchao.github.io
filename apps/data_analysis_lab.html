@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數據分析實驗室 | Arpow Space</title>
+    
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2d5a27; /* Nature Green */
+            --secondary: #5b6b66; /* Slate Green */
+            --accent: #af95b9; /* Soft Lavender */
+            --bg: #f5f0f7; /* Lavender tint */
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text: #2d3436;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        header { text-align: center; margin-bottom: 3rem; }
+        h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-tag {
+            background: var(--primary);
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+
+        .chart-wrapper {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            min-height: 500px;
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .control-panel {
+            background: rgba(0,0,0,0.03);
+            padding: 1.2rem;
+            border-radius: 15px;
+        }
+
+        label { display: block; font-weight: 700; margin-bottom: 0.5rem; color: var(--primary); }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        button:hover { background: var(--accent); transform: translateY(-2px); }
+        button.outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        button.active { background: var(--accent); border: none; }
+
+        .formula {
+            background: #2d2d2d;
+            color: #f1fa8c;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: monospace;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        input[type="range"] { width: 100%; }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回首頁</a>
+        <header>
+            <div class="section-tag">Science Teaching Tool</div>
+            <h1>數據分析實驗室 (V3)</h1>
+            <p>修正與功能增強版：座標對位、大樣本統計、對數分析</p>
+        </header>
+
+        <!-- Concept 01: Axis Logic & Log Plot -->
+        <section class="glass-card">
+            <div class="section-tag">CONCEPT 01</div>
+            <h2>座標軸邏輯與對數圖形</h2>
+            <div class="layout">
+                <div class="chart-wrapper">
+                    <canvas id="c1Chart"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-panel">
+                        <label>因果模式</label>
+                        <button id="btn-causal" onclick="setC1Mode(false)">✅ 因果模式</button>
+                        <button id="btn-invert" class="outline" style="margin-top:0.5rem" onclick="setC1Mode(true)">❓ 倒置模式</button>
+                    </div>
+                    <div class="control-panel">
+                        <label>標尺類型</label>
+                        <button id="btn-linear" onclick="setScaleType('linear')">線性 (Linear)</button>
+                        <button id="btn-log" class="outline" style="margin-top:0.5rem" onclick="setScaleType('logarithmic')">對數 (Log)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Concept 02: Big Data Stats -->
+        <section class="glass-card">
+            <div class="section-tag">CONCEPT 02</div>
+            <h2>統計分佈與信賴區間 (n=1000)</h2>
+            <div class="layout">
+                <div class="chart-wrapper">
+                    <canvas id="c2Chart"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-panel">
+                        <label>樣本數 n: <span id="n-val">100</span></label>
+                        <input type="range" min="10" max="1000" step="10" value="100" oninput="updateN(this.value)">
+                    </div>
+                    <div class="control-panel">
+                        <label>檢視模式</label>
+                        <button onclick="setC2View('raw')">原始分佈</button>
+                        <button class="outline" style="margin-top:0.5rem" onclick="setC2View('mean')">平均值 + 2σ 誤差</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Concept 03: Model Fitting -->
+        <section class="glass-card">
+            <div class="section-tag">CONCEPT 03</div>
+            <h2>模型擬合 (Fitting)</h2>
+            <div class="layout">
+                <div class="chart-wrapper">
+                    <canvas id="c3Chart"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-panel">
+                        <label>擬合模型</label>
+                        <button onclick="fitModel('linear')">線性擬合 (y = ax+b)</button>
+                        <button class="outline" style="margin-top:0.5rem" onclick="fitModel('quadratic')">二次項 (y = ax²+b)</button>
+                    </div>
+                    <div id="fitInfo" class="formula">R² = --</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Chart Instances
+        let chart1 = null, chart2 = null, chart3 = null;
+        let c1Inverted = false, c1Scale = 'linear';
+        let c2N = 100, c2View = 'raw';
+        let c2RawData = [], c2MeanData = [], c2SD = [];
+
+        // --- CONCEPT 01 LOGIC ---
+        function setC1Mode(inv) {
+            c1Inverted = inv;
+            updateC1();
+            document.getElementById('btn-causal').className = inv ? 'outline' : '';
+            document.getElementById('btn-invert').className = inv ? '' : 'outline';
+        }
+        function setScaleType(type) {
+            c1Scale = type;
+            updateC1();
+            document.getElementById('btn-linear').className = (type === 'linear') ? '' : 'outline';
+            document.getElementById('btn-log').className = (type === 'logarithmic') ? '' : 'outline';
+        }
+        function updateC1() {
+            if (chart1) chart1.destroy();
+            const raw = [{x: 1, y: 10}, {x: 2, y: 100}, {x: 3, y: 1000}, {x: 4, y: 8000}, {x: 5, y: 25000}];
+            const data = raw.map(p => c1Inverted ? {x: p.y, y: p.x} : {x: p.x, y: p.y});
+            
+            const ctx = document.getElementById('c1Chart').getContext('2d');
+            chart1 = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: '觀察數據',
+                        data: data,
+                        borderColor: '#2d5a27',
+                        pointRadius: 6,
+                        showLine: true,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { type: c1Inverted ? c1Scale : 'linear', title: { display: true, text: c1Inverted ? '變量 Y' : '變量 X' } },
+                        y: { type: c1Inverted ? 'linear' : c1Scale, title: { display: true, text: c1Inverted ? '變量 X' : '變量 Y' } }
+                    }
+                }
+            });
+        }
+
+        // --- CONCEPT 02 LOGIC (STATS) ---
+        function updateN(val) {
+            c2N = parseInt(val);
+            document.getElementById('n-val').innerText = val;
+            generateC2Data();
+        }
+        function generateC2Data() {
+            c2RawData = []; c2MeanData = []; c2SD = [];
+            const groups = [1, 2, 3, 4, 5];
+            groups.forEach(x => {
+                let sum = 0, pts = [];
+                for(let i=0; i<c2N; i++) {
+                    const v = 20 + x*10 + (Math.random()-0.5) * 20;
+                    pts.push({x: x, y: v});
+                    sum += v;
+                }
+                const mean = sum / c2N;
+                let sq = 0;
+                pts.forEach(p => sq += Math.pow(p.y - mean, 2));
+                const sd = Math.sqrt(sq / (c2N - 1));
+                c2RawData.push(...pts);
+                c2MeanData.push({x: x, y: mean});
+                c2SD.push(sd);
+            });
+            updateC2();
+        }
+        function setC2View(v) { c2View = v; updateC2(); }
+        function updateC2() {
+            if (chart2) chart2.destroy();
+            const ctx = document.getElementById('c2Chart').getContext('2d');
+            chart2 = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: c2View === 'raw' ? '觀測點' : '平均值',
+                        data: c2View === 'raw' ? c2RawData : c2MeanData,
+                        backgroundColor: c2View === 'raw' ? 'rgba(45, 90, 39, 0.2)' : '#af95b9',
+                        borderColor: '#2d5a27',
+                        pointRadius: c2View === 'raw' ? 3 : 8,
+                        errorBars: c2View === 'raw' ? null : c2SD.map(s => s * 2) // 2 Sigma
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { type: 'linear', min: 0, max: 6 },
+                        y: { min: 0, max: 100 }
+                    }
+                },
+                plugins: [errorBarPlugin]
+            });
+        }
+
+        // --- CONCEPT 03 LOGIC (FITTING) ---
+        function initC3() {
+            if (chart3) chart3.destroy();
+            const pts = [{x: 1, y: 5.2}, {x: 2, y: 18.5}, {x: 3, y: 44.1}, {x: 4, y: 78.9}, {x: 5, y: 122.4}];
+            const ctx = document.getElementById('c3Chart').getContext('2d');
+            chart3 = new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets: [{ label: '物理實驗數據', data: pts, backgroundColor: '#d9534f', pointRadius: 8 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { x: { type:'linear', min:0, max:6 }, y: { min:0, max:150 } }
+                }
+            });
+        }
+        function fitModel(type) {
+            let fitLine = [], r2 = (type === 'linear' ? '0.91' : '0.999');
+            for(let x=0; x<=6; x+=0.1) {
+                const y = type === 'linear' ? 28 * x - 20 : 4.9 * x * x;
+                fitLine.push({x: x, y: y});
+            }
+            document.getElementById('fitInfo').innerText = `R² = ${r2} | ${type === 'linear' ? 'y = 28x - 20' : 'y = 4.9x²'}`;
+            if (chart3.data.datasets.length > 1) chart3.data.datasets[1].data = fitLine;
+            else chart3.data.datasets.push({ label: '模型曲線', data: fitLine, type: 'line', borderColor: '#2d5a27', borderWidth: 2, fill: false, pointRadius: 0 });
+            chart3.update();
+        }
+
+        // --- PLUGINS ---
+        const errorBarPlugin = {
+            id: 'errorBars',
+            afterDatasetsDraw: (chart) => {
+                const {ctx, data, scales: {x, y}} = chart;
+                data.datasets.forEach((dataset) => {
+                    if (dataset.errorBars) {
+                        ctx.save();
+                        ctx.strokeStyle = dataset.borderColor;
+                        ctx.lineWidth = 2.5;
+                        dataset.data.forEach((point, index) => {
+                            const err = dataset.errorBars[index];
+                            const px = x.getPixelForValue(point.x);
+                            const pTop = y.getPixelForValue(point.y + err);
+                            const pBottom = y.getPixelForValue(point.y - err);
+                            ctx.beginPath();
+                            ctx.moveTo(px, pTop);
+                            ctx.lineTo(px, pBottom);
+                            ctx.moveTo(px - 6, pTop);
+                            ctx.lineTo(px + 6, pTop);
+                            ctx.moveTo(px - 6, pBottom);
+                            ctx.lineTo(px + 6, pBottom);
+                            ctx.stroke();
+                        });
+                        ctx.restore();
+                    }
+                });
+            }
+        };
+
+        window.onload = () => {
+            updateC1();
+            generateC2Data();
+            initC3();
+        };
+    </script>
+</body>
+</html>
