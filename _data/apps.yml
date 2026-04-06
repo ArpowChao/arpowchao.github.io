@@ -23,7 +23,7 @@ changelog:
 projects:
   - title: "數據分析實驗室 (Data Analysis Lab)"
     image: "/assets/img/apps/data_analysis_lab_thumbnail.png"
-    description: "專為高中生設計的互動式工具，探究自變項與應變項邏輯、平均值與標準差的統計意義，與模型擬合分析。"
+    description: "專為高中生設計的互動式工具，探究不確定度 (Uncertainty) 與樣本標準差的統計意義，以及模型擬合分析。"
     url: "/apps/data_analysis_lab.html"
     category: "實驗數據"
     tags: ["Statistics", "Physics", "Education"]
