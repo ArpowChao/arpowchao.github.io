@@ -8,7 +8,7 @@
     <!-- KaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ] });"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -380,7 +380,7 @@
                         </div>
                         <div style="text-align: center;">
                             <input type="range" id="sigmaResultSlider" min="0" max="3" value="1" step="0.01" style="width: 100%; accent-color: var(--primary);">
-                            <p style="font-weight: bold; margin: 0.8rem 0; font-size: 1.1rem; color: var(--text);">$\bar{x} \pm \mathbf{<span id="kResultValue">1.00</span>}$ 倍標準差</p>
+                            <p style="font-weight: bold; margin: 0.8rem 0; font-size: 1.1rem; color: var(--text);">$\bar{x} \pm$ <span id="kResultValue">1.00</span> 倍標準差</p>
                             <p style="color: #d9534f; font-weight: bold; margin: 0; font-size: 1.2rem;">涵蓋機率：<span id="probResultValue">68.3%</span></p>
                             <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem; font-style: italic;">(💡 68% 的可信度區間在物理實驗中最常用)</p>
                         </div>
@@ -939,6 +939,15 @@
         }
 
         window.onload = () => {
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
             regenerateStatData();
             fitModel('linear');
             initBellCurve();
