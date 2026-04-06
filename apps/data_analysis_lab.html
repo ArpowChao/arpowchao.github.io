@@ -383,6 +383,7 @@
                         <label>擬合模型選擇</label>
                         <button id="btn-fit-linear" class="outline" onclick="fitModel('linear')">假設為線性 (n=1)</button>
                         <button id="btn-fit-quad" class="outline" onclick="fitModel('quadratic')" style="margin-top:0.4rem">發現自然律 (n 自動回歸)</button>
+                        <button onclick="regenerateModelData()" class="outline" style="margin-top:0.4rem; background: #eef; color: #444; border-color: #ccd">重新隨機取樣數據</button>
                     </div>
                     <div class="control-group" style="margin-top: 1.2rem;">
                         <label>圖表呈現模式</label>
@@ -621,8 +622,21 @@
 
         // --- SECTION 3: Fitting Models ---
         const modelCtx = document.getElementById('modelChart').getContext('2d');
-        const noisyY = [2.1, 8.4, 18.2, 33.5, 49.8];
-        const rawPoints = [1, 2, 3, 4, 5].map((x, i) => ({x: x, y: noisyY[i]}));
+        let rawPoints = [];
+
+        function regenerateModelData() {
+            // 方程式原理說明:
+            // 系統內部假設一個真值 e.g. y = 5 * x^2 (加一些噪點)
+            // 回歸引擎 100% 透過以下公式計算出回歸線和 n 值：
+            // n (Slope) = [NΣ(XY) - ΣXΣY] / [NΣX² - (ΣX)²] (在 log 空間下)
+            const n_true = 2; // 二次律
+            const a_true = 5;
+            rawPoints = [1, 2, 3, 4, 5, 6].map(x => ({
+                x: x, 
+                y: a_true * Math.pow(x, n_true) * (0.8 + Math.random() * 0.4) // 正負 20% 隨機誤差
+            }));
+            updateModelView();
+        }
 
         let modelMode = 'linear'; // linear, logscale, logdata
         let currentFit = 'linear';
@@ -660,6 +674,8 @@
             }
         });
 
+        regenerateModelData();
+
         function setModelMode(mode) {
             modelMode = mode;
             updateModelView();
@@ -671,7 +687,9 @@
         }
 
         function updateModelView() {
+            if(!modelChart) return; 
             const n = rawPoints.length;
+           if (n === 0) return;
             const logX = rawPoints.map(p => Math.log10(p.x));
             const logY = rawPoints.map(p => Math.log10(p.y));
             
