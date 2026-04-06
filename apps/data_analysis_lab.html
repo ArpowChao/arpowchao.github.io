@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數據分析實驗室 | Arpow Space</title>
+    
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ] });"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2d5a27; /* Nature Green */
+            --secondary: #5b6b66; /* Slate Green */
+            --accent: #af95b9; /* Soft Lavender */
+            --bg: #f5f0f7; /* Lavender tint */
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text: #2d3436;
+        }
+
+        [data-mode='dark'] {
+            --bg: #1a151e; /* Dark Lavender */
+            --card-bg: rgba(45, 45, 55, 0.9);
+            --text: #ecf0f1;
+            --primary: #a1d683;
+            --accent: #d2c1d9;
+        }
+
+        body {
+            font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            opacity: 0.8;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .section-tag {
+            background: var(--primary);
+            color: white;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .theory-text {
+            margin-bottom: 2rem;
+        }
+
+        .theory-text h2 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .interactive-area {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .interactive-area { grid-template-columns: 1fr; }
+        }
+
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 20px;
+            min-height: 450px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+            position: relative;
+        }
+
+        [data-mode='dark'] .chart-container {
+            background: #2d2d2d;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            background: rgba(0,0,0,0.04);
+            padding: 1.5rem;
+            border-radius: 18px;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        [data-mode='dark'] .control-group {
+            background: rgba(255,255,255,0.05);
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            margin: 10px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 14px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(45, 90, 39, 0.2);
+        }
+
+        button:hover {
+            background: var(--accent);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 15px rgba(123, 194, 0, 0.4);
+        }
+
+        button.outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            box-shadow: none;
+        }
+
+        button.outline:hover {
+            background: rgba(45, 90, 39, 0.05);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .formula-box {
+            background: #2d2d2d;
+            color: #f1fa8c;
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            font-size: 1.25rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            font-family: 'Consolas', monospace;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 1000;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255,255,255,0.8);
+            padding: 0.7rem 1.2rem;
+            border-radius: 50px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .pro-tip {
+            border-left: 6px solid var(--accent);
+            background: rgba(123, 194, 0, 0.1);
+            padding: 1.2rem 1.5rem;
+            border-radius: 0 16px 16px 0;
+            margin: 2rem 0;
+        }
+
+        .pro-tip h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">← Home</a>
+
+    <div class="container fade-in">
+        <header>
+            <div class="section-tag">Science Lab</div>
+            <h1>數據分析實驗室</h1>
+            <p class="subtitle">高中生必學：從量測、分佈到建立物理模型</p>
+        </header>
+
+        <!-- 第 1 關：XY 的邏輯 -->
+        <section class="glass-card">
+            <div class="section-tag">Concept 01</div>
+            <div class="theory-text">
+                <h2>橫軸與縱軸：因果關係的座標</h2>
+                <p>在科學研究中，我們的目標是找出「原因」與「結果」的連結。想像你正在做一個<b>「光照強度與植物高度」</b>的實驗：</p>
+                <div class="pro-tip">
+                    <h4>💡 邏輯口訣</h4>
+                    <p><b>橫軸 (X) 是「你操縱的開關」：</b> 是你在實驗前就決定好的，例如光照 0, 2, 4, 6 小時。我們稱為「自變數」。</p>
+                    <p><b>縱軸 (Y) 是「大自然的反應」：</b> 是植物長高了多少，這是你無法直接操控，只能記錄的結果。我們稱為「應變數」。</p>
+                </div>
+            </div>
+            
+            <div class="interactive-area">
+                <div class="chart-container">
+                    <canvas id="xyChart"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>切換變因視角</label>
+                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem; opacity: 0.8;">選擇正確的科學配置：</p>
+                        <button id="btn-causal" onclick="setAxisMode(false)">✅ 因果模式 (理想)</button>
+                        <button id="btn-inverted" class="outline" onclick="setAxisMode(true)" style="margin-top:0.6rem">❓ 倒置模式 (混亂)</button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>呈現方式 (視覺化邏輯)</label>
+                        <p style="font-size: 0.85rem; margin-bottom: 0.6rem; opacity: 0.8;">選擇最能準確表達數據的圖表：</p>
+                        <button id="btn-bar" class="outline" onclick="setChartType('bar')">📊 長條圖 (比較量值)</button>
+                        <button id="btn-scatter" class="outline" onclick="setChartType('scatter')" style="margin-top:0.6rem">⭕ 散佈圖 (原始數據)</button>
+                        <button id="btn-line" onclick="setChartType('line')" style="margin-top:0.6rem">📈 折線圖 (揭示趨勢)</button>
+                        <p style="font-size: 0.75rem; margin-top: 0.8rem; color: var(--secondary); font-style: italic;">
+                            * 註：散佈圖是科學實驗的起點，折線則是我們對規律的「聯想」。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 2 關：數據的分佈與平均 -->
+        <section class="glass-card">
+            <div class="section-tag">Concept 02</div>
+            <div class="theory-text">
+                <h2>看到「叢林」還是「道路」？</h2>
+                <p>為什麼量測一次是不夠的？因為自然界存在<b>隨機誤差</b>。同樣的條件下測量 $n$ 次，結果往往會散開成一群「叢林」。</p>
+            </div>
+            
+            <div class="interactive-area">
+                <div class="chart-container">
+                    <canvas id="statChart"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>檢視層級</label>
+                        <button id="btn-stat-raw" onclick="updateStatView('raw')">觀察原始分佈</button>
+                        <button id="btn-stat-mean" class="outline" onclick="updateStatView('mean')" style="margin-top:0.8rem">觀察統計摘要</button>
+                        <button id="btn-stat-combined" class="outline" onclick="updateStatView('combined')" style="margin-top:0.8rem">綜合呈現 (原始 + 統計)</button>
+                        
+                        <div style="margin-top: 1.2rem; padding: 12px; background: rgba(45, 90, 39, 0.05); border-radius: 8px; border: 1px dashed var(--primary);">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; color: var(--primary);">
+                                <input type="checkbox" id="check-error-bars" checked onchange="updateStatView(currentStatView)" style="width: 18px; height: 18px; accent-color: var(--primary);"> 
+                                <span>顯示誤差槓 (Error Bars)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>樣本數 (n)</label>
+                        <input type="range" id="nSlider" min="1" max="100" value="5" oninput="regenerateStatData()">
+                        <p id="nLabel" style="text-align: center; font-weight: bold;">n = 5</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="theory-text" style="margin-top: 2.5rem;">
+                <p><b>🔍 何時看原始數據 (Raw Data)？</b><br>當你想了解實驗的「精度 (Precision)」時。分佈越集中，代表實驗控制得越好。</p>
+                <p><b>🔍 何時看平均與標準差 (Mean + SD)？</b><br>當你要呈現「規律」時。我們用 <b>誤差槓 (Error Bars)</b> 代表標準差，它象徵了測量值的「模糊地帶」。</p>
+                <div class="formula-box">
+                    $$ \bar{x} \pm s $$
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 3 關：模型擬合 -->
+        <section class="glass-card">
+            <div class="section-tag">Concept 03</div>
+            <div class="theory-text">
+                <h2>建立模型：解碼大自然的法律</h2>
+                <p>當點畫在圖表上後，我們會試著找一條線穿過它們。這就是<b>「建模」</b>。若線跟點很契合，代表我們發現了規律。</p>
+            </div>
+            
+            <div class="interactive-area">
+                <div class="chart-container">
+                    <canvas id="modelChart"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>擬合模型選擇</label>
+                        <button id="btn-fit-linear" class="outline" onclick="fitModel('linear')">假設為線性 (n=1)</button>
+                        <button id="btn-fit-quad" class="outline" onclick="fitModel('quadratic')" style="margin-top:0.4rem">發現自然律 (n 自動回歸)</button>
+                    </div>
+                    <div class="control-group" style="margin-top: 1.2rem;">
+                        <label>圖表呈現模式</label>
+                        <button id="btn-mode-linear" onclick="setModelMode('linear')">線性座標 (Linear)</button>
+                        <button id="btn-mode-logscale" class="outline" onclick="setModelMode('logscale')" style="margin-top:0.4rem">對數座標軸 (Log Scale)</button>
+                        <button id="btn-mode-logdata" class="outline" onclick="setModelMode('logdata')" style="margin-top:0.4rem">數據數值轉換 (Log-Log Plot)</button>
+                    </div>
+                    <p id="r2Value" style="text-align: center; margin-top: 1rem; font-weight: bold; color: var(--primary);">R² = 0.88</p>
+                    <p id="equationValue" style="text-align: center; font-size: 1.1rem; font-family: 'Courier New', monospace; color: var(--primary); margin-top: -0.2rem; font-weight: bold;"></p>
+                    <p id="exponentValue" style="text-align: center; font-size: 0.9rem; color: #666; margin-top: 0.2rem;"></p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- SECTION 1: XY Logic ---
+        let xyState = {
+            isInverted: false,
+            type: 'line' 
+        };
+        let xyChart = null; // Global instance holder
+
+        function setAxisMode(inverted) {
+            xyState.isInverted = inverted;
+            updateXyChart();
+            
+            // UI Toggle
+            document.getElementById('btn-causal').className = inverted ? 'outline' : '';
+            document.getElementById('btn-inverted').className = inverted ? '' : 'outline';
+        }
+
+        function setChartType(type) {
+            xyState.type = type;
+            updateXyChart();
+            
+            // UI Toggle
+            document.getElementById('btn-bar').className = type === 'bar' ? '' : 'outline';
+            document.getElementById('btn-scatter').className = type === 'scatter' ? '' : 'outline';
+            document.getElementById('btn-line').className = type === 'line' ? '' : 'outline';
+        }
+
+        function updateXyChart() {
+            // CRITICAL: Chart.js does not allow changing scale types (linear -> category) 
+            // after creation. We must DESTROY and RECREATE.
+            if (xyChart) {
+                xyChart.destroy();
+            }
+
+            const raw = [
+                {x: 1, y: 10}, {x: 2, y: 20}, {x: 5, y: 30}, 
+                {x: 12, y: 40}, {x: 25, y: 50}, {x: 50, y: 60} // Non-linear spacing
+            ];
+
+            // Mapping
+            let processedData = raw.map(p => {
+                return xyState.isInverted ? {x: p.y, y: p.x} : {x: p.x, y: p.y};
+            });
+
+            const xyCtx = document.getElementById('xyChart').getContext('2d');
+            
+            // Titles
+            let xTitle = xyState.isInverted ? '生長高度 (cm)' : '光照時間 (小時)';
+            let yTitle = xyState.isInverted ? '光照時間 (小時)' : '生長高度 (cm)';
+            let datasetLabel = xyState.isInverted ? '光照時間 (y 軸變因)' : '植物生長高度 (x 軸變因)';
+
+            // Config Object
+            let config = {
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: {
+                        x: {
+                            title: { display: true, text: xTitle, font: { weight: 'bold' } }
+                        },
+                        y: {
+                            type: 'linear',
+                            title: { display: true, text: yTitle, font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            };
+
+            if (xyState.type === 'bar') {
+                config.type = 'bar';
+                config.data = {
+                    labels: processedData.map(p => p.x.toString() + (xyState.isInverted ? ' cm' : 'h')), 
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: datasetLabel,
+                            data: processedData.map(p => p.y),
+                            backgroundColor: 'rgba(175, 149, 185, 0.6)', // Accent color
+                            borderColor: '#af95b9',
+                            borderWidth: 2,
+                            order: 2
+                        },
+                        {
+                            type: 'line',
+                            label: '誤導趨勢線 (等距座標)',
+                            data: processedData.map(p => p.y),
+                            borderColor: '#e74c3c', // Red to warn 'fake' line
+                            borderWidth: 3,
+                            tension: 0,
+                            fill: false,
+                            pointRadius: 5,
+                            order: 1
+                        }
+                    ]
+                };
+                config.options.scales.x.type = 'category';
+            } else {
+                config.type = 'line';
+                config.data = {
+                    datasets: [{
+                        label: datasetLabel,
+                        data: processedData, // Linear needs {x, y}
+                        borderColor: '#2d5a27',
+                        backgroundColor: 'rgba(45, 90, 39, 0.1)',
+                        borderWidth: 4,
+                        tension: 0, 
+                        showLine: (xyState.type === 'line'),
+                        pointRadius: 6,
+                        pointHoverRadius: 10
+                    }]
+                };
+                config.options.scales.x.type = 'linear';
+            }
+
+            xyChart = new Chart(xyCtx, config);
+        }
+
+        // Initial render
+        updateXyChart();
+
+        // --- SECTION 2: Stat Visualization ---
+        const statCtx = document.getElementById('statChart').getContext('2d');
+        let rawData = [];
+        let meanData = [];
+        let stdData = [];
+        
+        function regenerateStatData() {
+            const n = parseInt(document.getElementById('nSlider').value);
+            document.getElementById('nLabel').innerText = `n = ${n}`;
+            rawData = [];
+            meanData = [];
+            stdData = [];
+            const xPoints = [1, 2, 3, 4, 5];
+            
+            xPoints.forEach(x => {
+                let samples = [];
+                let sum = 0;
+                // Generate noisy data following a trend y = 10x + noise
+                for (let j = 0; j < n; j++) {
+                    let val = x * 10 + (Math.random() - 0.5) * 15;
+                    samples.push({x: x, y: val});
+                    sum += val;
+                }
+                const mean = sum / n;
+                let sqSum = 0;
+                samples.forEach(s => sqSum += Math.pow(s.y - mean, 2));
+                const s = (n > 1) ? Math.sqrt(sqSum / (n - 1)) : 0; // Handle n=1
+                
+                rawData.push(...samples);
+                meanData.push({x: x, y: mean});
+                stdData.push(s);
+            });
+            updateStatView(currentStatView);
+        }
+
+        let currentStatView = 'raw';
+        let statChart = new Chart(statCtx, {
+            type: 'scatter',
+            data: { datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', min: 0, max: 6, title: {display: true, text: '實驗位置 (X)'} },
+                    y: { min: -10, max: 70, title: {display: true, text: '觀測數值 (Y)'} }
+                }
+            }
+        });
+
+        function updateStatView(type) {
+            currentStatView = type;
+            const nVal = parseInt(document.getElementById('nSlider').value);
+            const showError = document.getElementById('check-error-bars').checked;
+            
+            if (type === 'raw') {
+                statChart.data.datasets = [{
+                    label: '所有觀測點 (n次測量)',
+                    data: rawData,
+                    backgroundColor: 'rgba(45, 90, 39, 0.4)',
+                    pointRadius: nVal > 50 ? 2 : (nVal > 20 ? 3 : 5)
+                }];
+            } else if (type === 'mean') {
+                statChart.data.datasets = [{
+                    label: '平均值 (Mean)',
+                    data: meanData,
+                    borderColor: '#2d5a27',
+                    backgroundColor: '#fe9b1a',
+                    pointRadius: 8,
+                    showLine: false,
+                    errorBars: showError ? stdData : null 
+                }];
+            } else if (type === 'combined') {
+                statChart.data.datasets = [
+                    {
+                        label: '觀測點',
+                        data: rawData,
+                        backgroundColor: 'rgba(45, 90, 39, 0.2)',
+                        pointRadius: nVal > 50 ? 2 : 3,
+                        order: 2
+                    },
+                    {
+                        label: '平均值',
+                        data: meanData,
+                        borderColor: '#2d5a27',
+                        backgroundColor: '#fe9b1a',
+                        pointRadius: 6,
+                        showLine: false,
+                        errorBars: showError ? stdData : null,
+                        order: 1
+                    }
+                ];
+            }
+            statChart.update();
+            
+            // UI Toggle
+            document.getElementById('btn-stat-raw').className = type === 'raw' ? '' : 'outline';
+            document.getElementById('btn-stat-mean').className = type === 'mean' ? '' : 'outline';
+            document.getElementById('btn-stat-combined').className = type === 'combined' ? '' : 'outline';
+        }
+
+        // --- SECTION 3: Fitting Models ---
+        const modelCtx = document.getElementById('modelChart').getContext('2d');
+        const noisyY = [2.1, 8.4, 18.2, 33.5, 49.8];
+        const rawPoints = [1, 2, 3, 4, 5].map((x, i) => ({x: x, y: noisyY[i]}));
+
+        let modelMode = 'linear'; // linear, logscale, logdata
+        let currentFit = 'linear';
+
+        let modelChart = new Chart(modelCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: '實驗點',
+                        data: rawPoints,
+                        backgroundColor: '#d9534f',
+                        pointRadius: 7,
+                        zIndex: 10
+                    },
+                    {
+                        label: '擬合趨勢',
+                        data: [],
+                        type: 'line',
+                        borderColor: '#2d5a27',
+                        borderWidth: 3,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', min: 0, max: 6, title: { display: true, text: '自變量 X' } },
+                    y: { type: 'linear', min: 0, max: 60, title: { display: true, text: '相依量 Y' } }
+                }
+            }
+        });
+
+        function setModelMode(mode) {
+            modelMode = mode;
+            updateModelView();
+        }
+
+        function fitModel(type) {
+            currentFit = type;
+            updateModelView();
+        }
+
+        function updateModelView() {
+            const n = rawPoints.length;
+            const logX = rawPoints.map(p => Math.log10(p.x));
+            const logY = rawPoints.map(p => Math.log10(p.y));
+            
+            const meanLogX = logX.reduce((a, b) => a + b, 0) / n;
+            const meanLogY = logY.reduce((a, b) => a + b, 0) / n;
+            
+            // --- Scientific OLS Regression ---
+            let num = 0, den = 0;
+            for(let i=0; i<n; i++) {
+                num += (logX[i] - meanLogX) * (logY[i] - meanLogY);
+                den += Math.pow(logX[i] - meanLogX, 2);
+            }
+            const regressedSlope = num / den;
+            
+            // Final Model Choice
+            const powerIndex = (currentFit === 'linear') ? 1 : regressedSlope;
+            
+            // Re-calculate best 'a' for visual centering
+            const logA = meanLogY - (powerIndex * meanLogX);
+            const aConst = Math.pow(10, logA);
+            
+            // Real R2 calculation in log space
+            let sst = 0, ssr = 0;
+            logY.forEach((ly, i) => {
+                const predLy = logA + (powerIndex * logX[i]);
+                sst += Math.pow(ly - meanLogY, 2);
+                ssr += Math.pow(ly - predLy, 2);
+            });
+            const r2 = Math.max(0, 1 - (ssr / sst)).toFixed(2);
+
+            let processedPoints = [];
+            let fitLine = [];
+            let xlabel = '自變量 X';
+            let ylabel = '相依量 Y';
+            let exponentMsg = "";
+            let equationText = `y = ${aConst.toFixed(2)} · x <sup style='font-size:0.8em'>${powerIndex.toFixed(2)}</sup>`;
+
+            if (modelMode === 'linear') {
+                processedPoints = rawPoints;
+                for(let x=0; x<=6; x+=0.1) {
+                    fitLine.push({x: x, y: aConst * Math.pow(x, powerIndex)});
+                }
+                modelChart.options.scales.x.type = 'linear';
+                modelChart.options.scales.x.min = 0;
+                modelChart.options.scales.x.max = 6;
+                modelChart.options.scales.y.type = 'linear';
+                modelChart.options.scales.y.min = 0;
+                modelChart.options.scales.y.max = 60;
+            } 
+            else if (modelMode === 'logscale') {
+                processedPoints = rawPoints;
+                for(let x=0.5; x<=10; x+=0.1) {
+                    fitLine.push({x: x, y: aConst * Math.pow(x, powerIndex)});
+                }
+                modelChart.options.scales.x.type = 'logarithmic';
+                modelChart.options.scales.x.min = 0.5;
+                modelChart.options.scales.x.max = 10;
+                modelChart.options.scales.y.type = 'logarithmic';
+                modelChart.options.scales.y.min = 0.5;
+                modelChart.options.scales.y.max = 100;
+                xlabel = 'Log(X) 軸刻度';
+                ylabel = 'Log(Y) 軸刻度';
+                exponentMsg = currentFit === 'linear' ? "假設為線性（斜率=1）時，模型偏離了真實數據分布" : "回歸發現：在對數尺度下數據呈現直線，揭示了冪定律關係";
+            }
+            else if (modelMode === 'logdata') {
+                processedPoints = rawPoints.map(p => ({ x: Math.log10(p.x), y: Math.log10(p.y) }));
+                for(let lx=-0.1; lx<=1.1; lx+=0.05) {
+                    fitLine.push({x: lx, y: logA + (powerIndex * lx)});
+                }
+                modelChart.options.scales.x.type = 'linear';
+                modelChart.options.scales.x.min = -0.1;
+                modelChart.options.scales.x.max = 1.0;
+                modelChart.options.scales.y.type = 'linear';
+                modelChart.options.scales.y.min = 0;
+                modelChart.options.scales.y.max = 2.5;
+                xlabel = 'log X (數值轉換)';
+                ylabel = 'log Y (數值轉換)';
+                exponentMsg = `回歸線斜率 (Slope) ≈ ${powerIndex.toFixed(2)} → 代表約 ${powerIndex.toFixed(0)} 次方關係`;
+                equationText = `log y = ${powerIndex.toFixed(2)} log x + ${logA.toFixed(2)}`;
+            }
+            modelChart.data.datasets[0].data = processedPoints;
+            modelChart.data.datasets[1].data = fitLine;
+            modelChart.data.datasets[1].label = currentFit === 'linear' ? '預測假設 (n=1)' : `數據回歸發現 (n=${powerIndex.toFixed(2)})`;
+            
+            modelChart.options.scales.x.title.text = xlabel;
+            modelChart.options.scales.y.title.text = ylabel;
+
+            document.getElementById('r2Value').innerText = `R² = ${r2}`;
+            if (document.getElementById('equationValue')) {
+                document.getElementById('equationValue').innerHTML = equationText;
+            }
+            document.getElementById('exponentValue').innerText = exponentMsg;
+
+            // UI Buttons
+            document.getElementById('btn-fit-linear').className = currentFit === 'linear' ? '' : 'outline';
+            document.getElementById('btn-fit-quad').className = currentFit === 'quadratic' ? '' : 'outline';
+            
+            document.getElementById('btn-mode-linear').className = modelMode === 'linear' ? '' : 'outline';
+            document.getElementById('btn-mode-logscale').className = modelMode === 'logscale' ? '' : 'outline';
+            document.getElementById('btn-mode-logdata').className = modelMode === 'logdata' ? '' : 'outline';
+
+            modelChart.update();
+        }
+
+        // --- Custom Error Bar Plugin ---
+        const errorBarPlugin = {
+            id: 'errorBars',
+            afterDatasetsDraw: (chart) => {
+                const {ctx, data, scales: {x, y}} = chart;
+                data.datasets.forEach((dataset) => {
+                    if (dataset.errorBars) {
+                        ctx.save();
+                        ctx.strokeStyle = dataset.borderColor;
+                        ctx.lineWidth = 2.5;
+                        dataset.data.forEach((point, index) => {
+                            const err = dataset.errorBars[index];
+                            const px = x.getPixelForValue(point.x);
+                            const pTop = y.getPixelForValue(point.y + err);
+                            const pBottom = y.getPixelForValue(point.y - err);
+
+                            ctx.beginPath();
+                            ctx.moveTo(px, pTop);
+                            ctx.lineTo(px, pBottom);
+                            ctx.moveTo(px - 6, pTop);
+                            ctx.lineTo(px + 6, pTop);
+                            ctx.moveTo(px - 6, pBottom);
+                            ctx.lineTo(px + 6, pBottom);
+                            ctx.stroke();
+                        });
+                        ctx.restore();
+                    }
+                });
+            }
+        };
+        Chart.register(errorBarPlugin);
+
+        window.onload = () => {
+            regenerateStatData();
+            fitModel('linear');
+        };
+    </script>
+</body>
+</html>
