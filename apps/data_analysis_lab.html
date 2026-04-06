@@ -381,8 +381,8 @@
                 <div class="controls">
                     <div class="control-group">
                         <label>擬合模型選擇</label>
-                        <button id="btn-fit-linear" class="outline" onclick="fitModel('linear')">假設為線性 (n=1)</button>
-                        <button id="btn-fit-quad" class="outline" onclick="fitModel('quadratic')" style="margin-top:0.4rem">發現自然律 (n 自動回歸)</button>
+                        <button id="btn-fit-linear" class="outline" onclick="fitModel('linear')">線性擬合 (y = mx + c)</button>
+                        <button id="btn-fit-power" class="outline" onclick="fitModel('power')" style="margin-top:0.4rem">冪定律發現 (y = ax<sup>n</sup>)</button>
                         <button onclick="regenerateModelData()" class="outline" style="margin-top:0.4rem; background: #eef; color: #444; border-color: #ccd">重新隨機取樣數據</button>
                     </div>
                     <div class="control-group" style="margin-top: 1.2rem;">
@@ -641,6 +641,16 @@
         let modelMode = 'linear'; // linear, logscale, logdata
         let currentFit = 'linear';
 
+        function fitModel(mode) {
+            currentFit = mode;
+            updateModelView();
+        }
+
+        function setModelMode(mode) {
+            modelMode = mode;
+            updateModelView();
+        }
+
         let modelChart = new Chart(modelCtx, {
             type: 'scatter',
             data: {
@@ -689,108 +699,122 @@
         function updateModelView() {
             if(!modelChart) return; 
             const n = rawPoints.length;
-           if (n === 0) return;
-            const logX = rawPoints.map(p => Math.log10(p.x));
-            const logY = rawPoints.map(p => Math.log10(p.y));
-            
-            const meanLogX = logX.reduce((a, b) => a + b, 0) / n;
-            const meanLogY = logY.reduce((a, b) => a + b, 0) / n;
-            
-            // --- Scientific OLS Regression ---
-            let num = 0, den = 0;
+            if (n === 0) return;
+
+            const x_vals = rawPoints.map(p => p.x);
+            const y_vals = rawPoints.map(p => p.y);
+            const logX = x_vals.map(x => Math.log10(x));
+            const logY = y_vals.map(y => Math.log10(y));
+
+            // Domain A Sums (Original Space)
+            let sX=0, sY=0, sXY=0, sX2=0;
             for(let i=0; i<n; i++) {
-                num += (logX[i] - meanLogX) * (logY[i] - meanLogY);
-                den += Math.pow(logX[i] - meanLogX, 2);
+                sX += x_vals[i]; sY += y_vals[i];
+                sXY += x_vals[i]*y_vals[i]; sX2 += x_vals[i]*x_vals[i];
             }
-            const regressedSlope = num / den;
-            
-            // Final Model Choice
-            const powerIndex = (currentFit === 'linear') ? 1 : regressedSlope;
-            
-            // Re-calculate best 'a' for visual centering
-            const logA = meanLogY - (powerIndex * meanLogX);
-            const aConst = Math.pow(10, logA);
-            
-            // Real R2 calculation in log space
-            let sst = 0, ssr = 0;
-            logY.forEach((ly, i) => {
-                const predLy = logA + (powerIndex * logX[i]);
-                sst += Math.pow(ly - meanLogY, 2);
-                ssr += Math.pow(ly - predLy, 2);
-            });
-            const r2 = Math.max(0, 1 - (ssr / sst)).toFixed(2);
+            const denO = (n*sX2 - sX*sX);
+            const m_o = (denO === 0) ? 0 : (n*sXY - sX*sY) / denO;
+            const c_o = (sY - m_o*sX) / n;
 
-            let processedPoints = [];
-            let fitLine = [];
-            let xlabel = '自變量 X';
-            let ylabel = '相依量 Y';
-            let exponentMsg = "";
-            let equationText = `y = ${aConst.toFixed(2)} · x <sup style='font-size:0.8em'>${powerIndex.toFixed(2)}</sup>`;
+            // Domain B Sums (Log-Log Space)
+            let sLX=0, sLY=0, sLXY=0, sLX2=0;
+            for(let i=0; i<n; i++) {
+                sLX += logX[i]; sLY += logY[i];
+                sLXY += logX[i]*logY[i]; sLX2 += logX[i]*logX[i];
+            }
+            const denL = (n*sLX2 - sLX*sLX);
+            const n_l = (denL === 0) ? 0 : (n*sLXY - sLX*sLY) / denL;
+            const logA = (sLY - n_l*sLX) / n;
+            const a_l = Math.pow(10, logA);
 
+            let fitLine = [], r2 = 0, eqText = "", exponentMsg = "";
+
+            if (modelMode === 'logdata') {
+                // Strictly Log-Log Plot logic: Linear fit on logs
+                eqText = `log y = ${n_l.toFixed(2)} log x + ${logA.toFixed(2)}`;
+                exponentMsg = "對數空間線性擬合：當數據 linearized 後，其回歸方程變為 y' = mx' + b";
+                
+                let ssr=0, sst=0, meanLY = sLY/n;
+                for(let i=0; i<n; i++) {
+                    const pred = n_l * logX[i] + logA;
+                    ssr += Math.pow(logY[i] - pred, 2);
+                    sst += Math.pow(logY[i] - meanLY, 2);
+                }
+                let valR2 = (sst === 0) ? 0 : Math.max(0, 1 - ssr/sst);
+                r2 = valR2.toFixed(3);
+                for(let lx=-1; lx<=1.2; lx+=0.02) fitLine.push({x: lx, y: n_l*lx + logA});
+            } else {
+                if (currentFit === 'linear') {
+                    const cStr = c_o >= 0 ? `+ ${c_o.toFixed(2)}` : `- ${Math.abs(c_o).toFixed(2)}`;
+                    eqText = `y = ${m_o.toFixed(2)}x ${cStr}`;
+                    exponentMsg = "線性擬合：基於原始數據的 OLS 回歸";
+                    let ssr=0, sst=0, meanY = sY/n;
+                    for(let i=0; i<n; i++){
+                        const pred = m_o*x_vals[i]+c_o;
+                        ssr += Math.pow(y_vals[i] - pred, 2);
+                        sst += Math.pow(y_vals[i] - meanY, 2);
+                    }
+                    let valR2 = (sst === 0) ? 0 : Math.max(0, 1 - ssr/sst);
+                    r2 = valR2.toFixed(3);
+
+                    if (modelMode === 'linear') {
+                        for(let x=0; x<=7.5; x+=0.05) fitLine.push({x: x, y: m_o*x+c_o});
+                    } else {
+                        // LogScale mode: linear fit is a curve
+                        for(let x=0.01; x<=12; x+=0.05) {
+                            const y = m_o*x + c_o;
+                            if(y > 0) fitLine.push({x: x, y: y});
+                        }
+                    }
+                } else {
+                    eqText = `y = ${a_l.toFixed(2)} · x <sup style='font-size:0.8em'>${n_l.toFixed(2)}</sup>`;
+                    exponentMsg = `冪定律發現：基於對數轉換數據的回歸 (n ≈ ${n_l.toFixed(2)})`;
+                    let ssr=0, sst=0, meanLY = sLY/n;
+                    for(let i=0; i<n; i++) {
+                        const predLY = n_l*logX[i]+logA;
+                        ssr += Math.pow(logY[i] - predLY, 2);
+                        sst += Math.pow(logY[i] - meanLY, 2);
+                    }
+                    let valR2 = (sst === 0) ? 0 : Math.max(0, 1 - ssr/sst);
+                    r2 = valR2.toFixed(3);
+                    for(let x=0.01; x<=12; x+=0.05) fitLine.push({x: x, y: a_l * Math.pow(x, n_l)});
+                }
+            }
+
+            // Sync chart scales and data
+            modelChart.options.scales.x.type = (modelMode==='logscale') ? 'logarithmic' : 'linear';
+            modelChart.options.scales.y.type = (modelMode==='logscale') ? 'logarithmic' : 'linear';
+
+            let xlabel = '自變量 X', ylabel = '相依量 Y';
             if (modelMode === 'linear') {
-                processedPoints = rawPoints;
-                for(let x=0; x<=6; x+=0.1) {
-                    fitLine.push({x: x, y: aConst * Math.pow(x, powerIndex)});
-                }
-                modelChart.options.scales.x.type = 'linear';
-                modelChart.options.scales.x.min = 0;
-                modelChart.options.scales.x.max = 6;
-                modelChart.options.scales.y.type = 'linear';
-                modelChart.options.scales.y.min = 0;
-                modelChart.options.scales.y.max = 60;
-            } 
-            else if (modelMode === 'logscale') {
-                processedPoints = rawPoints;
-                for(let x=0.5; x<=10; x+=0.1) {
-                    fitLine.push({x: x, y: aConst * Math.pow(x, powerIndex)});
-                }
-                modelChart.options.scales.x.type = 'logarithmic';
-                modelChart.options.scales.x.min = 0.5;
-                modelChart.options.scales.x.max = 10;
-                modelChart.options.scales.y.type = 'logarithmic';
-                modelChart.options.scales.y.min = 0.5;
-                modelChart.options.scales.y.max = 100;
-                xlabel = 'Log(X) 軸刻度';
-                ylabel = 'Log(Y) 軸刻度';
-                exponentMsg = currentFit === 'linear' ? "假設為線性（斜率=1）時，模型偏離了真實數據分布" : "回歸發現：在對數尺度下數據呈現直線，揭示了冪定律關係";
+                modelChart.options.scales.x.min = 0; modelChart.options.scales.x.max = 7;
+                modelChart.options.scales.y.min = 0; modelChart.options.scales.y.max = 250;
+            } else if (modelMode === 'logscale') {
+                modelChart.options.scales.x.min = 0.5; modelChart.options.scales.x.max = 10;
+                modelChart.options.scales.y.min = 0.5; modelChart.options.scales.y.max = 300;
+                xlabel = 'Log(X) 軸刻度'; ylabel = 'Log(Y) 軸刻度';
+            } else if (modelMode === 'logdata') {
+                modelChart.options.scales.x.min = -0.1; modelChart.options.scales.x.max = 1.0;
+                modelChart.options.scales.y.min = 0; modelChart.options.scales.y.max = 2.5;
+                xlabel = 'log X (數據轉換值)'; ylabel = 'log Y (數據轉換值)';
             }
-            else if (modelMode === 'logdata') {
-                processedPoints = rawPoints.map(p => ({ x: Math.log10(p.x), y: Math.log10(p.y) }));
-                for(let lx=-0.1; lx<=1.1; lx+=0.05) {
-                    fitLine.push({x: lx, y: logA + (powerIndex * lx)});
-                }
-                modelChart.options.scales.x.type = 'linear';
-                modelChart.options.scales.x.min = -0.1;
-                modelChart.options.scales.x.max = 1.0;
-                modelChart.options.scales.y.type = 'linear';
-                modelChart.options.scales.y.min = 0;
-                modelChart.options.scales.y.max = 2.5;
-                xlabel = 'log X (數值轉換)';
-                ylabel = 'log Y (數值轉換)';
-                exponentMsg = `回歸線斜率 (Slope) ≈ ${powerIndex.toFixed(2)} → 代表約 ${powerIndex.toFixed(0)} 次方關係`;
-                equationText = `log y = ${powerIndex.toFixed(2)} log x + ${logA.toFixed(2)}`;
-            }
-            modelChart.data.datasets[0].data = processedPoints;
+
+            modelChart.data.datasets[0].data = (modelMode==='logdata') ? logX.map((lx, i) => ({x:lx, y:logY[i]})) : rawPoints;
             modelChart.data.datasets[1].data = fitLine;
-            modelChart.data.datasets[1].label = currentFit === 'linear' ? '預測假設 (n=1)' : `數據回歸發現 (n=${powerIndex.toFixed(2)})`;
-            
+            modelChart.data.datasets[1].label = (modelMode==='logdata') ? '對數空間線性擬合' : (currentFit==='linear'?'線性擬合':'冪定律擬合');
             modelChart.options.scales.x.title.text = xlabel;
             modelChart.options.scales.y.title.text = ylabel;
 
             document.getElementById('r2Value').innerText = `R² = ${r2}`;
-            if (document.getElementById('equationValue')) {
-                document.getElementById('equationValue').innerHTML = equationText;
-            }
+            document.getElementById('equationValue').innerHTML = eqText;
             document.getElementById('exponentValue').innerText = exponentMsg;
 
-            // UI Buttons
-            document.getElementById('btn-fit-linear').className = currentFit === 'linear' ? '' : 'outline';
-            document.getElementById('btn-fit-quad').className = currentFit === 'quadratic' ? '' : 'outline';
-            
-            document.getElementById('btn-mode-linear').className = modelMode === 'linear' ? '' : 'outline';
-            document.getElementById('btn-mode-logscale').className = modelMode === 'logscale' ? '' : 'outline';
-            document.getElementById('btn-mode-logdata').className = modelMode === 'logdata' ? '' : 'outline';
-
+            ['btn-fit-linear', 'btn-fit-power', 'btn-mode-linear', 'btn-mode-logscale', 'btn-mode-logdata'].forEach(id => {
+                const isActive = (id==='btn-fit-linear' && currentFit==='linear') || (id==='btn-fit-power' && currentFit==='power') ||
+                                 (id==='btn-mode-linear' && modelMode==='linear') || (id==='btn-mode-logscale' && modelMode==='logscale') ||
+                                 (id==='btn-mode-logdata' && modelMode==='logdata');
+                document.getElementById(id).className = isActive ? 'active' : 'outline';
+            });
             modelChart.update();
         }
 
