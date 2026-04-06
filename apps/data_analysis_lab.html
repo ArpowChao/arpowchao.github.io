@@ -204,6 +204,12 @@
             border-color: var(--accent);
         }
 
+        button.active {
+            background: var(--primary);
+            color: white;
+            border: 2px solid var(--primary);
+        }
+
         .formula-box {
             background: #2d2d2d;
             color: #f1fa8c;
@@ -657,7 +663,7 @@
                 datasets: [
                     {
                         label: '實驗點',
-                        data: rawPoints,
+                        data: [],
                         backgroundColor: '#d9534f',
                         pointRadius: 7,
                         zIndex: 10
@@ -683,18 +689,6 @@
                 }
             }
         });
-
-        regenerateModelData();
-
-        function setModelMode(mode) {
-            modelMode = mode;
-            updateModelView();
-        }
-
-        function fitModel(type) {
-            currentFit = type;
-            updateModelView();
-        }
 
         function updateModelView() {
             if(!modelChart) return; 
@@ -794,8 +788,8 @@
                 modelChart.options.scales.y.min = 0.5; modelChart.options.scales.y.max = 300;
                 xlabel = 'Log(X) 軸刻度'; ylabel = 'Log(Y) 軸刻度';
             } else if (modelMode === 'logdata') {
-                modelChart.options.scales.x.min = -0.1; modelChart.options.scales.x.max = 1.0;
-                modelChart.options.scales.y.min = 0; modelChart.options.scales.y.max = 2.5;
+                modelChart.options.scales.x.min = -0.1; modelChart.options.scales.x.max = 1.2;
+                modelChart.options.scales.y.min = 0; modelChart.options.scales.y.max = 3.0;
                 xlabel = 'log X (數據轉換值)'; ylabel = 'log Y (數據轉換值)';
             }
 
@@ -852,7 +846,7 @@
 
         window.onload = () => {
             regenerateStatData();
-            fitModel('linear');
+            regenerateModelData();
         };
     </script>
 </body>
