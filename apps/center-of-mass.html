@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>質心運動模擬 (Center of Mass) | Arpow Space</title>
+    
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --accent: #50e3c2;
+            --bg: #121212;
+            --card-bg: rgba(30, 30, 35, 0.9);
+            --text: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 1000;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.7rem 1.2rem;
+            border-radius: 50px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin: 3rem 0;
+            padding: 0 1rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #4a90e2, #50e3c2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.7;
+        }
+
+        .simulation-container {
+            width: 1260px;
+            max-width: 95vw;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 10px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            margin-bottom: 4rem;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #glowscript {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Override some GlowScript styles if needed */
+        .glowscript {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">← Home</a>
+
+    <header>
+        <h1>質心運動模擬</h1>
+        <p class="subtitle">探索拋體爆炸後的質心軌跡與動量守恆</p>
+    </header>
+
+    <div class="simulation-container">
+        <div id="glowscript" class="glowscript">
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
+            <link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
+            <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
+            <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
+            <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
+            <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
+            <script type="text/javascript"><!--//--><![CDATA[//><!--
+
+            // START JAVASCRIPT
+            ;(function() {;
+            var ρσ_modules = {};
+            var running, paused, step_mode, state, m1, m2, m_total, launch_speed_x, peak_v, plumb_lines;
+            ρσ_modules.pythonize = {};
+
+            (function(){
+                function strings() {
+                    var string_funcs, exclude, name;
+                    string_funcs = set("capitalize strip lstrip rstrip islower isupper isspace lower upper swapcase center count endswith startswith find rfind index rindex format join ljust rjust partition rpartition replace split rsplit splitlines zfill".split(" "));
+                    if (!arguments.length) {
+                        exclude = (function(){
+                            var s = ρσ_set();
+                            s.jsset.add("split");
+                            s.jsset.add("replace");
+                            return s;
+                        })();
+                    } else if (arguments[0]) {
+                        exclude = Array.prototype.slice.call(arguments);
+                    } else {
+                        exclude = null;
+                    }
+                    if (exclude) {
+                        string_funcs = string_funcs.difference(set(exclude));
+                    }
+                    var ρσ_Iter0 = string_funcs;
+                    ρσ_Iter0 = ((typeof ρσ_Iter0[Symbol.iterator] === "function") ? (ρσ_Iter0 instanceof Map ? ρσ_Iter0.keys() : ρσ_Iter0) : Object.keys(ρσ_Iter0));
+                    for (var ρσ_Index0 of ρσ_Iter0) {
+                        name = ρσ_Index0;
+                        (ρσ_expr_temp = String.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name] = (ρσ_expr_temp = ρσ_str.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name];
+                    }
+                };
+                if (!strings.__module__) Object.defineProperties(strings, {
+                    __module__ : {value: "pythonize"}
+                });
+
+                ρσ_modules.pythonize.strings = strings;
+            })();
+            async function __main__() {
+            "use strict";
+                var display = canvas;
+                var scene = canvas();
+
+                function round(num, n=0) {return Number(num.toFixed(n))}
+
+                var version, print, arange, __name__, type, ρσ_ls, scene, floor, ratio_label, ratio_text, ratio_slider, mode_label, mode_dropdown, force_slider, running, paused, step_mode, start_btn, pause_btn, step_btn, slow_mode, plumb_check, connect_check, cm_check, reset_btn, cm_data_text, g, base_dt, shell, f1, f2, cm_real, cm_theoretical, plumb_lines, num_dashes, connect_dashes, _, vec, dist, dash_len, dir_vec, i, d, dt, state, dash_length, gap_length, curr_y, end_y, c, force_scale, mode;
+                version = ρσ_list_decorate([ "3.2", "glowscript" ]);
+                Array.prototype['+'] = function(r) {return this.concat(r)}
+                Array.prototype['*'] = function(r) {return __array_times_number(this, r)}
+                window.__GSlang = "vpython";
+                print = GSprint;
+                arange = range;
+                __name__ = "__main__";
+                type = pytype;
+                var strings = ρσ_modules.pythonize.strings;
+
+                strings();
+                "4";
+                scene = ρσ_interpolate_kwargs.call(this, canvas, [ρσ_desugar_kwargs({width: 850, height: 500, center: vector(20, 10, 0), background: color.gray(.1)})]);
+                "5";
+                floor = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(20, 1["-u"]()["*"](.5), 0), size: vector(80, 1, 15), color: color.green})]);
+                "7";
+                scene.caption = "\n";
+                "9";
+                async function dummy_bind(obj) {
+                    "10";
+                };
+                if (!dummy_bind.__argnames__) Object.defineProperties(dummy_bind, {
+                    __argnames__ : {value: ["obj"]},
+                    __module__ : {value: null}
+                });
+
+                "13";
+                ratio_label = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "質量比 (紅 m1 : 藍 m2) = "})]);
+                "14";
+                ratio_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "1.0"})]);
+                "15";
+                scene.append_to_caption("  ");
+                "16";
+                async function update_ratio(s) {
+                    "17";
+                    ratio_text.text = "{:.1f}".format(s.value);
+                };
+                if (!update_ratio.__argnames__) Object.defineProperties(update_ratio, {
+                    __argnames__ : {value: ["s"]},
+                    __module__ : {value: null}
+                });
+
+                "18";
+                ratio_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: .1, max: 10, value: 1, length: 200, bind: update_ratio})]);
+                "21";
+                scene.append_to_caption("\n\n");
+                "22";
+                mode_label = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "f2 爆炸模式："})]);
+                "23";
+                mode_dropdown = ρσ_interpolate_kwargs.call(this, menu, [ρσ_desugar_kwargs({choices: ρσ_list_decorate([ "靜止下落", "鉛直下落", "水平前拋", "水平後拋" ]), selected: "靜止下落", bind: dummy_bind})]);
+                "26";
+                scene.append_to_caption("   |   爆炸強度：");
+                "27";
+                force_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: .1, max: 1, value: .5, length: 150, bind: dummy_bind})]);
+                "29";
+                scene.append_to_caption("\n\n");
+                "32";
+                running = false;
+                "33";
+                paused = false;
+                "34";
+                step_mode = false;
+                "36";
+                async function trigger_start(b) {
+                    "37";
+                    "38";
+                    if (!running) {
+                        "39";
+                        (await start_sim());
+                        "40";
+                        paused = false;
+                        "41";
+                        step_mode = false;
+                        "42";
+                        pause_btn.text = "播放/暫停";
+                        "43";
+                    } else {
+                        "44";
+                        paused = !paused;
+                        "45";
+                        step_mode = false;
+                        "46";
+                        b.text = (paused) ? "繼續" : "暫停";
+                        "47";
+                        pause_btn.text = b.text;
+                    }
+                };
+                if (!trigger_start.__argnames__) Object.defineProperties(trigger_start, {
+                    __argnames__ : {value: ["b"]},
+                    __module__ : {value: null}
+                });
+
+                "49";
+                async function trigger_step(b) {
+                    "50";
+                    "51";
+                    if (running) {
+                        "52";
+                        paused = true;
+                        "53";
+                        step_mode = true;
+                        "54";
+                        pause_btn.text = "繼續";
+                    }
+                };
+                if (!trigger_step.__argnames__) Object.defineProperties(trigger_step, {
+                    __argnames__ : {value: ["b"]},
+                    __module__ : {value: null}
+                });
+
+                "56";
+                start_btn = ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "發射並開始模擬", bind: trigger_start})]);
+                "57";
+                scene.append_to_caption("  ");
+                "58";
+                pause_btn = ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "播放/暫停", bind: trigger_start})]);
+                "59";
+                scene.append_to_caption("  ");
+                "60";
+                step_btn = ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "單步播放 (StepForward)", bind: trigger_step})]);
+                "61";
+                scene.append_to_caption("   |   ");
+                "64";
+                slow_mode = ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({text: "慢動作模式", bind: dummy_bind})]);
+                "66";
+                scene.append_to_caption("\n\n");
+                "69";
+                async function toggle_plumb(c) {
+                    var ρσ_ls, line;
+                    "70";
+                    var ρσ_Iter1 = plumb_lines;
+                    ρσ_Iter1 = ((typeof ρσ_Iter1[Symbol.iterator] === "function") ? (ρσ_Iter1 instanceof Map ? ρσ_Iter1.keys() : ρσ_Iter1) : Object.keys(ρσ_Iter1));
+                    for (var ρσ_Index1 of ρσ_Iter1) {
+                        line = ρσ_Index1;
+                        "71";
+                        line.visible = c.checked;
+                    }
+                };
+                if (!toggle_plumb.__argnames__) Object.defineProperties(toggle_plumb, {
+                    __argnames__ : {value: ["c"]},
+                    __module__ : {value: null}
+                });
+
+                "73";
+                plumb_check = ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({text: "顯示最高點鉛錘虛線", checked: true, bind: toggle_plumb})]);
+                "74";
+                scene.append_to_caption("   |   ");
+                "75";
+                connect_check = ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({text: "顯示兩球連線虛線", checked: true, bind: dummy_bind})]);
+                "78";
+                scene.append_to_caption("   |   ");
+                "79";
+                async function toggle_cm(c) {
+                    "80";
+                    cm_real.visible = c.checked;
+                    "81";
+                    cm_theoretical.visible = c.checked;
+                    "82";
+                    if (c.checked) {
+                        "83";
+                        cm_real.make_trail = true;
+                        "84";
+                        cm_theoretical.make_trail = true;
+                        "85";
+                    } else {
+                        "87";
+                        cm_real.make_trail = false;
+                        "88";
+                        cm_theoretical.make_trail = false;
+                        "89";
+                        cm_real.clear_trail();
+                        "90";
+                        cm_theoretical.clear_trail();
+                    }
+                };
+                if (!toggle_cm.__argnames__) Object.defineProperties(toggle_cm, {
+                    __argnames__ : {value: ["c"]},
+                    __module__ : {value: null}
+                });
+
+                "92";
+                cm_check = ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({text: "顯示質心與軌跡 (白/灰球)", checked: true, bind: toggle_cm})]);
+                "94";
+                scene.append_to_caption("  ");
+                "96";
+                async function trigger_reset(b) {
+                    "97";
+                    "98";
+                    running = false;
+                    "99";
+                    paused = false;
+                    "100";
+                    step_mode = false;
+                    "101";
+                    start_btn.text = "發射並開始模擬";
+                    "102";
+                    pause_btn.text = "播放/暫停";
+                    "103";
+                    (await start_sim());
+                };
+                if (!trigger_reset.__argnames__) Object.defineProperties(trigger_reset, {
+                    __argnames__ : {value: ["b"]},
+                    __module__ : {value: null}
+                });
+
+                "105";
+                reset_btn = ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "重新重置與發射", bind: trigger_reset})]);
+                "108";
+                cm_data_text = ρσ_interpolate_kwargs.call(this, label, [ρσ_desugar_kwargs({pos: vector(20, 1["-u"]()["*"](5), 0), text: "質心座標 (X, Y): 計算中...", box: false, color: color.white})]);
+                "111";
+                g = vector(0, 1["-u"]()["*"](9.8), 0);
+                "112";
+                base_dt = .015;
+                "114";
+                shell = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({radius: .6, color: color.yellow, make_trail: true, visible: false})]);
+                "115";
+                f1 = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({color: color.red, make_trail: true, visible: false})]);
+                "116";
+                f2 = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({color: color.cyan, make_trail: true, visible: false})]);
+                "117";
+                cm_real = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({radius: .3, color: color.white, make_trail: true, visible: false})]);
+                "118";
+                cm_theoretical = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({radius: .15, color: color.gray(.3), make_trail: true, visible: false})]);
+                "121";
+                plumb_lines = ρσ_list_decorate([]);
+                "122";
+                num_dashes = 15;
+                "123";
+                connect_dashes = (function() {
+                    var ρσ_Iter = range(num_dashes), ρσ_Result = [], _;
+                    ρσ_Iter = ((typeof ρσ_Iter[Symbol.iterator] === "function") ? (ρσ_Iter instanceof Map ? ρσ_Iter.keys() : ρσ_Iter) : Object.keys(ρσ_Iter));
+                    for (var ρσ_Index of ρσ_Iter) {
+                        _ = ρσ_Index;
+                        ρσ_Result.push(ρσ_interpolate_kwargs.call(this, cylinder, [ρσ_desugar_kwargs({radius: .06, color: color.gray(.8), visible: false})]));
+                    }
+                    ρσ_Result = ρσ_list_constructor(ρσ_Result);
+                    return ρσ_Result;
+                })();
+                "125";
+                async function update_mass_display() {
+                    var ρσ_ls, ratio;
+                    "126";
+                    ratio = ratio_slider.value;
+                    "127";
+                    ratio_text.text = "{:.1f}".format(ratio);
+                };
+                if (!update_mass_display.__module__) Object.defineProperties(update_mass_display, {
+                    __module__ : {value: null}
+                });
+
+                "130";
+                async function start_sim() {
+                    var ρσ_ls, obj, line, dash, ratio, launch_angle, v_mag, launch_v;
+                    "131";
+                    "132";
+                    running = true;
+                    "133";
+                    (await update_mass_display());
+                    "136";
+                    var ρσ_Iter2 = ρσ_list_decorate([ shell, f1, f2, cm_real, cm_theoretical ]);
+                    ρσ_Iter2 = ((typeof ρσ_Iter2[Symbol.iterator] === "function") ? (ρσ_Iter2 instanceof Map ? ρσ_Iter2.keys() : ρσ_Iter2) : Object.keys(ρσ_Iter2));
+                    for (var ρσ_Index2 of ρσ_Iter2) {
+                        obj = ρσ_Index2;
+                        "137";
+                        obj.clear_trail();
+                        "138";
+                        obj.visible = false;
+                    }
+                    "141";
+                    cm_real.make_trail = cm_check.checked;
+                    "142";
+                    cm_theoretical.make_trail = cm_check.checked;
+                    "145";
+                    var ρσ_Iter3 = plumb_lines;
+                    ρσ_Iter3 = ((typeof ρσ_Iter3[Symbol.iterator] === "function") ? (ρσ_Iter3 instanceof Map ? ρσ_Iter3.keys() : ρσ_Iter3) : Object.keys(ρσ_Iter3));
+                    for (var ρσ_Index3 of ρσ_Iter3) {
+                        line = ρσ_Index3;
+                        "146";
+                        line.visible = false;
+                    }
+                    "147";
+                    plumb_lines.clear();
+                    "150";
+                    var ρσ_Iter4 = connect_dashes;
+                    ρσ_Iter4 = ((typeof ρσ_Iter4[Symbol.iterator] === "function") ? (ρσ_Iter4 instanceof Map ? ρσ_Iter4.keys() : ρσ_Iter4) : Object.keys(ρσ_Iter4));
+                    for (var ρσ_Index4 of ρσ_Iter4) {
+                        dash = ρσ_Index4;
+                        "151";
+                        dash.visible = false;
+                    }
+                    "153";
+                    ratio = ratio_slider.value;
+                    "154";
+                    m_total = 10;
+                    "155";
+                    m1 = m_total["*"](ratio["/"](1["+"](ratio)));
+                    "156";
+                    m2 = m_total["*"](1["/"](1["+"](ratio)));
+                    "158";
+                    f1.radius = .6["*"](Math.pow((m1["/"](5)), (1["/"](3))));
+                    "159";
+                    f2.radius = .6["*"](Math.pow((m2["/"](5)), (1["/"](3))));
+                    "161";
+                    shell.pos = vector(0, 0, 0);
+                    "162";
+                    launch_angle = 53["*"](pi)["/"](180);
+                    "163";
+                    v_mag = 20;
+                    "164";
+                    launch_v = vector(v_mag["*"](cos(launch_angle)), v_mag["*"](sin(launch_angle)), 0);
+                    "165";
+                    shell.v = launch_v;
+                    "166";
+                    launch_speed_x = launch_v.x;
+                    "167";
+                    shell.visible = true;
+                    "169";
+                    cm_theoretical.pos = shell.pos;
+                    "170";
+                    cm_theoretical.v = shell.v;
+                    "171";
+                    cm_theoretical.visible = false;
+                    "173";
+                    peak_v = vector(launch_speed_x, 0, 0);
+                    "175";
+                    state = "rising";
+                    "176";
+                    cm_data_text.text = "質心座標 (X, Y): 計算中...";
+                };
+                if (!start_sim.__module__) Object.defineProperties(start_sim, {
+                    __module__ : {value: null}
+                });
+
+                "179";
+                while (true) {
+                    "180";
+                    (await rate(100));
+                    "183";
+                    if ((state === "exploded" || typeof state === "object" && ρσ_equals(state, "exploded")) && connect_check.checked) {
+                        "184";
+                        vec = f2.pos["-"](1["*"](f1.pos));
+                        "185";
+                        dist = vec.mag;
+                        "186";
+                        if (dist[">"](.1)) {
+                            "187";
+                            dash_len = dist["/"](num_dashes["*"](2)["-"](1["*"](1)));
+                            "188";
+                            dir_vec = vec.norm();
+                            "189";
+                            for (var ρσ_Index5 = 0; ρσ_Index5["<"](num_dashes); ρσ_Index5++) {
+                                i = ρσ_Index5;
+                                "190";
+                                ρσ_getitem(connect_dashes, i).pos = f1.pos["+"](dir_vec["*"](i)["*"](2)["*"](dash_len));
+                                "191";
+                                ρσ_getitem(connect_dashes, i).axis = dir_vec["*"](dash_len);
+                                "192";
+                                ρσ_getitem(connect_dashes, i).visible = true;
+                                "193";
+                            }
+                        } else {
+                            "194";
+                            var ρσ_Iter6 = connect_dashes;
+                            ρσ_Iter6 = ((typeof ρσ_Iter6[Symbol.iterator] === "function") ? (ρσ_Iter6 instanceof Map ? ρσ_Iter6.keys() : ρσ_Iter6) : Object.keys(ρσ_Iter6));
+                            for (var ρσ_Index6 of ρσ_Iter6) {
+                                d = ρσ_Index6;
+                                d.visible = false;
+                            }
+                            "195";
+                        }
+                    } else {
+                        "196";
+                        var ρσ_Iter7 = connect_dashes;
+                        ρσ_Iter7 = ((typeof ρσ_Iter7[Symbol.iterator] === "function") ? (ρσ_Iter7 instanceof Map ? ρσ_Iter7.keys() : ρσ_Iter7) : Object.keys(ρσ_Iter7));
+                        for (var ρσ_Index7 of ρσ_Iter7) {
+                            d = ρσ_Index7;
+                            d.visible = false;
+                        }
+                        "199";
+                    }
+                    if (!running) {
+                        continue;
+                    }
+                    "200";
+                    if (paused && !step_mode) {
+                        continue;
+                    }
+                    "201";
+                    if (step_mode) {
+                        step_mode = false;
+                    }
+                    "203";
+                    dt = (slow_mode.checked) ? base_dt["*"](.1) : base_dt;
+                    "205";
+                    if ((state === "rising" || typeof state === "object" && ρσ_equals(state, "rising"))) {
+                        "206";
+                        shell.pos=shell.pos["+"](shell.v["*"](dt));
+                        "207";
+                        shell.v=shell.v["+"](g["*"](dt));
+                        "210";
+                        if (shell.v.y["<="](0)) {
+                            "211";
+                            state = "exploded";
+                            "212";
+                            shell.visible = false;
+                            "214";
+                            f1.pos = f2.pos = shell.pos;
+                            "215";
+                            cm_real.pos = shell.pos;
+                            "216";
+                            cm_real.clear_trail();
+                            "217";
+                            cm_theoretical.pos = shell.pos;
+                            "218";
+                            cm_theoretical.clear_trail();
+                            "221";
+                            f1.visible = f2.visible = true;
+                            "222";
+                            cm_real.visible = cm_check.checked;
+                            "223";
+                            cm_theoretical.visible = cm_check.checked;
+                            "224";
+                            cm_real.make_trail = cm_check.checked;
+                            "225";
+                            cm_theoretical.make_trail = cm_check.checked;
+                            "228";
+                            dash_length = .8;
+                            "229";
+                            gap_length = .6;
+                            "230";
+                            curr_y = shell.pos.y;
+                            "231";
+                            while (curr_y[">"](0)) {
+                                "232";
+                                end_y = max(0, curr_y["-"](1["*"](dash_length)));
+                                "233";
+                                c = ρσ_interpolate_kwargs.call(this, cylinder, [ρσ_desugar_kwargs({pos: vector(shell.pos.x, curr_y, 0), axis: vector(0, end_y["-"](1["*"](curr_y)), 0), radius: .08, color: color.gray(.6), visible: plumb_check.checked})]);
+                                "237";
+                                plumb_lines.append(c);
+                                "238";
+                                curr_y = end_y["-"](1["*"](gap_length));
+                            }
+                            "241";
+                            force_scale = force_slider.value;
+                            "242";
+                            mode = mode_dropdown.selected;
+                            "244";
+                            if ((mode === "靜止下落" || typeof mode === "object" && ρσ_equals(mode, "靜止下落"))) {
+                                "245";
+                                f2.v = vector(0, 0, 0);
+                                "246";
+                            } else if ((mode === "鉛直下落" || typeof mode === "object" && ρσ_equals(mode, "鉛直下落"))) {
+                                "247";
+                                f2.v = vector(0, 1["-u"]()["*"](1.5)["*"](launch_speed_x)["*"](force_scale), 0);
+                                "248";
+                            } else if ((mode === "水平前拋" || typeof mode === "object" && ρσ_equals(mode, "水平前拋"))) {
+                                "249";
+                                f2.v = vector(launch_speed_x["+"](launch_speed_x["*"](.5["+"](force_scale))), 0, 0);
+                                "250";
+                            } else if ((mode === "水平後拋" || typeof mode === "object" && ρσ_equals(mode, "水平後拋"))) {
+                                "251";
+                                f2.v = vector(launch_speed_x["-"](1["*"](launch_speed_x)["*"](2)["*"](force_scale)), 0, 0);
+                            }
+                            "254";
+                            f1.v = m_total["*"](peak_v)["-"](1["*"](m2)["*"](f2.v))["/"](m1);
+                            "257";
+                            cm_theoretical.v = peak_v;
+                            "259";
+                        }
+                    } else if ((state === "exploded" || typeof state === "object" && ρσ_equals(state, "exploded"))) {
+                        "261";
+                        if (f1.pos.y[">"](0) || f1.v.y[">"](0)) {
+                            "262";
+                            f1.pos=f1.pos["+"](f1.v["*"](dt));
+                            "263";
+                            f1.v=f1.v["+"](g["*"](dt));
+                            "264";
+                        } else {
+                            "265";
+                            f1.v = vector(0, 0, 0);
+                            "266";
+                            f1.pos.y = 0;
+                            "269";
+                        }
+                        if (f2.pos.y[">"](0) || f2.v.y[">"](0)) {
+                            "270";
+                            f2.pos=f2.pos["+"](f2.v["*"](dt));
+                            "271";
+                            f2.v=f2.v["+"](g["*"](dt));
+                            "272";
+                        } else {
+                            "273";
+                            f2.v = vector(0, 0, 0);
+                            "274";
+                            f2.pos.y = 0;
+                            "277";
+                        }
+                        if (cm_theoretical.pos.y[">"](0) || cm_theoretical.v.y[">"](0)) {
+                            "278";
+                            cm_theoretical.pos=cm_theoretical.pos["+"](cm_theoretical.v["*"](dt));
+                            "279";
+                            cm_theoretical.v=cm_theoretical.v["+"](g["*"](dt));
+                            "280";
+                        } else {
+                            "281";
+                            cm_theoretical.v = vector(0, 0, 0);
+                            "282";
+                            cm_theoretical.pos.y = 0;
+                        }
+                        "285";
+                        cm_real.pos = m1["*"](f1.pos)["+"](m2["*"](f2.pos))["/"](m_total);
+                        "288";
+                        cm_data_text.text = "質心座標 (X, Y): ({:.2f}, {:.2f})".format(cm_real.pos.x, cm_real.pos.y);
+                        "291";
+                        if ((f1.v.mag === 0 || typeof f1.v.mag === "object" && ρσ_equals(f1.v.mag, 0)) && (f2.v.mag === 0 || typeof f2.v.mag === "object" && ρσ_equals(f2.v.mag, 0)) && cm_real.pos.y["<="](0)) {
+                            "292";
+                            running = false;
+                        }
+                    }
+                }
+            };
+            if (!__main__.__module__) Object.defineProperties(__main__, {
+                __module__ : {value: null}
+            });
+
+            ;$(function(){ window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })})()
+            // END JAVASCRIPT
+
+            //--><!]]></script>
+        </div>
+    </div>
+
+</body>
+</html>

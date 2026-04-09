@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年4月9日"
+    entry: "新增「質心運動模擬 (Center of Mass)」，展示系統質心在內力作用（爆炸）下的運動不變性。"
   - date: "2026年4月6日"
     entry: "新增「數據分析實驗室 (Data Analysis Lab)」，協助高中生理解統計邏輯與模型擬合。"
   - date: "2025年12月24日"
@@ -21,6 +23,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "質心運動模擬 (Center of Mass)"
+    image: "/assets/img/apps/center_of_mass_thumbnail.png"
+    description: "探索拋體在空中爆炸後，各碎片雖然軌跡不同，但系統質心依然維持原拋體運動軌跡的物理特性。"
+    url: "/apps/center-of-mass.html"
+    category: "力學"
+    tags: ["Physics", "Simulation", "Center of Mass", "Vpython"]
   - title: "數據分析實驗室 (Data Analysis Lab)"
     image: "/assets/img/apps/data_analysis_lab_thumbnail.png"
     description: "專為高中生設計的互動式工具，探究不確定度 (Uncertainty) 與樣本標準差的統計意義，以及模型擬合分析。"
