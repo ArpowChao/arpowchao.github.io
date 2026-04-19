@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聲音的數位轉生：從類比到邏輯 | Arpow Space</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #059669;
+            --accent: #d97706;
+            --bg: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text: #0f172a;
+            --text-dim: #64748b;
+            --border: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.6rem 1rem;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin: 4rem 0 2rem;
+            padding: 0 1rem;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            width: 1200px;
+            max-width: 95vw;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-bottom: 5rem;
+        }
+
+        .step-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 2.5rem;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        @media (max-width: 850px) {
+            .step-card {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .step-card.full-width {
+            grid-template-columns: 1fr;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card-content h2 {
+            font-size: 1.8rem;
+            color: var(--secondary);
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        .card-content p {
+            line-height: 1.6;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+        }
+
+        .interactive-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .visual-preview {
+            width: 100%;
+            height: 600px;
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), #2563eb);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, var(--secondary), #059669);
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        .logic-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .bit-box {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .bit-box.active {
+            background: var(--primary);
+            border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .bit-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.2rem;
+        }
+
+        .bit-label {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            text-transform: uppercase;
+        }
+
+        .floating-label {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text);
+            font-weight: 700;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">← Home</a>
+
+    <header>
+        <h1>聲音的數位轉生</h1>
+        <p class="subtitle">從類比震動到數位邏輯，探索聲音在電腦中的奇幻旅程</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- Step 0.1: UM66 Specification -->
+        <section class="step-card" id="step-spec">
+            <div class="card-content">
+                <h2>核心零件：UM66 音樂 IC</h2>
+                <p>在開始實驗前，我們先認識這顆微型電腦。它是一顆專門儲存旋律的積體電路 (IC)。</p>
+                <div class="ic-specs" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem; text-align: center; margin-top: 1rem;">
+                    <h3 style="margin-top: 0; color: #1e293b; font-size: 1.1rem; border-bottom: 2px solid #cbd5e1; padding: 0.8rem; text-align: left;">UM66 規格書 (Data Sheet)</h3>
+                    <img src="../assets/audio-digital-science/um66-spec.png" alt="UM66 Specification" style="width: 100%; height: auto; border-radius: 8px;">
+                    <p style="font-size: 0.85rem; color: #475569; padding: 0.8rem; font-weight: 500;">
+                        ⚡ 工作電壓範圍：1.3V ~ 3.3V (超低功耗設計)
+                    </p>
+                </div>
+            </div>
+            <div class="ic-photo" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem; text-align: center; display: flex; flex-direction: column; align-self: stretch;">
+                <h3 style="margin-top: 0; color: #1e293b; font-size: 1.1rem; border-bottom: 2px solid #cbd5e1; padding: 0.8rem; text-align: left;">核心零件：UM66 實體外觀</h3>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+                    <img src="../assets/audio-digital-science/um66-photo.png" alt="UM66 Physical Photo" style="max-width: 100%; height: auto; border-radius: 8px;">
+                </div>
+                <p style="font-size: 0.85rem; color: #64748b; padding: 0.8rem; font-style: italic;">
+                    註：UM66 採用 TO-92 封裝，外型與常見的小功率電晶體非常相似。
+                </p>
+            </div>
+        </section>
+
+        <!-- Step 0.2: Basic Wiring Diagram -->
+        <section class="step-card full-width" id="step-basic-circuit">
+            <div class="card-content" style="flex: 1;">
+                <h2>實體電路連接 (Basic Setup)</h2>
+                <p>這是最簡單的發聲組合：電源、音樂 IC 與發聲元件。</p>
+                <div class="circuit-diagram" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem; margin: 1rem 0; text-align: center;">
+                    <h3 style="margin-top: 0; color: #1e293b; font-size: 1.1rem; border-bottom: 2px solid #cbd5e1; padding: 0.8rem; text-align: left;">實體電路連接圖 (Wiring Diagram)</h3>
+                    <img src="../assets/audio-digital-science/um66-circuit.png" alt="UM66 Circuit" style="width: 100%; height: auto; border-radius: 8px;">
+                    <p style="font-size: 0.85rem; color: #64748b; padding: 0.8rem;">
+                        這是一個「純數位」的發聲系統。IC 輸出的方波訊號直接推動蜂鳴器，完全沒有經過放大或類比濾波。
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Step 1: Music IC Interaction -->
+        <section class="step-card" id="step-1">
+            <div class="card-content">
+                <h2>1. 聆聽與觀察</h2>
+                <p>想像你手上有一個簡單的音樂 IC，試著播放這段音樂並觀察右側產生的波形。</p>
+                <div class="interactive-area">
+                    <button id="play-ic" class="btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        播放 IC 音樂
+                    </button>
+                    <p style="font-style: italic; font-size: 0.9rem; margin: 0;">「音質雖然破破的，但還聽得出是哪首歌吧？」</p>
+                </div>
+            </div>
+            <div class="visual-preview">
+                <canvas id="ic-canvas"></canvas>
+                <div class="floating-label">類比訊號 (精簡版)</div>
+            </div>
+        </section>
+
+        <!-- Step 2: NPN Amplifier Circuit card -->
+        <section class="step-card full-width" id="step-npn-circuit">
+            <div class="card-content" style="flex: 1;">
+                <h2>2. 電晶體的放大魔力</h2>
+                <p>為了讓聲音變大，我們在電路中加入一個<strong>電晶體 (Transistor)</strong>。它就像是一個受訊號控制的開關。</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 1.5rem;">
+                    <!-- Hardware Photo (Enlarged) -->
+                    <div class="circuit-diagram" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+                        <h3 style="margin-top: 0; color: #1e293b; font-size: 1.2rem; border-bottom: 2px solid #cbd5e1; padding: 0.8rem; text-align: left;">電晶體放大電路圖 (NPN Amplifier)</h3>
+                        <img src="../assets/audio-digital-science/npn-circuit.png" alt="NPN Amplifier Circuit" style="width: 100%; height: auto; border-radius: 8px; max-width: 1000px; margin: 1rem auto;">
+                        <p style="font-size: 1rem; color: #64748b; padding: 0.8rem;">
+                            實體接線圖：透過 NPN 電晶體，小電流控制大電流。
+                        </p>
+                    </div>
+
+                    <!-- Theory Metaphor (Side-by-side layout) -->
+                    <div class="theory-diagram" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; text-align: left;">
+                        <h3 style="margin-top: 0; color: #1e293b; font-size: 1.2rem; border-bottom: 2px solid #cbd5e1; padding-bottom: 0.8rem;">運作原理：水龍頭比喻</h3>
+                        <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem; align-items: center; margin-top: 1.5rem;">
+                            <!-- Image (Left, Smaller) -->
+                            <div style="text-align: center;">
+                                <img src="../assets/audio-digital-science/transistor-metaphor.png" alt="Transistor Metaphor" style="width: 100%; height: auto; border-radius: 8px;">
+                                <p style="font-size: 1rem; color: #1d4ed8; margin-top: 1rem; font-weight: 600;">
+                                    💡 音樂 IC 控制「開關」
+                                </p>
+                            </div>
+                            <!-- Explanation Text (Right) -->
+                            <div style="background: #f8fafc; border-left: 4px solid var(--primary); padding: 1.5rem; border-radius: 0 8px 8px 0;">
+                                <h4 style="margin-top: 0; color: #1e293b; font-size: 1.1rem; margin-bottom: 1rem;">它是如何工作的？</h4>
+                                <p style="margin: 0; font-size: 1rem; line-height: 1.8; color: #334155;">
+                                    當音樂 IC 輸出數位訊號時：<br>
+                                    • <strong>輸出 1 (High)</strong>：就像轉開水龍頭，大電流流向喇叭發出聲音。<br>
+                                    • <strong>輸出 0 (Low)</strong>：就像關掉水龍頭，電流切斷，喇叭靜音。<br><br>
+                                    這就是電晶體作為「電子開關」的核心任務。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Step 3: ADC Drawing Whiteboard -->
+        <section class="step-card full-width" id="step-3">
+            <div class="card-content">
+                <h2>3. 類比與數位的轉換 (ADC)</h2>
+                <p>現在，請你在平板上親自嘗試「數位化」！</p>
+                <p>背景的曲線是真實世界的聲音（類比訊號）。請根據網格，畫出你認為數位化後的「階梯波形」。</p>
+                <div class="interactive-area">
+                    <div class="slider-group">
+                        <label class="slider-label">選擇網格精細度 (量化位元)：</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="grid-4bit" class="btn active" style="flex: 1;">2-bit (4 階解析度)</button>
+                            <button id="grid-16bit" class="btn" style="flex: 1; background: #64748b;">4-bit (16 階解析度)</button>
+                        </div>
+                    </div>
+                    <div class="slider-group">
+                        <label class="slider-label">繪圖工具：</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="tool-brush" class="btn active" style="flex: 1;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l5 5"/><path d="M11 11l1 1"/></svg>
+                                畫筆
+                            </button>
+                            <button id="tool-eraser" class="btn" style="flex: 1; background: #64748b;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2C14 1 16 1 17 2L21 6C22 7 22 9 21 10L11 20"/><path d="M17 2L11 8"/></svg>
+                                橡皮擦
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="clear-adc" class="btn" style="background: #ef4444; flex: 1;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v140c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            清除畫布
+                        </button>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-dim);">
+                        💡 <strong>提示：</strong> 當使用 2-bit（只有 4 條水平線）時，是不是發現很難精準捕捉波形的細節？
+                    </p>
+                </div>
+            </div>
+            <div class="visual-preview" style="height: 600px; cursor: crosshair;">
+                <canvas id="adc-canvas"></canvas>
+                <div class="floating-label" id="adc-mode-label" style="background: rgba(255,255,255,0.8); color: var(--text);">模式：2-bit (4 階)</div>
+            </div>
+        </section>
+
+        <!-- Step 4: Logic Gates -->
+        <section class="step-card" id="step-4">
+            <div class="card-content">
+                <h2>4. 機器如何「讀懂」聲音？</h2>
+                <p>電腦內部只有 0 與 1。透過<strong>邏輯閘 (Logic Gates)</strong> 組成的加法器，機器能決定在特定時間點該輸出多少電壓。</p>
+                <p>點擊位元開關，觀察右側輸出的電壓大小（代表聲音的強度）。</p>
+                <div class="interactive-area">
+                    <div class="logic-grid">
+                        <div class="bit-box" data-bit="3">
+                            <div class="bit-val">0</div>
+                            <div class="bit-label">Bit 3 (8)</div>
+                        </div>
+                        <div class="bit-box" data-bit="2">
+                            <div class="bit-val">0</div>
+                            <div class="bit-label">Bit 2 (4)</div>
+                        </div>
+                        <div class="bit-box" data-bit="1">
+                            <div class="bit-val">0</div>
+                            <div class="bit-label">Bit 1 (2)</div>
+                        </div>
+                        <div class="bit-box" data-bit="0">
+                            <div class="bit-val">0</div>
+                            <div class="bit-label">Bit 0 (1)</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; font-weight: 700; color: var(--accent);">
+                        目前強度數值：<span id="total-val">0</span> / 15
+                    </div>
+                </div>
+            </div>
+            <div class="visual-preview">
+                <canvas id="logic-canvas"></canvas>
+                <div class="floating-label">電壓輸出</div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- Global Audio Setup ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let icOsc = null;
+        let icGain = null;
+        let ampOsc = null;
+        let ampGain = null;
+        let ampDistortion = null;
+
+        // --- Step 1: Music IC Logic ---
+        const icCanvas = document.getElementById('ic-canvas');
+        const icCtx = icCanvas.getContext('2d');
+        const playIcBtn = document.getElementById('play-ic');
+        
+        let icPlaying = false;
+        const melody = [
+            {f: 261.63, d: 0.5, v: 0.8}, {f: 261.63, d: 0.5, v: 0.6}, {f: 392.00, d: 0.5, v: 0.8}, {f: 392.00, d: 0.5, v: 0.6},
+            {f: 440.00, d: 0.5, v: 0.8}, {f: 440.00, d: 0.5, v: 0.6}, {f: 392.00, d: 1.0, v: 0.4},
+            {f: 349.23, d: 0.5, v: 0.8}, {f: 349.23, d: 0.5, v: 0.6}, {f: 329.63, d: 0.5, v: 0.8}, {f: 329.63, d: 0.5, v: 0.6},
+            {f: 293.66, d: 0.5, v: 0.8}, {f: 293.66, d: 0.5, v: 0.6}, {f: 261.63, d: 1.0, v: 0.4}
+        ];
+
+        let currentDisplayFreq = 0;
+        let currentDisplayAmp = 0;
+
+        async function playMelody(oscType, gainNode, isBroken = false) {
+            let time = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            osc.type = oscType;
+            
+            // Initial gain
+            gainNode.gain.setValueAtTime(0, time);
+
+            // Add a bit of "broken" noise if requested
+            if (isBroken) {
+                const noise = audioCtx.createOscillator();
+                noise.type = 'sawtooth';
+                noise.frequency.value = 50;
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.value = 0.05;
+                noise.connect(noiseGain);
+                noiseGain.connect(gainNode);
+                noise.start();
+                setTimeout(() => noise.stop(), 7000);
+            }
+
+            osc.connect(gainNode);
+            osc.start();
+            
+            let elapsed = 0;
+            melody.forEach((note, i) => {
+                osc.frequency.setValueAtTime(note.f, time);
+                
+                // Keep gain constant for stability (as requested)
+                gainNode.gain.setValueAtTime(0.2, time);
+
+                // Sync display frequency with visualizer
+                setTimeout(() => {
+                    if (icPlaying) {
+                        currentDisplayFreq = note.f;
+                        currentDisplayAmp = 1.0; // Keep visual amplitude stable
+                    }
+                }, elapsed * 1000);
+                
+                time += note.d;
+                elapsed += note.d;
+            });
+            
+            osc.stop(time);
+            osc.onended = () => {
+                currentDisplayFreq = 0;
+                currentDisplayAmp = 0;
+            };
+            return osc;
+        }
+        
+        // ... rest of the functions
+
+        playIcBtn.addEventListener('click', async () => {
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            
+            if (icPlaying) return;
+            icPlaying = true;
+            playIcBtn.textContent = '播放中...';
+            
+            icGain = audioCtx.createGain();
+            icGain.gain.value = 0.1;
+            icGain.connect(audioCtx.destination);
+            
+            icOsc = await playMelody('square', icGain, true);
+            icOsc.onended = () => {
+                icPlaying = false;
+                playIcBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 播放 IC 音樂';
+            };
+        });
+
+        // --- Step 2: Amp Logic (Removed Interaction) ---
+        // Note: Interactive simulation removed as per pedagogical preference.
+        // Purely informational card is kept in the HTML section.
+
+        // --- Step 3: ADC Whiteboard Logic ---
+        const adcCanvas = document.getElementById('adc-canvas');
+        const adcCtx = adcCanvas.getContext('2d');
+        const clearAdcBtn = document.getElementById('clear-adc');
+        const grid4bitBtn = document.getElementById('grid-4bit');
+        const grid16bitBtn = document.getElementById('grid-16bit');
+        const toolBrush = document.getElementById('tool-brush');
+        const toolEraser = document.getElementById('tool-eraser');
+        const adcModeLabel = document.getElementById('adc-mode-label');
+
+        let adcIsDrawing = false;
+        let adcLastX = 0;
+        let adcLastY = 0;
+        let currentGridMode = 4; 
+        let isEraser = false;
+
+        // Drawing Layer
+        const drawingCanvas = document.createElement('canvas');
+        const drawingCtx = drawingCanvas.getContext('2d');
+
+        function resizeAdc() {
+            adcCanvas.width = adcCanvas.offsetWidth;
+            adcCanvas.height = adcCanvas.offsetHeight;
+            drawingCanvas.width = adcCanvas.width;
+            drawingCanvas.height = adcCanvas.height;
+            drawAdcBackground();
+        }
+
+        function drawAdcBackground() {
+            adcCtx.clearRect(0, 0, adcCanvas.width, adcCanvas.height);
+            
+            // 1. Draw Grid (Clearer for light mode)
+            adcCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+            adcCtx.lineWidth = 1;
+            
+            // Horizontal lines (Quantization Levels)
+            const levels = currentGridMode === 4 ? 4 : 16; 
+            for (let i = 0; i <= levels; i++) {
+                const y = (i / levels) * adcCanvas.height;
+                adcCtx.beginPath();
+                adcCtx.moveTo(0, y);
+                adcCtx.lineTo(adcCanvas.width, y);
+                adcCtx.stroke();
+            }
+
+            // Vertical lines (Sampling Rate)
+            const samples = 16;
+            for (let i = 0; i <= samples; i++) {
+                const x = (i / samples) * adcCanvas.width;
+                adcCtx.beginPath();
+                adcCtx.moveTo(x, 0);
+                adcCtx.lineTo(x, adcCanvas.height);
+                adcCtx.stroke();
+            }
+
+            // 2. Draw High Dynamic Organic Waveform (Guide - Fully filling)
+            adcCtx.strokeStyle = 'rgba(37, 99, 235, 0.4)'; // Blue tinted guide
+            adcCtx.setLineDash([15, 8]);
+            adcCtx.lineWidth = 4;
+            adcCtx.beginPath();
+            
+            // Hardcode 285 to guarantee span on 600px canvas
+            const baseAmp = 285; 
+            for (let x = 0; x < adcCanvas.width; x++) {
+                // More complex, jagged wave with multiple frequencies
+                const wave = Math.sin(x * 0.012) * 0.45 + 
+                             Math.sin(x * 0.028) * 0.3 + 
+                             Math.sin(x * 0.055) * 0.15 + 
+                             Math.sin(x * 0.09) * 0.1;
+                
+                const y = wave * baseAmp + 300; 
+                
+                if (x === 0) adcCtx.moveTo(x, y);
+                else adcCtx.lineTo(x, y);
+            }
+            adcCtx.stroke();
+            adcCtx.setLineDash([]);
+        }
+
+        function getAdcPos(e) {
+            const rect = adcCanvas.getBoundingClientRect();
+            if (e.touches) {
+                return [e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top];
+            }
+            return [e.clientX - rect.left, e.clientY - rect.top];
+        }
+
+        function startAdcDrawing(e) {
+            adcIsDrawing = true;
+            [adcLastX, adcLastY] = getAdcPos(e);
+        }
+
+        function drawAdc(e) {
+            if (!adcIsDrawing) return;
+            const [x, y] = getAdcPos(e);
+
+            drawingCtx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
+            drawingCtx.strokeStyle = isEraser ? 'rgba(0,0,0,1)' : '#1d4ed8'; 
+            drawingCtx.lineWidth = isEraser ? 30 : 5;
+            drawingCtx.lineCap = 'round';
+            drawingCtx.lineJoin = 'round';
+            
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(adcLastX, adcLastY);
+            drawingCtx.lineTo(x, y);
+            drawingCtx.stroke();
+
+            [adcLastX, adcLastY] = [x, y];
+        }
+
+        function stopAdcDrawing() {
+            adcIsDrawing = false;
+        }
+
+        adcCanvas.addEventListener('mousedown', startAdcDrawing);
+        adcCanvas.addEventListener('mousemove', drawAdc);
+        adcCanvas.addEventListener('mouseup', stopAdcDrawing);
+        adcCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startAdcDrawing(e); });
+        adcCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawAdc(e); });
+        adcCanvas.addEventListener('touchend', stopAdcDrawing);
+
+        clearAdcBtn.addEventListener('click', () => {
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+        });
+
+        toolBrush.addEventListener('click', () => {
+            isEraser = false;
+            toolBrush.classList.add('active');
+            toolEraser.classList.remove('active');
+            toolEraser.style.background = '#64748b';
+            toolBrush.style.background = '';
+        });
+
+        toolEraser.addEventListener('click', () => {
+            isEraser = true;
+            toolEraser.classList.add('active');
+            toolBrush.classList.remove('active');
+            toolBrush.style.background = '#64748b';
+            toolEraser.style.background = '';
+        });
+
+        grid4bitBtn.addEventListener('click', () => {
+            currentGridMode = 4;
+            grid4bitBtn.classList.add('active');
+            grid16bitBtn.classList.remove('active');
+            grid16bitBtn.style.background = '#64748b';
+            grid4bitBtn.style.background = '';
+            adcModeLabel.textContent = '模式：2-bit (4 階)';
+            drawAdcBackground();
+        });
+
+        grid16bitBtn.addEventListener('click', () => {
+            currentGridMode = 16;
+            grid16bitBtn.classList.add('active');
+            grid4bitBtn.classList.remove('active');
+            grid4bitBtn.style.background = '#64748b';
+            grid16bitBtn.style.background = '';
+            adcModeLabel.textContent = '模式：4-bit (16 階)';
+            drawAdcBackground();
+        });
+
+        // Add to main loop
+        function renderAdc() {
+            drawAdcBackground();
+            adcCtx.drawImage(drawingCanvas, 0, 0);
+        }
+
+        // --- Step 4: Logic Gates ---
+        const logicCanvas = document.getElementById('logic-canvas');
+        const logicCtx = logicCanvas.getContext('2d');
+        const bitBoxes = document.querySelectorAll('.bit-box');
+        const totalValText = document.getElementById('total-val');
+
+        let bits = [0, 0, 0, 0];
+
+        bitBoxes.forEach(box => {
+            box.addEventListener('click', () => {
+                const idx = parseInt(box.dataset.bit);
+                bits[idx] = bits[idx] === 0 ? 1 : 0;
+                box.querySelector('.bit-val').textContent = bits[idx];
+                box.classList.toggle('active');
+                
+                const total = bits[0] * 1 + bits[1] * 2 + bits[2] * 4 + bits[3] * 8;
+                totalValText.textContent = total;
+            });
+        });
+
+        // --- Animation Loop ---
+        function animate() {
+            const time = Date.now() * 0.002;
+            
+            // Draw IC Wave (Step 1)
+            icCtx.clearRect(0, 0, icCanvas.width, icCanvas.height);
+            icCtx.strokeStyle = '#1d4ed8';
+            icCtx.lineWidth = 3;
+            icCtx.beginPath();
+            if (currentDisplayFreq > 0) {
+                const visualFreq = currentDisplayFreq * 0.0002;
+                const visualAmp = currentDisplayAmp * 50; 
+                for (let x = 0; x < icCanvas.width; x++) {
+                    const y = Math.sign(Math.sin(x * visualFreq + time * 5)) * visualAmp + icCanvas.height / 2;
+                    if (x === 0) icCtx.moveTo(x, y);
+                    else icCtx.lineTo(x, y);
+                }
+            } else {
+                icCtx.moveTo(0, icCanvas.height / 2);
+                icCtx.lineTo(icCanvas.width, icCanvas.height / 2);
+            }
+            icCtx.stroke();
+
+            // Draw ADC Whiteboard
+            renderAdc();
+
+            // Draw Logic voltage
+            logicCtx.clearRect(0, 0, logicCanvas.width, logicCanvas.height);
+            const total = bits[0] * 1 + bits[1] * 2 + bits[2] * 4 + bits[3] * 8;
+            const targetHeight = (total / 15) * 400; // Adjusted for 600px height
+            
+            logicCtx.fillStyle = 'rgba(37, 99, 235, 0.1)';
+            logicCtx.fillRect(50, logicCanvas.height - 500, logicCanvas.width - 100, 400);
+            
+            logicCtx.fillStyle = '#2563eb';
+            logicCtx.shadowBlur = 10;
+            logicCtx.shadowColor = 'rgba(37, 99, 235, 0.3)';
+            logicCtx.fillRect(70, logicCanvas.height - 100 - targetHeight, logicCanvas.width - 140, targetHeight);
+            logicCtx.shadowBlur = 0;
+
+            requestAnimationFrame(animate);
+        }
+
+        // Handle Resize
+        function resize() {
+            [icCanvas, adcCanvas, logicCanvas].forEach(c => {
+                c.width = c.offsetWidth;
+                c.height = 600; 
+            });
+            resizeAdc();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+
+    </script>
+</body>
+</html>

@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年4月19日"
+    entry: "新增「聲音的數位轉生 (Audio Digital Science)」，並加入互動式 ADC 繪圖畫布，讓學生親手體驗類比轉數位的量化與取樣過程。"
   - date: "2026年4月9日"
     entry: "新增「質心運動模擬 (Center of Mass)」，展示系統質心在內力作用（爆炸）下的運動不變性。"
   - date: "2026年4月6日"
@@ -23,6 +25,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "聲音的數位轉生 (Audio Digital Science)"
+    image: "/assets/img/apps/audio_digital_science_thumbnail.png"
+    description: "探索聲音如何從震動訊號透過放大、取樣、量化，最終轉化為電腦能讀懂的數位邏輯。專為課程分享設計的互動教材。"
+    url: "/apps/audio-digital-science.html"
+    category: "現代物理"
+    tags: ["Audio", "ADC", "Digital Logic", "Physics", "Education"]
   - title: "質心運動模擬 (Center of Mass)"
     image: "/assets/img/apps/center_of_mass_thumbnail.png"
     description: "探索拋體在空中爆炸後，各碎片雖然軌跡不同，但系統質心依然維持原拋體運動軌跡的物理特性。"
