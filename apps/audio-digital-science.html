@@ -446,8 +446,8 @@
             <div class="visual-preview" style="height: 600px; cursor: crosshair;">
                 <canvas id="adc-canvas"></canvas>
                 <div class="floating-label" id="adc-mode-label" style="background: rgba(255,255,255,0.8); color: var(--text);">模式：2-bit (4 階)</div>
-                <div class="axis-label-x">橫軸：取樣率</div>
-                <div class="axis-label-y">縱軸：位元取樣深度</div>
+                <div class="axis-label-x">取樣率</div>
+                <div class="axis-label-y">位元取樣深度</div>
             </div>
         </section>
 
@@ -625,8 +625,8 @@
             adcCtx.lineWidth = 1;
             
             // Horizontal lines (Quantization Levels)
-            // Added one extra level as per user request: levels + 1
-            const levels = currentGridMode === 4 ? 5 : 17; 
+            // Adjusted: n-bit = 2^n values = 2^n lines (e.g., 0, 1, 2, 3 for 2-bit)
+            const levels = currentGridMode === 4 ? 3 : 15; 
             for (let i = 0; i <= levels; i++) {
                 const y = (i / levels) * adcCanvas.height;
                 adcCtx.beginPath();
