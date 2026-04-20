@@ -262,6 +262,36 @@
             font-weight: 700;
             border: 1px solid var(--border);
         }
+
+        .axis-label-x {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 700;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .axis-label-y {
+            position: absolute;
+            top: 50%;
+            left: 5px;
+            transform: translateY(-50%) rotate(-90deg);
+            transform-origin: left center;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 700;
+            pointer-events: none;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -409,13 +439,15 @@
                         </button>
                     </div>
                     <p style="font-size: 0.85rem; color: var(--text-dim);">
-                        💡 <strong>提示：</strong> 當使用 2-bit（只有 4 條水平線）時，是不是發現很難精準捕捉波形的細節？
+                        💡 <strong>提示：</strong> 當格線精細度較低時，是不是發現很難精準捕捉波形的細節？
                     </p>
                 </div>
             </div>
             <div class="visual-preview" style="height: 600px; cursor: crosshair;">
                 <canvas id="adc-canvas"></canvas>
                 <div class="floating-label" id="adc-mode-label" style="background: rgba(255,255,255,0.8); color: var(--text);">模式：2-bit (4 階)</div>
+                <div class="axis-label-x">橫軸：取樣率</div>
+                <div class="axis-label-y">縱軸：位元取樣深度</div>
             </div>
         </section>
 
@@ -593,7 +625,8 @@
             adcCtx.lineWidth = 1;
             
             // Horizontal lines (Quantization Levels)
-            const levels = currentGridMode === 4 ? 4 : 16; 
+            // Added one extra level as per user request: levels + 1
+            const levels = currentGridMode === 4 ? 5 : 17; 
             for (let i = 0; i <= levels; i++) {
                 const y = (i / levels) * adcCanvas.height;
                 adcCtx.beginPath();
