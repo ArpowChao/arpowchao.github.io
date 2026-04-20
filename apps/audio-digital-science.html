@@ -265,7 +265,7 @@
 
         .axis-label-x {
             position: absolute;
-            bottom: 5px;
+            bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 1.2rem;
@@ -273,24 +273,26 @@
             font-weight: 700;
             pointer-events: none;
             background: rgba(255, 255, 255, 0.8);
-            padding: 2px 8px;
-            border-radius: 4px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            z-index: 10;
         }
 
         .axis-label-y {
             position: absolute;
             top: 50%;
-            left: 5px;
+            left: 35px;
             transform: translateY(-50%) rotate(-90deg);
-            transform-origin: left center;
+            transform-origin: center center;
             font-size: 1.2rem;
             color: var(--text-dim);
             font-weight: 700;
             pointer-events: none;
             white-space: nowrap;
             background: rgba(255, 255, 255, 0.8);
-            padding: 2px 8px;
-            border-radius: 4px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            z-index: 10;
         }
     </style>
 </head>
