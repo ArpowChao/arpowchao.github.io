@@ -307,6 +307,26 @@
 
     <div class="container">
         
+        <!-- Video Introduction -->
+        <section class="step-card full-width" id="step-video">
+            <div class="card-content" style="text-align: center; width: 100%;">
+                <h2 style="color: var(--primary); margin-bottom: 1.5rem;">引言：實驗室的聲音魔法</h2>
+                <div class="video-wrapper" style="max-width: 400px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 2px solid var(--border); aspect-ratio: 9 / 16; background: #000;">
+                    <iframe 
+                        width="100%" 
+                        height="100%" 
+                        src="https://www.youtube.com/embed/Q3RVBmfE90M" 
+                        title="YouTube video player" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen 
+                        style="display: block;">
+                    </iframe>
+                </div>
+                <p style="margin-top: 1.5rem; color: var(--text-dim); font-style: italic;">「在進入科學原理前，先看看這個有趣的實體實驗！」</p>
+            </div>
+        </section>
+        
         <!-- Step 0.1: UM66 Specification -->
         <section class="step-card" id="step-spec">
             <div class="card-content">
@@ -351,17 +371,33 @@
             <div class="card-content">
                 <h2>1. 聆聽與觀察</h2>
                 <p>想像你手上有一個簡單的音樂 IC，試著播放這段音樂並觀察右側產生的波形。</p>
-                <div class="interactive-area">
-                    <button id="play-ic" class="btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        播放 IC 音樂
-                    </button>
-                    <p style="font-style: italic; font-size: 0.9rem; margin: 0;">「音質雖然破破的，但還聽得出是哪首歌吧？」</p>
+                <div class="comparison-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="comparison-box" style="background: rgba(0,0,0,0.05); padding: 1.2rem; border-radius: 16px; text-align: center; border: 2px solid transparent; transition: 0.3s;" id="box-a">
+                        <p style="font-weight: 700; margin-bottom: 0.8rem; color: var(--text);">音質 A (音樂 IC)</p>
+                        <button id="play-ic" class="btn" style="width: 100%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            播放
+                        </button>
+                        <button class="vote-btn btn" data-choice="A" style="margin-top: 0.8rem; background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 0.4rem; width: 100%; font-size: 0.8rem;">
+                            👍 我投這個比較好聽
+                        </button>
+                    </div>
+                    <div class="comparison-box" style="background: rgba(0,0,0,0.05); padding: 1.2rem; border-radius: 16px; text-align: center; border: 2px solid transparent; transition: 0.3s;" id="box-b">
+                        <p style="font-weight: 700; margin-bottom: 0.8rem; color: var(--text);">音質 B (高音質數位)</p>
+                        <button id="play-hires" class="btn secondary" style="width: 100%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            播放
+                        </button>
+                        <button class="vote-btn btn" data-choice="B" style="margin-top: 0.8rem; background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 0.4rem; width: 100%; font-size: 0.8rem;">
+                            👍 我投這個比較好聽
+                        </button>
+                    </div>
                 </div>
+                <div id="choice-feedback" style="margin-top: 1rem; text-align: center; font-weight: 700; color: var(--secondary); min-height: 1.5rem;"></div>
             </div>
             <div class="visual-preview">
                 <canvas id="ic-canvas"></canvas>
-                <div class="floating-label">類比訊號 (精簡版)</div>
+                <div class="floating-label" id="wave-type-label">目前狀態：靜止</div>
             </div>
         </section>
 
@@ -453,6 +489,37 @@
             </div>
         </section>
 
+        <!-- Section 3.5: ADC Summary Diagram -->
+        <section class="step-card full-width" id="step-adc-summary">
+            <div class="card-content" style="text-align: center; width: 100%;">
+                <h2 style="color: var(--primary);">3.5 總結：類比到數位的四個階段</h2>
+                <p>從真實聲音到電腦數據，主要經過以下四個關鍵步驟：</p>
+                
+                <div class="adc-summary-visual" style="margin: 2rem auto; max-width: 1000px;">
+                    <img src="../assets/audio-digital-science/adc-summary.png" alt="ADC Process Summary" style="width: 100%; height: auto; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 1px solid var(--border);">
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 2rem; text-align: left;">
+                    <div style="background: rgba(37, 99, 235, 0.03); padding: 1.5rem; border-radius: 16px; border-left: 4px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <h4 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 0.8rem;">1. 類比訊號</h4>
+                        <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-dim); margin: 0;">連續的電壓變化，完整記錄了原始聲音的每一絲波形震動。</p>
+                    </div>
+                    <div style="background: rgba(37, 99, 235, 0.03); padding: 1.5rem; border-radius: 16px; border-left: 4px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <h4 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 0.8rem;">2. 取樣與保持</h4>
+                        <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-dim); margin: 0;">每隔極短的時間點，瞬間擷取當下的電壓高度記錄下來。</p>
+                    </div>
+                    <div style="background: rgba(37, 99, 235, 0.03); padding: 1.5rem; border-radius: 16px; border-left: 4px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <h4 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 0.8rem;">3. 量化</h4>
+                        <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-dim); margin: 0;">將取樣到的數值，對齊到數位系統預設的「刻度（量化位元）」。</p>
+                    </div>
+                    <div style="background: rgba(37, 99, 235, 0.03); padding: 1.5rem; border-radius: 16px; border-left: 4px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <h4 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 0.8rem;">4. 編碼</h4>
+                        <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-dim); margin: 0;">將量化後的格點數值轉化為 0 與 1，讓電腦能讀懂並儲存。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Step 4: Logic Gates -->
         <section class="step-card" id="step-4">
             <div class="card-content">
@@ -504,8 +571,13 @@
         const icCanvas = document.getElementById('ic-canvas');
         const icCtx = icCanvas.getContext('2d');
         const playIcBtn = document.getElementById('play-ic');
+        const playHiresBtn = document.getElementById('play-hires');
+        const voteBtns = document.querySelectorAll('.vote-btn');
+        const feedback = document.getElementById('choice-feedback');
+        const waveTypeLabel = document.getElementById('wave-type-label');
         
         let icPlaying = false;
+        let currentWaveType = 'none'; // 'square' or 'sine'
         const melody = [
             {f: 261.63, d: 0.5, v: 0.8}, {f: 261.63, d: 0.5, v: 0.6}, {f: 392.00, d: 0.5, v: 0.8}, {f: 392.00, d: 0.5, v: 0.6},
             {f: 440.00, d: 0.5, v: 0.8}, {f: 440.00, d: 0.5, v: 0.6}, {f: 392.00, d: 1.0, v: 0.4},
@@ -563,6 +635,8 @@
             osc.onended = () => {
                 currentDisplayFreq = 0;
                 currentDisplayAmp = 0;
+                currentWaveType = 'none';
+                waveTypeLabel.textContent = '目前狀態：靜止';
             };
             return osc;
         }
@@ -575,6 +649,8 @@
             if (icPlaying) return;
             icPlaying = true;
             playIcBtn.textContent = '播放中...';
+            currentWaveType = 'square';
+            waveTypeLabel.textContent = '目前狀態：播放 音質 A (方波)';
             
             icGain = audioCtx.createGain();
             icGain.gain.value = 0.1;
@@ -583,8 +659,57 @@
             icOsc = await playMelody('square', icGain, true);
             icOsc.onended = () => {
                 icPlaying = false;
-                playIcBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 播放 IC 音樂';
+                playIcBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 播放';
+                currentWaveType = 'none';
+                waveTypeLabel.textContent = '目前狀態：靜止';
             };
+        });
+
+        playHiresBtn.addEventListener('click', async () => {
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            
+            if (icPlaying) return;
+            icPlaying = true;
+            playHiresBtn.textContent = '播放中...';
+            currentWaveType = 'sine';
+            waveTypeLabel.textContent = '目前狀態：播放 音質 B (正弦波)';
+            
+            icGain = audioCtx.createGain();
+            icGain.gain.value = 0.1;
+            icGain.connect(audioCtx.destination);
+            
+            icOsc = await playMelody('sine', icGain, false);
+            icOsc.onended = () => {
+                icPlaying = false;
+                playHiresBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 播放';
+                currentWaveType = 'none';
+                waveTypeLabel.textContent = '目前狀態：靜止';
+            };
+        });
+
+        voteBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const choice = btn.dataset.choice;
+                const boxA = document.getElementById('box-a');
+                const boxB = document.getElementById('box-b');
+                
+                // Clear active states
+                boxA.style.borderColor = 'transparent';
+                boxB.style.borderColor = 'transparent';
+                boxA.style.background = 'rgba(0,0,0,0.05)';
+                boxB.style.background = 'rgba(0,0,0,0.05)';
+                
+                // Set active choice
+                if (choice === 'A') {
+                    boxA.style.borderColor = 'var(--primary)';
+                    boxA.style.background = 'rgba(37, 99, 235, 0.05)';
+                    feedback.textContent = '你不孤單！很多人也覺得 IC 的聲音更有復古懷舊感。';
+                } else {
+                    boxB.style.borderColor = 'var(--secondary)';
+                    boxB.style.background = 'rgba(5, 150, 105, 0.05)';
+                    feedback.textContent = '正確的選擇！高音質數位音訊能更精確地還原原始波形。';
+                }
+            });
         });
 
         // --- Step 2: Amp Logic (Removed Interaction) ---
@@ -792,7 +917,12 @@
                 const visualFreq = currentDisplayFreq * 0.0002;
                 const visualAmp = currentDisplayAmp * 50; 
                 for (let x = 0; x < icCanvas.width; x++) {
-                    const y = Math.sign(Math.sin(x * visualFreq + time * 5)) * visualAmp + icCanvas.height / 2;
+                    let y;
+                    if (currentWaveType === 'square') {
+                        y = Math.sign(Math.sin(x * visualFreq + time * 5)) * visualAmp + icCanvas.height / 2;
+                    } else {
+                        y = Math.sin(x * visualFreq + time * 5) * visualAmp + icCanvas.height / 2;
+                    }
                     if (x === 0) icCtx.moveTo(x, y);
                     else icCtx.lineTo(x, y);
                 }
