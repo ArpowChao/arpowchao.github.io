@@ -45,6 +45,84 @@ const orbitCtx = orbitCanvas.getContext('2d');
 const energyCanvas = document.getElementById('energy-canvas');
 const energyCtx = energyCanvas.getContext('2d');
 
+// --- 畫布主題顏色管理 ---
+let canvasTheme = {
+    canvasBg: 'rgba(5, 6, 12, 0.4)',
+    gridColor: 'rgba(255, 255, 255, 0.02)',
+    glowAtmos0: 'rgba(59, 130, 246, 0.55)',
+    glowAtmos1: 'rgba(0, 242, 254, 0.35)',
+    glowAtmos2: 'rgba(0, 242, 254, 0.08)',
+    glowAtmos3: 'rgba(0, 242, 254, 0)',
+    earthCenter: '#1e293b',
+    earthMid: '#0f172a',
+    earthEdge: '#020617',
+    earthOutline: 'rgba(0, 242, 254, 0.4)',
+    earthOutlineGlow: 'rgba(0, 242, 254, 0.5)',
+    trailColorNormal: 'rgba(0, 242, 254, 0.4)',
+    trailColorDrag: 'rgba(244, 63, 94, 0.5)',
+    satColorNormal: 'rgba(0, 242, 254, 0.8)',
+    satColorDrag: 'rgba(244, 63, 94, 0.8)',
+    satGlowNormal: '#00f2fe',
+    satGlowDrag: '#f43f5e',
+    chartBg: 'rgba(0, 0, 0, 0.2)',
+    chartBorder: 'rgba(255, 255, 255, 0.04)',
+    chartGrid: 'rgba(255, 255, 255, 0.02)',
+    chartText: 'rgba(148, 163, 184, 0.7)'
+};
+
+function updateCanvasTheme() {
+    const isLight = document.body && document.body.classList && document.body.classList.contains('light-mode');
+    if (isLight) {
+        canvasTheme = {
+            canvasBg: 'rgba(255, 255, 255, 0.15)',
+            gridColor: 'rgba(0, 0, 0, 0.04)',
+            glowAtmos0: 'rgba(37, 99, 235, 0.45)',
+            glowAtmos1: 'rgba(2, 132, 199, 0.25)',
+            glowAtmos2: 'rgba(2, 132, 199, 0.04)',
+            glowAtmos3: 'rgba(2, 132, 199, 0)',
+            earthCenter: '#cbd5e1',
+            earthMid: '#94a3b8',
+            earthEdge: '#475569',
+            earthOutline: 'rgba(2, 132, 199, 0.45)',
+            earthOutlineGlow: 'rgba(2, 132, 199, 0.2)',
+            trailColorNormal: 'rgba(2, 132, 199, 0.55)',
+            trailColorDrag: 'rgba(185, 28, 28, 0.6)',
+            satColorNormal: 'rgba(2, 132, 199, 0.95)',
+            satColorDrag: 'rgba(185, 28, 28, 0.95)',
+            satGlowNormal: '#1d4ed8',
+            satGlowDrag: '#b91c1c',
+            chartBg: 'rgba(255, 255, 255, 0.65)',
+            chartBorder: 'rgba(15, 23, 42, 0.08)',
+            chartGrid: 'rgba(15, 23, 42, 0.04)',
+            chartText: 'rgba(71, 85, 105, 0.9)'
+        };
+    } else {
+        canvasTheme = {
+            canvasBg: 'rgba(5, 6, 12, 0.4)',
+            gridColor: 'rgba(255, 255, 255, 0.02)',
+            glowAtmos0: 'rgba(59, 130, 246, 0.55)',
+            glowAtmos1: 'rgba(0, 242, 254, 0.35)',
+            glowAtmos2: 'rgba(0, 242, 254, 0.08)',
+            glowAtmos3: 'rgba(0, 242, 254, 0)',
+            earthCenter: '#1e293b',
+            earthMid: '#0f172a',
+            earthEdge: '#020617',
+            earthOutline: 'rgba(0, 242, 254, 0.4)',
+            earthOutlineGlow: 'rgba(0, 242, 254, 0.5)',
+            trailColorNormal: 'rgba(0, 242, 254, 0.4)',
+            trailColorDrag: 'rgba(244, 63, 94, 0.5)',
+            satColorNormal: 'rgba(0, 242, 254, 0.8)',
+            satColorDrag: 'rgba(244, 63, 94, 0.8)',
+            satGlowNormal: '#00f2fe',
+            satGlowDrag: '#f43f5e',
+            chartBg: 'rgba(0, 0, 0, 0.2)',
+            chartBorder: 'rgba(255, 255, 255, 0.04)',
+            chartGrid: 'rgba(255, 255, 255, 0.02)',
+            chartText: 'rgba(148, 163, 184, 0.7)'
+        };
+    }
+}
+
 // --- UI 元素 ---
 const playPauseBtn = document.getElementById('play-pause-btn');
 const playBtnText = document.getElementById('play-btn-text');
@@ -269,11 +347,11 @@ function drawOrbit(scale, zoomFactor, camX = 0, camY = 0) {
     const earthCy = cy - camY * scale;
 
     // 1. 繪製太空星光微弱背景
-    orbitCtx.fillStyle = 'rgba(5, 6, 12, 0.4)';
+    orbitCtx.fillStyle = canvasTheme.canvasBg;
     orbitCtx.fillRect(0, 0, w, h);
 
     // 2. 繪製格線 (Grid Lines)
-    orbitCtx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+    orbitCtx.strokeStyle = canvasTheme.gridColor;
     orbitCtx.lineWidth = 1;
     const gridSize = 40;
     for (let i = 0; i < w; i += gridSize) {
@@ -293,10 +371,10 @@ function drawOrbit(scale, zoomFactor, camX = 0, camY = 0) {
     const earthRadiusPx = R * scale;
     const atmosRadiusPx = (R + 120000) * scale; // 120km 厚度大氣
     const glowGrad = orbitCtx.createRadialGradient(earthCx, earthCy, earthRadiusPx - 10 * scale, earthCx, earthCy, atmosRadiusPx);
-    glowGrad.addColorStop(0, 'rgba(59, 130, 246, 0.6)');  // 深藍
-    glowGrad.addColorStop(0.3, 'rgba(0, 242, 254, 0.35)'); // 亮青
-    glowGrad.addColorStop(0.8, 'rgba(0, 242, 254, 0.08)'); // 漸淡
-    glowGrad.addColorStop(1, 'rgba(0, 242, 254, 0)');
+    glowGrad.addColorStop(0, canvasTheme.glowAtmos0);
+    glowGrad.addColorStop(0.3, canvasTheme.glowAtmos1);
+    glowGrad.addColorStop(0.8, canvasTheme.glowAtmos2);
+    glowGrad.addColorStop(1, canvasTheme.glowAtmos3);
     orbitCtx.fillStyle = glowGrad;
     orbitCtx.beginPath();
     orbitCtx.arc(earthCx, earthCy, atmosRadiusPx, 0, Math.PI * 2);
@@ -304,9 +382,9 @@ function drawOrbit(scale, zoomFactor, camX = 0, camY = 0) {
 
     // 4. 繪製地球本體
     const earthGrad = orbitCtx.createRadialGradient(earthCx - earthRadiusPx*0.2, earthCy - earthRadiusPx*0.2, 0, earthCx, earthCy, earthRadiusPx);
-    earthGrad.addColorStop(0, '#1e293b'); // 暗亮藍
-    earthGrad.addColorStop(0.6, '#0f172a'); // 深海藍
-    earthGrad.addColorStop(1, '#020617'); // 邊緣陰影
+    earthGrad.addColorStop(0, canvasTheme.earthCenter);
+    earthGrad.addColorStop(0.6, canvasTheme.earthMid);
+    earthGrad.addColorStop(1, canvasTheme.earthEdge);
     orbitCtx.fillStyle = earthGrad;
     orbitCtx.beginPath();
     orbitCtx.arc(earthCx, earthCy, earthRadiusPx, 0, Math.PI * 2);
@@ -331,9 +409,9 @@ function drawOrbit(scale, zoomFactor, camX = 0, camY = 0) {
     orbitCtx.restore();
 
     // 4b. 地球發光邊界線
-    orbitCtx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+    orbitCtx.strokeStyle = canvasTheme.earthOutline;
     orbitCtx.lineWidth = 1.5;
-    orbitCtx.shadowColor = 'rgba(0, 242, 254, 0.5)';
+    orbitCtx.shadowColor = canvasTheme.earthOutlineGlow;
     orbitCtx.shadowBlur = 6;
     orbitCtx.beginPath();
     orbitCtx.arc(earthCx, earthCy, earthRadiusPx, 0, Math.PI * 2);
@@ -349,10 +427,10 @@ function drawOrbit(scale, zoomFactor, camX = 0, camY = 0) {
         }
         
         // 漸層軌跡 (隨著越遠越淡)
-        orbitCtx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+        orbitCtx.strokeStyle = canvasTheme.trailColorNormal;
         if (isDragEnabled) {
             // 開啟阻力時為橙紅色發光尾跡，強調衰減
-            orbitCtx.strokeStyle = 'rgba(244, 63, 94, 0.5)';
+            orbitCtx.strokeStyle = canvasTheme.trailColorDrag;
         }
         orbitCtx.lineWidth = 1.5;
         orbitCtx.stroke();
@@ -363,8 +441,8 @@ function drawOrbit(scale, zoomFactor, camX = 0, camY = 0) {
     const satY = cy + (y - camY) * scale;
     
     // 衛星外發光
-    orbitCtx.fillStyle = isDragEnabled ? 'rgba(244, 63, 94, 0.8)' : 'rgba(0, 242, 254, 0.8)';
-    orbitCtx.shadowColor = isDragEnabled ? '#f43f5e' : '#00f2fe';
+    orbitCtx.fillStyle = isDragEnabled ? canvasTheme.satColorDrag : canvasTheme.satColorNormal;
+    orbitCtx.shadowColor = isDragEnabled ? canvasTheme.satGlowDrag : canvasTheme.satGlowNormal;
     orbitCtx.shadowBlur = 12;
     orbitCtx.beginPath();
     orbitCtx.arc(satX, satY, 5, 0, Math.PI * 2);
@@ -437,22 +515,22 @@ function drawEnergyChart() {
         // 當前子圖的專屬 Y 座標轉換函數
         const getY = (val) => subYEnd - ((val - minVal) / range) * subH;
 
-        // 2. 繪製子圖玻璃暗色背景與發光邊界
-        energyCtx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        // 2. 繪製子圖玻璃背景與發光邊界
+        energyCtx.fillStyle = canvasTheme.chartBg;
         energyCtx.fillRect(margin.left, subYStart, chartW, subH);
-        energyCtx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        energyCtx.strokeStyle = canvasTheme.chartBorder;
         energyCtx.lineWidth = 1;
         energyCtx.strokeRect(margin.left, subYStart, chartW, subH);
 
         // 3. 繪製格線與標註
-        energyCtx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+        energyCtx.strokeStyle = canvasTheme.chartGrid;
         energyCtx.beginPath();
         energyCtx.moveTo(margin.left, subYStart + subH / 2);
         energyCtx.lineTo(margin.left + chartW, subYStart + subH / 2);
         energyCtx.stroke();
 
         // 標註最大/最小值 (單位 GJ)
-        energyCtx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        energyCtx.fillStyle = canvasTheme.chartText;
         energyCtx.font = '10px Share Tech Mono';
         energyCtx.textAlign = 'right';
         energyCtx.textBaseline = 'middle';
@@ -727,4 +805,22 @@ function resizeCanvases() {
 window.addEventListener('resize', resizeCanvases);
 
 // --- 初始化啟動 ---
+updateCanvasTheme();
 initSimulation();
+
+// ==========================================================================
+// 8. 主題切換 (Theme Toggle)
+// ==========================================================================
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        themeToggleBtn.innerHTML = isLight ? '🌙 切換暗色模式' : '🌓 切換明亮模式';
+        updateCanvasTheme();
+        
+        // 即時重繪防白屏
+        drawAll();
+        drawEnergyChart();
+    });
+}

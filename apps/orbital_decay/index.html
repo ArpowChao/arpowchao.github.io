@@ -14,6 +14,9 @@
     <div class="container">
         <!-- 頂部標題區 -->
         <header class="app-header">
+            <a href="../index.html" class="btn btn-secondary home-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; font-size: 0.95rem; border-radius: 8px; font-weight: 700; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); margin-right: 0.5rem;">
+                🏠 回首頁
+            </a>
             <div class="logo-area">
                 <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="6" />
@@ -25,9 +28,14 @@
                     <p class="subtitle">近地衛星軌道衰減與能量物理模擬 (真實萬有引力與大氣阻力演算)</p>
                 </div>
             </div>
-            <div class="simulation-time-badge">
-                <span class="badge-label">模擬已過時間:</span>
-                <span id="elapsed-time" class="mono-font">00 天 00:00:00.000</span>
+            <div class="header-controls" style="display: flex; align-items: center; gap: 1rem;">
+                <button id="theme-toggle-btn" class="btn btn-secondary theme-toggle-btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; border-radius: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-primary);">
+                    🌓 切換明亮模式
+                </button>
+                <div class="simulation-time-badge" style="margin-left: 0;">
+                    <span class="badge-label">模擬已過時間:</span>
+                    <span id="elapsed-time" class="mono-font">00 天 00:00:00.000</span>
+                </div>
             </div>
         </header>
 

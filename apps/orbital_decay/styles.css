@@ -579,3 +579,89 @@ input[type="range"]::-webkit-slider-thumb:hover {
     height: 100%;
     display: block;
 }
+
+/* ==========================================================================
+   明亮模式 (Light Mode)
+   ========================================================================== */
+body.light-mode {
+    --bg-dark: #f1f5f9;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(15, 23, 42, 0.08);
+    --border-glow: rgba(2, 132, 199, 0.18);
+    
+    /* 淺色發光色系 (提高對比度) */
+    --cyan-glow: #0284c7;
+    --neon-blue: #1d4ed8;
+    --neon-green: #15803d;
+    --neon-red: #b91c1c;
+    --neon-orange: #b45309;
+    
+    /* 文字 */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    
+    /* 陰影 */
+    --shadow-neon: 0 0 10px rgba(2, 132, 199, 0.15);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .stars-bg {
+    background-image: none;
+    background-color: #f1f5f9;
+}
+
+body.light-mode .canvas-wrapper {
+    background: radial-gradient(circle at center, #ffffff 0%, #e2e8f0 100%);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.light-mode .chart-wrapper {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+body.light-mode .telemetry-item {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+body.light-mode .tel-value {
+    color: #0f172a;
+}
+
+body.light-mode .simulation-time-badge {
+    background: rgba(15, 23, 42, 0.04);
+    border-color: rgba(2, 132, 199, 0.2);
+}
+
+body.light-mode .btn-secondary {
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--text-primary);
+    border-color: rgba(15, 23, 42, 0.15);
+}
+
+body.light-mode .btn-secondary:hover {
+    background: rgba(15, 23, 42, 0.1);
+    border-color: rgba(15, 23, 42, 0.3);
+}
+
+body.light-mode .btn-drag-off {
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--text-secondary);
+}
+
+body.light-mode .btn-drag-off:hover {
+    background: rgba(15, 23, 42, 0.1);
+    color: var(--text-primary);
+}
+
+body.light-mode input[type="range"] {
+    background: rgba(15, 23, 42, 0.1);
+}
+
+body.light-mode .slider-header label {
+    color: #0f172a;
+}
+
+body.light-mode .card-header {
+    background: rgba(0, 0, 0, 0.01);
+}
