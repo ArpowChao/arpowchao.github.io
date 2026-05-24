@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年5月24日"
+    entry: "新增「太空軌道轉移與重力逃逸遊戲」與「近地衛星軌道衰減模擬器」，深入剖析克卜勒軌道預測、重力束縛能與大氣阻力衰減物理機制。"
   - date: "2026年4月19日"
     entry: "新增「聲音的數位轉生 (Audio Digital Science)」，並加入互動式 ADC 繪圖畫布，讓學生親手體驗類比轉數位的量化與取樣過程。"
   - date: "2026年4月9日"
@@ -110,3 +112,15 @@ projects:
     category: "實用工具"
     tags: ["Utility", "In Progress"]
     disabled: true
+  - title: "太空軌道轉移與重力逃逸遊戲"
+    image: "/assets/img/apps/orbit_transfer_thumbnail.png"
+    description: "體驗霍曼轉移、逃逸速度與重力束縛能的互動式物理模擬遊戲，支援大螢幕高對比投影教學。"
+    url: "/apps/orbit_transfer/index.html"
+    category: "力學"
+    tags: ["Physics", "Simulation", "Interactive", "Gravity", "Education"]
+  - title: "近地衛星軌道衰減模擬器"
+    image: "/assets/img/apps/orbital_decay_thumbnail.png"
+    description: "高精度 Verlet 數值積分模擬低軌道大氣阻力造成的軌道高度衰減，並以三通道圖表展現軌道佯謬。"
+    url: "/apps/orbital_decay/index.html"
+    category: "力學"
+    tags: ["Physics", "Simulation", "Orbital Decay", "Atmosphere"]

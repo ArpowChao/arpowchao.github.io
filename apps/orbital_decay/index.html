@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>軌道衰減模擬器 - 近地衛星與能量守恆物理模擬</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="stars-bg"></div>
+    <div class="container">
+        <!-- 頂部標題區 -->
+        <header class="app-header">
+            <div class="logo-area">
+                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="6" />
+                    <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                    <path d="M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12c0 5.52 4.48 10 10 10" stroke-dasharray="3 3"/>
+                </svg>
+                <div class="title-group">
+                    <h1>ORBITAL DECAY SIMULATOR</h1>
+                    <p class="subtitle">近地衛星軌道衰減與能量物理模擬 (真實萬有引力與大氣阻力演算)</p>
+                </div>
+            </div>
+            <div class="simulation-time-badge">
+                <span class="badge-label">模擬已過時間:</span>
+                <span id="elapsed-time" class="mono-font">00 天 00:00:00.000</span>
+            </div>
+        </header>
+
+        <!-- 主要工作區：兩欄排版 -->
+        <main class="main-content">
+            <!-- 左側：軌道畫布 -->
+            <section class="visualizer-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="4"/>
+                        </svg>
+                        <h2>軌道視覺呈現 (2D Orbit View)</h2>
+                    </div>
+                    <div class="orbit-scale-badge" id="zoom-status">縮放: 1.0x</div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="orbit-canvas"></canvas>
+                    <div id="crash-overlay" class="overlay-msg hidden">
+                        <div class="overlay-content">
+                            <div class="warning-icon">⚠️</div>
+                            <h3>衛星已墜毀於地球表面</h3>
+                            <p>大氣阻力消耗了所有力學能，衛星高度歸零。</p>
+                            <button id="overlay-reset-btn" class="btn btn-primary">重新發射衛星</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右側：控制面板與即時數據 -->
+            <section class="controls-card">
+                <!-- 即時數值儀表 -->
+                <div class="control-section readouts-section">
+                    <h3>即時遙測數據 (Telemetry)</h3>
+                    <div class="telemetry-grid">
+                        <div class="telemetry-item">
+                            <div class="tel-label">當前高度</div>
+                            <div class="tel-value"><span id="readout-altitude" class="mono-font">400.00</span> <span class="tel-unit">km</span></div>
+                        </div>
+                        <div class="telemetry-item">
+                            <div class="tel-label">軌道速度</div>
+                            <div class="tel-value"><span id="readout-velocity" class="mono-font">7.67</span> <span class="tel-unit">km/s</span></div>
+                        </div>
+                        <div class="telemetry-item">
+                            <div class="tel-label">大氣密度</div>
+                            <div class="tel-value"><span id="readout-density" class="mono-font">0.00e0</span> <span class="tel-unit">kg/m³</span></div>
+                        </div>
+                        <div class="telemetry-item">
+                            <div class="tel-label">離心/向心加速度比</div>
+                            <div class="tel-value"><span id="readout-acc-ratio" class="mono-font">1.000</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模擬主控制按鈕 -->
+                <div class="control-section action-section">
+                    <div class="btn-group">
+                        <button id="play-pause-btn" class="btn btn-success">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" id="play-icon"/>
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" class="hidden" id="pause-icon"/>
+                            </svg>
+                            <span id="play-btn-text">開始模擬</span>
+                        </button>
+                        <button id="reset-btn" class="btn btn-secondary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                            </svg>
+                            重設模擬
+                        </button>
+                    </div>
+                    
+                    <button id="drag-toggle-btn" class="btn btn-drag-off">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
+                        <span>大氣阻力：關閉中</span>
+                    </button>
+                </div>
+
+                <!-- 參數調整滑桿 -->
+                <div class="control-section settings-section">
+                    <h3>參數微調 (Constants & Speed)</h3>
+                    
+                    <!-- 模擬播放速度 -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="speed-slider">模擬更新速度</label>
+                            <span class="slider-value" id="speed-val">1000x</span>
+                        </div>
+                        <input type="range" id="speed-slider" min="10" max="10000" step="10" value="2000">
+                        <span class="slider-desc">每影格執行的物理步長數 (dt = 0.001s)</span>
+                    </div>
+
+                    <!-- 初始軌道高度 -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="altitude-slider">初始高度 (h)</label>
+                            <span class="slider-value" id="altitude-val">400 km</span>
+                        </div>
+                        <input type="range" id="altitude-slider" min="100" max="2000" step="10" value="400">
+                        <span class="slider-desc">近地衛星高度 (影響初始圓周運動速度)</span>
+                    </div>
+
+                    <!-- 衛星質量 -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="mass-slider">衛星質量 (m)</label>
+                            <span class="slider-value" id="mass-val">1,000 kg</span>
+                        </div>
+                        <input type="range" id="mass-slider" min="100" max="50000" step="100" value="1000">
+                        <span class="slider-desc">影響阻力產生的加速度與總能量大小</span>
+                    </div>
+
+                    <!-- 大氣阻力放大倍率 -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="drag-slider">阻力強度放大率</label>
+                            <span class="slider-value" id="drag-val">2.0e5 x</span>
+                        </div>
+                        <input type="range" id="drag-slider" min="100" max="2000000" step="100" value="200000">
+                        <span class="slider-desc">調節阻力。設為 500~2000 等低值時可觀察到「軌道衰減速度反增」物理悖論</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 下方：能量關係圖 -->
+        <footer class="energy-chart-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18" />
+                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                    </svg>
+                    <h2>能量對時間關係線圖 (Energy vs Time)</h2>
+                </div>
+                <div class="energy-values-legend">
+                    <div class="legend-item ke-color">
+                        <span class="legend-dot"></span>
+                        動能 (KE): <span id="val-ke" class="mono-font">0.00</span> GJ
+                    </div>
+                    <div class="legend-item pe-color">
+                        <span class="legend-dot"></span>
+                        重力位能 (PE): <span id="val-pe" class="mono-font">0.00</span> GJ
+                    </div>
+                    <div class="legend-item me-color">
+                        <span class="legend-dot"></span>
+                        總力學能 (ME): <span id="val-me" class="mono-font">0.00</span> GJ
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="energy-canvas"></canvas>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

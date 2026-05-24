@@ -1,0 +1,581 @@
+/* ==========================================================================
+   軌道衰減模擬器 - 全域變數與重設 (Orbit Decay Simulator CSS)
+   ========================================================================== */
+:root {
+    --bg-dark: #070913;
+    --bg-card: rgba(13, 17, 38, 0.7);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 242, 254, 0.15);
+    
+    /* 霓虹色系 */
+    --cyan-glow: #00f2fe;
+    --neon-blue: #3b82f6;
+    --neon-green: #10b981;
+    --neon-red: #f43f5e;
+    --neon-orange: #f97316;
+    
+    /* 文字顏色 */
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    /* 字型 */
+    --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'Share Tech Mono', monospace;
+    
+    /* 陰影 */
+    --shadow-neon: 0 0 15px rgba(0, 242, 254, 0.25);
+    --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+/* 太空背景星光效果 */
+.stars-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(1px 1px at 10px 30px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 150px 80px, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1px 1px at 300px 250px, #fff, transparent),
+        radial-gradient(2px 2px at 450px 120px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 600px 350px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 750px 200px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(2px 2px at 900px 480px, #fff, transparent),
+        radial-gradient(1px 1px at 1050px 150px, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1.5px 1.5px at 1200px 380px, #fff, transparent);
+    background-repeat: repeat;
+    background-size: 1400px 700px;
+    opacity: 0.8;
+}
+
+/* 容器排版 */
+.container {
+    width: 100%;
+    max-width: 1400px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ==========================================================================
+   頂部標題區 (App Header)
+   ========================================================================== */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--cyan-glow);
+    filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.6));
+    animation: rotateIcon 20s linear infinite;
+}
+
+@keyframes rotateIcon {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.title-group h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #fff 0%, var(--cyan-glow) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+}
+
+.subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+}
+
+.simulation-time-badge {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: inset 0 0 10px rgba(0, 242, 254, 0.05);
+}
+
+.badge-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mono-font {
+    font-family: var(--font-mono);
+    color: var(--cyan-glow);
+    text-shadow: 0 0 5px rgba(0, 242, 254, 0.5);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   主要兩欄工作區 (Main Layout)
+   ========================================================================== */
+.main-content {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 卡片基底樣式 */
+.visualizer-card, .controls-card, .energy-chart-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.title-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--cyan-glow);
+}
+
+.card-title h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+}
+
+/* ==========================================================================
+   左側：軌道模擬畫布區 (Orbit View)
+   ========================================================================== */
+.canvas-wrapper {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 480px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#orbit-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.orbit-scale-badge {
+    background: rgba(0, 242, 254, 0.1);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    color: var(--cyan-glow);
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+/* 墜毀畫面覆蓋層 */
+.overlay-msg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 6, 12, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.overlay-msg.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay-content {
+    text-align: center;
+    padding: 2.5rem;
+    background: rgba(18, 24, 52, 0.8);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 0 30px rgba(244, 63, 94, 0.2);
+    max-width: 400px;
+    animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.warning-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    animation: pulseGlow 1.5s infinite alternate;
+}
+
+@keyframes pulseGlow {
+    from { transform: scale(1); filter: drop-shadow(0 0 2px rgba(244, 63, 94, 0.4)); }
+    to { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(244, 63, 94, 0.9)); }
+}
+
+.overlay-content h3 {
+    font-size: 1.4rem;
+    color: var(--neon-red);
+    margin-bottom: 0.75rem;
+}
+
+.overlay-content p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   右側：控制與設定面板 (Controls Panel)
+   ========================================================================== */
+.controls-card {
+    padding: 1.5rem;
+    gap: 1.5rem;
+}
+
+.control-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.control-section h3 {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-left: 3px solid var(--cyan-glow);
+    padding-left: 0.5rem;
+}
+
+/* 數據儀表板 */
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.telemetry-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.tel-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.tel-value {
+    font-family: var(--font-mono);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.tel-unit {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-family: var(--font-main);
+    margin-left: 0.15rem;
+}
+
+/* 主操作按鈕 */
+.action-section {
+    gap: 0.75rem;
+}
+
+.btn-group {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 0.75rem;
+}
+
+.btn {
+    font-family: var(--font-main);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 各按鈕顏色與霓虹效果 */
+.btn-success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.4) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.6);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0.6) 100%);
+    border-color: var(--neon-green);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--text-secondary);
+    transform: translateY(-1px);
+}
+
+/* 空氣阻力按鈕：動態切換 */
+.btn-drag-off {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.9rem;
+}
+
+.btn-drag-off:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.btn-drag-on {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(244, 63, 94, 0.3) 100%);
+    border: 1px solid rgba(244, 63, 94, 0.6);
+    color: #fff;
+    padding: 0.9rem;
+    animation: glowAlert 2s infinite alternate;
+}
+
+.btn-drag-on:hover {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.3) 0%, rgba(244, 63, 94, 0.5) 100%);
+    border-color: var(--neon-red);
+    transform: translateY(-1px);
+}
+
+@keyframes glowAlert {
+    from { box-shadow: 0 0 8px rgba(244, 63, 94, 0.2); }
+    to { box-shadow: 0 0 20px rgba(244, 63, 94, 0.5); }
+}
+
+/* 滑桿與微調設定 */
+.settings-section {
+    gap: 1.25rem;
+}
+
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.slider-header label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.slider-value {
+    font-family: var(--font-mono);
+    color: var(--cyan-glow);
+    font-weight: 600;
+}
+
+.slider-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* 自訂 Range 樣式 */
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    outline: none;
+    transition: background 0.3s;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--cyan-glow);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.8);
+    cursor: pointer;
+    transition: transform 0.1s, background 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #fff;
+}
+
+/* ==========================================================================
+   下方：能量圖表區 (Energy Chart Card)
+   ========================================================================== */
+.energy-chart-card {
+    min-height: 360px;
+}
+
+.energy-values-legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.legend-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+}
+
+.ke-color .legend-dot {
+    background-color: var(--neon-green);
+    box-shadow: 0 0 6px var(--neon-green);
+}
+.ke-color {
+    color: var(--text-primary);
+}
+
+.pe-color .legend-dot {
+    background-color: var(--neon-red);
+    box-shadow: 0 0 6px var(--neon-red);
+}
+.pe-color {
+    color: var(--text-primary);
+}
+
+.me-color .legend-dot {
+    background-color: var(--neon-blue);
+    box-shadow: 0 0 6px var(--neon-blue);
+}
+.me-color {
+    color: var(--text-primary);
+}
+
+.chart-wrapper {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#energy-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
