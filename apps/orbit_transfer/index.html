@@ -25,7 +25,7 @@
                 </svg>
                 <div class="title-group">
                     <h1>ORBITAL MANEUVER</h1>
-                    <p class="subtitle">太空軌道轉移挑戰與重力逃逸遊戲 (游離能與束縛能實作)</p>
+                    <p class="subtitle">太空軌道轉移挑戰與重力逃逸遊戲 (脫離能與束縛能實作)</p>
                 </div>
             </div>
             <!-- 關卡與主題控制 -->
@@ -35,7 +35,7 @@
                     <select id="mission-selector" class="mission-dropdown">
                         <option value="0">任務一：地表發射入軌</option>
                         <option value="1">任務二：霍曼轉移挑戰</option>
-                        <option value="2">任務三：重力逃逸游離</option>
+                        <option value="2">任務三：重力逃逸</option>
                     </select>
                 </div>
                 <!-- 主題與儀表切換按鈕 -->
@@ -131,13 +131,13 @@
                         </div>
                     </div>
 
-                    <!-- Group 4: 束縛與游離 -->
+                    <!-- Group 4: 束縛與逃逸 -->
                     <div class="tel-group-card">
-                        <div class="tel-group-header">束縛與游離 (Escape Energetics: Eb = Kion - KE)</div>
+                        <div class="tel-group-header">束縛與逃逸 (Escape Energetics: Eb = Ke - KE)</div>
                         <div class="tel-group-row">
                             <div class="tel-item-large">
-                                <span class="tel-lbl">脫離動能 (K_ion)</span>
-                                <span class="tel-val kion-color" id="val-ionization">62.530 GJ</span>
+                                <span class="tel-lbl">脫離動能 (K_e)</span>
+                                <span class="tel-val ke-esc-color" id="val-escape-ke">62.530 GJ</span>
                             </div>
                             <div class="tel-item-large">
                                 <span class="tel-lbl">重力束縛能 (Eb)</span>
@@ -205,7 +205,7 @@
                         <div class="formula-explanation-box">
                             <div class="formula-equation">
                                 <span class="formula-term highlighted-eb">Eb</span> = 
-                                <span class="formula-term highlighted-kion">K_ion</span> - 
+                                <span class="formula-term highlighted-ke-esc">K_e</span> - 
                                 <span class="formula-term highlighted-ke">KE</span>
                             </div>
                             <div class="formula-values" id="val-formula-equation">
@@ -244,10 +244,10 @@
                              <span class="chart-label">束縛能 Eb</span>
                          </div>
  
-                         <div class="chart-column col-kion">
-                             <div class="chart-bar bar-kion" id="bar-kion"></div>
-                             <span class="chart-val val-kion" id="chart-val-kion">62.530 GJ</span>
-                             <span class="chart-label">脫離能 Kion</span>
+                         <div class="chart-column col-ke-esc">
+                             <div class="chart-bar bar-ke-esc" id="bar-ke-esc"></div>
+                             <span class="chart-val val-ke-esc" id="chart-val-ke-esc">62.530 GJ</span>
+                             <span class="chart-label">脫離能 Ke</span>
                          </div>
                      </div>
                  </div>

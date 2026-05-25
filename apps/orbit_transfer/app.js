@@ -50,7 +50,7 @@ let userZoomFactor = 1.0;     // 使用者手動縮放因子 (滾輪/按鈕)
 // 關卡與任務
 let currentMissionIdx = 0;
 let successFrames = 0; // 滿足條件的影格計數器
-let isPerfectEscape = false; // 完美游離旗標
+let isPerfectEscape = false; // 完美逃逸旗標
 
 // 地球陸地生成
 const earthLands = [];
@@ -104,8 +104,8 @@ const missions = [
         }
     },
     {
-        title: "重力逃逸與游離 (Gravity Escape)",
-        description: "最終挑戰：加能使其擺脫地球引力束縛！當總力學能 ME ≥ 0 即成功游離。如果控制增量使 ME 剛好趨近於 0 (誤差 ±0.05 GJ)，將達成「完美游離」成就，在無窮遠處停下！",
+        title: "重力逃逸 (Gravity Escape)",
+        description: "最終挑戰：加能使其擺脫地球引力束縛！當總力學能 ME ≥ 0 即成功逃逸。如果控制增量使 ME 剛好趨近於 0 (誤差 ±0.05 GJ)，將達成「完美逃逸」成就，在無窮遠處停下！",
         checklist: [
             { id: "alt", text: "總力學能 ME ≥ 0 (脫離重力束縛)", check: (h, e, me) => me >= 0 },
             { id: "circ", text: "飛離地球深空 (高度 > 30,000 km)", check: (h, e, me) => h > 30000 }
@@ -133,19 +133,19 @@ const valKe = document.getElementById('val-ke');
 const valPe = document.getElementById('val-pe');
 const valMe = document.getElementById('val-me');
 const valBinding = document.getElementById('val-binding');
-const valIonization = document.getElementById('val-ionization');
+const valEscapeKe = document.getElementById('val-escape-ke');
 const valFormulaEquation = document.getElementById('val-formula-equation');
 const escapeStatus = document.getElementById('escape-status');
 const bindingCard = document.getElementById('binding-card');
 const barPe = document.getElementById('bar-pe');
 const barMe = document.getElementById('bar-me');
 const barKe = document.getElementById('bar-ke');
-const barKion = document.getElementById('bar-kion');
+const barKeEsc = document.getElementById('bar-ke-esc');
 const barEb = document.getElementById('bar-eb');
 const chartValPe = document.getElementById('chart-val-pe');
 const chartValMe = document.getElementById('chart-val-me');
 const chartValKe = document.getElementById('chart-val-ke');
-const chartValKion = document.getElementById('chart-val-kion');
+const chartValKeEsc = document.getElementById('chart-val-ke-esc');
 const chartValEb = document.getElementById('chart-val-eb');
 
 const valFuel = document.getElementById('val-fuel');
@@ -513,9 +513,9 @@ function updateTelemetry() {
     valPe.textContent = `${peGJ.toFixed(3)} GJ`;
     valMe.textContent = `${meGJ.toFixed(3)} GJ`;
     
-    // 游離動能 (Ionization Kinetic Energy)
-    const ionizationEnergy = -peGJ;
-    valIonization.textContent = `${ionizationEnergy.toFixed(3)} GJ`;
+    // 脫離動能 (Escape Kinetic Energy)
+    const escapeKe = -peGJ;
+    valEscapeKe.textContent = `${escapeKe.toFixed(3)} GJ`;
     
     // 束縛能與狀態
     const boundEnergy = meGJ < 0 ? -meGJ : 0;
@@ -525,23 +525,23 @@ function updateTelemetry() {
         bindingCard.classList.remove('escaped');
         escapeStatus.textContent = "狀態：受地球重力束縛 (BOUND)";
         isPerfectEscape = false;
-        valFormulaEquation.textContent = `${boundEnergy.toFixed(3)} = ${ionizationEnergy.toFixed(3)} - ${keGJ.toFixed(3)} (GJ)`;
+        valFormulaEquation.textContent = `${boundEnergy.toFixed(3)} = ${escapeKe.toFixed(3)} - ${keGJ.toFixed(3)} (GJ)`;
     } else {
         valBinding.textContent = "0.000 GJ";
         bindingCard.classList.add('escaped');
-        valFormulaEquation.textContent = `0.000 = ${ionizationEnergy.toFixed(3)} - ${keGJ.toFixed(3)} (已游離)`;
+        valFormulaEquation.textContent = `0.000 = ${escapeKe.toFixed(3)} - ${keGJ.toFixed(3)} (已逃逸)`;
         
         if (Math.abs(meGJ) <= 0.05) {
-            escapeStatus.textContent = "狀態：完美游離 (PERFECT ESCAPE)";
+            escapeStatus.textContent = "狀態：完美逃逸 (PERFECT ESCAPE)";
             isPerfectEscape = true;
         } else {
-            escapeStatus.textContent = "狀態：已脫離重力游離 (ESCAPED)";
+            escapeStatus.textContent = "狀態：已脫離重力束縛 (ESCAPED)";
             isPerfectEscape = false;
         }
     }
 
     // Auto-scale: find max absolute energy to scale the bars
-    const maxVal = Math.max(Math.abs(peGJ), Math.abs(meGJ), ionizationEnergy, boundEnergy, 1.0);
+    const maxVal = Math.max(Math.abs(peGJ), Math.abs(meGJ), escapeKe, boundEnergy, 1.0);
 
     // Calculate vertical heights and top levels based on baseline (0) at 15% and well depth (PE) at 85% (total 70% depth).
     const peHeight = (Math.abs(peGJ) / maxVal) * 70;
@@ -608,12 +608,12 @@ function updateTelemetry() {
         }
     }
 
-    // 5. K_ion Bar (always positive, extends downwards from baseline to PE level)
-    if (barKion) {
-        barKion.style.top = '15%';
-        barKion.style.height = `${peHeight}%`;
-        if (chartValKion) {
-            chartValKion.textContent = `+${ionizationEnergy.toFixed(3)} GJ`;
+    // 5. Ke Bar (always positive, extends downwards from baseline to PE level)
+    if (barKeEsc) {
+        barKeEsc.style.top = '15%';
+        barKeEsc.style.height = `${peHeight}%`;
+        if (chartValKeEsc) {
+            chartValKeEsc.textContent = `+${escapeKe.toFixed(3)} GJ`;
         }
     }
     
@@ -668,10 +668,10 @@ function triggerMissionCompleted() {
         showModal("霍曼轉移挑戰完成！", "完美的兩次軌道脈衝！您成功在近地點和遠地點精準點火，將衛星從 400 km 提升至 2000 km 目標圓軌道。", "🛰️", true);
     } else if (currentMissionIdx === 2) {
         let title = "重力逃逸成功！";
-        let desc = "衛星已飛入深太空。當總力學能大於或等於 0 時，衛星的動能已大於或等於該處的游離動能 (KE ≥ K_ion)，地球重力將再也無法拉回它！";
+        let desc = "衛星已飛入深太空。當總力學能大於或等於 0 時，衛星的動能已大於或等於該處的脫離動能 (KE ≥ K_e)，地球重力將再也無法拉回它！";
         if (isPerfectEscape) {
-            title = "🏆 完美游離成就解鎖！";
-            desc = "不可思議！您的發射提供了剛好等於束縛能的額外能量，讓總力學能剛好趨近於 0 (ME ≈ 0)。衛星將在飛往恰至無窮遠處時速度歸零，此時動能恰好等於該處的游離動能！";
+            title = "🏆 完美逃逸成就解鎖！";
+            desc = "不可思議！您的發射提供了剛好等於束縛能的額外能量，讓總力學能剛好趨近於 0 (ME ≈ 0)。衛星將在飛往恰至無窮遠處時速度歸零，此時動能恰好等於該處的脫離動能！";
         }
         showModal(title, desc, "🌌", true);
     }
@@ -1009,7 +1009,7 @@ function drawOrbitPrediction(earthCx, earthCy, scale) {
             }
         }
         
-        ctx.strokeStyle = canvasTheme.escapeColor; // 游離狀態呈紅色虛線
+        ctx.strokeStyle = canvasTheme.escapeColor; // 逃逸狀態呈紅色虛線
         ctx.setLineDash([5, 5]);
         ctx.lineWidth = 1.8;
         ctx.stroke();
