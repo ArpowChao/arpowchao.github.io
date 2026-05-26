@@ -341,7 +341,7 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
           <button class="btn" style="margin-top:8px;background:#a855f7;color:#fff;" onclick="runInvestmentOptimizer()">▶ 執行投資配置優化</button>
           <div id="iv-results" style="display:none;margin-top:10px;">
             <div id="iv-summary" style="font-size:11px;color:#e2e8f0;line-height:1.7;background:#162032;border:1px solid #334155;border-radius:6px;padding:8px;margin-bottom:8px;"></div>
-            <div style="color:#a855f7;font-weight:700;font-size:12px;margin-bottom:4px;">最終淨資產百分位數（萬元）</div>
+            <div style="color:#a855f7;font-weight:700;font-size:12px;margin-bottom:4px;">最終淨資產百分位數（萬元，含房屋價值）</div>
             <table style="width:100%;font-size:11px;border-collapse:collapse;">
               <thead><tr>
                 <th style="background:#0f172a;color:#a855f7;padding:5px;border:1px solid #334155;">策略</th>
@@ -351,6 +351,7 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
               </tr></thead>
               <tbody id="iv-tbody"></tbody>
             </table>
+            <div id="iv-recommendation" style="margin-top:10px;font-size:11px;color:#cbd5e1;line-height:1.75;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;"></div>
           </div>
         </div>
       </div>
@@ -1030,6 +1031,14 @@ function seededNormal(rng) {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
+function formatPayoffDate(startYr, startMo, payoffMonthNum) {
+  if (!payoffMonthNum) return '合約到期';
+  const totalMonths = startYr * 12 + (startMo - 1) + payoffMonthNum - 1;
+  const y = Math.floor(totalMonths / 12);
+  const m = (totalMonths % 12) + 1;
+  return `${y}年${m}月`;
+}
+
 // Port of investment_opt.py:simulate_cash_flow
 function simulateCashFlow(k, params, stockReturns) {
   const totalMonths = params.termYears * 12;
@@ -1118,9 +1127,12 @@ function runInvestmentOptimizer() {
 
   const lp = lastResult.params;
   const params = {
+    purchasePriceWan: lp.price,
     actualLoanWan: lp.actLoan,
     annualRate: lp.ratePct / 100,
     termYears: lp.termYrs,
+    startYear: lp.startYr,
+    startMonth: lp.startMo,
     monthlySpareCash: spare,
     stockAnnualReturn: stockRet,
     stockAnnualVolatility: stockVol,
@@ -1172,11 +1184,23 @@ function runInvestmentOptimizer() {
     const n = s.length;
     return { p10: s[Math.floor(n * 0.10)], p50: s[Math.floor(n * 0.50)], p90: s[Math.floor(n * 0.90)] };
   };
-  const pk0 = pct(wk0), pk1 = pct(wk1), pkOpt = pct(wkOpt);
+  const houseVal = params.purchasePriceWan * 10000;
+  // Final wealth includes house value (to match recommendation report convention)
+  const addHouse = (arr) => arr.map(v => v + houseVal);
+  const pk0 = pct(addHouse(wk0)), pk1 = pct(addHouse(wk1)), pkOpt = pct(addHouse(wkOpt));
   const winRate = wk0.reduce((acc, v, i) => acc + (v > wk1[i] ? 1 : 0), 0) / runs;
-  const meanK0 = wk0.reduce((s, v) => s + v, 0) / runs;
-  const meanK1 = wk1.reduce((s, v) => s + v, 0) / runs;
-  const meanKOpt = wkOpt.reduce((s, v) => s + v, 0) / runs;
+  const meanK0 = (wk0.reduce((s, v) => s + v, 0) / runs) + houseVal;
+  const meanK1 = (wk1.reduce((s, v) => s + v, 0) / runs) + houseVal;
+  const meanKOpt = (wkOpt.reduce((s, v) => s + v, 0) / runs) + houseVal;
+
+  // Deterministic trajectories (no random stock returns) for the recommendation report
+  const detK0 = simulateCashFlow(0.0, params, null);
+  const detK1 = simulateCashFlow(1.0, params, null);
+  const detKOpt = simulateCashFlow(optimalK, params, null);
+  const w0Final = (houseVal + detK0.stockHistory[totalMonths] - detK0.debtHistory[totalMonths]) / 10000;
+  const w1Final = (houseVal + detK1.stockHistory[totalMonths] - detK1.debtHistory[totalMonths]) / 10000;
+  const wOptFinal = (houseVal + detKOpt.stockHistory[totalMonths] - detKOpt.debtHistory[totalMonths]) / 10000;
+  const diffW = w0Final - w1Final;
 
   // Render summary
   const fmt = (v) => (v / 10000).toFixed(1);
@@ -1196,6 +1220,45 @@ function runInvestmentOptimizer() {
     rowHtml('100% 投股票', '#22c55e', pk0) +
     rowHtml('100% 還房貸', '#ef4444', pk1) +
     rowHtml(`黃金比例 (k=${(optimalK*100).toFixed(0)}%)`, '#a855f7', pkOpt);
+
+  // Generate recommendation report
+  const prepayPct = Math.round(optimalK * 100);
+  const stockPct = 100 - prepayPct;
+  const payoffStr = detKOpt.payoffMonth
+    ? formatPayoffDate(params.startYear, params.startMonth, detKOpt.payoffMonth)
+    : '合約到期';
+  const debt = params.actualLoanWan * 10000;
+  const monthlyR = Math.pow(1 + params.annualRate, 1 / 12) - 1;
+  const basePayment = Math.round(debt * monthlyR * Math.pow(1 + monthlyR, totalMonths) / (Math.pow(1 + monthlyR, totalMonths) - 1));
+  const p10Stock = pk0.p10 / 10000, p10Prepay = pk1.p10 / 10000;
+  const numFmt = (n) => Math.round(n).toLocaleString();
+  const stockRetPct = (params.stockAnnualReturn * 100).toFixed(1);
+  const stockVolPct = (params.stockAnnualVolatility * 100).toFixed(0);
+  const ratePctStr = (params.annualRate * 100).toFixed(3);
+
+  let prefText = '';
+  if (risk === 'conservative') {
+    prefText = `您選擇了 <b style="color:#22c55e;">「保守型」</b> 理財風險偏好，系統建議採取 <b style="color:#f8fafc;">${prepayPct}% 提前還款 / ${stockPct}% 大盤投資</b> 的穩健配置。此配置優先降低債務負擔，房貸還清時間提前至 <b style="color:#fbbf24;">${payoffStr}</b>，同時仍能透過定期定額累積 ${stockPct}% 的股票資產，防禦通膨。`;
+  } else if (risk === 'aggressive') {
+    prefText = `您選擇了 <b style="color:#ef4444;">「積極型」</b> 理財風險偏好，系統建議採取 <b style="color:#f8fafc;">${prepayPct}% 提前還款 / ${stockPct}% 大盤投資</b> 的配置。在預期大盤年化回報 ${stockRetPct}% 高於房貸利率 ${ratePctStr}% 的前提下，純數學最優解是將大部分閒錢投入大盤以實現複利。預估期末資產淨值約 <b style="color:#fbbf24;">${numFmt(w0Final)} 萬</b>，但需承受較高市場波動，房貸將在 <b style="color:#fbbf24;">${payoffStr}</b> 結清。`;
+  } else {
+    prefText = `您選擇了 <b style="color:#a855f7;">「平衡型」</b> 理財風險偏好，系統建議採取 <b style="color:#f8fafc;">${prepayPct}% 提前還款 / ${stockPct}% 大盤投資</b> 的黃金比例配置。在大盤中性表現下，期末資產淨值約 <b style="color:#fbbf24;">${numFmt(wOptFinal)} 萬</b>。此策略既避免過早償清低利房貸而錯失股票複利機會，又保留還款比例以抵禦下行波動，預計在 <b style="color:#fbbf24;">${payoffStr}</b> 提前還清。`;
+  }
+
+  document.getElementById('iv-recommendation').innerHTML = `
+    <div style="color:#a855f7;font-weight:700;font-size:12px;margin-bottom:6px;">📋 專家配置建議報告</div>
+    <p style="margin:6px 0;"><b style="color:#38bdf8;">1. 常態增長分析：</b></p>
+    <p style="margin:4px 0 8px 12px;">在大盤恆定年化 <b>${stockRetPct}%</b> 成長假設下：每月閒錢 ${numFmt(spare)} 元 <b style="color:#22c55e;">100% 投股票</b>，最終淨資產約 <b>${numFmt(w0Final)} 萬</b>；<b style="color:#ef4444;">100% 還房貸</b>則為 <b>${numFmt(w1Final)} 萬</b>。差距高達 <b style="color:#fbbf24;">${numFmt(diffW)} 萬</b>—來自股票報酬與房貸利率「利差」的時間複利。</p>
+    <p style="margin:6px 0;"><b style="color:#38bdf8;">2. 市場隨機波動與風險評估（${runs} 次蒙地卡羅）：</b></p>
+    <p style="margin:4px 0 8px 12px;">考慮大盤年化波動 <b>${stockVolPct}%</b>，股票勝過還款的勝率為 <b style="color:#fbbf24;">${(winRate*100).toFixed(1)}%</b>。悲觀情境（最差 10%）下，100% 股票會縮水至 <b style="color:#ef4444;">${numFmt(p10Stock)} 萬</b>，而 100% 還款則穩守 <b style="color:#22c55e;">${numFmt(p10Prepay)} 萬</b>—這就是還款作為「保證防禦資產」的價值。</p>
+    <p style="margin:6px 0;"><b style="color:#38bdf8;">3. 專家資產配置建議：</b></p>
+    <p style="margin:4px 0 8px 12px;">${prefText}</p>
+    <p style="margin:6px 0;"><b style="color:#38bdf8;">4. 具體理財行動指南：</b></p>
+    <ul style="margin:4px 0 0 18px;padding:0;">
+      <li style="margin-bottom:6px;"><b style="color:#a855f7;">動態配置調校：</b>若股票預期報酬降至 5% 以下、或年化波動飆至 25% 以上，建議主動將還款比例 k 調升，鎖定無風險的 ${ratePctStr}% 還款報酬。</li>
+      <li><b style="color:#a855f7;">房貸結清紅利：</b>當房貸在 <b style="color:#fbbf24;">${payoffStr}</b> 還清後，原本每月的房貸基礎月繳金（約 <b>${basePayment.toLocaleString()} 元</b>）應 <b style="color:#22c55e;">全額轉投股票大盤</b>，讓釋放的現金流繼續加速複利！</li>
+    </ul>`;
+
   document.getElementById('iv-results').style.display = 'block';
 
   // Render trajectory chart
