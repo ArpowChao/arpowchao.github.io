@@ -1042,7 +1042,7 @@
                     <div class="grid-2-col">
                         <div class="input-item">
                             <label for="price">成交價格 (萬)</label>
-                            <input type="number" id="price" value="888" step="10" min="10" max="100000">
+                            <input type="number" id="price" value="1000" step="10" min="10" max="100000">
                         </div>
                         <div class="input-item">
                             <label for="ratio">貸款成數 (成)</label>
@@ -1074,10 +1074,10 @@
                     <div class="actual-row">
                         <div class="val-est">
                             <span class="est-label">頭期估計:</span>
-                            <span class="est-val" id="est_dp">174.60</span><span class="unit"> 萬</span>
+                            <span class="est-val" id="est_dp">200.00</span><span class="unit"> 萬</span>
                         </div>
                         <div class="input-sync-group">
-                            <input type="number" id="act_dp" value="178.0" step="1" min="0" max="100000">
+                            <input type="number" id="act_dp" value="200.0" step="1" min="0" max="100000">
                             <button type="button" class="btn-sync" id="btn_sync_dp" title="同步估計頭期款">同步</button>
                         </div>
                     </div>
@@ -1085,10 +1085,10 @@
                     <div class="actual-row">
                         <div class="val-est">
                             <span class="est-label">貸款估計:</span>
-                            <span class="est-val" id="est_loan">698.40</span><span class="unit"> 萬</span>
+                            <span class="est-val" id="est_loan">800.00</span><span class="unit"> 萬</span>
                         </div>
                         <div class="input-sync-group">
-                            <input type="number" id="act_loan" value="710.0" step="1" min="0" max="100000">
+                            <input type="number" id="act_loan" value="800.0" step="1" min="0" max="100000">
                             <button type="button" class="btn-sync" id="btn_sync_loan" title="同步估計貸款額">同步</button>
                         </div>
                     </div>
@@ -1112,7 +1112,7 @@
                         <label for="prepay_mode">還款模式</label>
                         <select id="prepay_mode">
                             <option value="reduce_term">維持月還款，縮短年限</option>
-                            <option value="reduce_payment">降低月還款，維持原年限</option>
+                            <option value="reduce_payment" selected>降低月還款，維持原年限</option>
                         </select>
                     </div>
                     
@@ -2238,17 +2238,17 @@
 
         // ==================== 10. 恢復預設值 ====================
         function doReset() {
-            document.getElementById("price").value = "888";
+            document.getElementById("price").value = "1000";
             document.getElementById("ratio").value = "8.0";
             document.getElementById("rate").value = "2.185";
             document.getElementById("term").value = "40";
             const today = new Date();
             document.getElementById("start_yr").value = today.getFullYear();
             document.getElementById("start_mo").value = today.getMonth() + 1;
-            document.getElementById("act_dp").value = "178.0";
-            document.getElementById("act_loan").value = "710.0";
+            document.getElementById("act_dp").value = "200.0";
+            document.getElementById("act_loan").value = "800.0";
             document.getElementById("extra_pay").value = "0";
-            document.getElementById("prepay_mode").value = "reduce_term";
+            document.getElementById("prepay_mode").value = "reduce_payment";
             
             prepayments = [];
             selectedPrepayIndex = -1;
