@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>房貸試算與模擬分析系統</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:#0f172a;color:#e2e8f0;font-family:"Segoe UI","Microsoft JhengHei",sans-serif;display:flex;}
+
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:#0f172a;}
+::-webkit-scrollbar-thumb{background:#475569;border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:#64748b;}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:360px;min-width:360px;overflow-y:auto;
+  padding:12px;border-right:1px solid #334155;
+  display:flex;flex-direction:column;gap:0;
+}
+#sidebar h1{color:#f8fafc;font-size:17px;font-weight:700;margin-bottom:6px;}
+.divider{height:1px;background:#334155;margin:6px 0;}
+
+/* ── GROUP BOX ── */
+.grp{border:1px solid #334155;border-radius:8px;padding:14px 12px 10px;margin-top:14px;position:relative;}
+.grp-title{position:absolute;top:-10px;left:12px;background:#0f172a;padding:0 6px;color:#38bdf8;font-weight:700;font-size:12px;}
+
+/* ── FORM ROWS ── */
+.fr{display:flex;align-items:center;margin-bottom:7px;gap:6px;}
+.fl{color:#e2e8f0;font-size:13px;min-width:108px;}
+.fv{color:#e2e8f0;font-weight:700;font-size:13px;min-width:60px;}
+input[type=number],select{
+  background:#1e293b;border:1px solid #475569;border-radius:6px;
+  padding:4px 7px;color:#f8fafc;width:100%;outline:none;font-size:13px;height:28px;
+}
+input[type=number]:focus,select:focus{border-color:#38bdf8;}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 14px;border-radius:6px;font-weight:700;cursor:pointer;border:none;color:#fff;font-size:13px;width:100%;margin-top:6px;}
+.btn-green{background:#10b981;}.btn-green:hover{background:#059669;}
+.btn-amber{background:#f59e0b;}.btn-amber:hover{background:#d97706;}
+.btn-gray{background:#4b5563;}.btn-gray:hover{background:#374151;}
+.btn-blue{background:#2563eb;}.btn-blue:hover{background:#1d4ed8;}
+.btn-red{background:#ef4444;}.btn-red:hover{background:#dc2626;}
+.btn-sm{padding:3px 10px;font-size:11px;width:auto;margin-top:0;}
+.btn-row{display:flex;gap:6px;margin-top:6px;}
+
+/* ── MAIN PANEL ── */
+#main-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:12px;gap:8px;}
+
+/* ── METRIC CARDS ── */
+#metrics-row{display:flex;gap:8px;flex-shrink:0;}
+.mc{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 8px;text-align:center;flex:1;min-width:0;}
+.mc-t{color:#94a3b8;font-size:11px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mc-v{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── TABS ── */
+#tabs-area{flex:1;display:flex;flex-direction:column;overflow:hidden;border:1px solid #334155;border-radius:8px;background:#1e293b;}
+.tab-bar{display:flex;gap:2px;padding:0 8px;background:#0f172a;flex-shrink:0;border-bottom:1px solid #334155;}
+.tab-btn{padding:9px 14px;font-weight:700;font-size:12px;border:1px solid #334155;border-bottom:none;border-radius:6px 6px 0 0;cursor:pointer;color:#94a3b8;background:#0f172a;}
+.tab-btn.active{background:#1e293b;color:#38bdf8;border-bottom:2px solid #38bdf8;}
+.tab-panel{display:none;flex:1;overflow:hidden;flex-direction:column;padding:10px;}
+.tab-panel.active{display:flex;}
+
+/* ── TABLES ── */
+.tbl-wrap{flex:1;overflow:auto;}
+table{border-collapse:collapse;width:100%;}
+th{
+  background:#0f172a;color:#38bdf8;padding:6px 5px;
+  border:1px solid #334155;font-weight:700;font-size:11px;
+  position:sticky;top:0;z-index:5;white-space:nowrap;
+}
+td{padding:5px 5px;border:1px solid #334155;font-size:11px;color:#e2e8f0;}
+tbody tr:nth-child(even) td{background:#1e293b;}
+tbody tr:nth-child(odd) td{background:#162032;}
+tbody tr:hover td{background:#243447!important;cursor:pointer;}
+.td-r{text-align:right;}
+.td-c{text-align:center;}
+.rem-green{color:#10b981;font-weight:700;}
+.rem-amber{color:#f59e0b;font-weight:700;}
+
+/* ── DASHBOARD ── */
+#tab-dashboard.tab-panel.active{flex-direction:row;gap:12px;}
+#info-panel{
+  width:270px;min-width:270px;background:#1e293b;border:1px solid #334155;
+  border-radius:8px;padding:14px;overflow-y:auto;
+}
+#info-panel h3{color:#38bdf8;font-size:13px;font-weight:700;margin-bottom:10px;}
+.info-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;}
+.info-lbl{color:#94a3b8;}
+.info-val{color:#f8fafc;font-weight:600;}
+#chart-wrap{flex:1;position:relative;min-width:0;}
+
+/* ── PREPAY TABLE (sidebar) ── */
+#prepay-tbl-wrap{overflow-y:auto;max-height:120px;margin:6px 0;}
+#prepay-tbl{width:100%;border-collapse:collapse;}
+#prepay-tbl th{background:#0f172a;color:#38bdf8;padding:5px;border:1px solid #334155;font-size:11px;}
+#prepay-tbl td{padding:4px 5px;border:1px solid #334155;font-size:11px;color:#e2e8f0;}
+#prepay-tbl tbody tr:nth-child(even) td{background:#1e293b;}
+#prepay-tbl tbody tr:nth-child(odd) td{background:#162032;}
+#prepay-tbl tbody tr:hover td{background:#243447!important;}
+
+/* ── TIP TEXT ── */
+.tip{color:#38bdf8;font-size:11px;margin-bottom:6px;flex-shrink:0;}
+
+/* ── MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  display:flex;align-items:center;justify-content:center;z-index:1000;
+}
+.modal-box{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:22px;min-width:300px;}
+.modal-title{color:#38bdf8;font-size:15px;font-weight:700;margin-bottom:14px;}
+.modal-row{display:flex;align-items:center;margin-bottom:10px;gap:8px;}
+.modal-lbl{color:#e2e8f0;font-weight:600;font-size:13px;min-width:120px;}
+.modal-row input[type=number]{flex:1;}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<aside id="sidebar">
+  <h1>房貸試算與模擬分析系統</h1>
+  <div class="divider"></div>
+
+  <!-- 購屋基本參數 -->
+  <div class="grp">
+    <span class="grp-title">購屋與貸款基本參數</span>
+    <div class="fr"><span class="fl">成交價格（萬）:</span><input type="number" id="ip-price" value="873" step="10" min="10" max="100000" onchange="updateEstimates()"></div>
+    <div class="fr"><span class="fl">貸款成數（成）:</span><input type="number" id="ip-ratio" value="8" step="0.5" min="1" max="10" onchange="updateEstimates()"></div>
+    <div class="fr"><span class="fl">貸款年利率（%）:</span><input type="number" id="ip-rate" value="2.185" step="0.1" min="0.1" max="15" style="width:100%;"></div>
+    <div class="fr"><span class="fl">還款年限（年）:</span><input type="number" id="ip-term" value="40" step="1" min="1" max="50"></div>
+    <div class="fr"><span class="fl">貸款年份:</span><input type="number" id="ip-yr" value="2026" step="1" min="1900" max="2100"></div>
+    <div class="fr"><span class="fl">首期月份:</span><input type="number" id="ip-mo" value="7" step="1" min="1" max="12"></div>
+  </div>
+
+  <!-- 實際付款設定 -->
+  <div class="grp">
+    <span class="grp-title">實際付款與貸款設定</span>
+    <div class="fr"><span class="fl">頭期估計（萬）:</span><span class="fv" id="est-dp">174.60</span></div>
+    <div class="fr">
+      <span class="fl">實際頭期（萬）:</span>
+      <input type="number" id="ip-act-dp" value="175" step="1" min="0" max="100000" style="flex:1;">
+      <button class="btn btn-gray btn-sm" onclick="syncDp()">同步</button>
+    </div>
+    <div class="fr"><span class="fl">貸款估計（萬）:</span><span class="fv" id="est-loan">698.40</span></div>
+    <div class="fr">
+      <span class="fl">實際貸款（萬）:</span>
+      <input type="number" id="ip-act-loan" value="698" step="1" min="0" max="100000" style="flex:1;">
+      <button class="btn btn-gray btn-sm" onclick="syncLoan()">同步</button>
+    </div>
+  </div>
+
+  <!-- 每月增額 -->
+  <div class="grp">
+    <span class="grp-title">每月固定增額還款</span>
+    <div class="fr">
+      <span class="fl">每月增額（元）:</span>
+      <input type="number" id="ip-extra" value="0" step="1000" min="0" max="1000000" onchange="recalculate()">
+    </div>
+  </div>
+
+  <!-- 提前還款 -->
+  <div class="grp">
+    <span class="grp-title">提前還本模擬紀錄</span>
+    <div class="fr">
+      <span class="fl">還款模式:</span>
+      <select id="sel-mode" onchange="recalculate()" style="flex:1;">
+        <option value="reduce_term">維持月還款，縮短年限</option>
+        <option value="reduce_payment">降低月還款，維持原年限</option>
+      </select>
+    </div>
+    <div id="prepay-tbl-wrap">
+      <table id="prepay-tbl">
+        <thead><tr><th>年份</th><th>月份</th><th style="text-align:right;">金額（元）</th></tr></thead>
+        <tbody id="prepay-tbody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue btn-sm" style="flex:1;" onclick="openAddModal()">新增還款</button>
+      <button class="btn btn-red btn-sm" style="flex:1;" onclick="deleteSelectedPrepay()">刪除選中</button>
+    </div>
+  </div>
+
+  <div style="flex:1;"></div>
+  <button class="btn btn-green" onclick="recalculate()">立即計算（更新）</button>
+  <button class="btn btn-amber" onclick="exportExcel()">匯出 Excel 活頁簿</button>
+  <button class="btn btn-gray" onclick="resetDefaults()">恢復預設值</button>
+</aside>
+
+<!-- ═══════════════════════════ MAIN PANEL ═══════════════════════════ -->
+<div id="main-panel">
+
+  <!-- METRICS -->
+  <div id="metrics-row">
+    <div class="mc"><div class="mc-t">實際頭期款</div><div class="mc-v" id="c-dp" style="color:#10b981;">175.0 萬</div></div>
+    <div class="mc"><div class="mc-t">實際貸款額</div><div class="mc-v" id="c-loan" style="color:#38bdf8;">698.0 萬</div></div>
+    <div class="mc"><div class="mc-t">每月還款金額</div><div class="mc-v" id="c-monthly" style="color:#f59e0b;">- 元</div></div>
+    <div class="mc"><div class="mc-t">總還款金額（含利息）</div><div class="mc-v" id="c-total" style="color:#ec4899;">- 萬</div></div>
+    <div class="mc"><div class="mc-t">總支付利息額</div><div class="mc-v" id="c-interest" style="color:#ef4444;">- 萬</div></div>
+    <div class="mc"><div class="mc-t">預計還清時間</div><div class="mc-v" id="c-payoff" style="color:#a855f7;">-</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div id="tabs-area">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('dashboard',this)">視覺化儀表板</button>
+      <button class="tab-btn" onclick="switchTab('detail',this)">詳細還款計算表（還款計算）</button>
+      <button class="tab-btn" onclick="switchTab('decade',this)">十年分欄對照表（10年/欄）</button>
+    </div>
+
+    <!-- TAB 1: Dashboard -->
+    <div id="tab-dashboard" class="tab-panel active">
+      <div id="info-panel">
+        <h3>購屋貸款衍生指標</h3>
+        <div class="info-row"><span class="info-lbl">月利率</span><span class="info-val" id="inf-mrate">-</span></div>
+        <div class="info-row"><span class="info-lbl">估計頭期款</span><span class="info-val" id="inf-edp">-</span></div>
+        <div class="info-row"><span class="info-lbl">估計貸款額</span><span class="info-val" id="inf-eloan">-</span></div>
+        <div class="info-row"><span class="info-lbl">總利息佔還款比</span><span class="info-val" id="inf-iratio">-</span></div>
+      </div>
+      <div id="chart-wrap">
+        <canvas id="mortgage-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- TAB 2: Detail Table -->
+    <div id="tab-detail" class="tab-panel">
+      <div class="tip">💡 雙擊月份列，可直接設定該月「提前還本」金額</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="td-c">貸款年份</th>
+              <th class="td-c">月份</th>
+              <th class="td-r">不還款複利（元）</th>
+              <th class="td-r">還款金額（元）</th>
+              <th class="td-r">累計還款（元）</th>
+              <th class="td-r">剩餘負債（元）</th>
+              <th>備註狀態</th>
+            </tr>
+          </thead>
+          <tbody id="detail-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: Decade Table -->
+    <div id="tab-decade" class="tab-panel">
+      <div class="tip">💡 雙擊年月欄，可直接設定該月「提前還本」金額</div>
+      <div class="tbl-wrap">
+        <table id="decade-table">
+          <thead id="decade-thead"></thead>
+          <tbody id="decade-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ MODAL ═══════════════════════════ -->
+<div id="modal" class="modal-bg" style="display:none;" onclick="bgClose(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">新增 / 編輯提前還款</div>
+    <div class="modal-row">
+      <span class="modal-lbl">年份（年）:</span>
+      <input type="number" id="modal-yr" min="1900" max="2200" value="2030">
+    </div>
+    <div class="modal-row">
+      <span class="modal-lbl">月份（月）:</span>
+      <input type="number" id="modal-mo" min="1" max="12" value="1">
+    </div>
+    <div class="modal-row">
+      <span class="modal-lbl">還款金額（元）:</span>
+      <input type="number" id="modal-amt" min="0" max="100000000" step="50000" value="500000">
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin-top:4px;">輸入 0 可刪除此筆還款</p>
+    <div class="modal-foot">
+      <button class="btn btn-gray btn-sm" onclick="closeModal()">取消</button>
+      <button class="btn btn-green btn-sm" onclick="confirmModal()">確定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// STATE
+// ================================================================
+let prepayments = [];
+let lastResult = null;
+let mortgageChart = null;
+let selectedPrepayRow = -1;  // index in prepayments array (for sidebar table selection)
+let modalEditIdx = -1;       // index in prepayments when editing existing, -1 for new
+
+// ================================================================
+// UTILITY
+// ================================================================
+function fmtN(n) {
+  return Math.round(n).toLocaleString('zh-TW');
+}
+function fmtV(v) {
+  return typeof v === 'number' ? fmtN(v) : v;
+}
+function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function gi(id) { return parseInt(document.getElementById(id).value) || 0; }
+
+// ================================================================
+// MORTGAGE CALCULATION (ported from mortgage_calc.py)
+// ================================================================
+function calculateMortgage({
+  purchasePriceWan, loanRatioCheng, actualDownpaymentWan, actualLoanWan,
+  startYear, startMonth, annualRate, termYears,
+  monthlyExtraPayment = 0, prepayments = [], prepaymentMode = 'reduce_term'
+}) {
+  const estDp  = purchasePriceWan * (1 - loanRatioCheng / 10);
+  const estLoan = purchasePriceWan * loanRatioCheng / 10;
+  const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1;
+  const totalMonths = termYears * 12;
+
+  let basePmt;
+  if (monthlyRate <= 0) {
+    basePmt = Math.round(actualLoanWan * 10000 / totalMonths);
+  } else {
+    const mp = monthlyRate, tm = totalMonths;
+    basePmt = Math.round(actualLoanWan * 10000 * mp * Math.pow(1 + mp, tm) / (Math.pow(1 + mp, tm) - 1));
+  }
+
+  let curPmt = basePmt;
+  const totalTableMonths = Math.ceil(((startMonth - 1) + totalMonths) / 12) * 12;
+
+  const rows = [];
+  let prevNR = null, prevCR = null, prevRD = null;
+  let payoffMonth = 0, activeN = 0;
+
+  for (let i = 1; i <= totalTableMonths; i++) {
+    const year  = startYear + Math.floor((i - 1) / 12);
+    const month = (i - 1) % 12 + 1;
+    const isFirst  = year === startYear && month === startMonth;
+    const isActive = year > startYear || (year === startYear && month >= startMonth);
+
+    const row = { year, month, nonRepayment: '-', repayment: '-', cumulativeRepayment: '-', remainingDebt: '-', remarks: '' };
+
+    if (isActive) {
+      activeN++;
+
+      let extra = 0;
+      for (const p of prepayments) {
+        if (+p.year === year && +p.month === month) extra += +p.amount;
+      }
+
+      // A. Non-repayment compound
+      let nr;
+      if (isFirst) {
+        nr = Math.round(actualLoanWan * 10000 * (1 + monthlyRate));
+      } else {
+        nr = typeof prevNR === 'number' ? prevNR * (1 + monthlyRate) : '-';
+      }
+
+      // B. Repayment
+      const target = curPmt + monthlyExtraPayment + extra;
+      let rep;
+      if (isFirst) {
+        rep = (typeof nr === 'number' && nr < target + 500) ? nr : target;
+      } else if (typeof prevRD === 'number') {
+        const cd = prevRD * (1 + monthlyRate);
+        rep = cd < target + 500 ? cd : target;
+      } else {
+        rep = target;
+      }
+      if (typeof prevRD === 'number' && prevRD <= 0) { rep = 0; extra = 0; }
+
+      // C. Remaining debt
+      let rd;
+      if (isFirst) {
+        rd = (typeof nr === 'number' ? nr : 0) - rep;
+      } else if (typeof prevRD === 'number') {
+        rd = prevRD * (1 + monthlyRate) - rep;
+      } else if (typeof nr === 'number') {
+        rd = nr - rep;
+      } else {
+        rd = '-';
+      }
+      if (typeof rd === 'number' && rd < 0.01) rd = 0;
+
+      // D. Cumulative
+      let cr;
+      if (isFirst) {
+        cr = rep;
+      } else if (typeof prevCR === 'number') {
+        cr = prevCR + rep;
+      } else {
+        cr = rep;
+      }
+
+      // E. Remarks
+      const remarks = [];
+      if (typeof rd === 'number' && rd <= 0 && typeof prevRD === 'number' && prevRD > 0) {
+        remarks.push(`最後一期繳交${fmtN(Math.round(rep))}元！恭喜還款完畢！`);
+        payoffMonth = activeN;
+      } else if (extra > 0) {
+        remarks.push(`【提前還本 ${fmtN(Math.round(extra))} 元】`);
+        if (prepaymentMode === 'reduce_payment' && typeof rd === 'number' && rd > 0) {
+          const remM = totalMonths - activeN;
+          if (remM > 0) {
+            const mp = monthlyRate;
+            curPmt = mp <= 0
+              ? Math.round(rd / remM)
+              : Math.round(rd * mp * Math.pow(1 + mp, remM) / (Math.pow(1 + mp, remM) - 1));
+            remarks.push(`【月付款調整為 ${fmtN(curPmt)} 元】`);
+          }
+        }
+      }
+
+      row.nonRepayment = nr;
+      row.repayment = rep;
+      row.cumulativeRepayment = cr;
+      row.remainingDebt = rd;
+      row.remarks = remarks.join(' ');
+
+      prevNR = nr; prevCR = cr; prevRD = rd;
+    } else {
+      prevNR = prevCR = prevRD = '-';
+    }
+    rows.push(row);
+  }
+
+  const finalRepaid = typeof prevCR === 'number' ? prevCR : 0;
+  const totalInterest = Math.max(0, finalRepaid - actualLoanWan * 10000);
+
+  let payoffDate = '未開始或未還清';
+  if (payoffMonth > 0) {
+    const abs = startMonth - 1 + payoffMonth - 1;
+    payoffDate = `${startYear + Math.floor(abs / 12)}年${abs % 12 + 1}月`;
+  }
+
+  return {
+    monthlyRate, monthlyPayment: basePmt,
+    estimatedDownpayment: estDp, estimatedLoan: estLoan,
+    totalRepayment: finalRepaid, totalInterest, payoffDate,
+    actualPayoffMonthCount: payoffMonth > 0 ? payoffMonth : totalMonths,
+    table: rows
+  };
+}
+
+// ================================================================
+// RECALCULATE
+// ================================================================
+function recalculate() {
+  const price    = gv('ip-price');
+  const ratio    = gv('ip-ratio');
+  const actDp    = gv('ip-act-dp');
+  const actLoan  = gv('ip-act-loan');
+  const startYr  = gi('ip-yr');
+  const startMo  = gi('ip-mo');
+  const ratePct  = gv('ip-rate');
+  const termYrs  = gi('ip-term');
+  const extra    = gi('ip-extra');
+  const mode     = document.getElementById('sel-mode').value;
+
+  const res = calculateMortgage({
+    purchasePriceWan: price, loanRatioCheng: ratio,
+    actualDownpaymentWan: actDp, actualLoanWan: actLoan,
+    startYear: startYr, startMonth: startMo,
+    annualRate: ratePct / 100, termYears: termYrs,
+    monthlyExtraPayment: extra, prepayments, prepaymentMode: mode
+  });
+  lastResult = { res, params: { price, ratio, actDp, actLoan, startYr, startMo, ratePct, termYrs, extra, mode } };
+
+  // ── Metrics
+  document.getElementById('c-dp').textContent       = `${actDp.toFixed(1)} 萬`;
+  document.getElementById('c-loan').textContent     = `${actLoan.toFixed(1)} 萬`;
+  let mTxt = `${fmtN(res.monthlyPayment)} 元`;
+  if (extra > 0) mTxt += ` (+${fmtN(extra)})`;
+  document.getElementById('c-monthly').textContent  = mTxt;
+  document.getElementById('c-total').textContent    = `${(res.totalRepayment / 10000).toFixed(2)} 萬`;
+  document.getElementById('c-interest').textContent = `${(res.totalInterest / 10000).toFixed(2)} 萬`;
+  document.getElementById('c-payoff').textContent   = res.payoffDate;
+
+  // ── Info panel
+  document.getElementById('inf-mrate').textContent  = `${(res.monthlyRate * 100).toFixed(6)} %`;
+  document.getElementById('inf-edp').textContent    = `${res.estimatedDownpayment.toFixed(2)} 萬`;
+  document.getElementById('inf-eloan').textContent  = `${res.estimatedLoan.toFixed(2)} 萬`;
+  if (res.totalRepayment > 0) {
+    const ir = (res.totalInterest / res.totalRepayment * 100).toFixed(2);
+    document.getElementById('inf-iratio').textContent = `${ir} %`;
+  } else {
+    document.getElementById('inf-iratio').textContent = '-';
+  }
+
+  // ── Chart
+  updateChart(res.table);
+  // ── Tables
+  updateDetailTable(res.table);
+  updateDecadeTable(res.table, termYrs);
+}
+
+// ================================================================
+// CHART
+// ================================================================
+function updateChart(tableRows) {
+  const active = tableRows.filter(r => typeof r.remainingDebt === 'number');
+  const xLabels = active.map((_, i) => +(i / 12).toFixed(2));
+  const rdData  = active.map(r => +(r.remainingDebt / 10000).toFixed(2));
+  const crData  = active.map(r => +(r.cumulativeRepayment / 10000).toFixed(2));
+
+  if (mortgageChart) {
+    mortgageChart.data.labels = xLabels;
+    mortgageChart.data.datasets[0].data = rdData;
+    mortgageChart.data.datasets[1].data = crData;
+    mortgageChart.update();
+    return;
+  }
+
+  const ctx = document.getElementById('mortgage-chart').getContext('2d');
+  mortgageChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xLabels,
+      datasets: [
+        {
+          label: '剩餘負債 (萬)',
+          data: rdData,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56,189,248,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.2
+        },
+        {
+          label: '累計還款 (萬)',
+          data: crData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#f8fafc', font: { size: 12 } }
+        },
+        title: {
+          display: true,
+          text: '房貸還款與負債趨勢圖',
+          color: '#f8fafc',
+          font: { size: 14, weight: 'bold' }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: '還款年數 (年)', color: '#94a3b8', font: { size: 11 } },
+          ticks: { color: '#94a3b8', maxTicksLimit: 20 },
+          grid: { color: '#334155' }
+        },
+        y: {
+          title: { display: true, text: '金額 (萬元 NTD)', color: '#94a3b8', font: { size: 11 } },
+          ticks: { color: '#94a3b8' },
+          grid: { color: '#334155' }
+        }
+      },
+      backgroundColor: '#1e293b'
+    }
+  });
+}
+
+// ================================================================
+// DETAIL TABLE
+// ================================================================
+function updateDetailTable(tableRows) {
+  const tbody = document.getElementById('detail-tbody');
+  const frags = [];
+  for (let i = 0; i < tableRows.length; i++) {
+    const r = tableRows[i];
+    const inactive = r.remainingDebt === '-';
+    const remCls = r.remarks
+      ? (r.remarks.includes('最後一期') ? 'rem-green' : 'rem-amber')
+      : '';
+    frags.push(`<tr ondblclick="onDetailDblClick(${i})" data-idx="${i}">
+      <td class="td-c">${r.year} 年</td>
+      <td class="td-c">${r.month} 月</td>
+      <td class="td-r">${inactive ? '-' : fmtV(r.nonRepayment)}</td>
+      <td class="td-r">${inactive ? '-' : fmtV(r.repayment)}</td>
+      <td class="td-r">${inactive ? '-' : fmtV(r.cumulativeRepayment)}</td>
+      <td class="td-r">${inactive ? '-' : fmtV(r.remainingDebt)}</td>
+      <td class="${remCls}">${r.remarks || ''}</td>
+    </tr>`);
+  }
+  tbody.innerHTML = frags.join('');
+}
+
+function onDetailDblClick(rowIdx) {
+  if (!lastResult) return;
+  const r = lastResult.res.table[rowIdx];
+  if (r.remainingDebt === '-') return;
+  openEditModal(r.year, r.month);
+}
+
+// ================================================================
+// DECADE TABLE
+// ================================================================
+function updateDecadeTable(tableRows, termYears) {
+  const decades = Math.ceil(termYears / 10);
+  const thead = document.getElementById('decade-thead');
+  const tbody = document.getElementById('decade-tbody');
+
+  // Headers
+  const hCells = [''];  // row number placeholder
+  for (let d = 0; d < decades; d++) {
+    const label = `第 ${d * 10 + 1}–${Math.min((d + 1) * 10, termYears)} 年`;
+    hCells.push(`<th colspan="4" style="text-align:center;background:#162032;">${label}</th>`);
+  }
+
+  // Sub-headers
+  const subCells = ['<th style="text-align:center;">列</th>'];
+  for (let d = 0; d < decades; d++) {
+    subCells.push('<th class="td-c">期數/年月</th><th class="td-r">月還款（元）</th><th class="td-r">剩餘負債（元）</th><th>備註</th>');
+  }
+
+  thead.innerHTML = `<tr>${hCells.join('')}</tr><tr>${subCells.join('')}</tr>`;
+
+  const rowFrags = [];
+  for (let ri = 0; ri < 120; ri++) {
+    const cells = [`<td class="td-c" style="color:#64748b;font-size:10px;">${ri + 1}</td>`];
+    for (let d = 0; d < decades; d++) {
+      const ai = d * 120 + ri;
+      if (ai < tableRows.length) {
+        const row = tableRows[ai];
+        if (row.remainingDebt === '-') {
+          cells.push(`<td class="td-c">${row.year}/${String(row.month).padStart(2,'0')} (-)</td><td>-</td><td>-</td><td></td>`);
+        } else {
+          const remCls = row.remarks
+            ? (row.remarks.includes('最後一期') ? 'rem-green' : 'rem-amber')
+            : '';
+          cells.push(
+            `<td class="td-c" style="cursor:pointer;" ondblclick="onDecadeDblClick(${ai})">${row.year}/${String(row.month).padStart(2,'0')}</td>` +
+            `<td class="td-r">${fmtV(row.repayment)}</td>` +
+            `<td class="td-r">${fmtV(row.remainingDebt)}</td>` +
+            `<td class="${remCls}">${row.remarks || ''}</td>`
+          );
+        }
+      } else {
+        cells.push('<td>-</td><td>-</td><td>-</td><td></td>');
+      }
+    }
+    rowFrags.push(`<tr>${cells.join('')}</tr>`);
+  }
+  tbody.innerHTML = rowFrags.join('');
+}
+
+function onDecadeDblClick(tableRowIdx) {
+  if (!lastResult) return;
+  const r = lastResult.res.table[tableRowIdx];
+  if (!r || r.remainingDebt === '-') return;
+  openEditModal(r.year, r.month);
+}
+
+// ================================================================
+// PREPAYMENT SIDEBAR TABLE
+// ================================================================
+function renderPrepayTable() {
+  prepayments.sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month);
+  const tbody = document.getElementById('prepay-tbody');
+  if (prepayments.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#64748b;">（無紀錄）</td></tr>';
+    return;
+  }
+  tbody.innerHTML = prepayments.map((p, i) =>
+    `<tr onclick="selectPrepayRow(${i})" id="prow-${i}" style="${selectedPrepayRow === i ? 'outline:1px solid #38bdf8;' : ''}">
+      <td class="td-c">${p.year}</td>
+      <td class="td-c">${p.month}</td>
+      <td class="td-r">${fmtN(p.amount)}</td>
+    </tr>`
+  ).join('');
+}
+
+function selectPrepayRow(idx) {
+  selectedPrepayRow = idx;
+  renderPrepayTable();
+}
+
+function deleteSelectedPrepay() {
+  if (selectedPrepayRow < 0 || selectedPrepayRow >= prepayments.length) {
+    alert('請先在清單中點選要刪除的提前還款紀錄。');
+    return;
+  }
+  prepayments.splice(selectedPrepayRow, 1);
+  selectedPrepayRow = -1;
+  renderPrepayTable();
+  recalculate();
+}
+
+// ================================================================
+// MODAL
+// ================================================================
+function openAddModal() {
+  modalEditIdx = -1;
+  const startYr = gi('ip-yr');
+  document.getElementById('modal-title').textContent = '新增提前還款';
+  document.getElementById('modal-yr').value  = startYr;
+  document.getElementById('modal-mo').value  = 1;
+  document.getElementById('modal-amt').value = 500000;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function openEditModal(year, month) {
+  const idx = prepayments.findIndex(p => +p.year === year && +p.month === month);
+  modalEditIdx = idx;
+  const existing = idx >= 0 ? prepayments[idx].amount : 0;
+  document.getElementById('modal-title').textContent =
+    idx >= 0 ? `編輯提前還款（${year}年${month}月）` : `新增提前還款（${year}年${month}月）`;
+  document.getElementById('modal-yr').value  = year;
+  document.getElementById('modal-mo').value  = month;
+  document.getElementById('modal-amt').value = idx >= 0 ? existing : 500000;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+function bgClose(e) {
+  if (e.target.id === 'modal') closeModal();
+}
+
+function confirmModal() {
+  const yr  = parseInt(document.getElementById('modal-yr').value);
+  const mo  = parseInt(document.getElementById('modal-mo').value);
+  const amt = parseFloat(document.getElementById('modal-amt').value) || 0;
+
+  const existIdx = prepayments.findIndex(p => +p.year === yr && +p.month === mo);
+  if (amt === 0) {
+    if (existIdx >= 0) prepayments.splice(existIdx, 1);
+  } else {
+    if (existIdx >= 0) {
+      prepayments[existIdx].amount = amt;
+    } else {
+      prepayments.push({ year: yr, month: mo, amount: amt });
+    }
+  }
+  selectedPrepayRow = -1;
+  closeModal();
+  renderPrepayTable();
+  recalculate();
+}
+
+// ================================================================
+// ESTIMATES & SYNC
+// ================================================================
+function updateEstimates() {
+  const price = gv('ip-price');
+  const ratio = gv('ip-ratio');
+  const edp   = price * (1 - ratio / 10);
+  const eL    = price * ratio / 10;
+  document.getElementById('est-dp').textContent   = edp.toFixed(2);
+  document.getElementById('est-loan').textContent = eL.toFixed(2);
+}
+
+function syncDp() {
+  updateEstimates();
+  const v = parseFloat(document.getElementById('est-dp').textContent);
+  document.getElementById('ip-act-dp').value = v.toFixed(1);
+}
+
+function syncLoan() {
+  updateEstimates();
+  const v = parseFloat(document.getElementById('est-loan').textContent);
+  document.getElementById('ip-act-loan').value = v.toFixed(1);
+}
+
+// ================================================================
+// RESET
+// ================================================================
+function resetDefaults() {
+  document.getElementById('ip-price').value    = 873;
+  document.getElementById('ip-ratio').value    = 8;
+  document.getElementById('ip-rate').value     = 2.185;
+  document.getElementById('ip-term').value     = 40;
+  document.getElementById('ip-yr').value       = 2026;
+  document.getElementById('ip-mo').value       = 7;
+  document.getElementById('ip-act-dp').value   = 175;
+  document.getElementById('ip-act-loan').value = 698;
+  document.getElementById('ip-extra').value    = 0;
+  document.getElementById('sel-mode').selectedIndex = 0;
+  prepayments = [];
+  selectedPrepayRow = -1;
+  updateEstimates();
+  renderPrepayTable();
+  recalculate();
+}
+
+// ================================================================
+// TAB SWITCHING
+// ================================================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'dashboard' && mortgageChart) {
+    setTimeout(() => mortgageChart.resize(), 10);
+  }
+}
+
+// ================================================================
+// EXCEL EXPORT (SheetJS)
+// ================================================================
+function exportExcel() {
+  if (!lastResult) { alert('請先執行計算。'); return; }
+  const { res, params } = lastResult;
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Parameters
+  const s1Data = [
+    ['房貸模擬分析報表'],
+    [],
+    ['基本參數', '值'],
+    ['成交價格（萬）', params.price],
+    ['貸款成數（成）', params.ratio],
+    ['實際頭期（萬）', params.actDp],
+    ['實際貸款（萬）', params.actLoan],
+    ['貸款年份', params.startYr],
+    ['首期月份', params.startMo],
+    ['貸款年利率', params.ratePct / 100],
+    ['還款年限（年）', params.termYrs],
+    ['月利率', res.monthlyRate],
+    ['每月還款金額（元）', res.monthlyPayment],
+    ['總還款金額（元）', res.totalRepayment],
+    ['總支付利息（元）', res.totalInterest],
+    ['預計還清日期', res.payoffDate],
+    [],
+    ['提前還款模擬設定', ''],
+    ['還款模式', params.mode === 'reduce_term' ? '維持月還款，縮短年限' : '降低月還款，維持原年限'],
+    [],
+    ['提前還款紀錄'],
+    ['年份', '月份', '金額（元）'],
+    ...prepayments.map(p => [p.year, p.month, p.amount])
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(s1Data);
+  ws1['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 18 }];
+  XLSX.utils.book_append_sheet(wb, ws1, '購屋與貸款資料');
+
+  // Sheet 2: Monthly table
+  const s2Data = [
+    ['貸款年份', '月份', '不還款複利（元）', '還款金額（元）', '累計還款（元）', '剩餘負債（元）', '備註狀態'],
+    ...res.table.map(r => [
+      r.year, r.month,
+      typeof r.nonRepayment === 'number' ? Math.round(r.nonRepayment) : '-',
+      typeof r.repayment === 'number' ? Math.round(r.repayment) : '-',
+      typeof r.cumulativeRepayment === 'number' ? Math.round(r.cumulativeRepayment) : '-',
+      typeof r.remainingDebt === 'number' ? Math.round(r.remainingDebt) : '-',
+      r.remarks
+    ])
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(s2Data);
+  ws2['!cols'] = [{ wch: 10 }, { wch: 6 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 35 }];
+  XLSX.utils.book_append_sheet(wb, ws2, '詳細還款計算');
+
+  const fn = `房貸分析報表_${params.startYr}_${params.startMo}.xlsx`;
+  XLSX.writeFile(wb, fn);
+}
+
+// ================================================================
+// INIT
+// ================================================================
+window.addEventListener('load', () => {
+  updateEstimates();
+  recalculate();
+});
+</script>
+</body>
+</html>
