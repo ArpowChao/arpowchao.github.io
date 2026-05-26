@@ -32,7 +32,7 @@ projects:
   - title: "房貸試算與模擬分析系統"
     image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80"
     description: "房貸逐月攤銷計算、多筆提前還本模擬、十年分欄對照表，並整合蒙地卡羅利率風險模擬，量化未來利率波動對總利息的影響分布。"
-    url: "/homerate/"
+    url: "/apps/homerate/"
     category: "實用工具"
     tags: ["Finance", "Mortgage", "Simulation", "Monte Carlo", "Utility"]
   - title: "聲音的數位轉生 (Audio Digital Science)"
