@@ -107,6 +107,15 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
 /* ── TIP TEXT ── */
 .tip{color:#38bdf8;font-size:11px;margin-bottom:6px;flex-shrink:0;}
 
+/* ── MONTE CARLO TAB ── */
+#tab-mc.tab-panel.active{flex-direction:row;gap:0;}
+#mc-left{
+  width:280px;min-width:280px;overflow-y:auto;
+  border-right:1px solid #334155;padding-right:12px;
+}
+#mc-left td{padding:4px 5px;border:1px solid #334155;color:#e2e8f0;}
+#mc-left tr:nth-child(even) td{background:#1e293b;}
+#mc-left tr:nth-child(odd) td{background:#162032;}
 /* ── MODAL ── */
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,.75);
@@ -130,7 +139,7 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
   <!-- 購屋基本參數 -->
   <div class="grp">
     <span class="grp-title">購屋與貸款基本參數</span>
-    <div class="fr"><span class="fl">成交價格（萬）:</span><input type="number" id="ip-price" value="873" step="10" min="10" max="100000" onchange="updateEstimates()"></div>
+    <div class="fr"><span class="fl">成交價格（萬）:</span><input type="number" id="ip-price" value="1000" step="10" min="10" max="100000" onchange="updateEstimates()"></div>
     <div class="fr"><span class="fl">貸款成數（成）:</span><input type="number" id="ip-ratio" value="8" step="0.5" min="1" max="10" onchange="updateEstimates()"></div>
     <div class="fr"><span class="fl">貸款年利率（%）:</span><input type="number" id="ip-rate" value="2.185" step="0.1" min="0.1" max="15" style="width:100%;"></div>
     <div class="fr"><span class="fl">還款年限（年）:</span><input type="number" id="ip-term" value="40" step="1" min="1" max="50"></div>
@@ -141,16 +150,16 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
   <!-- 實際付款設定 -->
   <div class="grp">
     <span class="grp-title">實際付款與貸款設定</span>
-    <div class="fr"><span class="fl">頭期估計（萬）:</span><span class="fv" id="est-dp">174.60</span></div>
+    <div class="fr"><span class="fl">頭期估計（萬）:</span><span class="fv" id="est-dp">200.00</span></div>
     <div class="fr">
       <span class="fl">實際頭期（萬）:</span>
-      <input type="number" id="ip-act-dp" value="175" step="1" min="0" max="100000" style="flex:1;">
+      <input type="number" id="ip-act-dp" value="200" step="1" min="0" max="100000" style="flex:1;">
       <button class="btn btn-gray btn-sm" onclick="syncDp()">同步</button>
     </div>
-    <div class="fr"><span class="fl">貸款估計（萬）:</span><span class="fv" id="est-loan">698.40</span></div>
+    <div class="fr"><span class="fl">貸款估計（萬）:</span><span class="fv" id="est-loan">800.00</span></div>
     <div class="fr">
       <span class="fl">實際貸款（萬）:</span>
-      <input type="number" id="ip-act-loan" value="698" step="1" min="0" max="100000" style="flex:1;">
+      <input type="number" id="ip-act-loan" value="800" step="1" min="0" max="100000" style="flex:1;">
       <button class="btn btn-gray btn-sm" onclick="syncLoan()">同步</button>
     </div>
   </div>
@@ -171,7 +180,7 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
       <span class="fl">還款模式:</span>
       <select id="sel-mode" onchange="recalculate()" style="flex:1;">
         <option value="reduce_term">維持月還款，縮短年限</option>
-        <option value="reduce_payment">降低月還款，維持原年限</option>
+        <option value="reduce_payment" selected>降低月還款，維持原年限</option>
       </select>
     </div>
     <div id="prepay-tbl-wrap">
@@ -211,6 +220,7 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
       <button class="tab-btn active" onclick="switchTab('dashboard',this)">視覺化儀表板</button>
       <button class="tab-btn" onclick="switchTab('detail',this)">詳細還款計算表（還款計算）</button>
       <button class="tab-btn" onclick="switchTab('decade',this)">十年分欄對照表（10年/欄）</button>
+      <button class="tab-btn" onclick="switchTab('mc',this)">🎲 蒙地卡羅模擬</button>
     </div>
 
     <!-- TAB 1: Dashboard -->
@@ -260,6 +270,44 @@ tbody tr:hover td{background:#243447!important;cursor:pointer;}
     </div>
   </div>
 </div>
+
+    <!-- TAB 4: Monte Carlo -->
+    <div id="tab-mc" class="tab-panel">
+      <div id="mc-left">
+        <div style="color:#38bdf8;font-weight:700;font-size:13px;margin-bottom:6px;">蒙地卡羅利率風險模擬</div>
+        <p style="color:#94a3b8;font-size:11px;line-height:1.6;margin-bottom:8px;">
+          以目前貸款利率為中心，加入常態分布隨機波動，模擬未來利率不確定性對<b style="color:#e2e8f0;">總利息</b>與<b style="color:#e2e8f0;">還清期數</b>的影響分布。
+        </p>
+        <div class="grp" style="margin-top:4px;">
+          <span class="grp-title">模擬參數</span>
+          <div class="fr"><span class="fl" style="min-width:120px;">模擬次數:</span><input type="number" id="mc-trials" value="2000" min="200" max="10000" step="200"></div>
+          <div class="fr"><span class="fl" style="min-width:120px;">利率標準差（%）:</span><input type="number" id="mc-vol" value="0.5" min="0.05" max="5" step="0.05"></div>
+        </div>
+        <button class="btn btn-blue" style="margin-top:8px;" onclick="runMonteCarlo()">▶ 執行蒙地卡羅模擬</button>
+        <div id="mc-results" style="display:none;margin-top:10px;">
+          <div style="color:#38bdf8;font-weight:700;font-size:12px;margin-bottom:4px;">總利息分布（萬元）</div>
+          <table style="width:100%;font-size:11px;border-collapse:collapse;">
+            <thead><tr>
+              <th style="background:#0f172a;color:#38bdf8;padding:5px;border:1px solid #334155;">百分位</th>
+              <th style="background:#0f172a;color:#38bdf8;padding:5px;border:1px solid #334155;text-align:right;">總利息（萬）</th>
+            </tr></thead>
+            <tbody id="mc-tbody"></tbody>
+          </table>
+          <div style="color:#38bdf8;font-weight:700;font-size:12px;margin:8px 0 4px;">還清期數分布（月）</div>
+          <table style="width:100%;font-size:11px;border-collapse:collapse;">
+            <thead><tr>
+              <th style="background:#0f172a;color:#38bdf8;padding:5px;border:1px solid #334155;">百分位</th>
+              <th style="background:#0f172a;color:#38bdf8;padding:5px;border:1px solid #334155;text-align:right;">期數（月）</th>
+            </tr></thead>
+            <tbody id="mc-months-tbody"></tbody>
+          </table>
+          <div id="mc-stats" style="margin-top:8px;font-size:11px;color:#94a3b8;line-height:1.7;"></div>
+        </div>
+      </div>
+      <div style="flex:1;position:relative;min-width:0;padding-left:12px;">
+        <canvas id="mc-chart"></canvas>
+      </div>
+    </div>
 
 <!-- ═══════════════════════════ MODAL ═══════════════════════════ -->
 <div id="modal" class="modal-bg" style="display:none;" onclick="bgClose(event)">
@@ -776,19 +824,142 @@ function syncLoan() {
 }
 
 // ================================================================
+// MONTE CARLO
+// ================================================================
+let mcChart = null;
+
+function normalRandom(mean, std) {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return mean + std * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function runMonteCarlo() {
+  if (!lastResult) { alert('請先執行計算。'); return; }
+
+  const nTrials  = Math.min(10000, Math.max(200, parseInt(document.getElementById('mc-trials').value) || 2000));
+  const rateVol  = (parseFloat(document.getElementById('mc-vol').value) || 0.5) / 100;
+  const params   = lastResult.params;
+  const baseRate = params.ratePct / 100;
+
+  const interests = [], months = [];
+
+  for (let t = 0; t < nTrials; t++) {
+    const rate = Math.max(0.001, normalRandom(baseRate, rateVol));
+    const res  = calculateMortgage({
+      purchasePriceWan: params.price, loanRatioCheng: params.ratio,
+      actualDownpaymentWan: params.actDp, actualLoanWan: params.actLoan,
+      startYear: params.startYr, startMonth: params.startMo,
+      annualRate: rate, termYears: params.termYrs,
+      monthlyExtraPayment: params.extra,
+      prepayments: [...prepayments], prepaymentMode: params.mode
+    });
+    interests.push(res.totalInterest / 10000);
+    months.push(res.actualPayoffMonthCount);
+  }
+
+  interests.sort((a, b) => a - b);
+  months.sort((a, b) => a - b);
+  const n = interests.length;
+  const pi = (p) => interests[Math.round(p * (n - 1))];
+  const pm = (p) => months[Math.round(p * (n - 1))];
+  const mean = interests.reduce((s, v) => s + v, 0) / n;
+  const std  = Math.sqrt(interests.reduce((s, v) => s + (v - mean) ** 2, 0) / n);
+
+  const PCT_LABELS = ['最小值', 'P5', 'P10', 'P25', 'P50（中位）', 'P75', 'P90', 'P95', '最大值'];
+  const PCT_VALUES = [0, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 1.0];
+
+  document.getElementById('mc-tbody').innerHTML = PCT_VALUES.map((p, i) =>
+    `<tr><td>${PCT_LABELS[i]}</td><td style="text-align:right;">${pi(p).toFixed(2)}</td></tr>`
+  ).join('');
+  document.getElementById('mc-months-tbody').innerHTML = PCT_VALUES.map((p, i) =>
+    `<tr><td>${PCT_LABELS[i]}</td><td style="text-align:right;">${pm(p)}</td></tr>`
+  ).join('');
+  document.getElementById('mc-stats').innerHTML =
+    `平均總利息：<b style="color:#f8fafc;">${mean.toFixed(2)} 萬</b>　` +
+    `標準差：<b style="color:#f8fafc;">${std.toFixed(2)} 萬</b>　` +
+    `90% 信賴區間：<b style="color:#38bdf8;">${pi(0.05).toFixed(2)} ~ ${pi(0.95).toFixed(2)} 萬</b>`;
+  document.getElementById('mc-results').style.display = 'block';
+
+  // Histogram
+  const minV = interests[0], maxV = interests[n - 1];
+  const nBins = 40;
+  const bSize = (maxV - minV) / nBins || 1;
+  const bins  = Array(nBins).fill(0);
+  for (const v of interests) bins[Math.min(nBins - 1, Math.floor((v - minV) / bSize))]++;
+  const labels = Array.from({length: nBins}, (_, i) => (minV + (i + 0.5) * bSize).toFixed(2));
+
+  const p5val = pi(0.05), p95val = pi(0.95), p50val = pi(0.50);
+  const colors = labels.map(lbl => {
+    const v = parseFloat(lbl);
+    if (v < p5val || v > p95val) return 'rgba(239,68,68,0.75)';
+    if (v < p50val) return 'rgba(56,189,248,0.65)';
+    return 'rgba(168,85,247,0.65)';
+  });
+
+  if (mcChart) { mcChart.destroy(); mcChart = null; }
+  const ctx = document.getElementById('mc-chart').getContext('2d');
+  mcChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '次數',
+        data: bins,
+        backgroundColor: colors,
+        borderColor: 'transparent',
+        barPercentage: 1.0,
+        categoryPercentage: 1.0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: `總利息分布直方圖（${nTrials} 次模擬，利率 σ=${(rateVol*100).toFixed(2)}%）`,
+          color: '#f8fafc', font: { size: 13, weight: 'bold' }
+        },
+        tooltip: {
+          callbacks: {
+            title: (items) => `總利息 ≈ ${items[0].label} 萬`,
+            label: (item)  => `出現 ${item.raw} 次（${(item.raw/nTrials*100).toFixed(1)}%）`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: '總利息（萬元）', color: '#94a3b8', font: { size: 11 } },
+          ticks: { color: '#94a3b8', maxTicksLimit: 12 },
+          grid:  { color: '#334155' }
+        },
+        y: {
+          title: { display: true, text: '模擬次數', color: '#94a3b8', font: { size: 11 } },
+          ticks: { color: '#94a3b8' },
+          grid:  { color: '#334155' }
+        }
+      }
+    }
+  });
+}
+
+// ================================================================
 // RESET
 // ================================================================
 function resetDefaults() {
-  document.getElementById('ip-price').value    = 873;
+  document.getElementById('ip-price').value    = 1000;
   document.getElementById('ip-ratio').value    = 8;
   document.getElementById('ip-rate').value     = 2.185;
   document.getElementById('ip-term').value     = 40;
   document.getElementById('ip-yr').value       = 2026;
   document.getElementById('ip-mo').value       = 7;
-  document.getElementById('ip-act-dp').value   = 175;
-  document.getElementById('ip-act-loan').value = 698;
+  document.getElementById('ip-act-dp').value   = 200;
+  document.getElementById('ip-act-loan').value = 800;
   document.getElementById('ip-extra').value    = 0;
-  document.getElementById('sel-mode').selectedIndex = 0;
+  document.getElementById('sel-mode').selectedIndex = 1;
   prepayments = [];
   selectedPrepayRow = -1;
   updateEstimates();

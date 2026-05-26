@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年5月26日"
+    entry: "新增「房貸試算與模擬分析系統」，支援逐月攤銷表、提前還本模擬、十年分欄對照，以及蒙地卡羅利率風險模擬。"
   - date: "2026年5月24日"
     entry: "新增「太空軌道轉移與重力逃逸遊戲」與「近地衛星軌道衰減模擬器」，深入剖析克卜勒軌道預測、重力束縛能與大氣阻力衰減物理機制。"
   - date: "2026年4月19日"
@@ -27,6 +29,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "房貸試算與模擬分析系統"
+    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80"
+    description: "房貸逐月攤銷計算、多筆提前還本模擬、十年分欄對照表，並整合蒙地卡羅利率風險模擬，量化未來利率波動對總利息的影響分布。"
+    url: "/homerate/"
+    category: "實用工具"
+    tags: ["Finance", "Mortgage", "Simulation", "Monte Carlo", "Utility"]
   - title: "聲音的數位轉生 (Audio Digital Science)"
     image: "/assets/img/apps/audio_digital_science_thumbnail.png"
     description: "探索聲音如何從震動訊號透過放大、取樣、量化，最終轉化為電腦能讀懂的數位邏輯。專為課程分享設計的互動教材。"
