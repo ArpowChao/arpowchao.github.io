@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>彈簧碰撞物理模擬器 (Hooke's Law Spring Collision Simulator)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="../index.html" class="btn" style="padding: 0.5rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;" title="返回首頁">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </a>
+      <h1>彈簧碰撞物理模擬 <span>虎克定律</span></h1>
+    </div>
+    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem; gap: 0.5rem;">
+      <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      <span>明亮模式</span>
+    </button>
+  </header>
+  
+  <main>
+    <!-- Left panel: Parameters configuration -->
+    <section class="panel control-panel">
+      <h2 class="panel-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        參數設定
+      </h2>
+      
+      <!-- Ball A Configuration -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>球 A 質量 (m<sub>A</sub>)</span>
+          <span class="value-display" id="mass-a-val">2.0 kg</span>
+        </div>
+        <input type="range" id="mass-a" min="0.5" max="10.0" step="0.1" value="2.0">
+      </div>
+      
+      <div class="control-group">
+        <div class="control-label">
+          <span>球 A 初速 (v<sub>A</sub>)</span>
+          <span class="value-display" id="vel-a-val">150 m/s</span>
+        </div>
+        <input type="range" id="vel-a" min="-400" max="400" step="10" value="150">
+      </div>
+      
+      <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08);">
+      
+      <!-- Ball B Configuration -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>球 B 質量 (m<sub>B</sub>)</span>
+          <span class="value-display" id="mass-b-val">3.0 kg</span>
+        </div>
+        <input type="range" id="mass-b" min="0.5" max="10.0" step="0.1" value="3.0">
+      </div>
+      
+      <div class="control-group">
+        <div class="control-label">
+          <span>球 B 初速 (v<sub>B</sub>)</span>
+          <span class="value-display" id="vel-b-val">-50 m/s</span>
+        </div>
+        <input type="range" id="vel-b" min="-400" max="400" step="10" value="-50">
+      </div>
+      
+      <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08);">
+      
+      <!-- Spring/Energy properties -->
+      <div class="control-group">
+        <div class="control-label">
+          <span>彈簧彈性係數 (k)</span>
+          <span class="value-display" id="spring-k-val">15.0 N/m</span>
+        </div>
+        <input type="range" id="spring-k" min="5.0" max="50.0" step="1.0" value="15.0">
+      </div>
+      
+      <div class="control-group">
+        <div class="control-label">
+          <span>恢復係數 (e)</span>
+          <span class="value-display" id="coeff-e-val">0.70</span>
+        </div>
+        <input type="range" id="coeff-e" min="0.0" max="1.0" step="0.05" value="0.7">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>播放速率</span>
+          <span class="value-display" id="speed-val">1.0x</span>
+        </div>
+        <input type="range" id="sim-speed" min="0.1" max="3.0" step="0.1" value="1.0">
+      </div>
+    </section>
+    
+    <!-- Center panel: Main canvas & graphs -->
+    <section class="center-container">
+      <!-- Perspective switch tabs -->
+      <div class="view-selector">
+        <button class="view-btn active" data-view="third-person">靜止旁觀者 (第三人稱)</button>
+        <button class="view-btn" data-view="ball-a">球 A 視角</button>
+        <button class="view-btn" data-view="ball-b">球 B 視角</button>
+        <button class="view-btn" data-view="com">質心 (CoM) 視角</button>
+      </div>
+      
+      <!-- Simulation Canvas Box -->
+      <div class="simulation-card">
+        <div class="view-indicator" id="view-indicator">靜止旁觀者 (第三人稱)</div>
+        <div class="canvas-container">
+          <canvas id="simCanvas"></canvas>
+        </div>
+        
+        <!-- Live ball details overlay bottom -->
+        <div class="action-bar">
+          <button class="btn btn-primary" id="btn-play">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> 開始
+          </button>
+          <button class="btn" id="btn-step">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> 單步
+          </button>
+          <button class="btn btn-danger" id="btn-reset">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> 重設
+          </button>
+          
+          <div style="margin-left: auto; display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+            <div>球 A 速度: <span id="vel-a-live" style="font-family: monospace; font-weight: bold; color: var(--color-a);">0.00 m/s</span></div>
+            <div>球 B 速度: <span id="vel-b-live" style="font-family: monospace; font-weight: bold; color: var(--color-b);">0.00 m/s</span></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Energy stats grids -->
+      <div class="stats-grid">
+        <div class="stat-box" style="border-left: 3px solid var(--color-ke);">
+          <span class="stat-title">總動能 (E<sub>k</sub>)</span>
+          <span class="stat-value" id="stat-ke" style="color: var(--color-ke);">0.00 J</span>
+        </div>
+        <div class="stat-box" style="border-left: 3px solid var(--color-mech);">
+          <span class="stat-title">力學能 (E<sub>mech</sub>)</span>
+          <span class="stat-value" id="stat-mech" style="color: var(--color-mech);">0.00 J</span>
+        </div>
+        <div class="stat-box" style="border-left: 3px solid var(--color-int);">
+          <span class="stat-title">內動能 (E<sub>int</sub>)</span>
+          <span class="stat-value" id="stat-int" style="color: var(--color-int);">0.00 J</span>
+        </div>
+        <div class="stat-box" style="border-left: 3px solid var(--color-com);">
+          <span class="stat-title">質心動能 (E<sub>com</sub>)</span>
+          <span class="stat-value" id="stat-com" style="color: var(--color-com);">0.00 J</span>
+        </div>
+        <div class="stat-box" style="border-left: 3px solid var(--color-heat);">
+          <span class="stat-title">熱損耗 (Q)</span>
+          <span class="stat-value" id="stat-heat" style="color: var(--color-heat);">0.00 J</span>
+        </div>
+      </div>
+      
+      <!-- Scrolling energy chart -->
+      <div class="charts-card">
+        <div class="chart-header">
+          <span style="font-size: 0.9rem; font-weight: 600;">能量隨時間變化圖 (Real-time Energy Curve)</span>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-color" style="background: var(--color-mech);"></span>力學能</span>
+            <span class="legend-item"><span class="legend-color" style="background: var(--color-ke);"></span>總動能</span>
+            <span class="legend-item"><span class="legend-color" style="background: var(--color-int);"></span>內動能</span>
+            <span class="legend-item"><span class="legend-color" style="background: var(--color-com);"></span>質心動能</span>
+            <span class="legend-item"><span class="legend-color" style="background: var(--color-heat);"></span>熱損耗</span>
+          </div>
+        </div>
+        <div style="flex: 1; position: relative; width: 100%;">
+          <canvas id="chartCanvas"></canvas>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Right panel: Educational explanation -->
+    <section class="panel info-panel">
+      <h2 class="panel-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        物理原理解析
+      </h2>
+      
+      <div>
+        <h3>1. 柯尼希定理 (König's Theorem)</h3>
+        <p>系統的總動能可以拆解為「質心動能」與相對於質心的「內動能」之和：</p>
+        <div class="formula">E<sub>k</sub> = E<sub>com</sub> + E<sub>int</sub></div>
+        <ul>
+          <li><strong>質心動能：</strong> 整個系統作為一個質點運動時的動能，在碰撞過程中守恆。</li>
+          <li><strong>內動能：</strong> 兩球在質心座標系下的動能，在碰撞時會先轉換為彈簧的彈性位能。</li>
+        </ul>
+      </div>
+      
+      <div>
+        <h3>2. 非彈性碰撞與熱能損耗</h3>
+        <p>若恢復係數 <span class="formula">e &lt; 1</span>，表示碰撞過程中有部分能量以熱能損耗。模擬中，當兩球相對速度大於零時為壓縮期（彈性係數 <span class="formula">k</span>），兩球相對遠離時為釋放期（彈性係數變為 <span class="formula">e² &times; k</span>）。這導致彈簧釋放時作功變少，損失的能量轉換為熱能 <span class="formula">Q</span>。</p>
+      </div>
+      
+      <div>
+        <h3>3. 視角切換的物理意義</h3>
+        <ul>
+          <li><strong>第三者視角：</strong> 顯示兩球在地面的實際軌跡。</li>
+          <li><strong>A球 / B球視角：</strong> 以該球為靜止參考系，觀察另一球靠近、壓縮彈簧並反彈的動態。</li>
+          <li><strong>質心視角：</strong> 以系統質心為參考系，觀察兩球以相反方向等動量對撞，並各自反彈。在此視角下，質心動能恆為零，只呈現內動能與位能的轉換。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  
+  <footer>
+    <p>Hooke's Law Spring Collision Simulation &copy; 2026 Developed by Antigravity Physics Lab</p>
+  </footer>
+  
+  <script src="simulation.js"></script>
+</body>
+</html>
