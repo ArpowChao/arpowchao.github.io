@@ -65,27 +65,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Student Inline Answers Verification ---
     const inlineAnswers = {
-        "ans-6-1": { expected: 2.48, tolerance: 0.05, explanation: "光子能量公式：$E = \\frac{1240}{\\lambda} = \\frac{1240}{500} = 2.48\\text{ eV}$。" },
-        "ans-6-2": { expected: 0.82, tolerance: 0.05, explanation: "最大動能公式：$K_{\\text{max}} = hf - W = E_p - W = 3.10 - 2.28 = 0.82\\text{ eV}$。" },
-        "ans-6-3": { expected: 1.23, tolerance: 0.05, explanation: "德布羅意波長公式：$\\lambda = \\frac{h}{p} = \\frac{h}{mv} \\approx 1.23\\text{ Å}$ ($10^{-10}\\text{ m}$)。" }
+        "ans-6-1": {
+            type: "numeric",
+            expected: 2.48,
+            tolerance: 0.05,
+            explanation: "光子能量公式：$E = \\frac{1240}{\\lambda} = \\frac{1240}{500} = 2.48\\text{ eV}$。",
+            hint: "利用 $hc \\approx 1240\\text{ eV}\\cdot\\text{nm}$ 計算。"
+        },
+        "ans-6-2": {
+            type: "string",
+            expected: "能",
+            explanation: "因為入射紫外光的能量 $3.10\\text{ eV}$ 大於鈉金屬板的激發能量門檻 $2.28\\text{ eV}$，因此光子可以將能量完全轉移給單個電子，使其成功克服阻力逸出金屬表面。",
+            hint: "比較入射光子能量與金屬激發門檻能量的大小關係（填入『能』或『不能』）。"
+        },
+        "ans-6-3": {
+            type: "string",
+            expected: "短",
+            explanation: "德布羅意物質波波長與物體的動量（質量與速度的乘積）成反比。當速度變快時，動量增加，因此波長會縮短（變短）。",
+            hint: "物質波波長與速度成反比關係（填入『長』或『短』）。"
+        }
     };
 
     window.verifyInlineAnswer = function(questionId) {
         const input = document.getElementById(questionId);
         const feedback = document.getElementById(`${questionId}-feedback`);
-        const value = parseFloat(input.value.trim());
+        const text = input.value.trim();
         
-        if (isNaN(value)) {
-            feedback.innerHTML = "請輸入數字！";
-            feedback.className = "interactive-feedback incorrect";
-            feedback.style.display = "flex";
-            return;
+        const config = inlineAnswers[questionId];
+        let isCorrect = false;
+
+        if (config.type === "string") {
+            isCorrect = (text === config.expected);
+        } else {
+            const value = parseFloat(text);
+            if (isNaN(value)) {
+                feedback.innerHTML = "請輸入數字！";
+                feedback.className = "interactive-feedback incorrect";
+                feedback.style.display = "flex";
+                return;
+            }
+            const diff = Math.abs(value - config.expected);
+            isCorrect = (diff <= config.tolerance);
         }
 
-        const config = inlineAnswers[questionId];
-        const diff = Math.abs(value - config.expected);
-
-        if (diff <= config.tolerance) {
+        if (isCorrect) {
             feedback.innerHTML = `✓ 正確！${config.explanation}`;
             feedback.className = "interactive-feedback correct";
             feedback.style.display = "flex";
@@ -94,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Mark chapter task complete
             checkChapterCompletion(currentChapter);
         } else {
-            feedback.innerHTML = `✗ 答案不夠精確，再試試看！提示：利用 $hc \\approx 1240\\text{ eV}\\cdot\\text{nm}$ 計算。`;
+            feedback.innerHTML = `✗ 答案不夠精確，或回答錯誤，再試試看！<br>提示：${config.hint}`;
             feedback.className = "interactive-feedback incorrect";
             feedback.style.display = "flex";
         }
@@ -136,8 +159,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const inlineCorrect = document.querySelector(`#${chapterId} .interactive-feedback.correct`) !== null;
         const quizCount = document.querySelectorAll(`#${chapterId} .bloom-option-item.correct`).length;
         
+        let requiredQuizCount = 2;
+        if (chapterId === "ch-6-3") {
+            requiredQuizCount = 1;
+        }
+
         // Let's say if both criteria met, chapter is completed
-        if (inlineCorrect && quizCount >= 2) { // Need at least two Bloom answers correct
+        if (inlineCorrect && quizCount >= requiredQuizCount) {
             completedChapters.add(chapterId);
             updateNavigation();
         }
@@ -437,12 +465,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            // Calculate output numbers
+            // Calculate output indicators
             document.getElementById("stat-photon-energy").textContent = `${photonEnergy.toFixed(2)} eV`;
-            document.getElementById("stat-work-function").textContent = `${selectedMetal.workFunction.toFixed(2)} eV`;
             
-            const currentVal = isEmitted ? (intensity * (maxKE / 3)).toFixed(2) : "0.00";
-            document.getElementById("stat-photocurrent").textContent = `${currentVal} μA`;
+            let thresholdText = "中";
+            if (metalSelect.value === "sodium") thresholdText = "低";
+            if (metalSelect.value === "copper") thresholdText = "高";
+            document.getElementById("stat-metal-threshold").textContent = thresholdText;
+            
+            document.getElementById("stat-is-emitted").textContent = isEmitted ? "是" : "否";
+            document.getElementById("stat-is-emitted").style.color = isEmitted ? "#10b981" : "#ef4444";
+            
+            let currentText = "無";
+            if (isEmitted) {
+                if (intensity === 0) currentText = "無";
+                else if (intensity < 30) currentText = "微弱";
+                else if (intensity < 70) currentText = "中等";
+                else currentText = "顯著";
+            }
+            document.getElementById("stat-photocurrent").textContent = currentText;
+            document.getElementById("stat-photocurrent").style.color = isEmitted && intensity > 0 ? "#10b981" : "#94a3b8";
 
             animationTime++;
             photoelectricAnimFrame = requestAnimationFrame(animate);
@@ -587,17 +629,33 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fill();
             ctx.shadowBlur = 0;
 
-            // Output values
-            // Formula values: e- de Broglie wavelength is around 1.23 Angstroms (0.12nm)
-            let lambdaDisplay = "";
+            // Output qualitative values
+            let massText = "極小";
+            if (type === "alpha") massText = "中等";
+            if (type === "baseball") massText = "極大";
+            document.getElementById("stat-mw-mass").textContent = massText;
+
+            let velText = "慢";
+            if (speed < 2.0) velText = "慢";
+            else if (speed < 4.0) velText = "中等";
+            else velText = "快";
+            document.getElementById("stat-mw-velocity").textContent = velText;
+
+            let visibilityText = "無";
+            let visibilityColor = "#94a3b8";
             if (type === "electron") {
-                lambdaDisplay = `${(1.226 / Math.sqrt(speed)).toFixed(2)} Å`;
+                visibilityText = "極顯著";
+                visibilityColor = "#10b981";
             } else if (type === "alpha") {
-                lambdaDisplay = `${(0.12 / speed).toFixed(4)} Å`;
+                visibilityText = "微弱";
+                visibilityColor = "#8b5cf6";
             } else {
-                lambdaDisplay = `~ 10^-34 m (極微小)`;
+                visibilityText = "無 (顯現完全粒子性)";
+                visibilityColor = "#ef4444";
             }
-            document.getElementById("stat-mw-wavelength").textContent = lambdaDisplay;
+            const visibilityEl = document.getElementById("stat-mw-wave-visibility");
+            visibilityEl.textContent = visibilityText;
+            visibilityEl.style.color = visibilityColor;
 
             t++;
             matterWaveAnimFrame = requestAnimationFrame(animate);

@@ -256,10 +256,7 @@
                         <div class="formula-block">
                             $E = h f = \frac{h c}{\lambda}$
                         </div>
-                        <p>當光子撞擊金屬板時，會與單個電子進行一對一的碰撞，將其全部能量轉移給電子。若光子能量大於金屬的束縛能（稱為<strong>功函數 $W$</strong>），電子便能克服阻力飛出金屬表面，此時多餘的能量將轉化為光電子的<strong>最大動能 $K_{\text{max}}$</strong>：</p>
-                        <div class="formula-block">
-                            $K_{\text{max}} = hf - W$
-                        </div>
+                        <p>當光子撞擊金屬板時，會與單個電子進行一對一的碰撞，將其全部能量轉移給電子。若光子能量大於金屬所特有的最低能量門檻（激發門檻），電子便能克服阻力飛出金屬表面，產生光電子。</p>
                     </div>
                 </div>
 
@@ -270,7 +267,7 @@
                         <h2 class="concept-title">光電效應與底限頻率</h2>
                     </div>
                     <div class="concept-body">
-                        <p>只有當入射光的頻率高於特定極限（稱為<strong>底限頻率 $f_c$</strong>，即滿足 $hf_c = W$）時，才會有電子發射。否則，即使光線強度再大、照射時間再長，也絕對不會激發出任何光電子。</p>
+                        <p>只有當入射光的頻率高於特定極限（稱為<strong>底限頻率 $f_c$</strong>）時，才會有電子發射。若入射光的頻率低於此底限，則不論光強再大、照射時間再長，也絕對不會激發出任何光電子。</p>
 
                         <!-- 動態模擬器 -->
                         <div class="simulation-container">
@@ -301,9 +298,9 @@
                                         <span>金屬靶材 (功函數 W)</span>
                                     </label>
                                     <select id="pe-metal">
-                                        <option value="sodium">鈉 (Na) - W = 2.28 eV</option>
-                                        <option value="zinc">鋅 (Zn) - W = 4.30 eV</option>
-                                        <option value="copper">銅 (Cu) - W = 4.70 eV</option>
+                                        <option value="sodium">鈉 (Na) - 激發門檻：低</option>
+                                        <option value="zinc">鋅 (Zn) - 激發門檻：中</option>
+                                        <option value="copper">銅 (Cu) - 激發門檻：高</option>
                                     </select>
                                 </div>
                             </div>
@@ -313,12 +310,16 @@
                                     <span class="sim-stat-val" id="stat-photon-energy">2.76 eV</span>
                                 </div>
                                 <div class="sim-stat-box">
-                                    <span class="sim-stat-label">金屬功函數 W</span>
-                                    <span class="sim-stat-val" id="stat-work-function">2.28 eV</span>
+                                    <span class="sim-stat-label">金屬激發門檻能量</span>
+                                    <span class="sim-stat-val" id="stat-metal-threshold">低</span>
                                 </div>
                                 <div class="sim-stat-box">
-                                    <span class="sim-stat-label">偵測到光電流</span>
-                                    <span class="sim-stat-val" style="color: #10b981;" id="stat-photocurrent">0.00 μA</span>
+                                    <span class="sim-stat-label">是否逸出電子</span>
+                                    <span class="sim-stat-val" id="stat-is-emitted">是</span>
+                                </div>
+                                <div class="sim-stat-box">
+                                    <span class="sim-stat-label">光電流大小</span>
+                                    <span class="sim-stat-val" style="color: #10b981;" id="stat-photocurrent">微弱</span>
                                 </div>
                             </div>
                         </div>
@@ -336,7 +337,7 @@
                         <ul>
                             <li><strong>波動說預測</strong>：不論頻率如何，只要光強度夠大，累積一段時間後定能發射電子。<br><strong style="color: var(--accent-purple);">實驗發現</strong>：低於底限頻率，再強的光也無電子射出。</li>
                             <li><strong>波動說預測</strong>：微弱的光照射需要幾分鐘甚至幾小時來「累積能量」才能發射電子。<br><strong style="color: var(--accent-purple);">實驗發現</strong>：一旦頻率夠高，發射是瞬間發生的（延遲小於 $10^{-9}$ 秒）。</li>
-                            <li><strong>波動說預測</strong>：光電子飛出的最大動能應隨光線強度變強而增加。<br><strong style="color: var(--accent-purple);">實驗發現</strong>：最大動能僅由光頻率決定，光強僅影響飛出的電子數量。</li>
+                            <li><strong>波動說預測</strong>：光電子飛出的能量大小應隨光線強度變強而增加。<br><strong style="color: var(--accent-purple);">實驗發現</strong>：光電子的能量僅由光子能量（頻率）決定，光強僅影響飛出的電子數量。</li>
                         </ul>
                     </div>
                 </div>
@@ -355,10 +356,10 @@
                 <!-- 學生互動填答區 -->
                 <div class="interactive-input-section">
                     <div class="input-problem-desc">
-                        ✍️ 試算練習：若入射紫外光的能量為 $3.10\text{ eV}$，照射在功函數為 $2.28\text{ eV}$ 的金屬鈉靶上。飛出的光電子最大動能為多少電子伏特 ($\text{eV}$)？
+                        ✍️ 概念檢測：若入射紫外光的能量為 $3.10\text{ eV}$，照射在激發能量門檻為 $2.28\text{ eV}$ 的金屬鈉上，能否激發並逸出光電子？（請填入『能』或『不能』）
                     </div>
                     <div class="interactive-form-grid">
-                        <input type="text" id="ans-6-2" class="interactive-text-input" placeholder="例如：0.80">
+                        <input type="text" id="ans-6-2" class="interactive-text-input" placeholder="例如：能">
                         <button class="interactive-submit-btn" onclick="verifyInlineAnswer('ans-6-2')">驗證答案</button>
                     </div>
                     <div id="ans-6-2-feedback" class="interactive-feedback"></div>
@@ -377,46 +378,46 @@
                     <!-- 3. 應用 -->
                     <div class="bloom-question-card">
                         <span class="bloom-level-badge level-application">層級三：應用</span>
-                        <div class="bloom-q-text">1. 假設某金屬的功函數為 $2.0\text{ eV}$。若要使該金屬板產生光電效應，入射光子的波長必須滿足下列何種條件？（已知 $hc \approx 1240\text{ eV}\cdot\text{nm}$）</div>
+                        <div class="bloom-q-text">1. 將特定頻率的單色光照射在某金屬板上，若能產生光電效應，下列何種調整方式一定能增加發射的光電子數目，但不會改變光電子的最高能量？</div>
                         <div class="bloom-options-list">
-                            <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-1', 'ch-6-2')">
-                                <span class="bloom-option-badge">A</span> 波長必須大於 $620\text{ nm}$。
-                            </div>
                             <div class="bloom-option-item" data-correct="true" onclick="selectBloomOption(this, true, 'exp-6-2-1', 'ch-6-2')">
-                                <span class="bloom-option-badge">B</span> 波長必須小於 $620\text{ nm}$。
+                                <span class="bloom-option-badge">A</span> 保持單色光頻率不變，增加光的強度（亮度）
                             </div>
                             <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-1', 'ch-6-2')">
-                                <span class="bloom-option-badge">C</span> 只要光線足夠明亮，波長大小均無所謂。
+                                <span class="bloom-option-badge">B</span> 保持光的強度不變，提高光線的頻率
                             </div>
                             <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-1', 'ch-6-2')">
-                                <span class="bloom-option-badge">D</span> 必須使用紅外光。
+                                <span class="bloom-option-badge">C</span> 換成激發門檻能量更高的金屬靶材
+                            </div>
+                            <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-1', 'ch-6-2')">
+                                <span class="bloom-option-badge">D</span> 減弱入射單色光的強度
                             </div>
                         </div>
                         <div id="exp-6-2-1" class="bloom-explanation">
-                            <strong>解析：</strong> 答案為 B。底限波長 $\lambda_c = \frac{hc}{W} = \frac{1240}{2.0} = 620\text{ nm}$。由於波長越短、頻率與能量越高，故入射光波長必須小於底限波長，能量才能超過 $2.0\text{ eV}$。
+                            <strong>解析：</strong> 答案為 A。光的強度決定了單位時間內入射的光子數目。因此，保持頻率（單個光子能量）不變但增加強度，能打出更多光電子（光電流增大），但不會改變單個光電子的最高能量。
                         </div>
                     </div>
 
                     <!-- 4. 分析 -->
                     <div class="bloom-question-card">
                         <span class="bloom-level-badge level-analysis">層級四：分析</span>
-                        <div class="bloom-q-text">2. 在光電效應實驗中，我們將截止電壓（遏止電壓）$V_s$ 作為縱軸，入射光頻率 $f$ 作為橫軸繪製成一條直線。這條直線的斜率代表什麼物理量？</div>
+                        <div class="bloom-q-text">2. 下列關於光電效應實驗中「古典波動說預測」與「愛因斯坦光子說解釋」的對比，何者正確？</div>
                         <div class="bloom-options-list">
                             <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-2', 'ch-6-2')">
-                                <span class="bloom-option-badge">A</span> 金屬的功函數 $W$。
+                                <span class="bloom-option-badge">A</span> 波動說認為激發電子需要時間累積能量，光子說則認為是瞬間碰撞發生。
                             </div>
                             <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-2', 'ch-6-2')">
-                                <span class="bloom-option-badge">B</span> 普朗克常數 $h$。
+                                <span class="bloom-option-badge">B</span> 波動說預測任何頻率的光只要夠強都能打出電子，光子說則指出低於底限頻率便無法激發。
+                            </div>
+                            <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-2', 'ch-6-2')">
+                                <span class="bloom-option-badge">C</span> 波動說預測光電子能量隨光強增加而變大，光子說則指出光電子能量僅由頻率決定。
                             </div>
                             <div class="bloom-option-item" data-correct="true" onclick="selectBloomOption(this, true, 'exp-6-2-2', 'ch-6-2')">
-                                <span class="bloom-option-badge">C</span> 普朗克常數與基本電荷的比值 $\frac{h}{e}$。
-                            </div>
-                            <div class="bloom-option-item" onclick="selectBloomOption(this, false, 'exp-6-2-2', 'ch-6-2')">
-                                <span class="bloom-option-badge">D</span> 金屬的底限頻率 $f_c$。
+                                <span class="bloom-option-badge">D</span> 以上對比皆正確。
                             </div>
                         </div>
                         <div id="exp-6-2-2" class="bloom-explanation">
-                            <strong>解析：</strong> 答案為 C。由能量守恆：$e V_s = K_{\text{max}} = hf - W \implies V_s = (\frac{h}{e})f - \frac{W}{e}$。是以，這條直線的斜率即為 $\frac{h}{e}$，且此值對所有金屬皆相同。
+                            <strong>解析：</strong> 答案為 D。這三個現象正是古典波動理論的預測與實驗結果不符（而愛因斯坦光子說成功解釋）的核心關鍵。
                         </div>
                     </div>
                 </div>
@@ -438,11 +439,11 @@
                     </div>
                     <div class="concept-body">
                         <p>1924年，法國物理學家德布羅意（Louis de Broglie）大膽提出對稱設想：既然被視為波動的光具有粒子性，那麼被視為粒子的實體物質（如電子、質子）也應該具有波動性。他將這種伴隨著運動粒子出現的波稱為<strong>物質波 (Matter Wave)</strong>。</p>
-                        <p>一個動量為 $p = mv$ 的運動粒子，其對應的物質波波長 $\lambda$ 滿足：</p>
+                        <p>一個動量為 $p$ 的運動粒子，其對應的物質波波長 $\lambda$ 反比於其動量：波長越短，粒子的粒子性越顯著；波長越長，波動性越易被觀測。德布羅意提出波長 $\lambda$ 與粒子質量 $m$ 及速度 $v$ 有如下關係：</p>
                         <div class="formula-block">
-                            $\lambda = \frac{h}{p} = \frac{h}{m v}$
+                            $\lambda = \frac{h}{m v}$
                         </div>
-                        <p>該波長亦被稱為<strong>德布羅意波長</strong>。</p>
+                        <p>因此，極微觀且輕量的粒子（如電子）才容易展現出波動性，而巨觀物體則因質量巨大，其波長小到無法觀測。</p>
                     </div>
                 </div>
 
@@ -488,9 +489,17 @@
                                 </div>
                             </div>
                             <div class="simulation-stats">
-                                <div class="sim-stat-box" style="grid-column: span 3;">
-                                    <span class="sim-stat-label">計算所得德布羅意波長 λ</span>
-                                    <span class="sim-stat-val" id="stat-mw-wavelength" style="color: #8b5cf6;">1.23 Å</span>
+                                <div class="sim-stat-box">
+                                    <span class="sim-stat-label">粒子相對質量</span>
+                                    <span class="sim-stat-val" id="stat-mw-mass">極小</span>
+                                </div>
+                                <div class="sim-stat-box">
+                                    <span class="sim-stat-label">粒子相對速度</span>
+                                    <span class="sim-stat-val" id="stat-mw-velocity">中等</span>
+                                </div>
+                                <div class="sim-stat-box">
+                                    <span class="sim-stat-label">波動特性顯著度</span>
+                                    <span class="sim-stat-val" id="stat-mw-wave-visibility" style="color: #8b5cf6;">極顯著</span>
                                 </div>
                             </div>
                         </div>
@@ -523,10 +532,10 @@
                 <!-- 學生互動填答區 -->
                 <div class="interactive-input-section">
                     <div class="input-problem-desc">
-                        ✍️ 試算練習：若一電子以速度 $v = 5.9 \times 10^6\text{ m/s}$ 運動，已知普朗克常數與質量的比值算得常數後，其對應的德布羅意波長約為 $1.23\text{ Å}$。若此電子的速度減半為 $2.95 \times 10^6\text{ m/s}$，波長將變為多少 $\text{Å}$？
+                        ✍️ 概念檢測：根據物質波的理論，當電子的運動速度變快（動量變大）時，其伴隨的物質波波長將會變『長』或『短』？
                     </div>
                     <div class="interactive-form-grid">
-                        <input type="text" id="ans-6-3" class="interactive-text-input" placeholder="例如：2.46">
+                        <input type="text" id="ans-6-3" class="interactive-text-input" placeholder="例如：短">
                         <button class="interactive-submit-btn" onclick="verifyInlineAnswer('ans-6-3')">驗證答案</button>
                     </div>
                     <div id="ans-6-3-feedback" class="interactive-feedback"></div>
