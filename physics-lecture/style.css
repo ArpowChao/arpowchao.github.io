@@ -717,6 +717,84 @@ canvas.simulation-canvas {
     opacity: 0.65;
 }
 
+.bloom-option-item.selected {
+    border-color: var(--accent-purple) !important;
+    background-color: rgba(124, 58, 237, 0.03) !important;
+    color: var(--accent-purple) !important;
+}
+
+.bloom-option-item.selected .bloom-option-badge {
+    background-color: var(--accent-purple) !important;
+    color: white !important;
+}
+
+.bloom-textarea-input {
+    width: 100%;
+    height: 100px;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text-main);
+    background-color: var(--bg-card);
+    outline: none;
+    resize: vertical;
+    margin-bottom: 0.8rem;
+    transition: var(--transition-base);
+}
+
+.bloom-textarea-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.bloom-fill-container {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.bloom-text-input {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text-main);
+    background-color: var(--bg-card);
+    outline: none;
+    transition: var(--transition-base);
+    width: 150px;
+}
+
+.bloom-text-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.bloom-submit-btn {
+    padding: 0.6rem 1.25rem;
+    background-color: var(--primary-color);
+    color: white !important;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-base);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bloom-submit-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
 .bloom-explanation {
     margin-top: 1rem;
     background-color: var(--bg-card);
