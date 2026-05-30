@@ -1,0 +1,3248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" id="theme-prism">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學測物理全概念互動複習講義 | Arpow Deep-Learning</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX CDN for beautiful math equations rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+    
+    <!-- html2canvas for taking screenshots of chapters to draw notes on -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --radius-lg: 24px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+
+            /* Light mode palette with Twilight/Dusk hues adapted */
+            --sunset-blue: #1e6091; /* legible dark blue */
+            --sunset-purple: #7209b7; /* violet */
+            --emerald-glass: rgba(16, 185, 129, 0.08); 
+            --barley-glow: #0f172a; /* dark slate for headings */
+            --action-orange: #ea580c; 
+            --action-gold: #d97706; 
+            
+            --bg-primary: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --text-primary: #0f172a;
+            --text-content: #334155;
+            --text-muted: #64748b;
+            
+            --bg-glass: rgba(255, 255, 255, 0.85);
+            --border-glass: rgba(148, 163, 184, 0.2);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+        }
+
+        html {
+            background: var(--bg-primary) !important;
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
+            background: transparent !important;
+            margin: 0; padding: 0; min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Layout Container */
+        .layout-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2.5rem;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* --- Sticky Left Sidebar --- */
+        .sidebar {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 2rem 1.5rem;
+            position: sticky; top: 2rem;
+            height: fit-content;
+            max-height: calc(100vh - 5rem);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-xl);
+            z-index: 100;
+        }
+
+        .sidebar-title {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 1rem;
+        }
+
+        .nav-menu {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 0.4rem;
+        }
+
+        .nav-menu::-webkit-scrollbar { width: 4px; }
+        .nav-menu::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 4px; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            color: var(--text-content) !important;
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 0.95rem;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(30, 96, 145, 0.08) !important;
+            color: var(--sunset-blue) !important;
+            border-color: rgba(30, 96, 145, 0.15);
+            transform: translateX(6px);
+        }
+
+        .nav-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.15);
+            transition: var(--transition);
+        }
+
+        .nav-item.completed .nav-status-dot {
+            background: #4caf50;
+            box-shadow: 0 0 8px #4caf50;
+        }
+
+        /* --- Overall Progress Panel --- */
+        .progress-panel {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .progress-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--action-orange), var(--action-gold));
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* --- Main Content Area --- */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4rem;
+        }
+
+        /* Hero Header */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            padding: 2.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--sunset-blue);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .back-link:hover {
+            color: var(--sunset-purple);
+            transform: translateX(-4px);
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin: 0.5rem 0 0;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary), var(--sunset-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-content);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* --- Study Sections & Cards --- */
+        .chapter-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            scroll-margin-top: 3rem;
+            transition: var(--transition);
+        }
+
+        .chapter-section:hover {
+            border-color: rgba(30, 96, 145, 0.15);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .chapter-header {
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .chapter-tag {
+            font-size: 0.8rem;
+            color: var(--action-gold);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .chapter-header h2 {
+            font-size: 2rem;
+            margin: 0.3rem 0 0;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        /* Custom Admonitions */
+        .trap-box {
+            background: rgba(234, 88, 12, 0.08);
+            border-left: 5px solid var(--action-orange);
+            border-radius: var(--radius-sm);
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            color: var(--text-content);
+        }
+
+        .trap-box-title {
+            font-weight: 700;
+            color: var(--action-orange);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tables Formatting */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: rgba(30, 96, 145, 0.05);
+            color: var(--sunset-blue);
+            font-weight: 700;
+            text-align: left;
+            padding: 0.8rem 1.2rem;
+            border-bottom: 2px solid rgba(30, 96, 145, 0.15);
+        }
+
+        td {
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            line-height: 1.5;
+            color: var(--text-content);
+        }
+
+        tr:hover td {
+            background: rgba(0, 0, 0, 0.01);
+        }
+
+        /* Markdown lists */
+        .content-body ul, .content-body ol {
+            padding-left: 1.5rem;
+            line-height: 1.7;
+            color: var(--text-content);
+        }
+
+        .content-body li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* --- Interactive Exploration Panel --- */
+        .interactive-panel {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px dashed rgba(0, 0, 0, 0.15);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            margin-top: 1rem;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--action-gold);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .interactive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            color: var(--text-content);
+        }
+
+        .input-group input, .input-group select {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--sunset-blue);
+            box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.15);
+        }
+
+        .btn-calc {
+            background: linear-gradient(135deg, var(--action-orange), var(--action-gold)) !important;
+            color: #ffffff !important;
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            width: fit-content;
+        }
+
+        .btn-calc:hover {
+            box-shadow: 0 5px 15px rgba(231, 110, 40, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .calc-result {
+            background: rgba(30, 96, 145, 0.03);
+            border-radius: 8px;
+            padding: 1.2rem;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            border-left: 4px solid var(--sunset-blue);
+            color: var(--text-content);
+        }
+
+        .result-val {
+            color: var(--sunset-purple);
+            font-family: monospace;
+            font-weight: 700;
+        }
+
+        /* --- Canvas for Waves Sim --- */
+        .sim-canvas {
+            background: #0f172a;
+            border-radius: var(--radius-md);
+            width: 100%;
+            height: 300px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+
+        /* --- Quiz Section --- */
+        .quiz-panel {
+            background: rgba(30, 96, 145, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .quiz-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--sunset-blue);
+            border-bottom: 1px dashed var(--border-glass);
+            padding-bottom: 0.8rem;
+        }
+
+        .question-card {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 2rem;
+        }
+
+        .question-card:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .q-text {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .options-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.8rem;
+        }
+
+        .option-item {
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            padding: 0.9rem 1.2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--text-content);
+            user-select: none;
+        }
+
+        .option-item:hover {
+            background: rgba(30, 96, 145, 0.04);
+            border-color: rgba(30, 96, 145, 0.2);
+            transform: translateX(4px);
+        }
+
+        .option-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        /* State Classes */
+        .option-item.correct {
+            background: rgba(34, 197, 94, 0.1) !important;
+            border-color: #22c55e !important;
+            color: #166534 !important;
+        }
+
+        .option-item.correct .option-badge {
+            background: #22c55e !important;
+            color: #ffffff;
+        }
+
+        .option-item.incorrect {
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
+        }
+
+        .option-item.incorrect .option-badge {
+            background: #ef4444 !important;
+            color: #ffffff;
+        }
+
+        .option-item.disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .explanation {
+            background: rgba(30, 96, 145, 0.03);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-top: 1rem;
+            border-left: 4px solid var(--sunset-blue);
+            color: var(--text-content);
+            display: none;
+            line-height: 1.6;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Interactive Lab Link Card --- */
+        .lab-link-card {
+            background: rgba(0, 0, 0, 0.01);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--sunset-blue);
+            border-radius: var(--radius-md);
+            padding: 1.25rem 1.5rem;
+            margin: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .lab-link-card:hover {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.12);
+            border-left-color: var(--sunset-purple);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .lab-link-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: rgba(30, 96, 145, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--sunset-blue);
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+
+        .lab-link-card:hover .lab-link-icon {
+            background: rgba(114, 9, 183, 0.1);
+            color: var(--sunset-purple);
+        }
+
+        .lab-link-content {
+            flex-grow: 1;
+        }
+
+        .lab-link-title {
+            margin: 0 0 0.3rem 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .lab-link-desc {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .btn-lab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ffffff;
+            color: var(--text-primary) !important;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            padding: 0.5rem 1.1rem;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn-lab:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+            transform: translateX(2px);
+        }
+
+        @media (max-width: 768px) {
+            .lab-link-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .btn-lab {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* --- Details & Glass Details adapted for Light Mode --- */
+        .glass-details {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            margin: 1.5rem 0;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .glass-details summary {
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            color: var(--sunset-blue);
+            cursor: pointer;
+            background: rgba(30, 96, 145, 0.03);
+            border-bottom: 1px solid transparent;
+            transition: var(--transition);
+        }
+
+        .glass-details[open] summary {
+            border-bottom-color: var(--border-glass);
+        }
+
+        .details-content {
+            padding: 1.5rem;
+            background: #ffffff;
+        }
+
+        /* --- Screenshot Note Tool styling --- */
+        .btn-note {
+            background: #ffffff;
+            border: 1px solid rgba(30, 96, 145, 0.3);
+            color: var(--sunset-blue) !important;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .btn-note:hover {
+            background: var(--sunset-blue);
+            color: #ffffff !important;
+            border-color: var(--sunset-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(30, 96, 145, 0.2);
+        }
+
+        /* --- Screenshot Note-taking Modal --- */
+        .note-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 10000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            color: #ffffff;
+            padding: 0;
+        }
+
+        .note-toolbar {
+            width: 100%;
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .toolbar-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f8fafc;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .tool-btn.danger {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .tool-btn.danger:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .tool-btn.success {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        .tool-btn.success:hover {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        .tool-btn.close {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: transparent;
+        }
+
+        .tool-btn.close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.3rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .color-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .color-btn.active {
+            border-color: #ffffff;
+            transform: scale(1.15);
+        }
+
+        .brush-size-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .brush-size-container input {
+            cursor: pointer;
+        }
+
+        .note-canvas-container {
+            flex-grow: 1;
+            width: 100%;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: #0f172a;
+        }
+
+        #note-canvas {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: #ffffff;
+            cursor: crosshair;
+            display: block;
+            border-radius: 12px;
+        }
+
+        /* --- Responsive Styles --- */
+        @media (max-width: 1024px) {
+            .layout-container {
+                grid-template-columns: 1fr;
+                padding: 1.5rem 1rem;
+            }
+
+            .sidebar {
+                position: static;
+                max-height: none;
+                margin-bottom: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <h2 class="sidebar-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8 8 16.2"/><path d="M7.8 7.8l8.4 8.4"/></svg>
+                單元導覽
+            </h2>
+            <nav class="nav-menu">
+                <a href="#ch1" class="nav-item active" id="nav-ch1">
+                    <span>1. 物理科學史與SI單位</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+                <a href="#ch2" class="nav-item" id="nav-ch2">
+                    <span>2. 物質的組成與基本力</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+                <a href="#ch3" class="nav-item" id="nav-ch3">
+                    <span>3. 運動學與牛頓力學</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+                <a href="#ch4" class="nav-item" id="nav-ch4">
+                    <span>4. 電磁學與電磁感應</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+                <a href="#ch5" class="nav-item" id="nav-ch5">
+                    <span>5. 波動與都卜勒效應</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+                <a href="#ch6" class="nav-item" id="nav-ch6">
+                    <span>6. 能量、功與核能</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+                <a href="#ch7" class="nav-item" id="nav-ch7">
+                    <span>7. 量子論與近代物理</span>
+                    <div class="nav-status-dot"></div>
+                </a>
+            </nav>
+
+            <div class="progress-panel">
+                <div class="progress-label">
+                    <span>複習總進度</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="study-progress"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Grid -->
+        <main class="main-content">
+            <!-- Hero Panel -->
+            <section class="hero">
+                <div>
+                    <a href="/apps/" class="back-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        返回實驗室首頁
+                    </a>
+                </div>
+                <h1>高中物理學測全概念複習講義</h1>
+                <p>針對高中學測物理全單元設計的互動式複習講義。內建高精度公式渲染、即時模擬測驗與分析解析，並結合核心公式計算機與動態模擬器，助你深度內化學測觀念，擊破考試陷阱！</p>
+            </section>
+
+            <!-- Chapter 1 -->
+            <section class="chapter-section" id="ch1">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 01</span>
+                        <h2>物理科學史與SI基本單位</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch1')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>物理科學的發展是由無數科學家的觀察與實驗累積而成。2019年起，國際度量衡大會全面改以「自然物理常數」來重新定義國際單位制 (SI)，使其不再依賴實物標準。</p>
+                    
+                    <details>
+                        <summary>展開查看：歷史上重要物理科學史與理論總覽</summary>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" style="width: 10%;">學門</th>
+                                        <th class="text-center" style="width: 25%;">理論</th>
+                                        <th class="text-center" style="width: 15%;">科學家</th>
+                                        <th>理論簡述</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center">運動學</td>
+                                        <td class="text-center">克卜勒行星運動第一定律<br>克卜勒行星運動第二定律<br>克卜勒行星運動第三定律</td>
+                                        <td class="text-center">克卜勒</td>
+                                        <td>1st. $\Rightarrow$ 行星軌跡為橢圓型<br>2nd. $\Rightarrow$ 行星與焦點連線在每單位時間內掃掠面積相等<br>3rd. $\Rightarrow$ 對所有繞同一星體旋轉的行星 $\frac {r^3}{T^2}=\text{常數}$，其中 $r$ 為平均軌道半徑</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">力學</td>
+                                        <td class="text-center">牛頓運動第一定律<br>牛頓運動第二定律<br>牛頓運動第三定律</td>
+                                        <td class="text-center">牛頓</td>
+                                        <td>1st. $\Rightarrow$ 慣性定律，若合力為零，靜者恆靜、動者恆作等速度運動<br>2nd. $\Rightarrow$ $\Sigma F = ma$，合力造成物體產生加速度<br>3rd. $\Rightarrow$ 作用力與反作用力</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">力學</td>
+                                        <td class="text-center">萬有引力定律</td>
+                                        <td class="text-center">牛頓</td>
+                                        <td>$F_g=\frac {GMm}{r^2}$，其中 $G=6.67\times 10^{-11} \frac{\text{N}\cdot\text{m}^2}{\text{kg}^2}$</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">庫侖定律</td>
+                                        <td class="text-center">庫侖</td>
+                                        <td>$F_e=\frac {kQq}{r^2}$，其中 $k=9\times 10^9 \frac{\text{N}\cdot\text{m}^2}{\text{C}^2}$</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">電流磁效應</td>
+                                        <td class="text-center">厄斯特</td>
+                                        <td>載流導線會周圍產生磁場（電生磁）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">安培右手定則</td>
+                                        <td class="text-center">安培</td>
+                                        <td>用以判斷載流導線的電流與所生磁場的方向關係</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">電磁感應</td>
+                                        <td class="text-center">法拉第</td>
+                                        <td>封閉線圈內的變動磁場會產生感應電流（磁生電）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">冷次定律</td>
+                                        <td class="text-center">冷次</td>
+                                        <td>描述感應電流的方向總是與磁場變化相反，反抗磁通量變化，本質符合能量守恆</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">電磁學四大方程式</td>
+                                        <td class="text-center">馬克士威</td>
+                                        <td>1. 統整電磁學理論成四條方程式（馬克士威方程組）<br>2. 預測光是一種電磁波</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電磁學</td>
+                                        <td class="text-center">電磁波</td>
+                                        <td class="text-center">赫茲</td>
+                                        <td>首次於實驗室發射並接收電磁波，證實電磁波的存在</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">惠更斯原理</td>
+                                        <td class="text-center">惠更斯<br>(海更士)</td>
+                                        <td>波前上任一點皆可看作新的子波源發出子波，這些子波疊加形成新的波前。此原理解釋了波的反射、折射、干涉和繞射</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">司乃耳定律</td>
+                                        <td class="text-center">司乃耳</td>
+                                        <td>折射定律，折射角與入射角滿足以下關係：<br>$\frac{\sin\theta_1}{\sin\theta_2}=\frac{v_1}{v_2}=\frac{\lambda_1}{\lambda_2}=\frac{n_2}{n_1}$</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">雙狹縫干涉</td>
+                                        <td class="text-center">楊</td>
+                                        <td>雙狹縫干涉實驗，首度證實光具有波動性</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">都卜勒效應</td>
+                                        <td class="text-center">都卜勒</td>
+                                        <td>觀測者與波源有相對運動時，觀測到的波頻率會發生變化（接近時變高，遠離時變低）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">焦耳實驗</td>
+                                        <td class="text-center">焦耳</td>
+                                        <td>通過轉動槳葉使水升溫，測量熱功當量，證明熱量跟機械能可互相轉換（熱是能量的一種形式）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">質能互換</td>
+                                        <td class="text-center">愛因斯坦</td>
+                                        <td>$E=\Delta m c^2$，質量與能量可以互相轉換</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">基本粒子</td>
+                                        <td class="text-center">電子</td>
+                                        <td class="text-center">湯木生</td>
+                                        <td>由陰極射線實驗中發現帶負電的粒子（電子），證明原子可分割，並提出「葡萄乾布丁模型」</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">基本粒子</td>
+                                        <td class="text-center">質子</td>
+                                        <td class="text-center">拉塞福</td>
+                                        <td>1. 由 $\alpha$ 粒子撞擊金箔的散射實驗中發現原子核，並提出「行星原子模型」<br>2. 後續以 $\alpha$ 粒子轟擊氮原子核發現質子</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">基本粒子</td>
+                                        <td class="text-center">中子</td>
+                                        <td class="text-center">查兌克</td>
+                                        <td>以 $\alpha$ 粒子撞擊鈹核產生輻射，再撞擊石蠟噴出質子，藉此發現不帶電的中子</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">半量子論</td>
+                                        <td class="text-center">普朗克</td>
+                                        <td>首次引入能量「量子化」概念，成功解釋黑體輻射光譜，開啟近代物理新紀元</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">光電效應的觀察</td>
+                                        <td class="text-center">赫茲</td>
+                                        <td>首次在放電實驗中觀察到光照射會使金屬更容易放電的現象（光電效應）</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">光電效應實驗</td>
+                                        <td class="text-center">雷納</td>
+                                        <td>進行光電效應的系統實驗研究，發現光電子最大動能與光強無關、與頻率成正比等古典物理無法解釋的現象</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">光量子論</td>
+                                        <td class="text-center">愛因斯坦</td>
+                                        <td>提出光子說，認為光具有波粒二象性，光子能量 $E=hf$，完美解釋光電效應</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">氫原子模型</td>
+                                        <td class="text-center">波耳</td>
+                                        <td>提出定態與能階躍遷模型，修正行星原子模型，成功解釋氫原子的離散發射光譜線</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">物質波</td>
+                                        <td class="text-center">德布羅意</td>
+                                        <td>提出物質波假說，認為運動中的粒子（如電子）也具有波動性，波長 $\lambda = \frac{h}{p}$</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>展開查看：常用物理關係式表</summary>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" style="width: 12%;">學門</th>
+                                        <th class="text-center" style="width: 25%;">關係式</th>
+                                        <th class="text-center" style="width: 30%;">代數說明</th>
+                                        <th>說明</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center">運動學</td>
+                                        <td class="text-center">$\Delta x = x_f - x_i$</td>
+                                        <td class="text-center">$\Delta x$ 位移<br>$x_f$ 末位置<br>$x_i$ 初位置</td>
+                                        <td>描述物體位置狀態的改變。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">運動學</td>
+                                        <td class="text-center">$\Delta v = v_f - v_i$</td>
+                                        <td class="text-center">$\Delta v$ 速度變化<br>$v_f$ 末速度<br>$v_i$ 初速度</td>
+                                        <td>描述物體運動速度狀態的改變。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">運動學</td>
+                                        <td class="text-center">$v = \frac{\Delta x}{\Delta t}$</td>
+                                        <td class="text-center">$v$ 平均速度<br>$\Delta x$ 位移<br>$\Delta t$ 變化時間</td>
+                                        <td>描述物體位置狀態隨時間改變的快慢。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">運動學</td>
+                                        <td class="text-center">$a = \frac{\Delta v}{\Delta t}$</td>
+                                        <td class="text-center">$a$ 平均加速度<br>$\Delta v$ 速度變化<br>$\Delta t$ 變化時間</td>
+                                        <td>描述物體速度狀態隨時間改變的快慢。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">運動學</td>
+                                        <td class="text-center">$\frac{r^3}{T^2} = \text{常數}$</td>
+                                        <td class="text-center">$r$ 平均軌道半徑<br>$T$ 公轉週期</td>
+                                        <td>克卜勒第三定律。在同一個中心天體引力場下，所有環繞天體之 $\frac{r^3}{T^2}$ 為定值。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">力學</td>
+                                        <td class="text-center">$\Sigma F = ma$</td>
+                                        <td class="text-center">$\Sigma F$ 合力<br>$m$ 質量<br>$a$ 加速度</td>
+                                        <td>牛頓第二運動定律。合力會使物體產生加速度，加速度與合力成正比，與質量成反比。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">力學</td>
+                                        <td class="text-center">$F_g = \frac{GMm}{r^2}$</td>
+                                        <td class="text-center">$F_g$ 萬有引力<br>$G$ 重力常數<br>$M, m$ 兩物體質量<br>$r$ 兩物體質心距離</td>
+                                        <td>萬有引力定律。宇宙中任何兩具質量物體皆互相吸引，引力與質量乘積成正比，與距離平方成反比。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">力學</td>
+                                        <td class="text-center">$F_e = \frac{kQq}{r^2}$</td>
+                                        <td class="text-center">$F_e$ 庫侖力 (靜電力)<br>$k$ 庫侖常數<br>$Q, q$ 兩點電荷電量<br>$r$ 兩電荷距離</td>
+                                        <td>庫侖定律。兩靜止點電荷間的作用力與電量乘積成正比，與距離平方成反比。同性相斥，異性相吸。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">力學</td>
+                                        <td class="text-center">$F_s = k \cdot \Delta x$</td>
+                                        <td class="text-center">$F_s$ 彈簧恢復力<br>$k$ 彈力常數<br>$\Delta x$ 彈簧形變量 (伸長或縮短量)</td>
+                                        <td>虎克定律。在彈性限度內，彈力大小與形變量成正比，方向指向恢復原長方向。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">$v = f\lambda$</td>
+                                        <td class="text-center">$v$ 波速<br>$f$ 頻率<br>$\lambda$ 波長</td>
+                                        <td>波速公式。波的傳播速度等於頻率與波長的乘積。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">$n = \frac{c}{v}$</td>
+                                        <td class="text-center">$n$ 折射率<br>$c$ 真空中光速<br>$v$ 介質中光速</td>
+                                        <td>介質折射率定義。折射率反映介質對光傳播速度的減慢程度。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">波動</td>
+                                        <td class="text-center">$\frac{\sin\theta_1}{\sin\theta_2} = \frac{v_1}{v_2} = \frac{\lambda_1}{\lambda_2} = \frac{n_2}{n_1}$</td>
+                                        <td class="text-center">$v$ 介質中波速<br>$\lambda$ 介質中波長<br>$n$ 介質折射率<br>$\theta$ 波前與界面的夾角 (入射角與折射角)</td>
+                                        <td>司乃耳定律 (折射定律)。描述波跨越不同介質界面時的方向與速度變化。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">$W = Fd\cos\theta$</td>
+                                        <td class="text-center">$W$ 功<br>$F$ 作用力<br>$d$ 位移大小<br>$\theta$ 力與位移的夾角</td>
+                                        <td>功的定義。力對物體作功的量值等於力在位移方向的分量乘到位移大小。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">$E_k = \frac{1}{2}mv^2$</td>
+                                        <td class="text-center">$E_k$ 動能<br>$m$ 質量<br>$v$ 速度大小</td>
+                                        <td>動能公式。物體因運動而具有的能量。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">$U_g = mgh$</td>
+                                        <td class="text-center">$U_g$ 重力位能<br>$m$ 質量<br>$g$ 重力加速度<br>$h$ 距地表或零位面的高度</td>
+                                        <td>重力位能公式。物體在重力場中因其位置高低而擁有的能量。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">$E = mc^2$ 或 $\Delta E = \Delta m c^2$</td>
+                                        <td class="text-center">$E$ 能量<br>$m$ 質量<br>$\Delta m$ 質量虧損<br>$c$ 真空中光速</td>
+                                        <td>愛因斯坦質能公式。揭示質量與能量的本質等價性。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">能量</td>
+                                        <td class="text-center">$P = \frac{W}{\Delta t} = \frac{\Delta E}{\Delta t}$</td>
+                                        <td class="text-center">$P$ 功率<br>$W$ 所作的功<br>$\Delta E$ 能量轉移量<br>$\Delta t$ 經歷時間</td>
+                                        <td>功率定義。描述作功或能量轉移的快慢。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電路</td>
+                                        <td class="text-center">$V = IR$</td>
+                                        <td class="text-center">$V$ 電壓 (電位差)<br>$I$ 電流<br>$R$ 電阻</td>
+                                        <td>歐姆定律。電阻兩端的電壓與通過的電流成正比。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">電路</td>
+                                        <td class="text-center">$P_E = IV = \frac{V^2}{R} = I^2 R$</td>
+                                        <td class="text-center">$P_E$ 電功率<br>$I$ 電流<br>$V$ 電壓<br>$R$ 電阻</td>
+                                        <td>電功率公式。描述電路元件消耗或提供電能的速率。</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">近代物理</td>
+                                        <td class="text-center">$E = hf = \frac{hc}{\lambda}$</td>
+                                        <td class="text-center">$E$ 光子能量<br>$h$ 普朗克常數<br>$f$ 光波頻率<br>$\lambda$ 光波波長</td>
+                                        <td>光量子假說。單個光子攜帶的能量與其頻率成正比。</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+
+                    <h4>SI制七大基本單位</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>物理量</th>
+                                    <th>單位名稱</th>
+                                    <th>符號</th>
+                                    <th>目前定義常數基準</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>長度</td>
+                                    <td>公尺</td>
+                                    <td>$m$</td>
+                                    <td>真空中光速 $c$</td>
+                                </tr>
+                                <tr>
+                                    <td>質量</td>
+                                    <td>公斤</td>
+                                    <td>$kg$</td>
+                                    <td>普朗克常數 $h$</td>
+                                </tr>
+                                <tr>
+                                    <td>時間</td>
+                                    <td>秒</td>
+                                    <td>$s$</td>
+                                    <td>銫原子超精細能階躍遷輻射週期 $\Delta \nu_{\text{Cs}}$</td>
+                                </tr>
+                                <tr>
+                                    <td>電流</td>
+                                    <td>安培</td>
+                                    <td>$A$</td>
+                                    <td>基本電荷量 $e$</td>
+                                </tr>
+                                <tr>
+                                    <td>溫度</td>
+                                    <td>克耳文</td>
+                                    <td>$K$</td>
+                                    <td>波茲曼常數 $k_{\text{B}}$</td>
+                                </tr>
+                                <tr>
+                                    <td>物質量</td>
+                                    <td>莫耳</td>
+                                    <td>$mol$</td>
+                                    <td>亞佛加厥常數 $N_{\text{A}}$</td>
+                                </tr>
+                                <tr>
+                                    <td>光強度</td>
+                                    <td>燭光</td>
+                                    <td>$cd$</td>
+                                    <td>單頻輻射發光效率 $K_{\text{cd}}$</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="trap-box">
+                        <div class="trap-box-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            學測考點陷阱！
+                        </div>
+                        <p>「牛頓 (N)」、「庫侖 (C)」、「焦耳 (J)」、「伏特 (V)」皆是<strong>導出單位</strong>而非基本單位。例如：$1\text{ N} = 1\text{ kg}\cdot\text{m/s}^2$，$1\text{ C} = 1\text{ A}\cdot\text{s}$。考題常要求利用基本單位表示這些導出單位，務必熟悉公式！</p>
+                    </div>
+
+                    <h4>物理常數與常用物理量數值</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 25%;">常數名稱</th>
+                                    <th class="text-center" style="width: 20%;">常用代號</th>
+                                    <th class="text-center" style="width: 30%;">數值 (SI單位)</th>
+                                    <th class="text-center">單位</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center">萬有引力常數</td>
+                                    <td class="text-center">$G$</td>
+                                    <td class="text-center">$6.67 \times 10^{-11}$</td>
+                                    <td class="text-center">$\text{N}\cdot\text{m}^2/\text{kg}^2$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">庫侖常數 (靜電力常數)</td>
+                                    <td class="text-center">$k$</td>
+                                    <td class="text-center">$9.0 \times 10^9$</td>
+                                    <td class="text-center">$\text{N}\cdot\text{m}^2/\text{C}^2$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">普朗克常數</td>
+                                    <td class="text-center">$h$</td>
+                                    <td class="text-center">$6.626 \times 10^{-34}$</td>
+                                    <td class="text-center">$\text{J}\cdot\text{s}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">真空中光速</td>
+                                    <td class="text-center">$c$</td>
+                                    <td class="text-center">$3.0 \times 10^8$</td>
+                                    <td class="text-center">$\text{m}/\text{s}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">亞佛加厥常數</td>
+                                    <td class="text-center">$N_{\text{A}}$</td>
+                                    <td class="text-center">$6.02 \times 10^{23}$</td>
+                                    <td class="text-center">$\text{mol}^{-1}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">基本電荷量</td>
+                                    <td class="text-center">$e$</td>
+                                    <td class="text-center">$1.6 \times 10^{-19}$</td>
+                                    <td class="text-center">$\text{C}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">電子質量</td>
+                                    <td class="text-center">$m_e$</td>
+                                    <td class="text-center">$9.11 \times 10^{-31}$</td>
+                                    <td class="text-center">$\text{kg}$</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>SI 導出單位舉例</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 15%;">導出單位</th>
+                                    <th class="text-center" style="width: 25%;">單位中文名稱</th>
+                                    <th class="text-center" style="width: 30%;">以 SI 基本單位表示</th>
+                                    <th class="text-center">物理關係式舉例</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center">$\text{N}$</td>
+                                    <td class="text-center">牛頓 (力)</td>
+                                    <td class="text-center">$\text{kg}\cdot\text{m}/\text{s}^2$</td>
+                                    <td class="text-center">$\Sigma F = ma$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{C}$</td>
+                                    <td class="text-center">庫侖 (電荷量)</td>
+                                    <td class="text-center">$\text{A}\cdot\text{s}$</td>
+                                    <td class="text-center">$q = I \cdot t$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{J}$</td>
+                                    <td class="text-center">焦耳 (功、能量)</td>
+                                    <td class="text-center">$\text{kg}\cdot\text{m}^2/\text{s}^2$</td>
+                                    <td class="text-center">$W = F \cdot d$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{W}$</td>
+                                    <td class="text-center">瓦特 (功率)</td>
+                                    <td class="text-center">$\text{kg}\cdot\text{m}^2/\text{s}^3$</td>
+                                    <td class="text-center">$P = \frac{W}{\Delta t}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{Hz}$</td>
+                                    <td class="text-center">赫茲 (頻率)</td>
+                                    <td class="text-center">$\text{s}^{-1}$</td>
+                                    <td class="text-center">$f = \frac{1}{T}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{V}$</td>
+                                    <td class="text-center">伏特 (電位差/電壓)</td>
+                                    <td class="text-center">$\text{kg}\cdot\text{m}^2/(\text{A}\cdot\text{s}^3)$</td>
+                                    <td class="text-center">$P = IV$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\Omega$</td>
+                                    <td class="text-center">歐姆 (電阻)</td>
+                                    <td class="text-center">$\text{kg}\cdot\text{m}^2/(\text{A}^2\cdot\text{s}^3)$</td>
+                                    <td class="text-center">$P = I^2 R$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{Pa}$</td>
+                                    <td class="text-center">帕斯卡 (壓力)</td>
+                                    <td class="text-center">$\text{kg}/(\text{m}\cdot\text{s}^2)$</td>
+                                    <td class="text-center">$P = \frac{F}{A}$</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>其他常用物理量單位</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 20%;">單位代號</th>
+                                    <th class="text-center" style="width: 30%;">物理意義/換算</th>
+                                    <th class="text-center">說明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center">$\text{cm}$</td>
+                                    <td class="text-center">$10^{-2}\text{ m}$</td>
+                                    <td class="text-center">公分，日常生活最常用的長度單位之一。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{Å}$</td>
+                                    <td class="text-center">$10^{-10}\text{ m}$</td>
+                                    <td class="text-center">埃，通常用來描述原子大小或光波波長（氫原子第一軌道半徑約 $0.53\text{ \AA}$）。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{A.U.}$</td>
+                                    <td class="text-center">$1.5 \times 10^{11}\text{ m}$</td>
+                                    <td class="text-center">天文單位，指太陽到地球的平均軌道半徑，常用于天體距離描述。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">$\text{eV}$</td>
+                                    <td class="text-center">$1.6 \times 10^{-19}\text{ J}$</td>
+                                    <td class="text-center">電子伏特，微觀粒子（如電子、光子）常用的能量單位。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recommended Lab for Exploration -->
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M18 3v3a3 3 0 0 1-3 3v12a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2V9A3 3 0 0 1 6 6V3"/><path d="M12 9h.01"/><path d="M10 13h4"/><path d="M9 17h6"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">推薦探究實驗室：數據分析實驗室 (Data Analysis Lab)</h5>
+                            <p class="lab-link-desc">在進行物理實驗與測量時，如何評估測量的不確定度？進入數據分析實驗室，親自模擬樣本抽樣並探究標準差與 A 類、B 類不確定度的統計意義。</p>
+                        </div>
+                        <a href="/apps/data_analysis_lab.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive Widget 1 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>
+                        SI 單位前贅詞換算器
+                    </div>
+                    <div class="interactive-grid">
+                        <div class="input-group">
+                            <label>輸入數值：</label>
+                            <input type="number" id="unit-val" value="1.0" step="any">
+                        </div>
+                        <div class="input-group">
+                            <label>原始前贅詞：</label>
+                            <select id="unit-from">
+                                <option value="12">T (Tera, 10¹²)</option>
+                                <option value="9">G (Giga, 10⁹)</option>
+                                <option value="6">M (Mega, 10⁶)</option>
+                                <option value="3">k (kilo, 10³)</option>
+                                <option value="0" selected>無 (10⁰)</option>
+                                <option value="-3">m (milli, 10⁻³)</option>
+                                <option value="-6">μ (micro, 10⁻⁶)</option>
+                                <option value="-9">n (nano, 10⁻⁹)</option>
+                                <option value="-12">p (pico, 10⁻¹²)</option>
+                                <option value="-15">f (femto, 10⁻¹⁵)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calcUnits()">進行換算</button>
+                    <div class="calc-result" style="margin-top: 1.5rem;">
+                        換算結果：<span id="unit-result" class="result-val">1.0 x 10⁰</span>
+                    </div>
+                </div>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-panel" id="quiz-ch1">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 1 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 下列物理量單位，何者為國際度量衡大會制定之「SI 基本單位」？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 0, 'A')"><div class="option-badge">A</div><span>牛頓 (N)</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 0, 'B')"><div class="option-badge">B</div><span>焦耳 (J)</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 0, 'C')"><div class="option-badge">C</div><span>庫侖 (C)</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 0, 'D')"><div class="option-badge">D</div><span>克耳文 (K)</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：D</strong><br>
+                            解析：國際單位制 (SI) 的七大基本單位包括：長度（公尺 m）、質量（公斤 kg）、時間（秒 s）、電流（安培 A）、溫度（克耳文 K）、物質量（莫耳 mol）、光強度（燭光 cd）。牛頓、焦耳與庫侖均為導出單位。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 下列哪一組物理量的單位，在國際單位制 (SI) 中均為「導出單位」？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 1, 'A')"><div class="option-badge">A</div><span>焦耳、克耳文、安培</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 1, 'B')"><div class="option-badge">B</div><span>牛頓、庫侖、瓦特</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 1, 'C')"><div class="option-badge">C</div><span>莫耳、公尺、秒</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 1, 'D')"><div class="option-badge">D</div><span>帕斯卡、公斤、燭光</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：(B) 選項中：牛頓（力和加速度，$\text{kg}\cdot\text{m/s}^2$）、庫侖（電荷量，$A\cdot s$）、瓦特（功率，$\text{kg}\cdot\text{m}^2/\text{s}^3$）皆可由基本單位導出，故全部都是導出單位。克耳文、安培、莫耳、公尺、秒、公斤、燭光均是基本單位。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 在物理學史上，是哪一位科學家首度在實驗室設計電路發射並成功偵測到「電磁波」，證實了馬克士威的預測？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 2, 'A')"><div class="option-badge">A</div><span>法拉第 (Faraday)</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 2, 'B')"><div class="option-badge">B</div><span>安培 (Ampère)</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 2, 'C')"><div class="option-badge">C</div><span>赫茲 (Hertz)</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch1', 2, 'D')"><div class="option-badge">D</div><span>厄斯特 (Oersted)</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：德國科學家赫茲 (Hertz) 於 1888 年首度在實驗室透過火花放電，產生並接收到了電磁波，完全證實了馬克士威提出的電磁學方程式理論及光是電磁波的預言。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chapter 2 -->
+            <section class="chapter-section" id="ch2">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 02</span>
+                        <h2>物質的組成與四大基本交互作用</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch2')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>宇宙中所有物質皆由基本粒子所構成，並透過四種基本交互作用力彼此連結。夸克為分數電荷，而日常接觸力皆為電磁力的微觀表現。</p>
+                    
+                    <h4>夸克模型</h4>
+                    <ul>
+                        <li><strong>質子 ($p$)</strong>：由兩個上夸克與一個下夸克組成 ($uud$)。電荷：$+2/3 + 2/3 - 1/3 = +1e$。</li>
+                        <li><strong>中子 ($n$)</strong>：由一個上夸克與兩個下夸克組成 ($udd$)。電荷：$+2/3 - 1/3 - 1/3 = 0e$。</li>
+                    </ul>
+
+                    <h4>基本粒子發展史</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 20%;">基本粒子</th>
+                                    <th style="width: 40%;">說明</th>
+                                    <th>發現相關證據</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>原子</strong></td>
+                                    <td>古希臘便有 Atom 一詞出現，意為不可分割，認為原子是物質的最基本單元。</td>
+                                    <td><strong>倍比定律</strong>：為道爾吞原子假說提供化學實質支持。<br><strong>布朗運動</strong>：愛因斯坦在物理上證明了微粒隨機運動是由周圍水分子的熱碰撞引起，為原子/分子論提供了直接的物理實驗證據。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>電子</strong></td>
+                                    <td>湯木生利用陰極射線管實驗，首度發現了比原子還小、帶負電荷的粒子（電子），打破了原子不可分割的觀念。</td>
+                                    <td>在電場或磁場中會發生偏轉，且其電荷與質量的比值（荷質比）遠大於任何已知原子離子。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>質子 (原子核)</strong></td>
+                                    <td>拉塞福進行金箔 $\alpha$ 粒子散射實驗，發現原子中心存在質量集中且帶正電的原子核；隨後透過撞擊實驗發現了質子。</td>
+                                    <td>帶正電的 $\alpha$ 粒子撞擊金箔時，有極少數粒子會發生大角度偏折甚至是反彈，意味著原子內部逆向大半為空，而質量集中於帶正電荷的微小中心（原子核）。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>中子</strong></td>
+                                    <td>查兌克以實驗證實原子核內存在不帶電荷且質量與質子相近的粒子，即為中子。</td>
+                                    <td>使用 $\alpha$ 粒子轟擊鈹核產生極強穿透性且不帶電的射線，該射線撞擊石蠟時能打出高能質子。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>夸克</strong></td>
+                                    <td>蓋爾曼提出夸克假說，科學家後續利用深度非彈性電子散射實驗探測質子與中子，證實其內部有更基本的組成分子（夸克）。</td>
+                                    <td>高能電子射向質子與中子的結構散射數據分析，顯示其內部存在電荷分布的點狀結構。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>宇宙四大交互作用力比較</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>基本力</th>
+                                    <th>相對強度</th>
+                                    <th>作用距離</th>
+                                    <th>傳遞媒介粒子</th>
+                                    <th>主要功能與實例</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>強交互作用</td>
+                                    <td>$1$</td>
+                                    <td>$< 10^{-15}\text{ m}$</td>
+                                    <td>膠子 ($Gluon$)</td>
+                                    <td>將夸克束縛為核子，並將質子中子緊鎖在核內</td>
+                                </tr>
+                                <tr>
+                                    <td>電磁交互作用</td>
+                                    <td>$10^{-2}$</td>
+                                    <td>無限遠</td>
+                                    <td>光子 ($Photon$)</td>
+                                    <td>帶電體間交互作用。支配摩擦力、彈力與化學反應</td>
+                                </tr>
+                                <tr>
+                                    <td>弱交互作用</td>
+                                    <td>$10^{-13}$</td>
+                                    <td>$< 10^{-18}\text{ m}$</td>
+                                    <td>弱玻色子 ($W^\pm, Z^0$)</td>
+                                    <td>引起基本粒子的衰變（如 $\beta$ 衰變：中子變質子）</td>
+                                </tr>
+                                <tr>
+                                    <td>萬有引力</td>
+                                    <td>$10^{-39}$</td>
+                                    <td>無限遠</td>
+                                    <td>重力子 ($Graviton$)</td>
+                                    <td>所有具質量物體間交互作用。主宰宇宙大尺度天體運行</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="trap-box">
+                        <div class="trap-box-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            學測考點陷阱！
+                        </div>
+                        <p>日常接觸力（拉力、摩擦力、正向力、繩子張力、彈簧彈力）雖然名稱相異，但其本質全部屬於<strong>微觀下的電磁交互作用</strong>！另外注意，強交互作用和弱交互作用為<strong>短程力</strong>，在原子核尺度外強度便降為零，因此日常生活中感受不到。</p>
+                    </div>
+
+                    <h4>接觸力之微觀本質（電磁交互作用力）</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 25%;">巨觀接觸力</th>
+                                    <th>微觀電磁力對應說明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>正向力</strong></td>
+                                    <td>當物體壓迫接觸面時，接觸面原子間的電子軌域發生重疊，產生靜電排斥力阻礙壓迫，巨觀表現為垂直接觸面的正向力。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>摩擦力</strong></td>
+                                    <td>當兩物體有相對運動趨勢時，微觀上粗糙表面凹凸不平處的原子彼此極為接近，電子與電子間產生靜電力相互排斥與牽引，巨觀阻礙相對運動。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>彈簧彈力</strong></td>
+                                    <td>當彈簧形變時，其內部的原子或分子之間的距離被拉開或壓縮，電子和原子核間的靜電吸引力與排斥力失去平衡，嘗試將物體拉回平衡位置以恢復原狀。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>繩子張力</strong></td>
+                                    <td>當繩子被拉緊時，繩子內相鄰原子或分子被拉長，分子間的靜電吸引力（化學鍵力）嘗試將原子拉回原始距離，巨觀形成沿著繩方向的拉力。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recommended Lab for Exploration -->
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">推薦探究實驗室：太空軌道轉移與重力逃逸遊戲</h5>
+                            <p class="lab-link-desc">探究四大基本力中的「萬有引力」！進入太空軌道轉移遊戲，親身體驗克卜勒軌道預測、逃逸速度與重力束縛能的物理本質。</p>
+                        </div>
+                        <a href="/apps/orbit_transfer/index.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive Widget 2 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        靜電力與萬有引力比較計算機
+                    </div>
+                    <p style="font-size:0.9rem; color:rgba(255,255,255,0.7)">計算一個電子與一個質子在特定距離下，其「庫侖靜電力」與「萬有引力」的量值對比：</p>
+                    <div class="interactive-grid">
+                        <div class="input-group">
+                            <label>物體間距離 $r$ (公尺)：</label>
+                            <input type="number" id="force-dist" value="5.3e-11" placeholder="例如：5.3e-11 (氫原子半徑)">
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calcForces()">進行分析</button>
+                    <div class="calc-result" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>庫侖靜電吸引力 $F_{\text{e}}$：<span id="force-fe" class="result-val">N/A</span></div>
+                        <div>萬有引力 $F_{\text{g}}$：<span id="force-fg" class="result-val">N/A</span></div>
+                        <div>靜電力是重力的：<span id="force-ratio" class="result-val" style="color:#a3be8c">N/A</span> 倍</div>
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-panel" id="quiz-ch2">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 2 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 關於質子與中子組成的夸克模型，下列敘述何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 0, 'A')"><div class="option-badge">A</div><span>質子由三個上夸克組成，中子由三個下夸克組成</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 0, 'B')"><div class="option-badge">B</div><span>質子由一個上夸克與兩個下夸克組成</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 0, 'C')"><div class="option-badge">C</div><span>質子由兩個上夸克與一個下夸克組成，中子由一個上夸克與兩個下夸克組成</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 0, 'D')"><div class="option-badge">D</div><span>中子不受強交互作用，故其內部沒有夸克</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：質子電荷為 $+1e$，由兩個上夸克 ($u$, $+2/3e$) 與一個下夸克 ($d$, $-1/3e$) 組成（$uud$）；中子電荷為 $0$，由一個上夸克與兩個下夸克組成（$udd$）。質子與中子皆為強子，內部都受強作用力束縛。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 關於原子核內強作用力（強交互作用）的特性，下列敘述何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 1, 'A')"><div class="option-badge">A</div><span>強作用力隨距離拉長而呈平方反比遞減，是長程力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 1, 'B')"><div class="option-badge">B</div><span>強作用力只存在於質子與質子之間，用以克服靜電排斥</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 1, 'C')"><div class="option-badge">C</div><span>強作用力的有效距離極短，主要作用於核內尺度（約 10⁻¹⁵ 公尺）</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 1, 'D')"><div class="option-badge">D</div><span>強作用力是自然界基本力中強度最弱的力</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：強作用力是自然界已知最強的力，作用距離極短（約 $10^{-15}\text{ m}$），一旦超出此核範圍便迅速降為零，所以是短程力。它存在於質子-質子、質子-中子、中子-中子及夸克之間。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 在微中子的放出過程中，例如放射性原子核內發生中子衰變成質子、電子與反微中子的反應，此反應主要由哪一種基本交互作用所控制？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 2, 'A')"><div class="option-badge">A</div><span>萬有引力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 2, 'B')"><div class="option-badge">B</div><span>電磁力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 2, 'C')"><div class="option-badge">C</div><span>強交互作用</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch2', 2, 'D')"><div class="option-badge">D</div><span>弱交互作用</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：D</strong><br>
+                            解析：中子衰變為質子與電子的過程稱為 $\beta$ 衰變（$n \rightarrow p + e^- + \bar{\nu}_e$），它是粒子性質改變（下夸克變上夸克）的反應，由**弱交互作用力**（弱力）所主宰。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chapter 3 -->
+            <section class="chapter-section" id="ch3">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 03</span>
+                        <h2>運動學與牛頓力學</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch3')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>運動學描述物體的位置如何隨時間改變；牛頓力學則探討改變物體運動狀態的因素——也就是「力」。</p>
+                    
+                    <h4>常見運動學物理量</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 15%;">物理量</th>
+                                    <th class="text-center" style="width: 15%;">常用代號</th>
+                                    <th style="width: 40%;">說明</th>
+                                    <th>定義關係式</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>位置</strong></td>
+                                    <td class="text-center">$x$</td>
+                                    <td>描述物體在空間中的坐標點位置。</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>位移</strong></td>
+                                    <td class="text-center">$\Delta x$</td>
+                                    <td>位置的變化量，屬於向量（具有大小與方向），僅與起點 and 終點有關。</td>
+                                    <td>$\Delta x = x_{\text{末}} - x_{\text{初}}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>路徑長</strong></td>
+                                    <td class="text-center">$L$</td>
+                                    <td>物體實際運動軌跡的總長度，屬於標量（僅具大小，無方向）。</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>速度</strong></td>
+                                    <td class="text-center">$v$</td>
+                                    <td>單位時間內的位置變化（位移），屬於向量，方向與位移方向相同。</td>
+                                    <td>$v = \frac{\Delta x}{\Delta t}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>速率</strong></td>
+                                    <td class="text-center">$v_s$</td>
+                                    <td>單位時間內的路徑長度，屬於標量，常用於描述運動的快慢。</td>
+                                    <td>$v_s = \frac{L}{\Delta t}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>加速度</strong></td>
+                                    <td class="text-center">$a$</td>
+                                    <td>單位時間內的速度變化量，屬於向量，方向與速度變化方向相同。</td>
+                                    <td>$a = \frac{\Delta v}{\Delta t}$</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>等加速度運動三大公式</h4>
+                    <p>當加速度為定值時，各物理量滿足以下關係（以初位置為原點）：</p>
+                    <ul>
+                        <li><strong>末速度與時間</strong>：$v = v_0 + at$</li>
+                        <li><strong>位移與時間</strong>：$\Delta x = v_0 t + \frac{1}{2}at^2$</li>
+                        <li><strong>末速度與位移</strong>：$v^2 = v_0^2 + 2a\Delta x$</li>
+                    </ul>
+
+                    <h4>圖形斜率與面積的意義</h4>
+                    <ul>
+                        <li><strong>位置-時間圖 ($x-t$)</strong>：切線斜率代表「瞬時速度」。</li>
+                        <li><strong>速度-時間圖 ($v-t$)</strong>：切線斜率代表「瞬時加速度」；<strong>與時間軸所夾面積代表「位移」</strong>。</li>
+                        <li><strong>加速度-時間圖 ($a-t$)</strong>：與時間軸所夾面積代表「速度變化量 ($\Delta v$)」。</li>
+                    </ul>
+
+                    <div class="trap-box">
+                        <div class="trap-box-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" width="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            學測考點陷阱！
+                        </div>
+                        <p>1. 在 $v-t$ 圖中，只要圖形都在時間軸的上方，代表速度皆為正值，物體<strong>持續前進，沒有折返</strong>（即使斜率向下也是在前進，只是在減速）。<br>
+                        2. 靜摩擦力的大小由合力狀態決定（$f_s = F_{\text{平行}}$），與正向力無關！只有最大靜摩擦力（$f_{s,\text{max}} = \mu_s N$）和動摩擦力（$f_k = \mu_k N$）才跟正向力 $N$成正比。</p>
+                    </div>
+
+                    <h4>天體運動學說演進</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 20%;">科學家</th>
+                                    <th class="text-center" style="width: 25%;">宇宙天體模型</th>
+                                    <th>運動現象之合理解釋方式</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>托勒密</strong></td>
+                                    <td class="text-center">地心說 (Geocentric model)</td>
+                                    <td>地球位於宇宙中心靜止不動。為了解釋複雜的「行星逆行」與亮度變化，引入了極度複雜的「本輪」與「均輪」幾何模型。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>哥白尼</strong></td>
+                                    <td class="text-center">日心說 (Heliocentric model)</td>
+                                    <td>太陽位於宇宙中心，地球與行星環繞太陽作圓周運動。以地球和行星間的「相對運動」（超車效應）自然地解釋行星逆行，極大簡化了模型。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>克卜勒</strong></td>
+                                    <td class="text-center">行星運動三大定律</td>
+                                    <td>基於第谷精確的觀測數據，修正哥白尼日心說的「正圓形軌道」偏見，歸納出繞日軌道為「橢圓形」，開創了定量分析天體運動的新時代。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recommended Labs for Exploration -->
+                    <h4 style="margin-top: 2rem; color: var(--sunset-purple);">🎯 推薦探究實驗室（觀念動態連結）</h4>
+                    
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon" style="color: #e76e28; background: rgba(231, 110, 40, 0.12);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="8" x="8" y="8" rx="1"/><path d="M2 20h20"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">摩擦力模擬器 (Friction Simulation)</h5>
+                            <p class="lab-link-desc">拉動木塊時，靜摩擦力如何隨外力變化？滑動後動摩擦力又如何表現？親自拉動木塊，即時觀察摩擦力與外力的關係圖線，擊破最大靜摩擦力與正向力關係的迷思。</p>
+                        </div>
+                        <a href="/apps/friction-simulation/index.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon" style="color: #4caf50; background: rgba(76, 175, 80, 0.12);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">動滑輪與定滑輪組合模擬器</h5>
+                            <p class="lab-link-desc">滑輪組如何省力？定滑輪與動滑輪的運動加速度與受力分析有何不同？透過此互動模擬分析力學優勢與加速度關係，加深牛頓第二運動定律的應用理解。</p>
+                        </div>
+                        <a href="/apps/movable_pulley.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon" style="color: #f9a825; background: rgba(249, 168, 37, 0.12);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="12" r="3"/><path d="M9 12h6"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">質心運動模擬 (Center of Mass)</h5>
+                            <p class="lab-link-desc">探究拋體在空中爆炸時，為什麼系統質心的軌跡依然維持拋物線不變？親自發射砲彈並觸發爆炸，觀察動量守恆與質心運動的奇妙特性。</p>
+                        </div>
+                        <a href="/apps/center-of-mass.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive Widget 3 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        等加速度運動求解器
+                    </div>
+                    <p style="font-size:0.9rem; color:rgba(255,255,255,0.7)">輸入已知條件以推算其他運動物理量（請確保數值合理）：</p>
+                    <div class="interactive-grid">
+                        <div class="input-group">
+                            <label>初速度 $v_0$ (公尺/秒)：</label>
+                            <input type="number" id="kin-v0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label>加速度 $a$ (公尺/秒²)：</label>
+                            <input type="number" id="kin-a" value="9.8">
+                        </div>
+                        <div class="input-group">
+                            <label>運動時間 $t$ (秒)：</label>
+                            <input type="number" id="kin-t" value="3" min="0">
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calcKinematics()">求解狀態</button>
+                    <div class="calc-result" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>末速度 $v$：<span id="kin-res-v" class="result-val">N/A</span> 公尺/秒</div>
+                        <div>位移 $\Delta x$：<span id="kin-res-dx" class="result-val">N/A</span> 公尺</div>
+                        <div>平均速度 $\bar{v}$：<span id="kin-res-vbar" class="result-val">N/A</span> 公尺/秒</div>
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-panel" id="quiz-ch3">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 3 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 某車輛自靜止起作等加速度直線運動，前 2 秒內行進了 6 公尺。則在第 4 秒末，該車的瞬時速度應為多少公尺/秒？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 0, 'A')"><div class="option-badge">A</div><span>6</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 0, 'B')"><div class="option-badge">B</div><span>12</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 0, 'C')"><div class="option-badge">C</div><span>18</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 0, 'D')"><div class="option-badge">D</div><span>24</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：依等加速度位移公式 $\Delta x = \frac{1}{2}at^2$（初速為零），$6 = \frac{1}{2}a(2)^2 \Rightarrow 6 = 2a \Rightarrow a = 3 \text{ m/s}^2$。再由速度公式 $v = at$，第 4 秒末的速度為 $v = 3 \times 4 = 12 \text{ m/s}$。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 關於摩擦力的概念，下列敘述何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 1, 'A')"><div class="option-badge">A</div><span>靜止在斜面上的物體，所受的靜摩擦力大小一定等於最大靜摩擦力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 1, 'B')"><div class="option-badge">B</div><span>摩擦力的方向一定與物體對地面的運動方向相反</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 1, 'C')"><div class="option-badge">C</div><span>動摩擦力的大小隨接觸正向力的增加而增大</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 1, 'D')"><div class="option-badge">D</div><span>當兩接觸面越光滑，最大靜摩擦力有可能無限增大</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：(C) 正確。動摩擦力滿足 $f_k = \mu_k N$，其中正向力 $N$ 增加，動摩擦力也會隨之成正比增加。靜摩擦力為被動力，大小會隨平行外力改變，並不一定等於最大值。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 有一物體在光滑水平面上受到一個固定方向且量值恆定的外力作用，則該物體必定作何種運動？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 2, 'A')"><div class="option-badge">A</div><span>等速度運動</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 2, 'B')"><div class="option-badge">B</div><span>等加速度運動</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 2, 'C')"><div class="option-badge">C</div><span>等速率圓周運動</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch3', 2, 'D')"><div class="option-badge">D</div><span>變加速度折返運動</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：根據牛頓第二運動定律 $F = ma$，當所受的合力 $F$ 為定值（大小與方向皆恆定）時，物體的加速度 $a$ 也必定是恆定不變的定值，因此物體必作「等加速度運動」。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chapter 4 -->
+            <section class="chapter-section" id="ch4">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 04</span>
+                        <h2>電磁學與電磁感應</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch4')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>歷史上厄斯特發現電流的磁效應，開啟電與磁的連結；法拉第發現電磁感應，實現「磁生電」；馬克士威則將電磁學大一統並預言電磁波。</p>
+                    
+                    <h4>核心效應對稱性</h4>
+                    <ul>
+                        <li><strong>電流磁效應 (電生磁)</strong>：載流導線產生環狀磁場。方向遵循<strong>安培右手定則</strong>。</li>
+                        <li><strong>電磁感應 (磁生電)</strong>：封閉線圈內「磁通量改變」產生感應電流。方向由<strong>冷次定律</strong>決定（感應磁場必反抗外在磁場變化，其本質為<strong>能量守恆</strong>）。</li>
+                    </ul>
+
+                    <h4>法拉第定律公式</h4>
+                    <p>感應電動勢（電壓）與磁通量變化率成正比：</p>
+                    $$\mathcal{E} = -N \frac{\Delta \Phi_B}{\Delta t}$$
+
+                    <h4>電磁波譜（頻率高到低，亦即能量大到小、波長短到長）</h4>
+                    $$\gamma \text{ 射線} \rightarrow X \text{ 射線} \rightarrow \text{紫外線} \rightarrow \text{可見光} \rightarrow \text{紅外線} \rightarrow \text{微波} \rightarrow \text{無線電波}$$
+                    <p>注意：所有電磁波在真空中傳播速度相同，皆為光速 $c \approx 3 \times 10^8 \text{ m/s}$。滿足關係式 $c = f\lambda$。</p>
+                </div>
+
+                <!-- Interactive Widget 4 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        法拉第感應電動勢計算機
+                    </div>
+                    <div class="interactive-grid">
+                        <div class="input-group">
+                            <label>線圈匝數 $N$：</label>
+                            <input type="number" id="ind-N" value="100" min="1">
+                        </div>
+                        <div class="input-group">
+                            <label>磁通量變化 $\Delta \Phi_B$ (韋伯 Wb)：</label>
+                            <input type="number" id="ind-dphi" value="0.5">
+                        </div>
+                        <div class="input-group">
+                            <label>變化時間 $\Delta t$ (秒)：</label>
+                            <input type="number" id="ind-dt" value="0.1" min="0.001">
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calcInduction()">計算感應電動勢</button>
+                    <div class="calc-result" style="margin-top: 1.5rem;">
+                        感應電動勢大小 $|\mathcal{E}|$：<span id="ind-res" class="result-val">N/A</span> 伏特 (V)
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-panel" id="quiz-ch4">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 4 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 將條形磁鐵的 N 極快速插入一個封閉的銅製螺線管中時，下列敘述何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 0, 'A')"><div class="option-badge">A</div><span>螺線管接近磁鐵端會感應出 S 極，以吸引磁鐵</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 0, 'B')"><div class="option-badge">B</div><span>螺線管接近磁鐵端會感應出 N 極，以排斥磁鐵</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 0, 'C')"><div class="option-badge">C</div><span>磁鐵插入的過程不會產生感應電流，只有拔出才會</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 0, 'D')"><div class="option-badge">D</div><span>螺線管內感應電流所生磁場會順應原本磁鐵前進以增加能量</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：冷次定律指出「感應電流所生磁場必反抗原磁通量的變化」。當 N 極接近時，螺線管為了阻礙 N 極靠近，在接近端會產生 N 極以產生斥力。這也是電磁能轉換機械能、符合能量守恆定律的寫照。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 將兩條相距很近且互相平行的導線，分別通入「相反方向」的穩定電流時，兩導線之間產生的電磁力為：</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 1, 'A')"><div class="option-badge">A</div><span>互相吸引的力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 1, 'B')"><div class="option-badge">B</div><span>互相排斥的力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 1, 'C')"><div class="option-badge">C</div><span>兩者無交互作用力</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 1, 'D')"><div class="option-badge">D</div><span>一條吸引、一條排斥</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：根據安培右手定則判定磁場與安培力方向，若兩平行導線通入**相反方向**的電流，兩者會產生互相**排斥**的力。通入**相同方向**電流則會互相**吸引**。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 有關電磁波的傳播特性，下列敘述何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 2, 'A')"><div class="option-badge">A</div><span>無線電波與紫外線在真空中的傳播速度不同</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 2, 'B')"><div class="option-badge">B</div><span>電磁波是力學波，傳播時極度依賴乙太作為介質</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 2, 'C')"><div class="option-badge">C</div><span>電磁波不需要任何介質即可在真空中傳播</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch4', 2, 'D')"><div class="option-badge">D</div><span>紅外線的波長比微波長，但頻率較低</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：(C) 正確。電磁波為非力學波，傳播不需任何介質，在真空中速度均為光速 $c$。微波的波長大於紅外線。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chapter 5 -->
+            <section class="chapter-section" id="ch5">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 05</span>
+                        <h2>波動與都卜勒效應</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch5')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>波動傳遞能量但不傳遞介質。都卜勒效應是指波源與觀測者有相對運動時，觀測頻率發生變化的現象。</p>
+                    
+                    <h4>波動的基本公式</h4>
+                    $$v = f\lambda$$
+                    <ul>
+                        <li><strong>頻率 $f$</strong>：由<strong>波源</strong>決定。波在折射進入不同介質時，頻率<strong>維持不變</strong>。</li>
+                        <li><strong>波速 $v$</strong>：由<strong>介質</strong>決定。例如光從空氣入水，波速變慢；聲波從空氣入水，波速變快。</li>
+                        <li><strong>波長 $\lambda$</strong>：依介質及頻率共同調節變動。</li>
+                    </ul>
+
+                    <h4>都卜勒效應機制</h4>
+                    <ul>
+                        <li><strong>相對接近</strong>：觀測波長被壓縮，頻率變高（聲音音調變尖銳，光譜<strong>藍移</strong>）。</li>
+                        <li><strong>相對遠離</strong>：觀測波長被拉長，頻率變低（聲音音調變低沉，光譜<strong>紅移</strong>）。</li>
+                        <li><em>注意</em>：波源在介質中傳播的波速和波源發出的真實頻率並未改變！</li>
+                    </ul>
+
+                    <!-- Recommended Lab for Exploration -->
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10c3-3 3-3 6 0s3 3 6 0 3-3 6 0"/><path d="M2 14c3-3 3-3 6 0s3 3 6 0 3-3 6 0"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">推薦探究實驗室：聲音的數位轉生 (Audio Digital Science)</h5>
+                            <p class="lab-link-desc">聲波訊號如何轉化為數位訊號？進入實驗室，親自調節取樣頻率與量化位元，體驗類比訊號轉數位的物理與工程機制（結合聲波傳播與資訊科技）。</p>
+                        </div>
+                        <a href="/apps/audio-digital-science.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive Widget 5 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        都卜勒效應動態波前模擬器
+                    </div>
+                    <p style="font-size:0.9rem; color:rgba(255,255,255,0.7)">拖動滑桿調整波源移動速度 $v_{\text{s}}$（相對於介質中波速 $v_{\text{w}}$ ），觀察波前（波峰）壓縮的情形：</p>
+                    <div style="margin: 1rem 0;">
+                        <label for="dop-speed" style="display:block; margin-bottom:0.5rem">波源速度比率 $v_{\text{s}} / v_{\text{w}}$：<span id="dop-speed-val" class="result-val">0.40</span></label>
+                        <input type="range" id="dop-speed" min="0" max="1.5" step="0.05" value="0.4" style="width:100%">
+                    </div>
+                    <canvas id="dopplerCanvas" class="sim-canvas"></canvas>
+                    <div style="margin-top:0.8rem; font-size:0.85rem; color:rgba(255,255,255,0.6)">
+                        * 當比率大於 1.0 時，波源超音速運動，波前將在後方形成圓錐形的「衝擊波（震波）」，這是音爆 (Sonic Boom) 的成因。
+                    </div>
+                </div>
+
+                <!-- Quiz 5 -->
+                <div class="quiz-panel" id="quiz-ch5">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 5 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 關於都卜勒效應，當一列火車笛聲長鳴並快速接近站在月台上的觀測者時，下列敘述何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 0, 'A')"><div class="option-badge">A</div><span>觀測者聽到的聲速變快，故音調變高</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 0, 'B')"><div class="option-badge">B</div><span>火車發出的笛聲真實頻率因為運動而變高了</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 0, 'C')"><div class="option-badge">C</div><span>觀測者量測到的笛聲波長被壓縮變短，因此聽到的音調變高</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 0, 'D')"><div class="option-badge">D</div><span>若火車以超音速前進，觀測者會先聽到音調變低再聽到音爆</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：在介質（空氣）固定下，聲波的傳播速度是由介質決定，故聲速不變。火車發出聲音的頻率也固定。因為波源接近，波前被壓縮使觀測波長變短，觀測頻率因此提高（音調變高）。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 當聲波與光波分別從空氣「斜向射入水中」時，兩者傳播路徑的折射行為是：</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 1, 'A')"><div class="option-badge">A</div><span>兩者波速都變慢，皆折向法線</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 1, 'B')"><div class="option-badge">B</div><span>兩者波速都變快，皆偏離法線</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 1, 'C')"><div class="option-badge">C</div><span>聲波速度變快偏離法線，光波速度變慢偏向法線</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 1, 'D')"><div class="option-badge">D</div><span>聲波速度變慢偏向法線，光波速度變快偏離法線</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：聲波是力學波，在固體與液體中的波速大於空氣，入水波速變快，因此折射角大於入射角，偏離法線；光波在水中的波速變慢（折射率 $n_{\text{水}}\approx 1.33 > n_{\text{空氣}}$），因此折射角小於入射角，偏向法線。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 當天文學家觀測到銀河系外某特定遙遠星系所發射的光譜譜線，比起實驗室測量基準整體往紅光端偏移（即「紅移」），代表該星系處於何種狀態？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 2, 'A')"><div class="option-badge">A</div><span>正以極高速度接近地球，光頻率變高</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 2, 'B')"><div class="option-badge">B</div><span>恆星溫度非常高而發出紅光</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 2, 'C')"><div class="option-badge">C</div><span>正相對於地球遠離中，觀測到的波長被拉長</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch5', 2, 'D')"><div class="option-badge">D</div><span>星系內部產生劇烈核分裂反應</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：紅光是可見光中波長較長、頻率較低的波段。當星系遠離地球時，都卜勒效應導致觀測波長拉長（紅移），這也是哈伯定律用以說明宇宙正在膨脹的直接證據。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chapter 6 -->
+            <section class="chapter-section" id="ch6">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 06</span>
+                        <h2>功、能量與核能</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch6')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>功是能量轉移的量度。核反應中微小的質量虧損能釋放龐大的能量，本質是由愛因斯坦質能互換公式主導。</p>
+                    
+                    <h4>功的定義</h4>
+                    $$W = Fd\cos\theta$$
+                    <ul>
+                        <li>力與位移垂直時，此力不作功（例如向心力不作功、提水桶等速水平走路不作功）。</li>
+                        <li>力與位移夾銳角作正功，夾鈍角作負功。</li>
+                    </ul>
+
+                    <h4>常見的能量類型</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 20%;">能量種類</th>
+                                    <th class="text-center" style="width: 25%;">關係式</th>
+                                    <th style="width: 25%;">代數說明</th>
+                                    <th>說明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>動能</strong></td>
+                                    <td class="text-center">$E_k = \frac{1}{2}mv^2$</td>
+                                    <td>$m$：質量<br>$v$：速度</td>
+                                    <td>物體因運動而具有的能量。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>重力位能</strong></td>
+                                    <td class="text-center">$U_g = mgh$</td>
+                                    <td>$g$：重力加速度<br>$h$：距零位面高度</td>
+                                    <td>物體在重力場中因位置擁有的位能。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>彈性位能</strong></td>
+                                    <td class="text-center">$U_s = \frac{1}{2}kx^2$</td>
+                                    <td>$k$：彈性常數<br>$x$：形變量</td>
+                                    <td>彈性體形變時儲存的能量。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>微觀動能</strong></td>
+                                    <td class="text-center">$E_{\text{thermal}}$</td>
+                                    <td>分子平均動能</td>
+                                    <td>分子隨機運動的表現，巨觀即為溫度/熱能。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>愛因斯坦質能公式</h4>
+                    $$E = \Delta m c^2$$
+                    <p>其中 $c = 3 \times 10^8 \text{ m/s}$。當損失 $1\text{ g}$ 的質量，可轉化為 $9 \times 10^{13}\text{ 焦耳}$ 的能量！</p>
+
+                    <h4>核分裂與核融合比較</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 20%;">比較項目</th>
+                                    <th style="width: 40%;">核分裂 (Fission)</th>
+                                    <th style="width: 40%;">核融合 (Fusion)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>原理</strong></td>
+                                    <td>重核（如鈾-235）受中子撞擊後分裂為中等質量的核。目前核能發電廠的原理。</td>
+                                    <td>輕核（如氘與氚）高溫高壓下融合成較重核。太陽的能量來源。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>常見燃料</strong></td>
+                                    <td>鈾-235 ($^{235}\text{U}$)</td>
+                                    <td>氘 ($^{2}\text{H}$)、氚 ($^{3}\text{H}$)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>能量釋放</strong></td>
+                                    <td>質量虧損經 $E = \Delta mc^2$ 釋放。</td>
+                                    <td>單位質量的能量釋放遠大於核分裂。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>應用/實例</strong></td>
+                                    <td>目前核能發電廠、原子彈。</td>
+                                    <td>太陽與恆星的能量來源、氫彈。</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>缺點</strong></td>
+                                    <td>高放射性核廢料處理問題。</td>
+                                    <td>技術難度極高（需上億度高溫與高壓）。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recommended Labs for Exploration -->
+                    <h4 style="margin-top: 2rem; color: var(--sunset-purple);">🎯 推薦探究實驗室（觀念動態連結）</h4>
+
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon" style="color: #e76e28; background: rgba(231, 110, 40, 0.12);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="12" r="3"/><path d="M9 12h6"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">彈簧碰撞與能量分析模擬器 (Spring Collision)</h5>
+                            <p class="lab-link-desc">完美重現非彈性碰撞的能量損耗與彈簧彈力作用過程！自訂兩球質量與初速，以多種觀測參考系（A球、B球、質心系）即時剖析力學能與熱能轉換，加深對動量守恆及能量轉換規律的理解。</p>
+                        </div>
+                        <a href="/apps/simulation/index.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon" style="color: #377abc; background: rgba(55, 122, 188, 0.12);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 10-4-4-4 4"/><path d="M12 6v12"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">近地衛星軌道衰減模擬器 (Orbital Decay)</h5>
+                            <p class="lab-link-desc">低軌道大氣阻力如何造成軌道高度衰減？以高精度 Verlet 數值積分模擬重力與大氣阻力的交互作用，透過三通道圖表展現「軌道佯謬（阻力反而使衛星加速）」的能量轉換機制。</p>
+                        </div>
+                        <a href="/apps/orbital_decay/index.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive Widget 6 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m17 5-5-3-5 3"/><path d="m17 19-5 3-5-3"/></svg>
+                        質能互換計算機
+                    </div>
+                    <p style="font-size:0.9rem; color:rgba(255,255,255,0.7)">輸入核反應產生的質量虧損，估算釋放的能量與其等效價值：</p>
+                    <div class="interactive-grid">
+                        <div class="input-group">
+                            <label>質量虧損 $\Delta m$：</label>
+                            <input type="number" id="mass-loss" value="1.0" step="any">
+                        </div>
+                        <div class="input-group">
+                            <label>單位：</label>
+                            <select id="mass-unit">
+                                <option value="g">公克 (g)</option>
+                                <option value="kg">公斤 (kg)</option>
+                                <option value="u">原子質量單位 (u)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calcEnergy()">轉換能量</button>
+                    <div class="calc-result" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>釋放能量 $E$：<span id="eng-res-j" class="result-val">N/A</span> 焦耳 (J)</div>
+                        <div>釋放能量 $E$ (MeV)：<span id="eng-res-mev" class="result-val">N/A</span> MeV</div>
+                        <div>等效於 <span id="eng-res-house" class="result-val" style="color:#ff9e64">N/A</span> 戶家庭的一年用電量</div>
+                    </div>
+                </div>
+
+                <!-- Quiz 6 -->
+                <div class="quiz-panel" id="quiz-ch6">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 6 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 根據愛因斯坦質能互換公式 $E=\Delta m c^2$，在一核反應過程中，若損失了 $1\text{ g}$ 的質量，將會釋放出多少焦耳的能量？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 0, 'A')"><div class="option-badge">A</div><span>$3\times 10^5$</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 0, 'B')"><div class="option-badge">B</div><span>$3\times 10^8$</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 0, 'C')"><div class="option-badge">C</div><span>$9\times 10^{10}$</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 0, 'D')"><div class="option-badge">D</div><span>$9\times 10^{13}$</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：D</strong><br>
+                            解析：公式中質量的單位必須為「公斤 (kg)」。$1\text{ g} = 10^{-3}\text{ kg}$，光速 $c = 3 \times 10^8\text{ m/s}$。帶入公式可得：$E = 10^{-3} \times (3 \times 10^8)^2 = 10^{-3} \times 9 \times 10^{16} = 9 \times 10^{13}\text{ J}$。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 下列關於「功」與「運動狀態」的敘述，何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 1, 'A')"><div class="option-badge">A</div><span>當人手提重物在水平地面上等速度走動時，人手對重物所作之功為正功</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 1, 'B')"><div class="option-badge">B</div><span>人造衛星繞地球作圓周運動時，重力對衛星所作的功為零</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 1, 'C')"><div class="option-badge">C</div><span>滑動摩擦力對運動中的物體必定作正功，以維持其前進</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 1, 'D')"><div class="option-badge">D</div><span>物體斜向拋出後，在上昇段重力對其作正功</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：(B) 正確。因為人造衛星作圓周運動時，其所受的重力（向心力）方向恆與速度（瞬時位移）方向垂直（$\theta = 90^\circ$），由 $W = Fd\cos 90^\circ = 0$，可知重力不作功。手提重物水平走、重力垂直水平位移，功亦為零。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 有關太陽的核反應與地球核能發電廠的反應原理，下列比較何者正確？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 2, 'A')"><div class="option-badge">A</div><span>兩者都主要利用重核鈾-235的分裂反應釋放能量</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 2, 'B')"><div class="option-badge">B</div><span>太陽是輕核融合成重核的核融合反應，核電廠則是重核分裂反應</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 2, 'C')"><div class="option-badge">C</div><span>太陽是核分裂反應，核電廠是核融合反應</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch6', 2, 'D')"><div class="option-badge">D</div><span>核分裂與核融合皆不需要發生質量虧損</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：太陽主要是利用內部豐富的氫核在高溫高壓下結合成氦核的**核融合**反應；地球上的核能發電廠則是利用鈾-235原子核受慢中子撞擊後產生鏈結反應的**核分裂**。兩者都是質量虧損轉化為能量。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chapter 7 -->
+            <section class="chapter-section" id="ch7">
+                <div class="chapter-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <span class="chapter-tag">UNIT 07</span>
+                        <h2>量子論與近代物理</h2>
+                    </div>
+                    <button class="btn-note" onclick="takeScreenshotAndNote('ch7')" title="截取目前區塊進行圖畫與文字筆記">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:0.3rem;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        截圖做筆記
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <h3>核心觀念整理</h3>
+                    <p>近代物理的兩大基石是「量子論」與「相對論」。近代物理揭示了微觀世界粒子與波動共存的本質。</p>
+                    
+                    <h4>量子假說與光量子說</h4>
+                    <ul>
+                        <li><strong>普朗克量子假說</strong>：黑體輻射能量並非連續，而是以量子為最小單位。光子能量公式：$E = hf$</li>
+                        <li><strong>愛因斯坦光電效應</strong>：光子與電子一對一碰撞。光的能量一部分克服束縛（功函數 $W$），其餘轉為電子動能：</li>
+                        $$hf = W + K_{\text{max}}$$
+                    </ul>
+
+                    <details class="glass-details">
+                        <summary>展開查看：雷納光電效應實驗數據比較表</summary>
+                        <div class="details-content">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" style="width: 18%;">操縱變因 (變大)</th>
+                                            <th class="text-center" style="width: 12%;">控制變因</th>
+                                            <th class="text-center" style="width: 23%;">截止電壓 $V_s$ (動能)</th>
+                                            <th class="text-center" style="width: 20%;">光電流 $I$</th>
+                                            <th>與古典物理之衝突</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-center"><strong>光頻率</strong></td>
+                                            <td class="text-center">$f < f_0$</td>
+                                            <td class="text-center" style="color: #bf616a;"><strong>無電子噴出</strong></td>
+                                            <td class="text-center" style="color: #bf616a;"><strong>無電流</strong></td>
+                                            <td>古典物理認為：只要入射光強度足夠強或照射時間足夠久，應能激發出電子。</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center"><strong>光頻率</strong></td>
+                                            <td class="text-center">$f \ge f_0$</td>
+                                            <td class="text-center" style="color: #a3be8c;"><strong>立即產生</strong></td>
+                                            <td class="text-center" style="color: #a3be8c;"><strong>立即產生</strong></td>
+                                            <td>古典物理認為：若為弱光照射，電子需在表面累積能量，應有明顯的時間延遲（數分鐘或數小時）。</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center"><strong>光頻率</strong></td>
+                                            <td class="text-center">強度、材質</td>
+                                            <td class="text-center"><strong>變大</strong> ($V_s \propto f$)</td>
+                                            <td class="text-center"><strong>不變</strong></td>
+                                            <td>古典物理認為：波的能量只與其強度（振幅）有關，與頻率無關，故不應存在特定的「底限頻率」。</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center"><strong>光強度</strong></td>
+                                            <td class="text-center">頻率、材質</td>
+                                            <td class="text-center"><strong>不變</strong></td>
+                                            <td class="text-center"><strong>變大</strong> ($I \propto$ 強度)</td>
+                                            <td>古典物理認為：光越強代表能量越高，激發出的電子最大初動能與截止電壓 $V_s$ 應隨光強增加而變大。</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center"><strong>金屬材質</strong></td>
+                                            <td class="text-center">頻率、強度</td>
+                                            <td class="text-center"><strong>隨 $W$ 改變</strong></td>
+                                            <td class="text-center"><strong>不變</strong></td>
+                                            <td>古典物理無法解釋為何不同材質的金屬會有各自特定的能量門檻（功函數 $W$）。</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </details>
+
+                    <h4>波粒二象性 (Wave-Particle Duality)</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 20%;">特性</th>
+                                    <th style="width: 40%;">粒子性</th>
+                                    <th style="width: 40%;">波動性</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center"><strong>表現現象</strong></td>
+                                    <td>碰撞、光電效應、康普頓效應</td>
+                                    <td>干涉、繞射、偏振</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>關鍵代數</strong></td>
+                                    <td>動量 $p$、能量 $E$</td>
+                                    <td>波長 $\lambda$、頻率 $f$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>關聯繫</strong></td>
+                                    <td>$E = hf$</td>
+                                    <td>$p = \frac{h}{\lambda}$</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><strong>微觀意義</strong></td>
+                                    <td colspan="2">物質波在本質上是「<strong>機率波</strong>」，用以描述粒子在空間中某位置出現的機率密度分佈。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <ul>
+                        <li>光具有波動性（干涉、繞射）與粒子性（光電效應）。</li>
+                        <li>德布羅意提出<strong>物質波 (de Broglie wave)</strong>：物質粒子亦有波動性：</li>
+                        $$\lambda = \frac{h}{p} = \frac{h}{mv}$$
+                        <li><strong>戴維森-革末實驗</strong>：利用電子束照射晶體觀察到繞射條紋，直接證實電子的波動性。</li>
+                    </ul>
+
+                    <!-- Recommended Lab for Exploration -->
+                    <div class="lab-link-card">
+                        <div class="lab-link-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2Z"/></svg>
+                        </div>
+                        <div class="lab-link-content">
+                            <h5 class="lab-link-title">推薦探究實驗室：Semiconductor 半導體物理入門</h5>
+                            <p class="lab-link-desc">半導體材料的能帶結構與量子狀態是什麼？進入半導體物理導覽，探討 p-n 接面、能隙與現代光電、二極體元件的物理與工程應用。</p>
+                        </div>
+                        <a href="/apps/semiconductor.html" class="btn-lab" target="_blank">
+                            進入模擬器
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive Widget 7 -->
+                <div class="interactive-panel">
+                    <div class="panel-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        光電子最大動能計算機
+                    </div>
+                    <div class="interactive-grid">
+                        <div class="input-group">
+                            <label>入射光波長 $\lambda$ (奈米 nm)：</label>
+                            <input type="number" id="pe-wl" value="400" min="1">
+                        </div>
+                        <div class="input-group">
+                            <label>金屬功函數 $W$ (電子伏特 eV)：</label>
+                            <input type="number" id="pe-w" value="2.2" step="0.1">
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calcPhotoelectric()">計算動能</button>
+                    <div class="calc-result" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>入射光子能量 $E$：<span id="pe-photon-e" class="result-val">N/A</span> eV</div>
+                        <div>光電子最大初動能 $K_{\text{max}}$：<span id="pe-kmax" class="result-val" style="color:#a3be8c">N/A</span> eV</div>
+                        <div>狀態分析：<span id="pe-state" class="result-val">N/A</span></div>
+                    </div>
+                </div>
+
+                <!-- Quiz 7 -->
+                <div class="quiz-panel" id="quiz-ch7">
+                    <div class="quiz-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        單元 7 實戰練習
+                    </div>
+                    <div class="question-card" data-q="0">
+                        <p class="q-text">Q1. 關於近代物理的實驗發現與理論，下列哪一項實驗「首次」證實了原本被視為粒子的「電子」也具有波動性？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 0, 'A')"><div class="option-badge">A</div><span>楊氏雙狹縫干涉實驗</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 0, 'B')"><div class="option-badge">B</div><span>雷納的光電效應實驗</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 0, 'C')"><div class="option-badge">C</div><span>戴維森與革末的電子繞射實驗</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 0, 'D')"><div class="option-badge">D</div><span>拉塞福的金箔 $\alpha$ 粒子散射實驗</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：戴維森與革末（Davisson and Germer）利用低能電子束照射鎳單晶體，觀察到電子的強烈繞射現象，首次實驗上證實了物質（電子）具有波動性，驗證了德布羅意的物質波假說。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="1">
+                        <p class="q-text">Q2. 關於愛因斯坦對「光電效應」的解釋，下列敘述何者符合其光量子假說？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 1, 'A')"><div class="option-badge">A</div><span>只要照射光強度（亮度）足夠強，任何頻率的光均能激發出電子</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 1, 'B')"><div class="option-badge">B</div><span>入射光子與電子為一對一碰撞。頻率低於底限頻率時，無論多亮或照多久皆無法噴出電子</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 1, 'C')"><div class="option-badge">C</div><span>激發出的光電子最大初動能與入射光強度成正比</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 1, 'D')"><div class="option-badge">D</div><span>弱光照射時需要累積能量，因此光電子會產生明顯時間延遲</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：B</strong><br>
+                            解析：愛因斯坦提出光子說，認為一個光子只與一個電子作用。光子能量為 $E = hf$。如果頻率低於底限頻率 $f_0$（光子能量小於金屬功函數 $W$），則不論光多強都無法打出電子。若大於 $f_0$，即使光微弱也會瞬間打出。
+                        </div>
+                    </div>
+                    <div class="question-card" data-q="2">
+                        <p class="q-text">Q3. 波耳修正了拉塞福的「行星原子模型」，成功解釋了下列哪一項物理事实？</p>
+                        <div class="options-list">
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 2, 'A')"><div class="option-badge">A</div><span>陰極射線是由帶負電的電子流組成</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 2, 'B')"><div class="option-badge">B</div><span>電子自發性發射電磁波並墜入原子核</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 2, 'C')"><div class="option-badge">C</div><span>氫原子的離散不連續譜線能階躍遷規律</span></div>
+                            <div class="option-item" onclick="checkAnswer(this, 'ch7', 2, 'D')"><div class="option-badge">D</div><span>原子核內部包含質子與中子</span></div>
+                        </div>
+                        <div class="explanation">
+                            <strong>正確答案：C</strong><br>
+                            解析：拉塞福的模型無法解釋原子的穩定性與不連續的發射譜線。波耳提出軌道量子化（定態）與能階躍遷理論（$\Delta E = hf$），完美解釋了氫原子光譜呈離散「不連續」譜線的特徵。
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Progress System: 3 questions per chapter
+        const quizStatus = {
+            ch1: [false, false, false],
+            ch2: [false, false, false],
+            ch3: [false, false, false],
+            ch4: [false, false, false],
+            ch5: [false, false, false],
+            ch6: [false, false, false],
+            ch7: [false, false, false],
+        };
+
+        function updateOverallProgress() {
+            let total = 0;
+            let solved = 0;
+            
+            for (let ch in quizStatus) {
+                total += quizStatus[ch].length;
+                solved += quizStatus[ch].filter(v => v).length;
+                
+                // Update navigation sidebar item classes
+                const navItem = document.getElementById(`nav-${ch}`);
+                if (navItem) {
+                    if (quizStatus[ch].every(v => v)) {
+                        navItem.classList.add('completed');
+                    } else {
+                        navItem.classList.remove('completed');
+                    }
+                }
+            }
+            
+            const percent = Math.round((solved / total) * 100);
+            document.getElementById('study-progress').style.width = `${percent}%`;
+            document.getElementById('progress-percent').innerText = `${percent}%`;
+        }
+
+        // Sidebar Navigation Active Class
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.chapter-section');
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            let currentActiveId = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (window.scrollY >= sectionTop - 120) {
+                    currentActiveId = section.getAttribute('id');
+                }
+            });
+            
+            if (currentActiveId) {
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('href') === `#${currentActiveId}`) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+        });
+
+        // Quiz Selection Logic
+        function checkAnswer(element, chId, qIdx, selectedOption) {
+            const parent = element.parentElement;
+            
+            // If already answered, ignore
+            if (parent.querySelector('.option-item.correct') || parent.querySelector('.option-item.incorrect')) {
+                return;
+            }
+
+            const correctAnswers = {
+                ch1: ['D', 'B', 'C'],
+                ch2: ['C', 'C', 'D'],
+                ch3: ['B', 'C', 'B'],
+                ch4: ['B', 'B', 'C'],
+                ch5: ['C', 'C', 'C'],
+                ch6: ['D', 'B', 'B'],
+                ch7: ['C', 'B', 'C']
+            };
+
+            const correctAns = correctAnswers[chId][qIdx];
+            const explanation = parent.parentElement.querySelector('.explanation');
+            
+            // Disable all option items
+            parent.querySelectorAll('.option-item').forEach(item => {
+                item.classList.add('disabled');
+            });
+
+            if (selectedOption === correctAns) {
+                element.classList.add('correct');
+                quizStatus[chId][qIdx] = true;
+            } else {
+                element.classList.add('incorrect');
+                // Highlight correct option
+                parent.querySelectorAll('.option-item').forEach(item => {
+                    if (item.textContent.trim().startsWith(correctAns)) {
+                        item.classList.remove('disabled');
+                        item.classList.add('correct');
+                    }
+                });
+            }
+
+            if (explanation) {
+                explanation.style.display = 'block';
+            }
+            
+            updateOverallProgress();
+        }
+
+        // Chapter 1 Calculator: SI Prefixes Converter
+        function calcUnits() {
+            const val = parseFloat(document.getElementById('unit-val').value);
+            const exp = parseInt(document.getElementById('unit-from').value);
+            
+            if (isNaN(val)) {
+                alert('請輸入有效數值！');
+                return;
+            }
+            
+            const standardVal = val * Math.pow(10, exp);
+            
+            // Format to scientific notation beautifully
+            let output = '';
+            if (standardVal === 0) {
+                output = '0';
+            } else {
+                const exponent = Math.floor(Math.log10(Math.abs(standardVal)));
+                const mantissa = standardVal / Math.pow(10, exponent);
+                output = `${mantissa.toFixed(4)} × 10<sup>${exponent}</sup>`;
+            }
+            
+            document.getElementById('unit-result').innerHTML = output;
+        }
+
+        // Chapter 2 Calculator: Coulomb vs Gravity Forces
+        function calcForces() {
+            const r = parseFloat(document.getElementById('force-dist').value);
+            if (isNaN(r) || r <= 0) {
+                alert('請輸入有效距離（大於零的數值）！');
+                return;
+            }
+
+            // Constants
+            const k = 9e9;
+            const G = 6.67e-11;
+            const q = 1.6e-19; // Proton and Electron charges
+            const me = 9.11e-31; // Electron mass
+            const mp = 1.67e-27; // Proton mass
+
+            // Formulas: Fe = k q^2 / r^2, Fg = G mp me / r^2
+            const fe = (k * q * q) / (r * r);
+            const fg = (G * mp * me) / (r * r);
+            const ratio = fe / fg;
+
+            document.getElementById('force-fe').innerText = fe.toExponential(4) + ' N';
+            document.getElementById('force-fg').innerText = fg.toExponential(4) + ' N';
+            document.getElementById('force-ratio').innerText = ratio.toExponential(4);
+        }
+
+        // Chapter 3 Calculator: Kinematics Solver
+        function calcKinematics() {
+            const v0 = parseFloat(document.getElementById('kin-v0').value);
+            const a = parseFloat(document.getElementById('kin-a').value);
+            const t = parseFloat(document.getElementById('kin-t').value);
+
+            if (isNaN(v0) || isNaN(a) || isNaN(t) || t < 0) {
+                alert('請輸入有效數值且時間不能為負數！');
+                return;
+            }
+
+            const v = v0 + a * t;
+            const dx = v0 * t + 0.5 * a * t * t;
+            const vbar = (v0 + v) / 2;
+
+            document.getElementById('kin-res-v').innerText = v.toFixed(3);
+            document.getElementById('kin-res-dx').innerText = dx.toFixed(3);
+            document.getElementById('kin-res-vbar').innerText = vbar.toFixed(3);
+        }
+
+        // Chapter 4 Calculator: Faraday Induction
+        function calcInduction() {
+            const N = parseInt(document.getElementById('ind-N').value);
+            const dphi = parseFloat(document.getElementById('ind-dphi').value);
+            const dt = parseFloat(document.getElementById('ind-dt').value);
+
+            if (isNaN(N) || isNaN(dphi) || isNaN(dt) || N < 1 || dt <= 0) {
+                alert('請確認輸入數值正確（線圈數大於1且時間變化大於零）！');
+                return;
+            }
+
+            const emf = N * Math.abs(dphi / dt);
+            document.getElementById('ind-res').innerText = emf.toFixed(3);
+        }
+
+        // Chapter 5: Doppler Effect Canvas Simulator
+        const canvas = document.getElementById('dopplerCanvas');
+        const ctx = canvas.getContext('2d');
+        let srcX = canvas.width / 2;
+        let srcY = canvas.height / 2;
+        let waves = [];
+        let time = 0;
+        
+        // Doppler variables
+        const waveSpeed = 2.0; // speed of wavefront propagation
+        let sourceSpeedRatio = 0.4;
+        
+        document.getElementById('dop-speed').addEventListener('input', (e) => {
+            sourceSpeedRatio = parseFloat(e.target.value);
+            document.getElementById('dop-speed-val').innerText = sourceSpeedRatio.toFixed(2);
+        });
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            const parentWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+            canvas.width = Math.max(300, parentWidth - 40);
+            canvas.height = 300;
+            srcX = canvas.width / 2;
+            srcY = canvas.height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', resizeCanvas);
+        resizeCanvas();
+
+
+        function animateDoppler() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Move source horizontally
+            const vs = sourceSpeedRatio * waveSpeed;
+            srcX += vs;
+            
+            // Loop source positions around canvas
+            if (srcX > canvas.width + 50) {
+                srcX = -50;
+                waves = [];
+            }
+            
+            // Emit new wave every 20 frames
+            if (time % 20 === 0) {
+                waves.push({
+                    x: srcX,
+                    y: srcY,
+                    r: 0
+                });
+            }
+            
+            // Draw wave crests
+            ctx.strokeStyle = 'rgba(129, 161, 193, 0.4)';
+            ctx.lineWidth = 2;
+            
+            waves.forEach(w => {
+                w.r += waveSpeed;
+                ctx.beginPath();
+                ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            
+            // Remove huge wave circles out of bounds
+            waves = waves.filter(w => w.r < canvas.width);
+            
+            // Draw wave source point
+            ctx.fillStyle = 'var(--action-orange)';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'var(--action-orange)';
+            ctx.beginPath();
+            ctx.arc(srcX, srcY, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Reset shadows
+            ctx.shadowBlur = 0;
+            
+            time++;
+            requestAnimationFrame(animateDoppler);
+        }
+        animateDoppler();
+
+        // Chapter 6 Calculator: E = mc^2
+        function calcEnergy() {
+            const massLoss = parseFloat(document.getElementById('mass-loss').value);
+            const unit = document.getElementById('mass-unit').value;
+
+            if (isNaN(massLoss) || massLoss <= 0) {
+                alert('請輸入有效質量虧損大於零！');
+                return;
+            }
+
+            const c = 3e8;
+            let mKg = 0;
+
+            if (unit === 'kg') {
+                mKg = massLoss;
+            } else if (unit === 'g') {
+                mKg = massLoss * 1e-3;
+            } else if (unit === 'u') {
+                // 1 u = 1.6605e-27 kg
+                mKg = massLoss * 1.6605e-27;
+            }
+
+            // Energy E = mc^2
+            const eJoules = mKg * c * c;
+            
+            // conversion: 1 eV = 1.602e-19 J, so 1 MeV = 1.602e-13 J
+            const eMev = eJoules / 1.602e-13;
+
+            // Equivalent household power: 
+            // Average household uses ~ 3600 kWh per year. 1 kWh = 3.6e6 J. Total = 1.296e10 Joules.
+            const houseYearJ = 1.296e10;
+            const housesEquivalent = eJoules / houseYearJ;
+
+            document.getElementById('eng-res-j').innerHTML = eJoules.toExponential(4);
+            document.getElementById('eng-res-mev').innerHTML = eMev.toExponential(4);
+            document.getElementById('eng-res-house').innerHTML = Math.round(housesEquivalent).toLocaleString();
+        }
+
+        // Chapter 7 Calculator: Photoelectric Effect
+        function calcPhotoelectric() {
+            const wl = parseFloat(document.getElementById('pe-wl').value); // in nm
+            const w = parseFloat(document.getElementById('pe-w').value); // in eV
+
+            if (isNaN(wl) || isNaN(w) || wl <= 0 || w < 0) {
+                alert('請確認輸入數值正確！');
+                return;
+            }
+
+            // energy in eV: E_photon = hc / lambda. In eV*nm: hc approx 1240
+            const hcEvNm = 1240;
+            const ePhoton = hcEvNm / wl;
+
+            const kMax = ePhoton - w;
+
+            document.getElementById('pe-photon-e').innerText = ePhoton.toFixed(3);
+
+            if (kMax >= 0) {
+                document.getElementById('pe-kmax').innerText = kMax.toFixed(3);
+                document.getElementById('pe-state').innerHTML = '<span style="color:#a3be8c">✔ 產生光電效應，電子噴出！</span>';
+            } else {
+                document.getElementById('pe-kmax').innerText = '0.000';
+                document.getElementById('pe-state').innerHTML = '<span style="color:#bf616a">✘ 光子能量低於功函數，無法產生光電效應。</span>';
+            }
+        }
+
+        // Note-taking system
+        let noteCanvas, noteCtx;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let noteMode = 'draw'; // 'draw', 'text', 'erase'
+        let noteColor = '#bf616a';
+        let noteBrushSize = 5;
+        let screenshotImg = null;
+        let currentChapterId = '';
+
+        function initNoteSystem() {
+            noteCanvas = document.getElementById('note-canvas');
+            noteCtx = noteCanvas.getContext('2d');
+            
+            // Mouse drawing events
+            noteCanvas.addEventListener('mousedown', startDrawing);
+            noteCanvas.addEventListener('mousemove', draw);
+            noteCanvas.addEventListener('mouseup', stopDrawing);
+            noteCanvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch drawing events (for tablet/mobile)
+            noteCanvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                noteCanvas.dispatchEvent(mouseEvent);
+            }, { passive: true });
+            
+            noteCanvas.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                noteCanvas.dispatchEvent(mouseEvent);
+            }, { passive: true });
+            
+            noteCanvas.addEventListener('touchend', () => {
+                const mouseEvent = new MouseEvent('mouseup', {});
+                noteCanvas.dispatchEvent(mouseEvent);
+            }, { passive: true });
+        }
+
+        function startDrawing(e) {
+            const rect = noteCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (noteMode === 'text') {
+                const text = prompt('請輸入要在筆記上標記的文字：');
+                if (text) {
+                    noteCtx.font = `bold ${noteBrushSize * 3}px 'Noto Sans TC', sans-serif`;
+                    noteCtx.fillStyle = noteColor;
+                    noteCtx.fillText(text, x, y + 10);
+                }
+                return;
+            }
+            
+            isDrawing = true;
+            [lastX, lastY] = [x, y];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = noteCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            noteCtx.beginPath();
+            noteCtx.moveTo(lastX, lastY);
+            noteCtx.lineTo(x, y);
+            
+            if (noteMode === 'erase') {
+                noteCtx.strokeStyle = '#ffffff'; // draw white over screenshot
+                noteCtx.lineWidth = noteBrushSize * 3;
+            } else {
+                noteCtx.strokeStyle = noteColor;
+                noteCtx.lineWidth = noteBrushSize;
+            }
+            
+            noteCtx.lineCap = 'round';
+            noteCtx.lineJoin = 'round';
+            noteCtx.stroke();
+            
+            [lastX, lastY] = [x, y];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function setNoteMode(mode) {
+            noteMode = mode;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                if (btn.id === `btn-${mode}`) btn.classList.add('active');
+                else if (btn.id && btn.id.startsWith('btn-')) btn.classList.remove('active');
+            });
+        }
+
+        function setNoteColor(color) {
+            noteColor = color;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                if (btn.style.backgroundColor === getRgbColor(color)) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            // Switch to draw mode if in erase mode
+            if (noteMode === 'erase') {
+                setNoteMode('draw');
+            }
+        }
+        
+        function getRgbColor(hex) {
+            const r = parseInt(hex.slice(1,3), 16);
+            const g = parseInt(hex.slice(3,5), 16);
+            const b = parseInt(hex.slice(5,7), 16);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function setNoteBrushSize(size) {
+            noteBrushSize = parseInt(size);
+        }
+
+        function clearNoteDrawing() {
+            if (confirm('確定要清除所有筆記標記並還原截圖嗎？')) {
+                noteCtx.clearRect(0, 0, noteCanvas.width, noteCanvas.height);
+                noteCtx.drawImage(screenshotImg, 0, 0);
+            }
+        }
+
+        function downloadNoteImage() {
+            const link = document.createElement('a');
+            link.download = `physics-note-${currentChapterId}-${new Date().toISOString().slice(0,10)}.png`;
+            link.href = noteCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function closeNoteModal() {
+            document.getElementById('note-modal').style.display = 'none';
+        }
+
+        function takeScreenshotAndNote(chapterId) {
+            currentChapterId = chapterId;
+            const targetSection = document.getElementById(chapterId);
+            
+            // Show loading indicator
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5rem;font-weight:bold;';
+            overlay.innerHTML = '正在截圖生成筆記板...';
+            document.body.appendChild(overlay);
+            
+            // Render using html2canvas
+            html2canvas(targetSection, {
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                scale: 2 // High resolution
+            }).then(canvas => {
+                document.body.removeChild(overlay);
+                
+                // Initialize canvas element if not initialized
+                if (!noteCanvas) {
+                    initNoteSystem();
+                }
+                
+                screenshotImg = canvas;
+                noteCanvas.width = canvas.width / 2; // scale back to standard size
+                noteCanvas.height = canvas.height / 2;
+                
+                // Set visual style widths for responsiveness
+                noteCanvas.style.width = `${noteCanvas.width}px`;
+                noteCanvas.style.height = `${noteCanvas.height}px`;
+                
+                // Draw initial screenshot
+                noteCtx.drawImage(canvas, 0, 0, noteCanvas.width, noteCanvas.height);
+                
+                // Show modal
+                document.getElementById('note-modal').style.display = 'flex';
+            }).catch(err => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+                alert('截圖失敗，請稍後再試。');
+                console.error(err);
+            });
+        }
+    </script>
+
+    <!-- Screenshot Note Modal -->
+    <div id="note-modal" class="note-modal">
+        <div class="note-toolbar">
+            <span class="toolbar-title">📝 截圖筆記板</span>
+            <div class="toolbar-actions">
+                <button onclick="setNoteMode('draw')" id="btn-draw" class="tool-btn active">✏️ 畫筆</button>
+                <button onclick="setNoteMode('text')" id="btn-text" class="tool-btn">🔤 文字</button>
+                <button onclick="setNoteMode('erase')" id="btn-erase" class="tool-btn">🧽 橡皮擦</button>
+                <div class="color-picker">
+                    <button class="color-btn active" style="background-color:#bf616a" onclick="setNoteColor('#bf616a')"></button>
+                    <button class="color-btn" style="background-color:#5e81ac" onclick="setNoteColor('#5e81ac')"></button>
+                    <button class="color-btn" style="background-color:#a3be8c" onclick="setNoteColor('#a3be8c')"></button>
+                    <button class="color-btn" style="background-color:#ebcb8b" onclick="setNoteColor('#ebcb8b')"></button>
+                    <button class="color-btn" style="background-color:#2e3440" onclick="setNoteColor('#2e3440')"></button>
+                </div>
+                <div class="brush-size-container">
+                    <span>粗細:</span>
+                    <input type="range" id="brush-size" min="2" max="20" value="5" onchange="setNoteBrushSize(this.value)">
+                </div>
+                <button onclick="clearNoteDrawing()" class="tool-btn danger">🧹 重設</button>
+                <button onclick="downloadNoteImage()" class="tool-btn success">💾 下載筆記</button>
+                <button onclick="closeNoteModal()" class="tool-btn close">❌ 關閉</button>
+            </div>
+        </div>
+        <div class="note-canvas-container">
+            <canvas id="note-canvas"></canvas>
+        </div>
+    </div>
+</body>
+
+</html>
