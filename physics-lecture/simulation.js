@@ -155,16 +155,13 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     function checkChapterCompletion(chapterId) {
-        // A chapter is complete if its inline question is answered correctly AND at least one Bloom quiz question is answered
+        // A chapter is complete if its inline question is answered correctly AND all Bloom quiz questions are answered correctly
         const inlineCorrect = document.querySelector(`#${chapterId} .interactive-feedback.correct`) !== null;
         const quizCount = document.querySelectorAll(`#${chapterId} .bloom-option-item.correct`).length;
         
-        let requiredQuizCount = 2;
-        if (chapterId === "ch-6-3") {
-            requiredQuizCount = 1;
-        }
+        const requiredQuizCount = 2;
 
-        // Let's say if both criteria met, chapter is completed
+        // If both criteria met, chapter is completed
         if (inlineCorrect && quizCount >= requiredQuizCount) {
             completedChapters.add(chapterId);
             updateNavigation();
