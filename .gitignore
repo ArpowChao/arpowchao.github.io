@@ -32,4 +32,6 @@ assets/downloads/*.zip
 # Temp files and local test environments
 scratch/
 .venv/
+repo_for_notebooklm.txt
+
 
