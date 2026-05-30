@@ -1,4 +1,8 @@
 changelog:
+  - date: "2026年5月30日"
+    entry: "新增「108課綱高中物理線上講義：量子現象」，整合概念四層級結構（關鍵/輔助/細節/補充）、黑體輻射/光電效應/物質波雙狹縫三大互動模擬器、即時填答反饋與 Bloom 核心認知測驗。"
+  - date: "2026年5月29日"
+    entry: "新增「學測物理全概念互動複習講義」，整合 KaTeX 精美公式、即時測驗與詳盡解析、7組互動式核心公式計算機與多普勒效應動態模擬波前畫布。"
   - date: "2026年5月28日"
     entry: "新增「彈簧碰撞與能量分析模擬器」，支援自訂質量、速度與恢復係數，深入探討柯尼希定理與非彈性碰撞之熱損耗，並提供 A球、B球、質心等四種觀測參考系與明暗款式切換。"
   - date: "2026年5月26日"
@@ -31,6 +35,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "108課綱高中物理線上講義：量子現象"
+    image: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&q=80"
+    description: "針對 108 課綱設計的物理學科概念線上講義。整合關鍵、輔助、細節與補充概念四層級結構，內建黑體輻射、光電效應、物質波雙狹縫等三大物理模擬動畫，搭配即時互動填答與 Bloom 認知測驗。"
+    url: "/physics-lecture/index.html"
+    category: "現代物理"
+    tags: ["Physics", "Education", "Interactive", "Quantum", "Simulation"]
   - title: "彈簧碰撞與能量分析模擬器"
     image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80"
     description: "互動式雙球彈簧碰撞模擬，支援自訂質量、速度與恢復係數。以雙彈性常數完整模擬非彈性碰撞之熱損耗，並提供 A球、B球、質心等四種觀測參考系。"
@@ -115,6 +125,12 @@ projects:
     url: "/apps/inquiry_and_practice.html"
     category: "科學方法"
     tags: ["Inquiry", "Physics", "Education"]
+  - title: "學測物理全概念互動複習講義"
+    image: "https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=400&q=80"
+    description: "針對高中學測物理全單元設計的互動式複習講義。內建 KaTeX 精美公式、即時互動測驗與解析、物理公式計算機與多普勒效應動態模擬。"
+    url: "/apps/physics-review/index.html"
+    category: "科學方法"
+    tags: ["Physics", "Education", "Interactive", "GSAT", "Formula Solver"]
   - title: "市場綜合儀表板"
     image: "https://i.meee.com.tw/Rq8z1Bb.png"
     description: "使用 React 重構的市場監測工具，提供更流暢的效能與體驗。"

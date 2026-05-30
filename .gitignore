@@ -28,3 +28,8 @@ assets/js/dist
 
 # Binary distributions
 assets/downloads/*.zip
+
+# Temp files and local test environments
+scratch/
+.venv/
+
