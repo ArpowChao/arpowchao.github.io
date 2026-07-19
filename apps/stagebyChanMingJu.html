@@ -33,6 +33,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="encrypted-roster.js"></script>
 
     <style>
 /* 隱藏 Chrome, Safari, Edge, Opera 的數字輸入箭頭 */
@@ -173,8 +174,8 @@
         
         /* 座位卡片 */
         .seat-item {
-            border-radius: 12px;
-            transition: all 0.2s;
+            border-radius: 14px;
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -184,65 +185,122 @@
             width: 100%;
             font-weight: bold;
             overflow: hidden;
-            padding: 4px;
+            padding: 8px;
+        }
+        .seat-number-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            min-width: 28px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #E7F3ED;
+            color: #3E8068;
+            border: 1px solid #C8E2D6;
+            font-family: "Varela Round", sans-serif;
+            font-size: clamp(10px, 0.85vw, 13px);
+            line-height: 1.1;
+            letter-spacing: 0.04em;
+            text-align: center;
+        }
+        .seat-student-name {
+            display: block;
+            width: 100%;
+            margin-top: 18px;
+            padding: 0 2px 2px;
+            color: #4F4942;
+            font-size: clamp(12px, 1.15vw, 18px);
+            font-weight: 900;
+            line-height: 1.15;
+            letter-spacing: 0.02em;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .seat-empty-number {
+            color: #AAA298;
+            font-family: "Varela Round", sans-serif;
+            font-size: clamp(13px, 1.1vw, 17px);
+            font-weight: 700;
+        }
+        .seat-blocked-label {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.62);
+            color: #9C5D52;
+            font-size: clamp(11px, 1vw, 15px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
         }
         .seat-note-input {
-            width: 90%;
-            background: rgba(255,255,255,0.4);
+            width: calc(100% - 8px);
+            min-height: 20px;
+            background: transparent;
             border: none;
-            border-bottom: 1px dashed rgba(255,255,255,0.6);
-            color: inherit;
+            border-top: 1px solid #E2E9E5;
+            color: #655F58;
             text-align: center;
-            font-size: 0.75em;
-            margin-top: 4px;
-            padding: 1px 0;
+            font-size: clamp(9px, 0.75vw, 12px);
+            margin-top: auto;
+            padding: 4px 2px 0;
             outline: none;
-            border-radius: 4px;
+            border-radius: 0;
+            transition: border-color 0.18s ease, background-color 0.18s ease;
+        }
+        .seat-note-input:focus {
+            border-top-color: #4E9B7C;
+            background: #F3F9F6;
         }
         .seat-note-input::placeholder {
-            color: rgba(255,255,255,0.7);
+            color: #B7B0A7;
         }
 
         .screen-mode .seat-item {
-            background-color: #88C9A1; 
-            border: 2px dashed rgba(255,255,255,0.8);
-            color: white;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-            text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
-            font-size: clamp(12px, 1.2vw, 18px); 
+            background-color: #FFFEFA;
+            border: 2px solid #80BFA5;
+            color: #4F4942;
+            box-shadow: 0 3px 0 #CBE2D7, 0 7px 14px rgba(67, 91, 79, 0.08);
+            text-shadow: none;
+        }
+        .screen-mode .seat-item.occupied:hover {
+            transform: translateY(-2px);
+            border-color: #4E9B7C;
+            box-shadow: 0 5px 0 #B8D8C8, 0 10px 18px rgba(67, 91, 79, 0.12);
         }
         .screen-mode .seat-item.empty {
-            background-color: #E0E0E0;
-            border: 2px dashed #CCC;
-            color: #AAA;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            background-color: #F4F2ED;
+            border: 2px dashed #D3CEC5;
+            color: #AAA298;
+            box-shadow: inset 0 1px 3px rgba(79, 73, 66, 0.05);
             text-shadow: none;
         }
         .screen-mode .seat-item.empty .seat-note-input { display: none; }
         
         .screen-mode .seat-item.blocked {
-            background-color: #8D6E63; 
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px);
-            border: none;
-            box-shadow: 0 4px 0 #5D4037;
+            background-color: #F5E8E4;
+            background-image: repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(201, 122, 109, 0.12) 8px, rgba(201, 122, 109, 0.12) 16px);
+            border: 2px solid #D9A69C;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.65);
         }
         .screen-mode .seat-item.blocked .seat-note-input { display: none; }
 
         .screen-mode .seat-item.selected {
-            background-color: var(--ac-yellow);
-            border: 3px solid #FFF;
-            transform: scale(1.05) rotate(-2deg);
+            background-color: #FFF7DE;
+            border: 3px solid #D9A441;
+            transform: translateY(-3px);
             z-index: 20;
-            color: #7A5C3E;
+            color: #5F4B28;
             text-shadow: none;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 6px 0 #E8D19A, 0 12px 22px rgba(95, 75, 40, 0.16);
         }
         .screen-mode .seat-item.selected .seat-note-input {
-            border-bottom: 1px dashed #7A5C3E;
-            background: rgba(255,255,255,0.5);
-            color: #7A5C3E;
+            border-top-color: #D9A441;
+            background: rgba(255,255,255,0.55);
+            color: #5F4B28;
         }
-        .screen-mode .seat-item.selected .seat-note-input::placeholder { color: rgba(122, 92, 62, 0.5); }
+        .screen-mode .seat-item.selected .seat-number-badge { background: #F7E4AE; color: #765B20; border-color: #E5C66F; }
+        .screen-mode .seat-item.selected .seat-note-input::placeholder { color: rgba(95, 75, 40, 0.55); }
         
         .seat-swap-anim {
             animation: seat-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1823,6 +1881,8 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
             const [selectedIdx, setSelectedIdx] = useState(null);
             const [currentView, setCurrentView] = useState("student");
             const [isExporting, setIsExporting] = useState(false);
+            const [rosterPassword, setRosterPassword] = useState("");
+            const [rosterLoadState, setRosterLoadState] = useState("idle");
             const containerRef = useRef(null);
             const [gridStyle, setGridStyle] = useState({});
 
@@ -1832,6 +1892,14 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                 const allNames = namesStr.split(/[\n,]+/).map(s => s.trim()).filter(s => s && !ignoreStr.includes(s));
                 const lockedNames = seats.filter(s => s.locked && s.text).map(s => s.text);
                 return allNames.filter(n => !lockedNames.includes(n));
+            };
+
+            const getSeatDisplay = (text, index) => {
+                const match = String(text || '').match(/^(\d{2})\s+(.+)$/);
+                return {
+                    number: match ? match[1] : String(index + 1).padStart(2, '0'),
+                    name: match ? match[2] : String(text || '')
+                };
             };
 
             // RWD 網格計算
@@ -1844,11 +1912,13 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                     const gap = 8;
                     const cellH = (availableHeight - ((rows - 1) * gap)) / rows;
                     const cellW = (availableWidth - ((cols - 1) * gap)) / cols;
-                    const size = Math.max(40, Math.min(cellH, cellW, 120)); 
+                    const targetRatio = 1.24;
+                    const cardWidth = Math.max(44, Math.min(cellW, cellH * targetRatio, 150));
+                    const cardHeight = Math.max(48, Math.min(cellH, cardWidth / targetRatio, 112));
                     
                     setGridStyle({
-                        gridTemplateColumns: `repeat(${cols}, ${size}px)`,
-                        gridTemplateRows: `repeat(${rows}, ${size}px)`
+                        gridTemplateColumns: `repeat(${cols}, ${cardWidth}px)`,
+                        gridTemplateRows: `repeat(${rows}, ${cardHeight}px)`
                     });
                 };
                 setSeats(prev => {
@@ -1955,6 +2025,27 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                 const newSeats = [...seats];
                 newSeats[idx] = { ...newSeats[idx], note: value };
                 setSeats(newSeats);
+            };
+
+            const handleEncryptedRosterLoad = async () => {
+                if (!rosterPassword) {
+                    setRosterLoadState("missing");
+                    return;
+                }
+                if (!window.SecureRoster) {
+                    setRosterLoadState("unavailable");
+                    return;
+                }
+
+                setRosterLoadState("loading");
+                try {
+                    const names = await window.SecureRoster.decrypt(rosterPassword);
+                    setNamesStr(names.join('\n'));
+                    setRosterPassword("");
+                    setRosterLoadState("success");
+                } catch (error) {
+                    setRosterLoadState(error.message === "WEB_CRYPTO_UNAVAILABLE" ? "unavailable" : "error");
+                }
             };
 
             // 檔案處理
@@ -2087,6 +2178,32 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                                 <button onClick={handleSnake} className="nook-btn bg-white border border-[#E0E4CC] text-[#797365] py-1 px-2" title="成績 S 型排列 (需先將名單按成績排序)">🐍 S型</button>
                                 <button onClick={handleInterleave} className="nook-btn bg-white border border-[#E0E4CC] text-[#E91E63] py-1 px-2" title="男女梅花座 (請將男生與女生名單分別貼在一起)">🌸 梅花</button>
                              </div>
+
+                             <div className="flex gap-1 items-center bg-[#FFF8E1] p-1 rounded-lg border border-[#F2D879]">
+                                <Lock size={12} className="text-[#7A5C3E] ml-1" />
+                                <input
+                                    type="password"
+                                    value={rosterPassword}
+                                    onChange={e => { setRosterPassword(e.target.value); setRosterLoadState("idle"); }}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleEncryptedRosterLoad(); }}
+                                    className="w-24 bg-white px-2 py-1 rounded-md border text-[#574E44] outline-none focus:border-[#7FD1B9]"
+                                    placeholder="名單密碼"
+                                    aria-label="加密名單密碼"
+                                    autoComplete="off"
+                                />
+                                <button
+                                    onClick={handleEncryptedRosterLoad}
+                                    disabled={rosterLoadState === "loading"}
+                                    className="nook-btn bg-[#7A5C3E] text-white py-1 px-2 disabled:opacity-50"
+                                >
+                                    {rosterLoadState === "loading" ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                                    匯入
+                                </button>
+                                {rosterLoadState === "success" && <span className="text-[#2E7D32] font-bold px-1">已匯入 33 人</span>}
+                                {rosterLoadState === "error" && <span className="text-[#C62828] font-bold px-1">密碼錯誤</span>}
+                                {rosterLoadState === "missing" && <span className="text-[#C62828] font-bold px-1">請輸入密碼</span>}
+                                {rosterLoadState === "unavailable" && <span className="text-[#C62828] font-bold px-1">瀏覽器不支援安全解密</span>}
+                             </div>
                              
                              <div className="flex gap-1 ml-auto">
                                 <button onClick={saveState} className="nook-btn bg-[#8D6E63] text-white py-1 px-2" title="儲存"><Save size={12}/></button>
@@ -2122,39 +2239,46 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
 
                             <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
                                 <div className="grid gap-2 seat-grid-wrapper content-center justify-center" style={{...gridStyle}}>
-                                    {seats.map((seat, i) => (
-                                        <div 
-                                            key={i} 
-                                            onClick={()=>handleSeatClick(i)}
-                                            className={`
-                                                seat-item cursor-pointer select-none relative group
-                                                ${seat.type}
-                                                ${selectedIdx === i ? 'selected' : ''}
-                                                ${seat.type === 'occupied' ? 'seat-swap-anim' : ''}
-                                                ${seat.locked ? 'border-[#F2D879] bg-[#FFF8E1]' : ''}
-                                            `}
-                                        >
-                                            {seat.locked && (
-                                                <div className="absolute top-1 right-1 text-[#F2D879] z-10">
-                                                    <Lock size={12} />
-                                                </div>
-                                            )}
-                                            
-                                            <span className="truncate w-full text-center px-0.5 z-0 font-black">
-                                                {seat.type === 'blocked' ? '' : (seat.text || (i+1))}
-                                            </span>
-                                            
-                                            {seat.type !== 'blocked' && seat.type !== 'empty' && (
-                                                <input 
-                                                    className="seat-note-input" 
-                                                    value={seat.note || ''} 
-                                                    onChange={(e) => handleNoteChange(i, e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()} 
-                                                    placeholder="備註"
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
+                                    {seats.map((seat, i) => {
+                                        const display = getSeatDisplay(seat.text, i);
+                                        return (
+                                            <div
+                                                key={i}
+                                                onClick={()=>handleSeatClick(i)}
+                                                className={`
+                                                    seat-item cursor-pointer select-none relative group
+                                                    ${seat.type}
+                                                    ${selectedIdx === i ? 'selected' : ''}
+                                                    ${seat.type === 'occupied' ? 'seat-swap-anim' : ''}
+                                                `}
+                                            >
+                                                {seat.locked && (
+                                                    <div className="absolute top-1 right-1 text-[#D9A441] z-10">
+                                                        <Lock size={13} />
+                                                    </div>
+                                                )}
+
+                                                {seat.type === 'blocked' ? (
+                                                    <span className="seat-blocked-label">空位</span>
+                                                ) : seat.type === 'empty' ? (
+                                                    <span className="seat-empty-number">{String(i + 1).padStart(2, '0')}</span>
+                                                ) : (
+                                                    <>
+                                                        <span className="seat-number-badge">{display.number}</span>
+                                                        <span className="seat-student-name">{display.name}</span>
+                                                        <input
+                                                            className="seat-note-input"
+                                                            value={seat.note || ''}
+                                                            onChange={(e) => handleNoteChange(i, e.target.value)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            placeholder="＋ 新增備註"
+                                                            aria-label={`${display.number} ${display.name}的備註`}
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
