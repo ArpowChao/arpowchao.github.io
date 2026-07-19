@@ -185,33 +185,35 @@
             width: 100%;
             font-weight: bold;
             overflow: hidden;
-            padding: 8px;
+            padding: 4px 6px;
         }
         .seat-number-badge {
             position: absolute;
-            top: 6px;
-            left: 6px;
-            min-width: 28px;
-            padding: 2px 7px;
+            top: 4px;
+            left: 5px;
+            min-width: 26px;
+            padding: 1px 6px;
             border-radius: 999px;
             background: #E7F3ED;
             color: #3E8068;
             border: 1px solid #C8E2D6;
             font-family: "Varela Round", sans-serif;
-            font-size: clamp(10px, 0.85vw, 13px);
+            font-size: clamp(9px, 0.8vw, 12px);
             line-height: 1.1;
             letter-spacing: 0.04em;
             text-align: center;
         }
         .seat-student-name {
             display: block;
+            flex-shrink: 0;
             width: 100%;
-            margin-top: 18px;
-            padding: 0 2px 2px;
+            min-height: 16px;
+            margin-top: 17px;
+            padding: 0 2px;
             color: #4F4942;
-            font-size: clamp(12px, 1.15vw, 18px);
+            font-size: clamp(11px, 1.05vw, 17px);
             font-weight: 900;
-            line-height: 1.15;
+            line-height: 1.1;
             letter-spacing: 0.02em;
             text-align: center;
             white-space: nowrap;
@@ -234,16 +236,18 @@
             letter-spacing: 0.12em;
         }
         .seat-note-input {
+            flex-shrink: 0;
             width: calc(100% - 8px);
-            min-height: 20px;
+            min-height: 14px;
             background: transparent;
             border: none;
             border-top: 1px solid #E2E9E5;
             color: #655F58;
             text-align: center;
-            font-size: clamp(9px, 0.75vw, 12px);
+            font-size: clamp(9px, 0.7vw, 11px);
+            line-height: 1.1;
             margin-top: auto;
-            padding: 4px 2px 0;
+            padding: 2px 2px 0;
             outline: none;
             border-radius: 0;
             transition: border-color 0.18s ease, background-color 0.18s ease;
@@ -1913,9 +1917,8 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                     const gap = 8;
                     const cellH = (availableHeight - ((rows - 1) * gap)) / rows;
                     const cellW = (availableWidth - ((cols - 1) * gap)) / cols;
-                    const targetRatio = 1.24;
-                    const cardWidth = Math.max(44, Math.min(cellW, cellH * targetRatio, 150));
-                    const cardHeight = Math.max(48, Math.min(cellH, cardWidth / targetRatio, 112));
+                    const cardWidth = Math.max(44, Math.min(cellW, 160));
+                    const cardHeight = Math.max(60, Math.min(cellH, 112));
                     
                     setGridStyle({
                         gridTemplateColumns: `repeat(${cols}, ${cardWidth}px)`,
@@ -2272,7 +2275,7 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                                                             value={seat.note || ''}
                                                             onChange={(e) => handleNoteChange(i, e.target.value)}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            placeholder="＋ 新增備註"
+                                                            placeholder="備註…"
                                                             aria-label={`${display.number} ${display.name}的備註`}
                                                         />
                                                     </>

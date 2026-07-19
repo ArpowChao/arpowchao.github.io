@@ -27,7 +27,7 @@ fs.mkdirSync(artifactDir, { recursive: true });
     await page.getByRole('button', { name: '班級助手' }).click();
     await page.getByRole('button', { name: '座位大師' }).click();
     await page.locator('.screen-mode').evaluate((element) => {
-      element.style.flex = '0 0 1000px';
+      element.style.flex = '0 0 620px';
     });
 
     const dimensionInputs = page.locator('input[type="number"]');
@@ -60,13 +60,14 @@ fs.mkdirSync(artifactDir, { recursive: true });
     await firstOccupiedSeat.waitFor();
     assert.equal(await firstOccupiedSeat.locator('.seat-number-badge').count(), 1, 'an occupied seat should show a separate number badge');
     assert.equal(await firstOccupiedSeat.locator('.seat-student-name').count(), 1, 'an occupied seat should show the student name separately');
-    assert.equal(await firstOccupiedSeat.locator('.seat-note-input').getAttribute('placeholder'), '＋ 新增備註', 'the note field should read as a lightweight secondary action');
+    assert.equal(await firstOccupiedSeat.locator('.seat-note-input').getAttribute('placeholder'), '備註…', 'the note field should stay concise in a compact seat card');
     const badgeBox = await firstOccupiedSeat.locator('.seat-number-badge').boundingBox();
     const nameBox = await firstOccupiedSeat.locator('.seat-student-name').boundingBox();
     assert.ok(
       badgeBox && nameBox && nameBox.y >= badgeBox.y + badgeBox.height - 1,
       `the seat number badge should not overlap the student name (badge: ${JSON.stringify(badgeBox)}, name: ${JSON.stringify(nameBox)})`
     );
+    assert.ok(nameBox && nameBox.height >= 14, 'the student name should remain visibly rendered in a compact seat card');
 
     const seatBox = await firstOccupiedSeat.boundingBox();
     assert.ok(seatBox && seatBox.width / seatBox.height >= 1.15, 'seat cards should use a readable horizontal proportion');
@@ -94,6 +95,8 @@ fs.mkdirSync(artifactDir, { recursive: true });
       seatBoxes.every((box) => box.left >= seatHostBox.x - 1 && box.right <= hostRight + 1 && box.top >= seatHostBox.y - 1 && box.bottom <= hostBottom + 1),
       'every seat should remain fully inside the visible seat area at 1032 pixels wide'
     );
+    const usedWidth = Math.max(...seatBoxes.map((box) => box.right)) - Math.min(...seatBoxes.map((box) => box.left));
+    assert.ok(usedWidth >= seatHostBox.width * 0.9, 'the seating grid should use at least 90 percent of the visible width');
 
     const importBox = await passwordInput.locator('xpath=..').boundingBox();
     assert.ok(importBox, 'encrypted roster controls should be visible');
