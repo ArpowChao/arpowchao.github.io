@@ -13,7 +13,7 @@ fs.mkdirSync(artifactDir, { recursive: true });
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
   const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    const page = await browser.newPage({ viewport: { width: 1032, height: 1600 } });
     const consoleErrors = [];
     page.on('console', (message) => {
       if (message.type() === 'error') consoleErrors.push(message.text());
@@ -26,6 +26,14 @@ fs.mkdirSync(artifactDir, { recursive: true });
     await page.getByRole('button', { name: '班級助手' }).waitFor({ timeout: 60000 });
     await page.getByRole('button', { name: '班級助手' }).click();
     await page.getByRole('button', { name: '座位大師' }).click();
+    await page.locator('.screen-mode').evaluate((element) => {
+      element.style.flex = '0 0 1000px';
+    });
+
+    const dimensionInputs = page.locator('input[type="number"]');
+    await dimensionInputs.nth(1).fill('6');
+    await page.locator('.seat-item').nth(35).waitFor();
+    assert.equal(await page.locator('.seat-item').count(), 36, 'a 6 by 6 layout should render 36 seats');
 
     const passwordInput = page.getByLabel('加密名單密碼');
     const importButton = page.getByRole('button', { name: '匯入', exact: true });
@@ -55,7 +63,10 @@ fs.mkdirSync(artifactDir, { recursive: true });
     assert.equal(await firstOccupiedSeat.locator('.seat-note-input').getAttribute('placeholder'), '＋ 新增備註', 'the note field should read as a lightweight secondary action');
     const badgeBox = await firstOccupiedSeat.locator('.seat-number-badge').boundingBox();
     const nameBox = await firstOccupiedSeat.locator('.seat-student-name').boundingBox();
-    assert.ok(badgeBox && nameBox && nameBox.y >= badgeBox.y + badgeBox.height - 1, 'the seat number badge should not overlap the student name');
+    assert.ok(
+      badgeBox && nameBox && nameBox.y >= badgeBox.y + badgeBox.height - 1,
+      `the seat number badge should not overlap the student name (badge: ${JSON.stringify(badgeBox)}, name: ${JSON.stringify(nameBox)})`
+    );
 
     const seatBox = await firstOccupiedSeat.boundingBox();
     assert.ok(seatBox && seatBox.width / seatBox.height >= 1.15, 'seat cards should use a readable horizontal proportion');
@@ -71,9 +82,22 @@ fs.mkdirSync(artifactDir, { recursive: true });
     await lastSeat.click();
     assert.equal(await lastSeat.locator('.seat-blocked-label').textContent(), '空位', 'a cancelled seat should clearly say that it is empty');
 
+    const seatHostBox = await page.locator('.seat-grid-wrapper').locator('xpath=..').boundingBox();
+    const seatBoxes = await page.locator('.seat-item').evaluateAll((elements) => elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+    }));
+    assert.ok(seatHostBox, 'the visible seat area should have measurable bounds');
+    const hostRight = seatHostBox.x + seatHostBox.width;
+    const hostBottom = seatHostBox.y + seatHostBox.height;
+    assert.ok(
+      seatBoxes.every((box) => box.left >= seatHostBox.x - 1 && box.right <= hostRight + 1 && box.top >= seatHostBox.y - 1 && box.bottom <= hostBottom + 1),
+      'every seat should remain fully inside the visible seat area at 1032 pixels wide'
+    );
+
     const importBox = await passwordInput.locator('xpath=..').boundingBox();
     assert.ok(importBox, 'encrypted roster controls should be visible');
-    assert.ok(importBox.x >= 0 && importBox.x + importBox.width <= 1440, 'encrypted roster controls should fit the desktop viewport');
+    assert.ok(importBox.x >= 0 && importBox.x + importBox.width <= 1032, 'encrypted roster controls should fit the desktop viewport');
 
     const relevantErrors = consoleErrors.filter((message) => message.toLowerCase().includes('roster'));
     assert.deepEqual(relevantErrors, [], `encrypted roster logged browser errors: ${relevantErrors.join('; ')}`);

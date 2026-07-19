@@ -1883,7 +1883,7 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
             const [isExporting, setIsExporting] = useState(false);
             const [rosterPassword, setRosterPassword] = useState("");
             const [rosterLoadState, setRosterLoadState] = useState("idle");
-            const containerRef = useRef(null);
+            const gridHostRef = useRef(null);
             const [gridStyle, setGridStyle] = useState({});
 
             // 解析名單
@@ -1905,10 +1905,11 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
             // RWD 網格計算
             useEffect(() => {
                 const updateGridSize = () => {
-                    if (!containerRef.current) return;
-                    const { width, height } = containerRef.current.getBoundingClientRect();
-                    const availableWidth = width - 48;
-                    const availableHeight = height - 140; 
+                    if (!gridHostRef.current) return;
+                    const { width, height } = gridHostRef.current.getBoundingClientRect();
+                    const safeInset = 12;
+                    const availableWidth = Math.max(0, width - safeInset);
+                    const availableHeight = Math.max(0, height - safeInset);
                     const gap = 8;
                     const cellH = (availableHeight - ((rows - 1) * gap)) / rows;
                     const cellW = (availableWidth - ((cols - 1) * gap)) / cols;
@@ -1930,7 +1931,7 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                 });
 
                 const resizeObserver = new ResizeObserver(() => window.requestAnimationFrame(updateGridSize));
-                if(containerRef.current) resizeObserver.observe(containerRef.current);
+                if(gridHostRef.current) resizeObserver.observe(gridHostRef.current);
                 updateGridSize(); 
                 return () => resizeObserver.disconnect();
             }, [rows, cols]);
@@ -2229,7 +2230,7 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                         </details>
                     </div>
 
-                    <div className="flex-1 bg-[#574E44] p-2 md:p-4 overflow-hidden rounded-[20px] md:rounded-[30px] print-hide screen-mode flex flex-col shadow-inner relative z-10" ref={containerRef}>
+                    <div className="flex-1 bg-[#574E44] p-2 md:p-4 overflow-hidden rounded-[20px] md:rounded-[30px] print-hide screen-mode flex flex-col shadow-inner relative z-10">
                         <div className={`paper-preview bg-white w-full h-full p-4 relative transition-transform duration-500 flex flex-col rounded-[15px] items-center justify-center ${currentView==='teacher'?'teacher-view-transform':''}`}>
                             
                             <div className={`flex flex-col items-center mb-2 w-full transition-all duration-300 shrink-0 ${currentView==='teacher'?'rotate-180':''}`}>
@@ -2237,7 +2238,7 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
                                 <div className="podium w-20 h-5 md:w-24 md:h-6 flex items-center justify-center font-bold text-[10px] md:text-xs rounded shadow-sm bg-[#DEB887] border border-[#8B4513]">講台</div>
                             </div>
 
-                            <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+                            <div ref={gridHostRef} className="flex-1 w-full flex items-center justify-center overflow-hidden">
                                 <div className="grid gap-2 seat-grid-wrapper content-center justify-center" style={{...gridStyle}}>
                                     {seats.map((seat, i) => {
                                         const display = getSeatDisplay(seat.text, i);
