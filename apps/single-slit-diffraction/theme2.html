@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>單狹縫繞射 - 主題二：子波的配對與抵消</title>
+<style>
+  :root {
+    --primary: #2c3e50;
+    --secondary: #e74c3c;
+    --highlight: #f39c12;
+    --dark-bg: #1a252f;
+    --panel-bg: #ffffff;
+  }
+  body {
+    font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #ecf0f1;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+  .container {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    width: 100%;
+    height: 100%;
+  }
+  .panel {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar {
+    flex: 0 0 350px;
+    overflow-y: auto;
+  }
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.4em;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 10px;
+  }
+  .author-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #7f8c8d;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .concept-box {
+    background: #eaf2f8;
+    border-left: 5px solid #3498db;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #2c3e50;
+    margin-bottom: 15px;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .control-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .control-item label {
+    font-weight: bold;
+    color: #34495e;
+    display: flex;
+    justify-content: space-between;
+  }
+  input[type=range] {
+    width: 100%;
+    cursor: pointer;
+  }
+  
+  .btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 5px;
+  }
+  button.action-btn {
+    background: #fff;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button.action-btn:hover { background: #ecf0f1; }
+  button.action-btn.active { background: var(--primary); color: white; border-color: var(--primary);}
+  
+  .highlight-btn-center { background: #f1c40f; color: #333; border: none;}
+  .highlight-btn-bright1 { background: #e67e22; color: white; border: none;}
+  .highlight-btn-bright2 { background: #d35400; color: white; border: none;}
+  .highlight-btn-dark1 { background: #34495e; color: white; border: none;}
+  .highlight-btn-dark2 { background: #2c3e50; color: white; border: none;}
+
+  #btn-play-pause { background: var(--highlight); color: #fff; border: none; }
+  #btn-play-pause.paused { background: #2ecc71; }
+  #btn-reset { background: #95a5a6; color: #fff; border: none; }
+  #btn-reset:hover { background: #7f8c8d; }
+
+  .data-box {
+    background: #fdf2f0;
+    border: 1px solid #fadbd8;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: auto;
+  }
+  .data-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    color: var(--secondary);
+  }
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: monospace;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+    color: #333;
+  }
+  .data-row strong { color: var(--primary); }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .instruction {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .instruction span {
+    background: rgba(44, 62, 80, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 1em;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sidebar panel">
+    <h1>主題二：子波配對與疊加</h1>
+    <div class="author-tag">成德高中 陳家騏老師 設計</div>
+    
+    <div class="concept-box">
+      <strong>💡 光程差與干涉疊加</strong><br>
+      • <strong>暗紋：</strong> 光程差為 λ, 2λ... 時，狹縫子波可等分為偶數區塊，兩兩「反相」配對抵消。<br>
+      • <strong>非中央亮紋：</strong> 光程差為 1.5λ, 2.5λ... 時，分成奇數區塊，兩兩抵消後「剩餘一區」無法抵消，產生較暗的亮紋。
+    </div>
+
+    <div class="control-group">
+      <div class="btn-grid" style="margin-bottom: 5px;">
+        <button id="btn-play-pause" class="action-btn">⏸ 暫停波動</button>
+        <button id="btn-reset" class="action-btn">↺ 重置參數</button>
+      </div>
+
+      <div class="control-item">
+        <label><span>屏幕觀測位置 (y)</span></label>
+        <input type="range" id="slider-y" min="-300" max="300" value="0" step="1">
+      </div>
+      
+      <div class="control-item">
+        <label><span>狹縫寬度 (b)</span> <span id="val-b">80</span></label>
+        <input type="range" id="slider-b" min="40" max="160" value="80" step="10">
+      </div>
+
+      <button id="btn-pair" class="action-btn" style="margin-top: 10px;">🔗 顯示抵消配對線</button>
+
+      <div style="font-size: 0.9em; font-weight: bold; color: #7f8c8d; margin-top: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">快速定位特定條紋：</div>
+      <div class="btn-grid">
+        <button id="btn-center" class="action-btn highlight-btn-center" style="grid-column: span 2;">中央亮紋 (Δr = 0)</button>
+        <button id="btn-dark1" class="action-btn highlight-btn-dark1">第 1 暗紋 (Δr = λ)</button>
+        <button id="btn-dark2" class="action-btn highlight-btn-dark2">第 2 暗紋 (Δr = 2λ)</button>
+        <button id="btn-bright1" class="action-btn highlight-btn-bright1">第 1 亮紋 (Δr ≈ 1.5λ)</button>
+        <button id="btn-bright2" class="action-btn highlight-btn-bright2">第 2 亮紋 (Δr ≈ 2.5λ)</button>
+      </div>
+    </div>
+
+    <div class="data-box">
+      <h3>即時觀測數據</h3>
+      <div class="data-row">
+        <span>最上最下光程差(Δr):</span>
+        <strong id="data-diff">0.00 λ</strong>
+      </div>
+      <div class="data-row" style="margin-top: 10px; border-top: 1px solid #fadbd8; padding-top: 10px;">
+        <span>疊加總振幅:</span>
+        <strong id="data-amp" style="color: var(--highlight);">1.00 (MAX)</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <canvas id="simCanvas"></canvas>
+    <div class="instruction">
+      <span>🖱️ 在右側屏幕上下拖曳觀測點，或點擊左側按鈕定位，觀察振幅變化</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // UI
+  const sliderY = document.getElementById('slider-y');
+  const sliderB = document.getElementById('slider-b');
+  const valB = document.getElementById('val-b');
+  const dataDiff = document.getElementById('data-diff');
+  const dataAmp = document.getElementById('data-amp');
+  const btnPair = document.getElementById('btn-pair');
+  
+  const btnPlayPause = document.getElementById('btn-play-pause');
+  const btnReset = document.getElementById('btn-reset');
+  
+  const btnsSnap = {
+    'btn-center': 0,
+    'btn-dark1': 1,
+    'btn-dark2': 2,
+    'btn-bright1': 1.5,
+    'btn-bright2': 2.5
+  };
+
+  // Physics Setup (Optimized for Screen Fitting)
+  let width, height;
+  const L = 350; // Distance to screen
+  const slitX = 150;
+  const screenX = slitX + L;
+  const lambda = 20; // Wavelength
+  const k = 2 * Math.PI / lambda;
+  const omega = 0.05;
+  let time = 0;
+  let isPlaying = true;
+  
+  let N = 24; 
+  let b = parseInt(sliderB.value);
+  let targetY = parseInt(sliderY.value);
+  let showPairing = false;
+  let isDragging = false;
+
+  function resize() {
+    width = canvas.parentElement.clientWidth;
+    height = canvas.parentElement.clientHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Play/Pause and Reset functionality
+  btnPlayPause.addEventListener('click', () => {
+    isPlaying = !isPlaying;
+    if (isPlaying) {
+        btnPlayPause.innerText = "⏸ 暫停波動";
+        btnPlayPause.classList.remove('paused');
+        btnPlayPause.style.background = 'var(--highlight)';
+    } else {
+        btnPlayPause.innerText = "▶ 播放波動";
+        btnPlayPause.classList.add('paused');
+        btnPlayPause.style.background = '#2ecc71';
+    }
+  });
+
+  btnReset.addEventListener('click', () => {
+    sliderY.value = 0;
+    sliderB.value = 80;
+    targetY = 0;
+    b = 80;
+    valB.innerText = 80;
+    time = 0;
+    showPairing = false;
+    btnPair.classList.remove('active');
+    
+    if (!isPlaying) {
+        isPlaying = true;
+        btnPlayPause.innerText = "⏸ 暫停波動";
+        btnPlayPause.classList.remove('paused');
+        btnPlayPause.style.background = 'var(--highlight)';
+    }
+  });
+
+  // Mouse interaction
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    if (mouseX > screenX - 50 && mouseX < screenX + 50) {
+      isDragging = true;
+      updateTargetY(e.clientY - rect.top - height/2);
+    }
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const rect = canvas.getBoundingClientRect();
+      updateTargetY(e.clientY - rect.top - height/2);
+    }
+  });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+
+  function updateTargetY(y) {
+    targetY = Math.max(-height/2 + 30, Math.min(height/2 - 30, y));
+    sliderY.value = targetY;
+  }
+
+  sliderY.addEventListener('input', (e) => { targetY = parseInt(e.target.value); });
+  sliderB.addEventListener('input', (e) => { 
+    b = parseInt(e.target.value); 
+    valB.innerText = b; 
+  });
+  
+  btnPair.addEventListener('click', () => {
+    showPairing = !showPairing;
+    btnPair.classList.toggle('active', showPairing);
+  });
+
+  // Setup Snap Buttons
+  for (const [id, lambdaMult] of Object.entries(btnsSnap)) {
+    document.getElementById(id).addEventListener('click', () => {
+      let sinTheta = (lambdaMult * lambda) / b;
+      sinTheta = Math.max(-0.99, Math.min(0.99, sinTheta)); 
+      
+      targetY = L * Math.tan(Math.asin(sinTheta));
+      sliderY.value = targetY;
+      
+      if (lambdaMult !== 0 && !showPairing) {
+          showPairing = true;
+          btnPair.classList.add('active');
+      } else if (lambdaMult === 0 && showPairing) {
+          showPairing = false;
+          btnPair.classList.remove('active');
+      }
+    });
+  }
+
+  function drawIntensityBackground() {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    for(let y = -height/2; y < height/2; y++) {
+      let theta = Math.atan2(y, L);
+      let alpha = (Math.PI * b * Math.sin(theta)) / lambda;
+      let intensity = 1.0;
+      if (alpha !== 0) {
+        intensity = Math.pow(Math.sin(alpha) / alpha, 2);
+      }
+      ctx.fillStyle = `rgba(231, 76, 60, ${intensity * 0.4})`;
+      ctx.fillRect(screenX, height/2 + y, width - screenX, 1);
+    }
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+    const cy = height / 2;
+
+    drawIntensityBackground();
+
+    // Draw Slit Barrier
+    ctx.fillStyle = '#333';
+    ctx.fillRect(slitX - 5, 0, 10, cy - b/2);
+    ctx.fillRect(slitX - 5, cy + b/2, 10, height - (cy + b/2));
+
+    // Draw Screen
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(screenX, 0);
+    ctx.lineTo(screenX, height);
+    ctx.stroke();
+
+    // Calculate Sources
+    let sources = [];
+    const spacing = b / (N - 1);
+    for (let i = 0; i < N; i++) {
+      sources.push(cy - b/2 + i * spacing);
+    }
+
+    // Calculations
+    const rTop = Math.hypot(L, targetY + b/2); 
+    const rBot = Math.hypot(L, targetY - b/2);
+    const pathDiff = Math.abs(rBot - rTop);
+    const lambdaDiff = pathDiff / lambda;
+
+    dataDiff.innerText = lambdaDiff.toFixed(2) + " λ";
+
+    // Grouping Logic
+    let numGroups = 1;
+    if (Math.abs(lambdaDiff - 1.0) < 0.15) numGroups = 2;
+    else if (Math.abs(lambdaDiff - 1.5) < 0.15) numGroups = 3;
+    else if (Math.abs(lambdaDiff - 2.0) < 0.15) numGroups = 4;
+    else if (Math.abs(lambdaDiff - 2.5) < 0.15) numGroups = 5;
+    else if (lambdaDiff > 0.5) numGroups = 2; 
+    
+    const groupSize = Math.floor(N / numGroups);
+
+    let totalAmpX = 0;
+    
+    // --- FIXED PHASE DISPLAY PANEL SETTINGS ---
+    const panelWidth = 200;
+    const panelHeight = 280;
+    const phaseDisplayX = width - 110; 
+    const phaseCenterY = cy;
+    const spreadY = 160; 
+    
+    let phaseDots = [];
+
+    const colors = [
+        '231, 76, 60',   // Red
+        '52, 152, 219',  // Blue
+        '155, 89, 182',  // Purple
+        '46, 204, 113',  // Green
+        '241, 196, 15'   // Yellow
+    ];
+
+    sources.forEach((sy, i) => {
+      let groupIdx = Math.floor(i / groupSize);
+      if (groupIdx >= numGroups) groupIdx = numGroups - 1; 
+      
+      const baseColor = colors[groupIdx % colors.length];
+      const colorStr = `rgba(${baseColor}, 0.6)`;
+      
+      const r = Math.hypot(L, targetY + cy - sy);
+      const phase = k * r;
+      const currentVal = Math.cos(phase - time);
+
+      // Draw Ray (ends at the screen)
+      ctx.strokeStyle = `rgba(${baseColor}, 0.25)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(slitX, sy);
+      ctx.lineTo(screenX, targetY + cy);
+      ctx.stroke();
+
+      // Draw Sine Wave
+      ctx.strokeStyle = colorStr;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const dx = screenX - slitX;
+      const dy = (targetY + cy) - sy;
+      const rayLen = Math.hypot(dx, dy);
+      const nx = -dy / rayLen;
+      const ny = dx / rayLen;
+      
+      for (let d = 0; d <= rayLen; d += 3) {
+        const px = slitX + (d / rayLen) * dx;
+        const py = sy + (d / rayLen) * dy;
+        const waveOffset = 6 * Math.cos(k * d - time);
+        if (d === 0) ctx.moveTo(px + nx * waveOffset, py + ny * waveOffset);
+        else ctx.lineTo(px + nx * waveOffset, py + ny * waveOffset);
+      }
+      ctx.stroke();
+
+      // Collect data for phase dots in the FIXED panel
+      const dotBaseY = phaseCenterY - spreadY/2 + (i * spreadY/(N-1)); 
+      const dotX = phaseDisplayX + currentVal * 25;
+      phaseDots.push({ x: dotX, y: dotBaseY, color: `rgb(${baseColor})`, val: currentVal, group: groupIdx });
+      
+      totalAmpX += currentVal;
+    });
+
+    // Update Amplitude Text
+    const normalizedAmp = Math.abs(totalAmpX / N);
+    if (normalizedAmp < 0.05) {
+      dataAmp.innerText = "0.00 (暗紋)";
+      dataAmp.style.color = "#34495e";
+    } else if (normalizedAmp > 0.95) {
+      dataAmp.innerText = "1.00 (MAX)";
+      dataAmp.style.color = "#f39c12";
+    } else {
+      dataAmp.innerText = normalizedAmp.toFixed(2);
+      dataAmp.style.color = "#e74c3c";
+    }
+
+    // --- DRAW FIXED PHASE DISPLAY PANEL ---
+    ctx.fillStyle = 'rgba(20, 20, 20, 0.75)';
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(width - panelWidth - 10, phaseCenterY - panelHeight/2, panelWidth, panelHeight, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ccc';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("觀測點相位疊加分析", phaseDisplayX, phaseCenterY - panelHeight/2 + 25);
+
+    // Draw Phase Dots Background Area
+    ctx.strokeStyle = '#555';
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    ctx.moveTo(phaseDisplayX, phaseCenterY - spreadY/2 - 10);
+    ctx.lineTo(phaseDisplayX, phaseCenterY + spreadY/2 + 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw pairing connectors
+    if (showPairing && numGroups > 1) {
+      ctx.strokeStyle = 'rgba(243, 156, 18, 0.8)';
+      ctx.lineWidth = 1.5;
+      
+      for(let g = 0; g < numGroups - 1; g += 2) {
+          for(let i = 0; i < groupSize; i++) {
+              const idx1 = g * groupSize + i;
+              const idx2 = (g+1) * groupSize + i;
+              if (idx1 < N && idx2 < N) {
+                  const p1 = phaseDots[idx1];
+                  const p2 = phaseDots[idx2];
+                  ctx.beginPath();
+                  ctx.moveTo(p1.x, p1.y);
+                  ctx.lineTo(p2.x, p2.y);
+                  ctx.stroke();
+              }
+          }
+      }
+    }
+
+    // Draw the dots
+    phaseDots.forEach((dot) => {
+      ctx.fillStyle = dot.color;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Draw Sum Vector (Resultant Amplitude)
+    const sumY = phaseCenterY + spreadY/2 + 35;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(phaseDisplayX - 30, sumY - 15, 60, 20);
+    ctx.fillStyle = '#f39c12';
+    ctx.beginPath();
+    ctx.arc(phaseDisplayX + (totalAmpX/N)*25, sumY - 5, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("疊加總振幅", phaseDisplayX, sumY + 20);
+
+    // Draw target marker on screen
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.moveTo(screenX, targetY + cy);
+    ctx.lineTo(screenX + 10, targetY + cy - 8);
+    ctx.lineTo(screenX + 10, targetY + cy + 8);
+    ctx.fill();
+    
+    // Draw a subtle connecting line from the target marker to the panel
+    ctx.strokeStyle = 'rgba(241, 196, 15, 0.3)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(screenX + 15, targetY + cy);
+    ctx.lineTo(width - panelWidth - 10, phaseCenterY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (isPlaying) {
+      time += omega;
+    }
+    requestAnimationFrame(render);
+  }
+
+  render();
+</script>
+</body>
+</html>

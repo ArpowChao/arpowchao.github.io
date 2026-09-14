@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>單狹縫繞射 - 主題四：量化參數與繞射圖樣全貌</title>
+<style>
+  :root {
+    --primary: #2c3e50;
+    --secondary: #e74c3c;
+    --highlight: #f39c12;
+    --b-field: #3498db;
+    --panel-bg: #ffffff;
+  }
+  body {
+    font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #ecf0f1;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+  .container {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    width: 100%;
+    height: 100%;
+  }
+  .panel {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar {
+    flex: 0 0 380px;
+    overflow-y: auto;
+  }
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    background: #0a0a0a;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.4em;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 10px;
+  }
+  .author-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #7f8c8d;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .concept-box {
+    background: #eaf2f8;
+    border-left: 5px solid #3498db;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #2c3e50;
+    margin-bottom: 15px;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .control-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: #fdf2f0;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #fadbd8;
+  }
+  .control-item label {
+    font-weight: bold;
+    color: #34495e;
+    display: flex;
+    justify-content: space-between;
+  }
+  input[type=range] {
+    width: 100%;
+    cursor: pointer;
+    margin-top: 5px;
+  }
+  /* Custom slider track colors for visualization */
+  #slider-wave { accent-color: #e74c3c; }
+
+  .data-box {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: auto;
+  }
+  .data-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    color: var(--secondary);
+  }
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    color: #333;
+    align-items: center;
+    font-family: monospace;
+    font-size: 1.1em;
+  }
+  .data-row strong { color: var(--primary); font-size: 1.2em;}
+  
+  .formula-highlight {
+    font-weight: bold;
+    color: #8e44ad;
+    font-size: 1.1em;
+    text-align: center;
+    margin: 10px 0;
+    background: #f5eef8;
+    padding: 15px;
+    border-radius: 6px;
+    line-height: 1.5;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .instruction {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: auto;
+    text-align: right;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .instruction span {
+    background: rgba(44, 62, 80, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 1em;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sidebar panel">
+    <h1>主題四：量化參數與繞射圖樣全貌</h1>
+    <div class="author-tag">成德高中 陳家騏老師 設計</div>
+    
+    <div class="concept-box">
+      <strong>💡 繞射公式與變數關係</strong><br>
+      透過前面的分析，我們知道第一暗紋發生的條件是光程差 Δr = λ。<br>
+      結合小角度近似 Δr = b·sinθ ≈ b(y/L)，我們可以推導出屏幕上的亮暗紋位置分佈規律。
+    </div>
+
+    <div class="formula-highlight">
+      中央亮帶寬度 Δy₀ = 2Lλ / b<br>
+      相鄰暗紋間距 Δy = Lλ / b
+    </div>
+
+    <div class="control-group">
+      <div class="control-item">
+        <label><span>光波長 (λ)</span> <span id="val-wave">525 nm</span></label>
+        <input type="range" id="slider-wave" min="400" max="700" value="525" step="5">
+      </div>
+
+      <div class="control-item">
+        <label><span>狹縫寬度 (b)</span> <span id="val-b">0.13 mm</span></label>
+        <input type="range" id="slider-b" min="0.02" max="0.30" value="0.13" step="0.01">
+      </div>
+      
+      <div class="control-item">
+        <label><span>狹縫到屏幕距離 (L)</span> <span id="val-L">245 cm</span></label>
+        <input type="range" id="slider-L" min="50" max="250" value="245" step="5">
+      </div>
+    </div>
+
+    <div class="data-box">
+      <h3>即時理論數據預測</h3>
+      <div class="data-row">
+        <span>暗紋間距 (Lλ/b):</span>
+        <strong id="data-spacing">9.89 mm</strong>
+      </div>
+      <div class="data-row" style="border-top: 2px solid #ddd; padding-top: 10px;">
+        <span style="color: #e74c3c;">中央亮帶寬度 (2Lλ/b):</span>
+        <strong id="data-width" style="color: #e74c3c; font-size: 1.4em;">19.79 mm</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <canvas id="simCanvas"></canvas>
+    <div class="instruction">
+      <span>🖱️ 調整左側的物理參數，觀察真實比例的單狹縫繞射圖樣與光強度曲線變化</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // UI Elements
+  const sliderWave = document.getElementById('slider-wave');
+  const sliderB = document.getElementById('slider-b');
+  const sliderL = document.getElementById('slider-L');
+  
+  const valWave = document.getElementById('val-wave');
+  const valB = document.getElementById('val-b');
+  const valL = document.getElementById('val-L');
+  
+  const dataSpacing = document.getElementById('data-spacing');
+  const dataWidth = document.getElementById('data-width');
+
+  let width, height;
+
+  // Real-world conversion scale (pixels per mm on the virtual screen)
+  const pxPerMm = 15;
+
+  // Wavelength to RGB approximation
+  function nmToRGB(wavelength){
+    let r = 0, g = 0, b = 0;
+    if (wavelength >= 380 && wavelength < 440) {
+        r = -(wavelength - 440) / (440 - 380);
+        b = 1.0;
+    } else if (wavelength >= 440 && wavelength < 490) {
+        g = (wavelength - 440) / (490 - 440);
+        b = 1.0;
+    } else if (wavelength >= 490 && wavelength < 510) {
+        g = 1.0;
+        b = -(wavelength - 510) / (510 - 490);
+    } else if (wavelength >= 510 && wavelength < 580) {
+        r = (wavelength - 510) / (580 - 510);
+        g = 1.0;
+    } else if (wavelength >= 580 && wavelength < 645) {
+        r = 1.0;
+        g = -(wavelength - 645) / (645 - 580);
+    } else if (wavelength >= 645 && wavelength <= 780) {
+        r = 1.0;
+    }
+    
+    // Intensity falloff near vision limits
+    let factor = 1.0;
+    if (wavelength >= 380 && wavelength < 420) {
+        factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
+    } else if (wavelength >= 700 && wavelength <= 780) {
+        factor = 0.3 + 0.7 * (780 - wavelength) / (780 - 700);
+    }
+    
+    return {
+        r: Math.round(255 * Math.pow(r * factor, 0.8)),
+        g: Math.round(255 * Math.pow(g * factor, 0.8)),
+        b: Math.round(255 * Math.pow(b * factor, 0.8))
+    };
+  }
+
+  function resize() {
+    width = canvas.parentElement.clientWidth;
+    height = canvas.parentElement.clientHeight;
+    if (width > 0 && height > 0) {
+      canvas.width = width;
+      canvas.height = height;
+      render();
+    }
+  }
+  window.addEventListener('resize', resize);
+  
+  function updateDataAndRender() {
+    const lambda_nm = parseFloat(sliderWave.value);
+    const b_mm = parseFloat(sliderB.value);
+    const L_cm = parseFloat(sliderL.value);
+    
+    // Update labels
+    valWave.innerText = lambda_nm + " nm";
+    valB.innerText = b_mm.toFixed(2) + " mm";
+    valL.innerText = L_cm + " cm";
+    
+    // Dynamic slider color
+    const rgb = nmToRGB(lambda_nm);
+    sliderWave.style.accentColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    
+    // Calculate theoretical values in mm
+    const L_mm = L_cm * 10;
+    const lambda_mm = lambda_nm * 1e-6;
+    
+    // y = L * lambda / b
+    const ySpacing_mm = (L_mm * lambda_mm) / b_mm;
+    const centralWidth_mm = 2 * ySpacing_mm;
+    
+    dataSpacing.innerText = ySpacing_mm.toFixed(2) + " mm";
+    dataWidth.innerText = centralWidth_mm.toFixed(2) + " mm";
+    
+    render();
+  }
+
+  [sliderWave, sliderB, sliderL].forEach(el => el.addEventListener('input', updateDataAndRender));
+
+  function render() {
+    if (!width || !height || height * 0.3 <= 0) return;
+    ctx.clearRect(0, 0, width, height);
+    
+    const lambda_nm = parseFloat(sliderWave.value);
+    const b_mm = parseFloat(sliderB.value);
+    const L_cm = parseFloat(sliderL.value);
+    
+    const L_mm = L_cm * 10;
+    const lambda_mm = lambda_nm * 1e-6;
+    
+    const rgb = nmToRGB(lambda_nm);
+    const colorBase = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+    
+    const centerX = width / 2;
+    const patternTop = height * 0.2;
+    const patternBottom = height * 0.5;
+    const graphBottom = height * 0.9;
+    const maxIntensityHeight = graphBottom - patternBottom - 20;
+
+    // --- 1. RENDER INTERFERENCE PATTERN (SCREEN) ---
+    // We will render it column by column
+    const imgData = ctx.createImageData(width, patternBottom - patternTop);
+    const data = imgData.data;
+    
+    for (let x = 0; x < width; x++) {
+        // Physical distance from center in mm
+        const dx_mm = (x - centerX) / pxPerMm;
+        
+        // Alpha = pi * b * sin(theta) / lambda  approx  pi * b * y / (L * lambda)
+        const alpha = (Math.PI * b_mm * dx_mm) / (L_mm * lambda_mm);
+        
+        // Intensity I = I0 * sinc^2(alpha)
+        let intensity = 1.0;
+        if (Math.abs(alpha) > 0.0001) {
+            intensity = Math.pow(Math.sin(alpha) / alpha, 2);
+        }
+        
+        // Non-linear visual mapping to simulate camera overexposure in the center
+        // and sensitivity to dim fringes
+        const visualIntensity = Math.pow(intensity, 0.6); 
+        
+        for (let y = 0; y < (patternBottom - patternTop); y++) {
+            const index = (y * width + x) * 4;
+            data[index] = rgb.r * visualIntensity;
+            data[index+1] = rgb.g * visualIntensity;
+            data[index+2] = rgb.b * visualIntensity;
+            data[index+3] = 255;
+        }
+    }
+    ctx.putImageData(imgData, 0, patternTop);
+
+    // Border around pattern
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, patternTop, width, patternBottom - patternTop);
+
+
+    // --- 2. RENDER INTENSITY GRAPH (I vs y) ---
+    // Axis
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, graphBottom);
+    ctx.lineTo(width, graphBottom);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(${colorBase}, 0.8)`;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    
+    for (let x = 0; x < width; x++) {
+        const dx_mm = (x - centerX) / pxPerMm;
+        const alpha = (Math.PI * b_mm * dx_mm) / (L_mm * lambda_mm);
+        
+        let intensity = 1.0;
+        if (Math.abs(alpha) > 0.0001) {
+            intensity = Math.pow(Math.sin(alpha) / alpha, 2);
+        }
+        
+        const drawY = graphBottom - (intensity * maxIntensityHeight);
+        if (x === 0) ctx.moveTo(x, drawY);
+        else ctx.lineTo(x, drawY);
+    }
+    ctx.stroke();
+
+    // Fill under graph
+    ctx.lineTo(width, graphBottom);
+    ctx.lineTo(0, graphBottom);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${colorBase}, 0.15)`;
+    ctx.fill();
+
+
+    // --- 3. ANNOTATIONS & MARKERS ---
+    const ySpacing_mm = (L_mm * lambda_mm) / b_mm;
+    const ySpacing_px = ySpacing_mm * pxPerMm;
+
+    // Draw Dark Fringe Guidelines
+    ctx.strokeStyle = '#7f8c8d';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    for(let n = -5; n <= 5; n++) {
+        if (n === 0) continue; // Center is bright
+        const markerX = centerX + n * ySpacing_px;
+        if (markerX > 0 && markerX < width) {
+            ctx.beginPath();
+            ctx.moveTo(markerX, patternBottom);
+            ctx.lineTo(markerX, graphBottom);
+            ctx.stroke();
+            
+            // Label n=1, n=2...
+            ctx.fillStyle = '#95a5a6';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            if (n === 1) ctx.fillText("1λ", markerX, graphBottom + 15);
+            if (n === -1) ctx.fillText("-1λ", markerX, graphBottom + 15);
+            if (n === 2) ctx.fillText("2λ", markerX, graphBottom + 15);
+            if (n === -2) ctx.fillText("-2λ", markerX, graphBottom + 15);
+        }
+    }
+    ctx.setLineDash([]);
+
+    // Central Bright Band Measurement Bracket
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    const brY = patternTop - 15;
+    ctx.beginPath();
+    ctx.moveTo(centerX - ySpacing_px, brY + 5);
+    ctx.lineTo(centerX - ySpacing_px, brY - 5);
+    ctx.moveTo(centerX - ySpacing_px, brY);
+    ctx.lineTo(centerX + ySpacing_px, brY);
+    ctx.moveTo(centerX + ySpacing_px, brY + 5);
+    ctx.lineTo(centerX + ySpacing_px, brY - 5);
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 15px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`中央亮帶寬 = 2Lλ/b`, centerX, brY - 10);
+    
+    // Top-down Schema Hint (Mini Map)
+    const mX = 20;
+    const mY = 25;
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText("實驗室俯視示意", mX, mY);
+    
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mX + 100, mY - 5); ctx.lineTo(mX + 100, mY + 35); // Slit wall
+    ctx.moveTo(mX + 300, mY - 5); ctx.lineTo(mX + 300, mY + 35); // Screen wall
+    ctx.stroke();
+    
+    // Laser beam
+    ctx.fillStyle = `rgba(${colorBase}, 0.2)`;
+    ctx.beginPath();
+    ctx.moveTo(mX + 100, mY + 15);
+    const spread = Math.min((ySpacing_px/width)*200, 60); // Cap the visual spread
+    ctx.lineTo(mX + 300, mY + 15 - spread); 
+    ctx.lineTo(mX + 300, mY + 15 + spread);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.fillText("L", mX + 195, mY + 10);
+    ctx.setLineDash([2,2]);
+    ctx.beginPath(); ctx.moveTo(mX + 100, mY + 15); ctx.lineTo(mX + 300, mY + 15); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Init
+  resize();
+  updateDataAndRender();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>水的三態實驗台 | Arpow Deep-Learning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+
+  <style>
+  /* ── tokens ─────────────────────────────────────────────── */
+  :root{
+    color-scheme:light;
+    --bg:#ECF0F2; --surface:#FFFFFF; --surface-2:#E3E9EC; --sunken:#F4F7F8;
+    --line:#C9D4D9; --line-soft:#DFE7EA;
+    --ink:#0D1A20; --ink-2:#44595F; --ink-3:#71868F;
+    --ice:#16A99B;   --ice-ink:#0F7D72;
+    --water:#2B62D9; --water-ink:#2453BC;
+    --vapor:#E07A2F; --vapor-ink:#A8571A;
+    /* 放大鏡視野固定用深色場：白色的氫原子在白底上會消失 */
+    --field:#141F27; --field-line:#2E3E4A; --field-ink:#93A9B5;
+    --field-ice:#3FD0BE; --field-water:#8AB0F7;
+    --o-fill:#E05548; --o-line:#7E211A; --h-fill:#EFF4F7; --h-line:#68818D;
+    --glass:#8FA5AF; --glass-soft:#CBD8DE;
+    --shadow:0 1px 2px rgba(13,26,32,.07), 0 8px 22px -14px rgba(13,26,32,.35);
+    --font-d:"Archivo","Noto Sans TC",system-ui,sans-serif;
+    --font-b:"Noto Sans TC",system-ui,"Segoe UI",sans-serif;
+    --font-m:"IBM Plex Mono","Noto Sans TC",ui-monospace,monospace;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font-b); font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding-inline:18px; padding-block:26px 44px;}
+
+  /* ── header ─────────────────────────────────────────────── */
+  .masthead{display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px 24px; margin-bottom:18px}
+  .back-link{
+    display:inline-flex; align-items:center;
+    font-family:var(--font-m); font-size:12.5px; font-weight:600;
+    color:var(--ink-2); text-decoration:none;
+    background:var(--surface); border:1px solid var(--line);
+    padding:5px 12px; border-radius:7px; box-shadow:0 1px 2px rgba(13,26,32,.04);
+    transition:all .2s ease;
+  }
+  .back-link:hover{
+    background:var(--surface-2); color:var(--water-ink);
+    border-color:var(--water); transform:translateX(-2px);
+  }
+  h1{
+    font-family:var(--font-d); font-weight:700; font-size:clamp(25px,4.2vw,36px);
+    letter-spacing:-.015em; line-height:1.1; margin:0; text-wrap:balance;
+  }
+  .tagline{margin:0; color:var(--ink-2); font-size:14px; max-width:46ch}
+  .spec{
+    font-family:var(--font-m); font-size:11px; color:var(--ink-3);
+    letter-spacing:.06em; margin-left:auto; white-space:nowrap;
+  }
+
+  /* ── readout rail ───────────────────────────────────────── */
+  .rail{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--line); border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; margin-bottom:16px;
+  }
+  .cell{background:var(--surface); padding:11px 14px 12px; min-width:0}
+  .cell .k{
+    font-family:var(--font-d); font-size:10.5px; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:2px;
+  }
+  .cell .v{
+    font-family:var(--font-m); font-size:clamp(17px,2.6vw,23px); font-weight:600;
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em; display:block;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .cell .v small{font-size:.62em; font-weight:400; color:var(--ink-3); margin-left:2px}
+  #r-state .v{font-family:var(--font-b); font-weight:700; font-size:clamp(15px,2.2vw,19px)}
+
+  /* ── panels ─────────────────────────────────────────────── */
+  .grid{display:grid; grid-template-columns:minmax(0,37fr) minmax(0,63fr); gap:16px; align-items:start}
+  .col{display:flex; flex-direction:column; gap:16px; min-width:0}
+  .panel{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .phead{
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+    padding:11px 15px 9px; border-bottom:1px solid var(--line-soft);
+  }
+  .phead h2{
+    font-family:var(--font-d); font-weight:600; font-size:13px; letter-spacing:.07em;
+    text-transform:uppercase; margin:0; color:var(--ink);
+  }
+  .phead .note{font-family:var(--font-m); font-size:11px; color:var(--ink-3); margin-left:auto}
+  .pbody{padding:13px 15px 15px}
+  canvas{display:block; width:100%; border-radius:6px; touch-action:none}
+  .c-vessel{aspect-ratio:420/480; background:var(--sunken)}
+  .c-mol{aspect-ratio:640/330; background:var(--field)}
+  .c-curve{aspect-ratio:640/250; background:transparent; cursor:ew-resize}
+
+  /* ── legend ─────────────────────────────────────────────── */
+  .legend{display:flex; flex-wrap:wrap; gap:6px 16px; padding:0 0 10px}
+  .lg{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-2)}
+  .sw{width:11px; height:11px; border-radius:3px; flex:none}
+  .sw.i{background:var(--ice)} .sw.w{background:var(--water)} .sw.v{background:var(--vapor)}
+
+  /* ── molecule caption ───────────────────────────────────── */
+  .mcap{
+    margin:12px 0 0; padding:10px 13px; border-radius:8px;
+    background:var(--surface-2); border-left:3px solid var(--line);
+    font-size:13.5px; color:var(--ink-2); min-height:62px;
+  }
+  .mcap b{color:var(--ink)}
+  .mcap.is-ice{border-left-color:var(--ice)}
+  .mcap.is-water{border-left-color:var(--water)}
+  .mcap.is-vapor{border-left-color:var(--vapor)}
+
+  /* ── controls ───────────────────────────────────────────── */
+  .ctl{display:flex; flex-direction:column; gap:13px}
+  .slabel{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .slabel .k{
+    font-family:var(--font-d); font-size:10.5px; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3);
+  }
+  .slabel .pw{font-family:var(--font-m); font-size:14px; font-weight:600; font-variant-numeric:tabular-nums}
+  input[type=range]{
+    width:100%; margin:0; height:26px; background:transparent;
+    -webkit-appearance:none; appearance:none;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:8px; border-radius:4px;
+    background:linear-gradient(90deg,var(--ice) 0%,var(--surface-2) 50%,var(--vapor) 100%);
+    border:1px solid var(--line);
+  }
+  input[type=range]::-moz-range-track{
+    height:8px; border-radius:4px;
+    background:linear-gradient(90deg,var(--ice) 0%,var(--surface-2) 50%,var(--vapor) 100%);
+    border:1px solid var(--line);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%;
+    background:var(--surface); border:2.5px solid var(--ink); margin-top:-7px; cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; border:2.5px solid var(--ink);
+    background:var(--surface); cursor:grab;
+  }
+  input[type=range]:focus-visible{outline:none}
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--water)}
+  input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 3px var(--water)}
+  .ends{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-3); margin-top:-6px}
+  .row{display:flex; flex-wrap:wrap; gap:7px; align-items:center}
+  .row .k{
+    font-family:var(--font-d); font-size:10.5px; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); width:100%;
+  }
+  button{
+    font-family:var(--font-b); font-size:13px; font-weight:500; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:7px;
+    padding:6px 11px; cursor:pointer; line-height:1.3;
+  }
+  button:hover{background:var(--surface-2)}
+  button:focus-visible{outline:2px solid var(--water); outline-offset:2px}
+  button[aria-pressed=true]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+  button.go{font-weight:700}
+
+  /* ── transition progress ────────────────────────────────── */
+  .trans{
+    display:none; gap:9px; align-items:center; margin-top:12px; padding:9px 12px;
+    border-radius:8px; background:var(--surface-2); border:1px solid var(--line-soft);
+  }
+  .trans.on{display:flex}
+  .trans .tag{
+    font-family:var(--font-d); font-size:10.5px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; white-space:nowrap;
+  }
+  .bar{flex:1; height:7px; border-radius:4px; background:var(--line); overflow:hidden; min-width:50px}
+  .bar i{display:block; height:100%; width:0; border-radius:4px; transition:width .12s linear}
+  .trans .pc{font-family:var(--font-m); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink-2)}
+
+  /* ── volume + facts ─────────────────────────────────────── */
+  .foot{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; margin-top:16px}
+  .vol{display:flex; flex-direction:column; gap:9px}
+  .vrow{display:grid; grid-template-columns:64px minmax(0,1fr) 74px; align-items:center; gap:10px}
+  .vrow .n{font-size:13px; color:var(--ink-2)}
+  .vrow .t{height:16px; border-radius:4px; background:var(--sunken); border:1px solid var(--line-soft); overflow:hidden}
+  .vrow .t i{display:block; height:100%; border-radius:3px 0 0 3px}
+  .vrow .q{font-family:var(--font-m); font-size:12.5px; font-variant-numeric:tabular-nums; text-align:right; color:var(--ink-2)}
+  .vscale{display:flex; justify-content:space-between; font-family:var(--font-m); font-size:10.5px; color:var(--ink-3); margin:2px 84px 0 74px}
+  .callout{
+    margin-top:11px; padding:10px 13px; border-radius:8px;
+    background:var(--surface-2); border-left:3px solid var(--vapor); font-size:13px; color:var(--ink-2);
+  }
+  .callout b{font-family:var(--font-m); font-weight:600; color:var(--vapor-ink); font-size:14px}
+  .facts{display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line-soft)}
+  .fact{background:var(--surface); padding:10px 14px 11px}
+  .fact .k{font-size:12px; color:var(--ink-3); display:block}
+  .fact .v{font-family:var(--font-m); font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; display:block}
+  .why{padding:12px 15px 14px; font-size:13px; color:var(--ink-2); border-top:1px solid var(--line-soft)}
+  .why b{color:var(--ink)}
+
+  footer{
+    margin-top:26px; padding-top:14px; border-top:1px solid var(--line);
+    font-size:12px; color:var(--ink-3); display:flex; flex-wrap:wrap; gap:6px 18px;
+  }
+  footer code{font-family:var(--font-m); font-size:11.5px}
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:minmax(0,1fr)}
+    .foot{grid-template-columns:minmax(0,1fr)}
+    .rail{grid-template-columns:repeat(2,1fr)}
+    .spec{margin-left:0; width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important}
+  }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <div style="margin-bottom:10px">
+        <a href="index.html" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="m15 18-6-6 6-6"/></svg>
+          返回 Apps
+        </a>
+      </div>
+      <h1>水的三態實驗台</h1>
+      <p class="tagline">加熱或冷卻 100 公克的水，同時看見容器裡的變化與水分子本身的排列。</p>
+    </div>
+    <div class="spec">100 g H₂O · 1 atm 定壓 · 成德高中 陳家騏老師 設計</div>
+  </header>
+
+  <div class="rail">
+    <div class="cell"><span class="k">溫度</span><span class="v" id="r-temp">25.0<small>°C</small></span></div>
+    <div class="cell" id="r-state"><span class="k">目前狀態</span><span class="v">水（液態）</span></div>
+    <div class="cell"><span class="k">已加入能量</span><span class="v" id="r-energy">52.2<small>kJ</small></span></div>
+    <div class="cell"><span class="k">加熱功率</span><span class="v" id="r-power">0.0<small>kW</small></span></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ── 容器 ───────────────────────────────────────── -->
+    <div class="col">
+      <section class="panel">
+        <div class="phead"><h2>容器</h2><span class="note">200 mL · 通氣</span></div>
+        <div class="pbody">
+          <canvas class="c-vessel" id="cv-vessel" role="img"
+            aria-label="裝有 100 公克水的容器，底部有加熱板，旁邊有溫度計"></canvas>
+
+          <div class="trans" id="trans">
+            <span class="tag" id="trans-tag">熔化中</span>
+            <span class="bar"><i id="trans-bar"></i></span>
+            <span class="pc" id="trans-pc">0%</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><h2>控制台</h2></div>
+        <div class="pbody ctl">
+          <div>
+            <div class="slabel">
+              <span class="k">加熱 / 冷卻</span>
+              <span class="pw" id="pw">關閉</span>
+            </div>
+            <input type="range" id="power" min="-100" max="100" value="0" step="1"
+              aria-label="加熱或冷卻功率，負值為冷卻">
+            <div class="ends"><span>冷卻 −6 kW</span><span>0</span><span>加熱 +6 kW</span></div>
+          </div>
+
+          <div class="row">
+            <span class="k">模擬速度</span>
+            <button id="sp1" data-sp="1" aria-pressed="false">1×（真實）</button>
+            <button id="sp5" data-sp="5" aria-pressed="true">5×</button>
+            <button id="sp25" data-sp="25" aria-pressed="false">25×</button>
+          </div>
+
+          <div class="row">
+            <span class="k">直接跳到</span>
+            <button class="go" data-e="4180">冰 −20 °C</button>
+            <button class="go" data-e="52210">水 25 °C</button>
+            <button class="go" data-e="313560">水蒸氣 120 °C</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ── 分子 + 曲線 ────────────────────────────────── -->
+    <div class="col">
+      <section class="panel">
+        <div class="phead">
+          <h2>水分子放大檢視</h2>
+          <span class="note">放大 ≈ 1 億倍 · ⬤ 氧　○ 氫</span>
+        </div>
+        <div class="pbody">
+          <canvas class="c-mol" id="cv-mol" role="img"
+            aria-label="容器內部水分子的放大動畫，依狀態顯示晶格、液體或氣體排列"></canvas>
+          <p class="mcap is-water" id="mcap"></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><h2>加熱曲線</h2><span class="note">拖曳曲線可跳到任一點</span></div>
+        <div class="pbody">
+          <div class="legend">
+            <span class="lg"><span class="sw i"></span>冰（固態）</span>
+            <span class="lg"><span class="sw w"></span>水（液態）</span>
+            <span class="lg"><span class="sw v"></span>水蒸氣（氣態）</span>
+          </div>
+          <canvas class="c-curve" id="cv-curve" role="img"
+            aria-label="溫度對已加入能量的加熱曲線，在 0 °C 與 100 °C 各有一段水平段"></canvas>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ── 體積 + 數據 ──────────────────────────────────── -->
+  <div class="foot">
+    <section class="panel">
+      <div class="phead"><h2>體積比較</h2><span class="note">同樣 100 g</span></div>
+      <div class="pbody">
+        <div class="vol">
+          <div class="vrow">
+            <span class="n">冰 0 °C</span>
+            <span class="t"><i style="width:90.8%;background:var(--ice)"></i></span>
+            <span class="q">109 mL</span>
+          </div>
+          <div class="vrow">
+            <span class="n">水 0 °C</span>
+            <span class="t"><i style="width:83.3%;background:var(--water)"></i></span>
+            <span class="q">100 mL</span>
+          </div>
+        </div>
+        <div class="vscale"><span>0</span><span>60</span><span>120 mL</span></div>
+        <p class="callout">水蒸氣 100 °C 佔 <b>≈ 170 000 mL</b>，是液態水的 <b>1700 倍</b>——同一個尺規畫不下，所以這裡只列數字。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="facts">
+        <div class="fact"><span class="k">熔化熱</span><span class="v">334 J/g</span></div>
+        <div class="fact"><span class="k">汽化熱</span><span class="v">2260 J/g</span></div>
+        <div class="fact"><span class="k">水的比熱</span><span class="v">4.18 J/(g·K)</span></div>
+        <div class="fact"><span class="k">冰的比熱</span><span class="v">2.09 J/(g·K)</span></div>
+      </div>
+      <p class="why"><b>為什麼冰會浮起來？</b>水分子在冰裡被氫鍵鎖成六角形晶格，中間留下空洞，比擠在一起的液態水多佔 9 % 的空間。密度變小，冰就浮在水面上——這是水最反常、也最重要的性質。</p>
+    </section>
+  </div>
+
+  <footer>
+    <span>能量刻度以 <code>−40 °C 的冰 = 0 kJ</code> 為起點</span>
+    <span>汽化佔全程 <code>71 %</code> 的能量，所以沸騰那段特別長</span>
+    <span>成德高中 陳家騏老師 設計</span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ═══ 物理 ═══════════════════════════════════════════════ */
+const M=100, C_ICE=2.09, C_W=4.18, C_V=2.00, LF=334, LV=2260;
+const E1=M*C_ICE*40, E2=E1+M*LF, E3=E2+M*C_W*100, E4=E3+M*LV, E5=E4+M*C_V*40;
+const PMAX=6000;
+
+function solve(E){
+  if(E<=E1)  return {T:-40+E/(M*C_ICE), fs:1, fl:0, fg:0, ph:'ice',   pr:0};
+  if(E<=E2){ const f=(E-E1)/(M*LF);  return {T:0,   fs:1-f, fl:f, fg:0, ph:'melt', pr:f}; }
+  if(E<=E3)  return {T:(E-E2)/(M*C_W), fs:0, fl:1, fg:0, ph:'water', pr:0};
+  if(E<=E4){ const f=(E-E3)/(M*LV);  return {T:100, fs:0, fl:1-f, fg:f, ph:'boil', pr:f}; }
+  return {T:100+(E-E4)/(M*C_V), fs:0, fl:0, fg:1, ph:'vapor', pr:0};
+}
+const LABEL={ice:'冰（固態）',melt:'熔化中',water:'水（液態）',boil:'沸騰中',vapor:'水蒸氣（氣態）'};
+const CAPS={
+  ice:'<b>固態。</b>每個水分子被四條氫鍵鎖在六角晶格上，只能在原地振動，不能換位子。溫度越低，振動幅度越小。',
+  melt:'<b>熔化中。</b>加進去的能量全部用來扯斷氫鍵、拆掉晶格，不是拿來升溫——所以<b>溫度死死停在 0 °C</b>。晶格從貼著水面的那一層開始瓦解，脫隊的分子直接掉進下方的液體；旁邊燒杯的<b>水位全程不動</b>，因為冰露出水面的 9 % 剛好補上融化後縮掉的體積。',
+  water:'<b>液態。</b>分子仍然緊靠在一起，但氫鍵不斷斷裂又重組，所以可以互相滑動、流動。溫度越高，滑動越快。',
+  boil:'<b>沸騰中。</b>能量用來把分子一個個從液面拽走，完全掙脫氫鍵——<b>溫度死死停在 100 °C</b>。每公克要 2260 J，是熔化的 6.8 倍。',
+  vapor:'<b>氣態。</b>分子之間幾乎沒有作用力，各自高速直線亂飛、彼此撞開。同樣 100 g，佔的空間是液態水的 1700 倍。'
+};
+
+/* ═══ 狀態 ═══════════════════════════════════════════════ */
+let E=52210, power=0, speed=5, scrubbing=false;
+const REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ═══ 主題色 ═════════════════════════════════════════════ */
+let K={};
+function readTokens(){
+  const s=getComputedStyle(document.documentElement);
+  const g=n=>s.getPropertyValue(n).trim();
+  K={ink:g('--ink'),ink2:g('--ink-2'),ink3:g('--ink-3'),line:g('--line'),lineSoft:g('--line-soft'),
+     surface:g('--surface'),surface2:g('--surface-2'),sunken:g('--sunken'),
+     ice:g('--ice'),iceInk:g('--ice-ink'),water:g('--water'),waterInk:g('--water-ink'),
+     vapor:g('--vapor'),vaporInk:g('--vapor-ink'),
+     o:g('--o-fill'),oL:g('--o-line'),h:g('--h-fill'),hL:g('--h-line'),
+     glass:g('--glass'),glassSoft:g('--glass-soft'),
+     field:g('--field'),fLine:g('--field-line'),fInk:g('--field-ink'),
+     fIce:g('--field-ice'),fWater:g('--field-water')};
+}
+readTokens();
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',readTokens);
+new MutationObserver(readTokens).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ═══ canvas 工具 ════════════════════════════════════════ */
+function fit(cv,dw){
+  const r=Math.min(2,window.devicePixelRatio||1), w=cv.clientWidth, h=cv.clientHeight;
+  if(!w||!h) return null;
+  cv.width=Math.round(w*r); cv.height=Math.round(h*r);
+  const ctx=cv.getContext('2d'); ctx.setTransform(w*r/dw,0,0,w*r/dw,0,0);
+  return ctx;
+}
+const cvV=document.getElementById('cv-vessel'), cvM=document.getElementById('cv-mol'), cvC=document.getElementById('cv-curve');
+let ctxV,ctxM,ctxC;
+function fitAll(){ ctxV=fit(cvV,420); ctxM=fit(cvM,640); ctxC=fit(cvC,640); }
+
+/* ═══ 分子模型 ═══════════════════════════════════════════ */
+const BW=640, BH=330, PAD=16, N=110, RM=9;
+const FLOOR=BH-PAD, CEIL=PAD;
+const INNER_W=BW-2*PAD-2*RM;
+
+/* 幾何一律由「每個分子佔多少面積」推導，9 % 的差才會是真的，
+   而且液體的高度不會被溫度（抖動幅度）影響 —— 水幾乎不可壓縮 */
+const D=33;                                     // 液態最近鄰距離：分子剛好相碰
+const PACK=0.77;                                // 實測堆積係數（見下方鬆弛求解器）
+const A_L=PACK*D*D;                             // 液態每分子面積
+const A_I=A_L*1.09;                             // 冰每分子面積（多 9 %）
+const H_LIQ=N*A_L/INNER_W;                      // 液態滿柱高
+const H_ICE=H_LIQ*1.09;                         // 冰滿柱高
+const R=Math.sqrt(A_I/(3*Math.sqrt(3)/4));      // 晶格鍵長
+
+/* 蜂巢晶格：a1/a2 為 graphene 晶格向量，每格 2 個原子。y 由上往下 */
+const raw=[];
+for(let m=-16;m<=16;m++)for(let n=-16;n<=16;n++){
+  const bx=(m+n)*1.5*R, by=(m-n)*0.866*R;
+  if(by<0 || by>H_ICE+2*R) continue;
+  for(const d of [0,R]) raw.push({x:bx+d, y:by});
+}
+const xr=raw.map(p=>p.x), midX=(Math.min(...xr)+Math.max(...xr))/2;
+const sites=raw.map(p=>({x:p.x-midX+BW/2, y:p.y}))
+  .filter(p=>p.x>PAD+RM && p.x<BW-PAD-RM)
+  .sort((a,b)=>a.y-b.y||a.x-b.x);         // 由上往下 → 融化時最底層（貼著水面）先消失
+sites.length=Math.min(sites.length,N);
+/* 晶格鄰居配對（氫鍵） */
+const bonds=[];
+for(let i=0;i<sites.length;i++)for(let j=i+1;j<sites.length;j++){
+  const dx=sites[i].x-sites[j].x, dy=sites[i].y-sites[j].y;
+  if(dx*dx+dy*dy < (R*1.18)**2) bonds.push([i,j]);
+}
+
+const mols=[];
+for(let i=0;i<N;i++) mols.push({
+  x:PAD+Math.random()*(BW-2*PAD), y:FLOOR-Math.random()*H_LIQ,
+  vx:0, vy:0, ang:Math.random()*6.28, av:0, st:'l',
+  ph:Math.random()*6.28, ph2:Math.random()*6.28
+});
+
+function levels(fs,fl){
+  const liqTop=FLOOR-H_LIQ*fl;
+  return {liqTop, iceBot:liqTop, iceTop:liqTop-H_ICE*fs};
+}
+
+function stepMols(s,dt){
+  const L=levels(s.fs,s.fl);
+  const ns=Math.round(N*s.fs), nl=Math.round(N*s.fl);
+  const jit=REDUCED?0:(20+0.30*Math.max(s.T,0));
+  const gasV=70*Math.sqrt((s.T+273)/373);
+
+  for(let i=0;i<N;i++){
+    const m=mols[i];
+    const want = i<ns ? 's' : (i<ns+nl ? 'l' : 'g');
+    if(want!==m.st){
+      const gasBot=s.fl>0.02 ? L.liqTop-RM : FLOOR-RM;
+      if(m.st==='s'&&want==='l'){ m.y=L.liqTop+6+Math.random()*14; m.vx=(Math.random()-.5)*50; m.vy=30; }
+      else if(m.st==='l'&&want==='g'){ const a=-Math.PI/2+(Math.random()-.5)*1.6; m.y=L.liqTop-4; m.vx=Math.cos(a)*gasV; m.vy=Math.sin(a)*gasV; }
+      else if(m.st==='g'&&want==='l'){ m.x=PAD+RM+Math.random()*(BW-2*PAD-2*RM); m.y=L.liqTop+8; m.vx=0; m.vy=20; }
+      else if(want==='s'){ m.vx=m.vy=0; }
+      /* 直接從冰跳到水蒸氣（按預設鈕或拖曲線）也要給速度，否則會卡在原地不動 */
+      else if(want==='g'){
+        m.x=PAD+RM+Math.random()*(BW-2*PAD-2*RM);
+        m.y=CEIL+RM+Math.random()*Math.max(1,gasBot-CEIL-RM);
+        const a=Math.random()*6.283; m.vx=Math.cos(a)*gasV; m.vy=Math.sin(a)*gasV;
+      }
+      else { m.y=L.liqTop+8; m.vx=(Math.random()-.5)*40; m.vy=20; }
+      m.st=want;
+      m.av = want==='g' ? (Math.random()-.5)*5 : 0;
+    }
+  }
+
+  const t=performance.now()/1000;
+  const amp=REDUCED?0:(1.1+2.7*(s.T+40)/40);
+  /* 冰塊最底下那一排永遠貼著水面，融化時才不會跟液面脫節 */
+  const yBase=ns>0 ? sites[Math.min(ns,sites.length)-1].y : 0;
+  const iceAnchor=Math.min(L.liqTop, FLOOR-RM);   // 沒有水時冰也不能壓到框線外
+
+  for(let i=0;i<N;i++){
+    const m=mols[i];
+    if(m.st==='s'){
+      const st=sites[i]||sites[sites.length-1];
+      m.x=st.x+Math.sin(t*6.1+m.ph)*amp;
+      m.y=iceAnchor-(yBase-st.y)+Math.cos(t*7.3+m.ph2)*amp;
+      m.ang=m.ph+Math.sin(t*5.2+m.ph2)*0.16;
+    }else if(m.st==='l'){
+      m.vy+=150*dt;
+      m.vx+=(Math.random()-.5)*jit*dt*7;
+      m.vy+=(Math.random()-.5)*jit*dt*7;
+      m.vx*=0.955; m.vy*=0.955;
+      m.x+=m.vx*dt; m.y+=m.vy*dt;
+      if(m.x<PAD+RM){m.x=PAD+RM;m.vx=Math.abs(m.vx)*.5}
+      if(m.x>BW-PAD-RM){m.x=BW-PAD-RM;m.vx=-Math.abs(m.vx)*.5}
+      if(m.y>FLOOR-RM){m.y=FLOOR-RM;m.vy=-Math.abs(m.vy)*.3}
+      if(m.y<L.liqTop+RM*0.4){m.y=L.liqTop+RM*0.4;m.vy=Math.abs(m.vy)*.3}
+      m.ang+=(m.vx*0.004)*dt*60;
+    }else{
+      const top = CEIL;
+      const bot = s.fl>0.02 ? L.liqTop-RM : FLOOR-RM;
+      let sp=Math.hypot(m.vx,m.vy);
+      if(sp<0.001){ const a=Math.random()*6.283; m.vx=Math.cos(a); m.vy=Math.sin(a); sp=1; }
+      const k=gasV/sp; m.vx*=k; m.vy*=k;
+      m.x+=m.vx*dt; m.y+=m.vy*dt; m.ang+=m.av*dt;
+      if(m.x<PAD+RM){m.x=PAD+RM;m.vx=Math.abs(m.vx)}
+      if(m.x>BW-PAD-RM){m.x=BW-PAD-RM;m.vx=-Math.abs(m.vx)}
+      if(m.y<top+RM){m.y=top+RM;m.vy=Math.abs(m.vy)}
+      if(m.y>bot){m.y=bot;m.vy=-Math.abs(m.vy)}
+    }
+  }
+
+  /* 液–液 軟排斥 + 收集氫鍵 */
+  /* 位置式鬆弛。單跑一輪壓不住重力，液體會被壓扁成一坨；
+     多跑幾輪並在每輪之後重新貼邊，水才會真的不可壓縮。 */
+  const hb=[], DH2=(D*1.22)**2;
+  for(let it=0;it<3;it++){
+    const last=it===2;
+    for(let i=0;i<N;i++){
+      const a=mols[i]; if(a.st!=='l') continue;
+      for(let j=i+1;j<N;j++){
+        const b=mols[j]; if(b.st!=='l') continue;
+        const dx=b.x-a.x, dy=b.y-a.y, d2=dx*dx+dy*dy;
+        if(d2>DH2 || d2<1) continue;
+        const d=Math.sqrt(d2);
+        if(d<D){ const f=(D-d)/d*0.5; a.x-=dx*f; a.y-=dy*f; b.x+=dx*f; b.y+=dy*f; }
+        if(last && hb.length<70 && d>D*0.82) hb.push([a,b]);
+      }
+    }
+    for(let i=0;i<N;i++){
+      const m=mols[i]; if(m.st!=='l') continue;
+      if(m.x<PAD+RM) m.x=PAD+RM; else if(m.x>BW-PAD-RM) m.x=BW-PAD-RM;
+      if(m.y>FLOOR-RM) m.y=FLOOR-RM; else if(m.y<L.liqTop+RM*0.4) m.y=L.liqTop+RM*0.4;
+    }
+  }
+  return hb;
+}
+
+function drawMol(c,x,y,ang,r){
+  const ha=104.5*Math.PI/360;
+  c.fillStyle=K.h; c.strokeStyle=K.hL; c.lineWidth=1.1;
+  for(const sg of [-1,1]){
+    const a=ang+sg*ha;
+    c.beginPath(); c.arc(x+Math.cos(a)*r*1.18, y+Math.sin(a)*r*1.18, r*0.56, 0, 6.284);
+    c.fill(); c.stroke();
+  }
+  c.beginPath(); c.arc(x,y,r,0,6.284);
+  c.fillStyle=K.o; c.fill(); c.strokeStyle=K.oL; c.lineWidth=1.3; c.stroke();
+}
+
+function drawMols(s,hb){
+  const c=ctxM; if(!c) return;
+  c.clearRect(0,0,BW,BH);
+  const L=levels(s.fs,s.fl);
+
+  /* 液面 */
+  if(s.fl>0.015){
+    c.fillStyle=K.fWater+'26';
+    c.fillRect(PAD,L.liqTop,BW-2*PAD,FLOOR-L.liqTop+PAD);
+    c.strokeStyle=K.fWater+'80'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(PAD,L.liqTop); c.lineTo(BW-PAD,L.liqTop); c.stroke();
+  }
+  /* 內壁 */
+  c.strokeStyle=K.fLine; c.lineWidth=1.5;
+  c.strokeRect(PAD-4,PAD-4,BW-2*PAD+8,BH-2*PAD+8);
+
+  /* 晶格氫鍵 */
+  if(s.fs>0.005){
+    const ns=Math.round(N*s.fs);
+    c.strokeStyle=K.fIce; c.globalAlpha=.5; c.lineWidth=2;
+    c.beginPath();
+    for(const [i,j] of bonds){
+      if(i>=ns||j>=ns) continue;
+      c.moveTo(mols[i].x,mols[i].y); c.lineTo(mols[j].x,mols[j].y);
+    }
+    c.stroke(); c.globalAlpha=1;
+  }
+  /* 液態氫鍵（虛線、短暫） */
+  if(hb.length){
+    c.strokeStyle=K.fWater; c.globalAlpha=.5; c.lineWidth=1.7; c.setLineDash([4,4]);
+    c.beginPath();
+    for(const [a,b] of hb){ c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); }
+    c.stroke(); c.setLineDash([]); c.globalAlpha=1;
+  }
+
+  for(const m of mols) drawMol(c,m.x,m.y,m.ang,RM);
+
+  /* 比例尺：放在上方空隙，不要壓到分子 */
+  const sbx=BW-PAD-14;
+  c.fillStyle=K.field; c.globalAlpha=.88;
+  c.beginPath(); c.roundRect(sbx-R-66,CEIL+1,R+70,18,5); c.fill(); c.globalAlpha=1;
+  c.strokeStyle=K.fInk; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(sbx-R,CEIL+10); c.lineTo(sbx,CEIL+10); c.stroke();
+  c.fillStyle=K.fInk; c.font='11px "IBM Plex Mono",monospace'; c.textAlign='right';
+  c.fillText('0.28 nm',sbx-R-6,CEIL+14);
+}
+
+/* ═══ 容器 ═══════════════════════════════════════════════ */
+const VW=420, VH=480;
+const bx0=26, bx1=248, by0=54, by1=406;       // 燒杯內壁
+let bubbles=[], wisps=[];
+
+function drawVessel(s,dt){
+  const c=ctxV; if(!c) return;
+  c.clearRect(0,0,VW,VH);
+  /* 浮力：浮冰排開的水恰好等於自身質量，所以只要還有冰，水面就固定在 100 mL。
+     沒入深度不可能超過水深 —— 夾住之後冰就自然坐在杯底，不會捅出燒杯。 */
+  const cap=by1-by0, mm=cap/200, WI=0.80;
+  const lvl=100*(s.fs+s.fl);
+  const hIceML=s.fs*109/WI;
+  const subML=Math.min(s.fs*100/WI, lvl);
+  const liqTop=by1-lvl*mm;
+  const hIce=hIceML*mm, iceTop=by1-(lvl-subML+hIceML)*mm;
+
+  /* 加熱板 */
+  const hot=power>0, cold=power<0, mag=Math.abs(power)/100;
+  if(mag>0.02){
+    const g=c.createRadialGradient((bx0+bx1)/2,by1+10,4,(bx0+bx1)/2,by1+10,150);
+    const col=hot?'224,122,47':'22,169,155';
+    g.addColorStop(0,`rgba(${col},${0.42*mag})`); g.addColorStop(1,`rgba(${col},0)`);
+    c.fillStyle=g; c.fillRect(bx0-40,by1-70,bx1-bx0+80,120);
+  }
+  c.fillStyle=mag>0.02?(hot?K.vapor:K.ice):K.glass;
+  c.globalAlpha=mag>0.02?(0.45+0.55*mag):0.5;
+  c.beginPath(); c.roundRect(bx0-12,by1+8,bx1-bx0+24,13,4); c.fill(); c.globalAlpha=1;
+  c.fillStyle=K.ink3; c.font='11px "IBM Plex Mono",monospace'; c.textAlign='center';
+  c.fillText(hot?'加熱':cold?'冷卻':'關閉',(bx0+bx1)/2,by1+40);
+
+  /* 液體 */
+  if(s.fl>0.004){
+    c.fillStyle=K.water; c.globalAlpha=.72;
+    c.beginPath(); c.roundRect(bx0,liqTop,bx1-bx0,by1-liqTop,[2,2,8,8]); c.fill();
+    c.globalAlpha=1;
+    c.strokeStyle=K.water; c.lineWidth=2.5;
+    c.beginPath(); c.moveTo(bx0,liqTop); c.lineTo(bx1,liqTop); c.stroke();
+  }
+  /* 冰塊：浮起來時剛好 9 % 露出水面 */
+  if(s.fs>0.004){
+    const w=(bx1-bx0)*WI, x=(bx0+bx1)/2-w/2;
+    c.fillStyle=K.ice; c.globalAlpha=.88;
+    c.beginPath(); c.roundRect(x,iceTop,w,hIce,7); c.fill(); c.globalAlpha=1;
+    c.strokeStyle=K.surface; c.globalAlpha=.5; c.lineWidth=1.6;
+    for(let i=1;i<=2;i++){
+      const yy=iceTop+hIce*i/3;
+      c.beginPath(); c.moveTo(x+9,yy); c.lineTo(x+w-9,yy-6); c.stroke();
+    }
+    c.globalAlpha=1;
+    /* 沒入水面下的部分蓋一層水色，看得出來哪裡是水線 */
+    const wl=Math.max(iceTop,liqTop);
+    if(s.fl>0.004 && iceTop+hIce>wl){
+      c.save();
+      c.beginPath(); c.rect(x,wl,w,iceTop+hIce-wl); c.clip();
+      c.fillStyle=K.water; c.globalAlpha=.32;
+      c.beginPath(); c.roundRect(x,iceTop,w,hIce,7); c.fill();
+      c.globalAlpha=1; c.restore();
+    }
+  }
+  /* 氣泡 */
+  if(s.ph==='boil'&&!REDUCED){
+    if(Math.random()<0.55) bubbles.push({x:bx0+8+Math.random()*(bx1-bx0-16),y:by1-4,r:2+Math.random()*4});
+    for(const b of bubbles){ b.y-=(38+b.r*9)*dt; }
+    bubbles=bubbles.filter(b=>b.y>liqTop-4);
+    c.strokeStyle=K.surface; c.globalAlpha=.75; c.lineWidth=1.6;
+    for(const b of bubbles){ c.beginPath(); c.arc(b.x,b.y,b.r,0,6.284); c.stroke(); }
+    c.globalAlpha=1;
+  }else bubbles.length=0;
+  /* 蒸氣 */
+  if(s.fg>0.004){
+    if(!REDUCED){
+      if(Math.random()<s.fg*0.9) wisps.push({x:(bx0+bx1)/2+(Math.random()-.5)*90,y:by0-6,r:6+Math.random()*13,a:1});
+      for(const w of wisps){ w.y-=26*dt; w.r+=11*dt; w.a-=0.5*dt; }
+      wisps=wisps.filter(w=>w.a>0);
+    }
+    c.fillStyle=K.vapor; c.globalAlpha=0.10+0.16*s.fg;
+    c.fillRect(bx0,by0,bx1-bx0,Math.max(0,liqTop-by0));
+    for(const w of wisps){ c.globalAlpha=w.a*0.3; c.beginPath(); c.arc(w.x,w.y,w.r,0,6.284); c.fill(); }
+    c.globalAlpha=1;
+  }else wisps.length=0;
+
+  /* 玻璃 + 刻度 */
+  c.strokeStyle=K.glass; c.lineWidth=3.5; c.lineJoin='round';
+  c.beginPath(); c.moveTo(bx0-2,by0-16); c.lineTo(bx0-2,by1+2);
+  c.arcTo(bx0-2,by1+10,bx0+8,by1+10,10); c.lineTo(bx1-8,by1+10);
+  c.arcTo(bx1+2,by1+10,bx1+2,by1+2,10); c.lineTo(bx1+2,by0-16); c.stroke();
+  c.strokeStyle=K.glassSoft; c.lineWidth=1.4; c.fillStyle=K.ink3;
+  c.font='10px "IBM Plex Mono",monospace'; c.textAlign='left';
+  for(let v=50;v<=200;v+=50){
+    const y=by1-(by1-by0)*v/200;
+    c.beginPath(); c.moveTo(bx0,y); c.lineTo(bx0+13,y); c.stroke();
+    c.fillText(v,bx0+17,y+3.5);
+  }
+  /* 通氣蓋 */
+  c.strokeStyle=K.glass; c.lineWidth=3.5;
+  c.beginPath(); c.moveTo(bx0-14,by0-16); c.lineTo(bx1-24,by0-16);
+  c.moveTo(bx1-8,by0-16); c.lineTo(bx1+14,by0-16); c.stroke();
+
+  /* 溫度計 */
+  const tx=330, ty0=64, ty1=402;
+  c.strokeStyle=K.line; c.lineWidth=2;
+  c.beginPath(); c.roundRect(tx-11,ty0-10,22,ty1-ty0+22,11); c.stroke();
+  const f=Math.min(1,Math.max(0,(s.T+40)/180)), yTop=ty1-(ty1-ty0)*f;
+  const g=c.createLinearGradient(0,ty1,0,ty0);
+  g.addColorStop(0,K.ice); g.addColorStop(0.36,K.water); g.addColorStop(1,K.vapor);
+  c.fillStyle=g;
+  c.beginPath(); c.roundRect(tx-6,yTop,12,ty1-yTop+8,6); c.fill();
+  c.beginPath(); c.arc(tx,ty1+10,11,0,6.284); c.fill();
+  c.strokeStyle=K.line; c.lineWidth=1.4; c.fillStyle=K.ink3;
+  c.font='10px "IBM Plex Mono",monospace'; c.textAlign='left';
+  for(const v of [-40,0,50,100,140]){
+    const y=ty1-(ty1-ty0)*(v+40)/180;
+    c.beginPath(); c.moveTo(tx+11,y); c.lineTo(tx+18,y); c.stroke();
+    c.fillText(v,tx+22,y+3.5);
+  }
+  c.fillStyle=K.ink; c.font='600 13px "IBM Plex Mono",monospace'; c.textAlign='center';
+  c.fillText(s.T.toFixed(1)+' °C',tx+2,ty0-24);
+}
+
+/* ═══ 加熱曲線 ═══════════════════════════════════════════ */
+const GW=640, GH=250, gl=48, gr=14, gt=28, gb=32;
+const gx=e=>gl+(GW-gl-gr)*e/E5;
+const gy=T=>gt+(GH-gt-gb)*(1-(T+40)/180);
+
+function drawCurve(s){
+  const c=ctxC; if(!c) return;
+  c.clearRect(0,0,GW,GH);
+  c.font='11px "IBM Plex Mono",monospace';
+
+  /* 格線 + 刻度 */
+  c.strokeStyle=K.lineSoft; c.lineWidth=1; c.fillStyle=K.ink3;
+  c.textAlign='right'; c.textBaseline='middle';
+  for(const T of [-40,0,50,100,140]){
+    const y=gy(T);
+    c.beginPath(); c.moveTo(gl,y); c.lineTo(GW-gr,y); c.stroke();
+    c.fillText(T,gl-7,y);
+  }
+  c.textAlign='center'; c.textBaseline='top';
+  for(const kJ of [0,100,200,300]){
+    const x=gx(kJ*1000);
+    c.beginPath(); c.moveTo(x,gt); c.lineTo(x,GH-gb); c.stroke();
+    c.fillText(kJ,x,GH-gb+7);
+  }
+  c.textAlign='left'; c.fillStyle=K.ink3;
+  c.fillText('已加入能量 (kJ) · 全程 317.6 kJ',gl,GH-gb+20);
+  c.textAlign='right'; c.textBaseline='middle';
+  c.fillText('°C',gl-7,gt-14);
+
+  /* 曲線 5 段 */
+  c.lineWidth=3; c.lineCap='round'; c.lineJoin='round';
+  const seg=(e0,T0,e1,T1,col)=>{
+    c.strokeStyle=col; c.beginPath(); c.moveTo(gx(e0),gy(T0)); c.lineTo(gx(e1),gy(T1)); c.stroke();
+  };
+  const grad=(e0,e1,y,a,b)=>{
+    const g=c.createLinearGradient(gx(e0),0,gx(e1),0);
+    g.addColorStop(0,a); g.addColorStop(1,b); return g;
+  };
+  seg(0,-40,E1,0,K.ice);
+  c.strokeStyle=grad(E1,E2,0,K.ice,K.water); c.beginPath(); c.moveTo(gx(E1),gy(0)); c.lineTo(gx(E2),gy(0)); c.stroke();
+  seg(E2,0,E3,100,K.water);
+  c.strokeStyle=grad(E3,E4,100,K.water,K.vapor); c.beginPath(); c.moveTo(gx(E3),gy(100)); c.lineTo(gx(E4),gy(100)); c.stroke();
+  seg(E4,100,E5,140,K.vapor);
+
+  /* 平台直接標註 */
+  c.textAlign='center'; c.textBaseline='bottom'; c.font='600 11px "IBM Plex Mono",monospace';
+  c.fillStyle=K.iceInk;  c.fillText('熔化 33.4 kJ',gx((E1+E2)/2),gy(0)-13);
+  c.fillStyle=K.vaporInk;c.fillText('汽化 226 kJ',gx((E3+E4)/2),gy(100)-11);
+
+  /* 目前位置 */
+  const px=gx(E), py=gy(s.T);
+  c.strokeStyle=K.ink3; c.lineWidth=1; c.setLineDash([3,4]);
+  c.beginPath(); c.moveTo(px,py); c.lineTo(px,GH-gb); c.stroke(); c.setLineDash([]);
+  const col=s.fg>0.5?K.vapor:(s.fs>0.5?K.ice:K.water);
+  c.beginPath(); c.arc(px,py,7,0,6.284);
+  c.fillStyle=col; c.fill(); c.strokeStyle=K.surface; c.lineWidth=2.5; c.stroke();
+}
+
+/* ═══ UI ═════════════════════════════════════════════════ */
+const el=id=>document.getElementById(id);
+const rTemp=el('r-temp'), rState=el('r-state').querySelector('.v'),
+      rEnergy=el('r-energy'), rPower=el('r-power'), pw=el('pw'),
+      mcap=el('mcap'), trans=el('trans'), tTag=el('trans-tag'),
+      tBar=el('trans-bar'), tPc=el('trans-pc');
+let lastPh='';
+
+function paintUI(s){
+  rTemp.innerHTML=s.T.toFixed(1)+'<small>°C</small>';
+  rEnergy.innerHTML=(E/1000).toFixed(1)+'<small>kJ</small>';
+  rPower.innerHTML=(power*PMAX/100000).toFixed(1)+'<small>kW</small>';
+  rState.textContent=LABEL[s.ph];
+  rState.style.color = s.ph==='ice'?'var(--ice-ink)' : s.ph==='vapor'?'var(--vapor-ink)' : 'var(--water-ink)';
+
+  if(s.ph!==lastPh){
+    lastPh=s.ph;
+    mcap.innerHTML=CAPS[s.ph];
+    mcap.className='mcap '+(s.ph==='ice'||s.ph==='melt'?'is-ice':s.ph==='vapor'||s.ph==='boil'?'is-vapor':'is-water');
+  }
+  const on = s.ph==='melt'||s.ph==='boil';
+  trans.classList.toggle('on',on);
+  if(on){
+    tTag.textContent = s.ph==='melt' ? '熔化中 · 溫度不變' : '沸騰中 · 溫度不變';
+    tTag.style.color = s.ph==='melt'?'var(--ice-ink)':'var(--vapor-ink)';
+    tBar.style.width=(s.pr*100).toFixed(1)+'%';
+    tBar.style.background = s.ph==='melt'?'var(--ice)':'var(--vapor)';
+    tPc.textContent=Math.round(s.pr*100)+'%';
+  }
+}
+
+el('power').addEventListener('input',e=>{
+  power=+e.target.value;
+  pw.textContent = power===0 ? '關閉' : (power>0?'+':'−')+Math.abs(power*PMAX/100000).toFixed(1)+' kW';
+  pw.style.color = power===0?'var(--ink-3)':(power>0?'var(--vapor-ink)':'var(--ice-ink)');
+});
+for(const b of document.querySelectorAll('[data-sp]')) b.addEventListener('click',()=>{
+  speed=+b.dataset.sp;
+  for(const o of document.querySelectorAll('[data-sp]')) o.setAttribute('aria-pressed',o===b);
+});
+for(const b of document.querySelectorAll('.go')) b.addEventListener('click',()=>{ E=+b.dataset.e; });
+
+/* 曲線刷選 */
+function scrub(ev){
+  const r=cvC.getBoundingClientRect();
+  const x=(ev.clientX-r.left)/r.width*GW;
+  E=Math.min(E5,Math.max(0,(x-gl)/(GW-gl-gr)*E5));
+}
+cvC.addEventListener('pointerdown',e=>{scrubbing=true;cvC.setPointerCapture(e.pointerId);scrub(e)});
+cvC.addEventListener('pointermove',e=>{if(scrubbing)scrub(e)});
+cvC.addEventListener('pointerup',()=>scrubbing=false);
+cvC.addEventListener('pointercancel',()=>scrubbing=false);
+
+/* ═══ 主迴圈 ═════════════════════════════════════════════ */
+let prev=performance.now(), lastW=-1;
+function frame(now){
+  /* 分頁隱藏時版面寬度是 0，這時量到的畫布尺寸不能用；
+     每幀確認一次，等到真的看得見再重新量，才不會整頁空白 */
+  if(!ctxM || cvM.clientWidth!==lastW){ fitAll(); lastW=cvM.clientWidth; }
+  const dt=Math.min(0.05,(now-prev)/1000); prev=now;
+  if(power!==0 && !scrubbing){
+    E=Math.min(E5,Math.max(0,E+power/100*PMAX*dt*speed));
+  }
+  const s=solve(E);
+  const hb=stepMols(s,dt);
+  drawMols(s,hb); drawVessel(s,dt); drawCurve(s); paintUI(s);
+  requestAnimationFrame(frame);
+}
+
+/* ═══ 啟動 ═══════════════════════════════════════════════ */
+let rz;
+addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(fitAll,120)});
+function start(){ fitAll(); requestAnimationFrame(frame); }
+
+window.claude?.hot?.snapshot?.(()=>({E,power,speed}));
+const boot=d=>{
+  if(d&&typeof d.E==='number'){
+    E=d.E; power=d.power??0; speed=d.speed??5;
+    const pi=el('power'); pi.value=power; pi.dispatchEvent(new Event('input'));
+    for(const o of document.querySelectorAll('[data-sp]')) o.setAttribute('aria-pressed',+o.dataset.sp===speed);
+  }
+  start();
+};
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>

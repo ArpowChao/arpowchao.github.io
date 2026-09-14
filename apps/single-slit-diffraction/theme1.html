@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>單狹縫繞射 - 主題一：現象觀察與惠更斯模型</title>
+<style>
+  :root {
+    --primary: #2c3e50;
+    --secondary: #e74c3c;
+    --highlight: #f39c12;
+    --bg-color: #ecf0f1;
+    --panel-bg: #ffffff;
+    --btn-play: #2ecc71;
+    --btn-pause: #f39c12;
+    --btn-calm: #3498db;
+    --btn-reset: #95a5a6;
+  }
+  body {
+    font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--bg-color);
+    color: #333;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+  .container {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    width: 100%;
+    height: 100%;
+  }
+  .panel {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar {
+    flex: 0 0 340px;
+    overflow-y: auto;
+  }
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.4em;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 10px;
+  }
+  .author-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #7f8c8d;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .concept-box {
+    background: #eaf2f8;
+    border-left: 5px solid #3498db;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .control-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .control-item label {
+    font-weight: bold;
+    color: #34495e;
+    display: flex;
+    justify-content: space-between;
+  }
+  input[type=range] {
+    width: 100%;
+    cursor: pointer;
+  }
+  
+  .btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  button.action-btn {
+    color: white;
+    border: none;
+    padding: 12px 10px;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: filter 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  button.action-btn:hover { filter: brightness(0.9); }
+  button.action-btn:active { transform: scale(0.98); }
+  
+  #btn-play { background: var(--btn-play); }
+  #btn-pause { background: var(--btn-pause); }
+  #btn-calm { background: var(--btn-calm); grid-column: span 2; font-size: 1.1em; padding: 15px;}
+  #btn-reset { background: var(--btn-reset); grid-column: span 2;}
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--secondary);
+    background: #fdf2f0;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #fadbd8;
+    margin-top: 10px;
+  }
+  input[type=checkbox] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  .canvas-wrapper {
+    flex: 1;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    background: #555; /* Neutral gray for flat water */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill; /* Stretch slightly to fit panel, or contain */
+    image-rendering: pixelated; 
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sidebar panel">
+    <h1>主題一：現象觀察與惠更斯模型</h1>
+    <div class="author-tag">成德高中 陳家騏老師 設計</div>
+    
+    <div class="concept-box">
+      <strong>💡 惠更斯原理 (Huygens' Principle)</strong><br>
+      波前上的每一點，都可以視為「新的點波源」，各自發出圓形的子波並以原波速前進。<br>
+      光通過單狹縫後不是一條直線，而是會向外擴展(繞射)，正是因為這些無數的子波在空間中重新疊加的結果。
+    </div>
+
+    <div class="control-group">
+      <div class="control-item">
+        <label><span>狹縫寬度 (b)</span> <span id="val-slit">40</span></label>
+        <input type="range" id="slider-slit" min="10" max="100" value="40" step="2">
+      </div>
+      <div class="control-item">
+        <label><span>波長 (λ)</span> <span id="val-wave">20</span></label>
+        <input type="range" id="slider-wave" min="10" max="40" value="20" step="1">
+      </div>
+      
+      <label class="checkbox-item">
+        <input type="checkbox" id="check-huygens" checked>
+        顯示惠更斯點波源與子波
+      </label>
+
+      <div class="btn-grid">
+        <button id="btn-play" class="action-btn">🌊 起振</button>
+        <button id="btn-pause" class="action-btn">⏸ 暫停</button>
+        <button id="btn-calm" class="action-btn">⏹ 恢復平靜</button>
+        <button id="btn-reset" class="action-btn">↺ 重置參數</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content panel">
+    <div class="canvas-wrapper">
+      <!-- Increased internal resolution for a larger, sharper observation area -->
+      <canvas id="waveCanvas" width="800" height="500"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  // UI Elements
+  const sliderSlit = document.getElementById('slider-slit');
+  const sliderWave = document.getElementById('slider-wave');
+  const valSlit = document.getElementById('val-slit');
+  const valWave = document.getElementById('val-wave');
+  const checkHuygens = document.getElementById('check-huygens');
+  
+  const btnPlay = document.getElementById('btn-play');
+  const btnPause = document.getElementById('btn-pause');
+  const btnCalm = document.getElementById('btn-calm');
+  const btnReset = document.getElementById('btn-reset');
+
+  // Physics & Animation Parameters
+  const slitX = 200; // Moved further left to give more observation room on the right
+  let slitWidth = parseInt(sliderSlit.value);
+  let lambda = parseInt(sliderWave.value);
+  let k = 2 * Math.PI / lambda;
+  let omega = 0.6; // wave speed multiplier
+  let waveSpeed = omega / k;
+  
+  let time = 0;
+  let isPlaying = false; // Start calm
+  let animationId;
+
+  // Pre-calculate point sources for Huygens principle
+  let sources = [];
+  function updateSources() {
+    sources = [];
+    const spacing = 1.5; 
+    const numSources = Math.floor(slitWidth / spacing);
+    const startY = height / 2 - slitWidth / 2;
+    for (let i = 0; i <= numSources; i++) {
+      sources.push({ x: slitX, y: startY + i * spacing });
+    }
+  }
+  updateSources();
+
+  // ImageData buffer for fast pixel manipulation
+  const imageData = ctx.createImageData(width, height);
+  const data = imageData.data;
+
+  function renderWave() {
+    const wt = omega * time;
+    const waveSpeed = omega / k;
+    const frontX = waveSpeed * time; // Position of the incident wave front
+    const slitHitTime = slitX / waveSpeed;
+    const maxR = waveSpeed * (time - slitHitTime); // Max radius of diffracted waves
+
+    const normalizationFactor = sources.length * 0.45; 
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let val = 0;
+        
+        if (x <= slitX) {
+          // Incident plane wave (propagates from x=0 to right)
+          if (x <= frontX) {
+            // Apply soft edge to the wavefront to prevent harsh aliasing
+            let fade = 1.0;
+            if (frontX - x < 10) fade = (frontX - x) / 10.0;
+            val = Math.cos(k * x - wt) * fade;
+          }
+        } else {
+          // Diffracted wave (superposition of point sources)
+          if (time > slitHitTime) {
+            for (let i = 0; i < sources.length; i++) {
+              const dx = x - sources[i].x;
+              const dy = y - sources[i].y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              
+              if (dist <= maxR) {
+                const dampening = Math.min(1, 18 / (dist + 18)); 
+                let fade = 1.0;
+                if (maxR - dist < 10) fade = (maxR - dist) / 10.0;
+                
+                // Phase continuity: source phase matches incident wave phase at slitX
+                val += Math.cos(k * slitX + k * dist - wt) * dampening * fade;
+              }
+            }
+            val = val / normalizationFactor;
+          }
+        }
+
+        // Clamp values and map to grayscale
+        if (val > 1) val = 1;
+        if (val < -1) val = -1;
+        
+        // Map -1 ~ 1 to 0 ~ 255 (Flat water is 127)
+        const intensity = 127 + val * 127;
+        const index = (y * width + x) * 4;
+        
+        data[index] = intensity;     // R
+        data[index + 1] = intensity; // G
+        data[index + 2] = intensity; // B
+        data[index + 3] = 255;       // Alpha
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Draw the barrier
+    ctx.fillStyle = '#111';
+    const barrierWidth = 12;
+    ctx.fillRect(slitX - barrierWidth/2, 0, barrierWidth, height/2 - slitWidth/2);
+    ctx.fillRect(slitX - barrierWidth/2, height/2 + slitWidth/2, barrierWidth, height/2 - slitWidth/2);
+
+    // Draw Huygens sources and sub-waves overlay
+    if (checkHuygens.checked && time > slitHitTime) {
+      const showCount = 7; // Show limited number of explicit sources for clarity
+      const step = Math.max(1, Math.floor(sources.length / showCount));
+      
+      ctx.lineWidth = 1.5;
+      
+      for (let i = 0; i < sources.length; i += step) {
+        const sx = sources[i].x;
+        const sy = sources[i].y;
+        
+        // Draw the point source
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw expanding sub-waves (circles exactly on the wave peaks)
+        ctx.strokeStyle = 'rgba(231, 76, 60, 0.4)';
+        
+        // Wave peaks occur where phase is a multiple of 2pi.
+        // k*slitX + k*r - wt = -2*n*pi
+        // r = maxR - n * lambda
+        let n = 0;
+        let r = maxR;
+        while(r > 0 && n < 15) { // draw up to 15 rings
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, -Math.PI/2, Math.PI/2);
+          ctx.stroke();
+          n++;
+          r = maxR - n * lambda;
+        }
+      }
+    }
+  }
+
+  function loop() {
+    if (isPlaying) {
+      time += 1;
+      renderWave();
+    }
+    animationId = requestAnimationFrame(loop);
+  }
+
+  // UI Event Listeners
+  sliderSlit.addEventListener('input', (e) => {
+    slitWidth = parseInt(e.target.value);
+    valSlit.innerText = slitWidth;
+    updateSources();
+    if (!isPlaying) renderWave();
+  });
+
+  sliderWave.addEventListener('input', (e) => {
+    lambda = parseInt(e.target.value);
+    k = 2 * Math.PI / lambda;
+    waveSpeed = omega / k;
+    valWave.innerText = lambda;
+    if (!isPlaying) renderWave();
+  });
+
+  checkHuygens.addEventListener('change', () => {
+    if (!isPlaying) renderWave();
+  });
+
+  // Action Buttons
+  btnPlay.addEventListener('click', () => {
+    if (!isPlaying) {
+      isPlaying = true;
+    }
+  });
+
+  btnPause.addEventListener('click', () => {
+    isPlaying = false;
+  });
+
+  btnCalm.addEventListener('click', () => {
+    isPlaying = false;
+    time = 0;
+    renderWave(); // Renders the flat t=0 state
+  });
+
+  btnReset.addEventListener('click', () => {
+    sliderSlit.value = 40;
+    sliderWave.value = 20;
+    slitWidth = 40;
+    lambda = 20;
+    k = 2 * Math.PI / lambda;
+    waveSpeed = omega / k;
+    valSlit.innerText = 40;
+    valWave.innerText = 20;
+    checkHuygens.checked = true;
+    
+    isPlaying = false;
+    time = 0;
+    updateSources();
+    renderWave();
+  });
+
+  // Start with Calm Water
+  renderWave();
+  loop();
+</script>
+</body>
+</html>

@@ -1,4 +1,8 @@
 changelog:
+  - date: "2026年9月14日"
+    entry: "新增「單狹縫繞射四大核心主題」（成德高中陳家騏老師設計），循序引導學生探索惠更斯子波起振、光程差反相配對抵消、空間幾何小角度近似，以及真實光強度光譜曲線與繞射圖樣。"
+  - date: "2026年9月14日"
+    entry: "新增「水的三態實驗台」（成德高中陳家騏老師設計），提供 100g 水加熱與冷卻模擬，微觀即時展示六角冰晶格解離、液態分子滑動與氣體分子運動，並同步連結巨觀容器浮冰 9% 露出率與定壓加熱曲線。"
   - date: "2026年5月30日"
     entry: "新增「108課綱高中物理線上講義：量子現象」，整合概念四層級結構（關鍵/輔助/細節/補充）、黑體輻射/光電效應/物質波雙狹縫三大互動模擬器、即時填答反饋與 Bloom 核心認知測驗。"
   - date: "2026年5月29日"
@@ -35,6 +39,18 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "單狹縫繞射四大核心主題"
+    image: "/assets/img/apps/single_slit_diffraction_thumbnail.png"
+    description: "由成德高中陳家騏老師設計。涵蓋四大進階主題：惠更斯波動模型、子波等分區塊配對抵消、空間幾何與小角度近似 (tanθ≈sinθ)，以及真實物理尺度與光強度分布 (Sinc²)。"
+    url: "/apps/single-slit-diffraction/index.html"
+    category: "波動與光學"
+    tags: ["Physics", "Optics", "Diffraction", "Huygens", "Simulation", "Wave"]
+  - title: "水的三態實驗台"
+    image: "/assets/img/apps/water_states_thumbnail.png"
+    description: "由成德高中陳家騏老師設計。加熱或冷卻 100 公克的水，微觀即時模擬分子六角晶格瓦解與氫鍵重組，並同步觀測巨觀容器相態、浮冰 9% 露出率與加熱曲線平台。"
+    url: "/apps/water-states.html"
+    category: "熱學"
+    tags: ["Physics", "Simulation", "Thermodynamics", "Phase Change", "Water"]
   - title: "108課綱高中物理線上講義：量子現象"
     image: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&q=80"
     description: "針對 108 課綱設計的物理學科概念線上講義。整合關鍵、輔助、細節與補充概念四層級結構，內建黑體輻射、光電效應、物質波雙狹縫等三大物理模擬動畫，搭配即時互動填答與 Bloom 認知測驗。"

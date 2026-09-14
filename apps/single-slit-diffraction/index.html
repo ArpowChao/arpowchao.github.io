@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>單狹縫繞射四大核心主題 | 成德高中 陳家騏老師 設計</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --secondary: #e74c3c;
+      --highlight: #f39c12;
+      --nav-bg: #1e293b;
+      --nav-text: #f8fafc;
+      --tab-active-bg: #334155;
+      --tab-active-text: #38bdf8;
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', 'Helvetica Neue', Arial, sans-serif;
+      background-color: #0f172a;
+      color: var(--nav-text);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 頂部導航列 */
+    .top-bar {
+      height: 60px;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      transform: translateX(-2px);
+    }
+
+    .app-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+    }
+
+    /* 主題切換按鈕組 */
+    .tabs-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 4px;
+      scrollbar-width: none;
+    }
+
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+
+    .tab-btn.active {
+      background: var(--tab-active-bg);
+      color: var(--tab-active-text);
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .tab-btn .badge-num {
+      background: rgba(255, 255, 255, 0.12);
+      color: inherit;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    .tab-btn.active .badge-num {
+      background: rgba(56, 189, 248, 0.2);
+    }
+
+    /* 作者銘謝標籤 */
+    .author-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.15));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fcd34d;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .author-pill svg {
+      color: #f59e0b;
+    }
+
+    /* 內容視窗 */
+    .content-viewport {
+      flex: 1;
+      position: relative;
+      background: #ecf0f1;
+      overflow: hidden;
+    }
+
+    .theme-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+
+    .theme-frame.active {
+      display: block;
+    }
+
+    @media (max-width: 1100px) {
+      .app-title {
+        display: none;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .top-bar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px;
+      }
+      .author-pill {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+      }
+      .tabs-nav {
+        width: 100%;
+        order: 3;
+        margin-top: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部功能與切換導覽列 -->
+  <header class="top-bar">
+    <div class="brand-group">
+      <a href="../index.html" class="back-btn" title="返回物理實驗室首頁">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        返回 Apps
+      </a>
+      <span class="app-title">單狹縫繞射核心實驗</span>
+    </div>
+
+    <!-- 主題切換分頁標籤 -->
+    <nav class="tabs-nav" role="tablist">
+      <button class="tab-btn active" data-tab="theme1" role="tab" aria-selected="true">
+        <span class="badge-num">主題一</span>
+        現象觀察與惠更斯模型
+      </button>
+      <button class="tab-btn" data-tab="theme2" role="tab" aria-selected="false">
+        <span class="badge-num">主題二</span>
+        子波配對與疊加抵消
+      </button>
+      <button class="tab-btn" data-tab="theme3" role="tab" aria-selected="false">
+        <span class="badge-num">主題三</span>
+        空間幾何與小角度近似
+      </button>
+      <button class="tab-btn" data-tab="theme4" role="tab" aria-selected="false">
+        <span class="badge-num">主題四</span>
+        量化參數與圖樣全貌
+      </button>
+    </nav>
+
+    <!-- 作者銘謝資訊 -->
+    <div class="author-pill">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      成德高中 陳家騏老師 設計
+    </div>
+  </header>
+
+  <!-- 實驗模擬內容區 (4 個獨立沙盒) -->
+  <main class="content-viewport">
+    <iframe id="frame-theme1" class="theme-frame active" src="theme1.html" title="主題一：現象觀察與惠更斯模型"></iframe>
+    <iframe id="frame-theme2" class="theme-frame" src="theme2.html" title="主題二：子波的配對與抵消"></iframe>
+    <iframe id="frame-theme3" class="theme-frame" src="theme3.html" title="主題三：空間幾何與小角度近似"></iframe>
+    <iframe id="frame-theme4" class="theme-frame" src="theme4.html" title="主題四：量化參數與繞射圖樣全貌"></iframe>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll('.tab-btn');
+    const frames = {
+      theme1: document.getElementById('frame-theme1'),
+      theme2: document.getElementById('frame-theme2'),
+      theme3: document.getElementById('frame-theme3'),
+      theme4: document.getElementById('frame-theme4'),
+    };
+
+    function switchTab(tabKey) {
+      if (!frames[tabKey]) return;
+
+      // 切換按鈕狀態
+      buttons.forEach(btn => {
+        const isActive = btn.dataset.tab === tabKey;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      // 切換框架顯示
+      Object.keys(frames).forEach(k => {
+        frames[k].classList.toggle('active', k === tabKey);
+      });
+
+      // 觸發該框架內的 resize 以確保 Canvas 尺寸正確
+      try {
+        const activeWin = frames[tabKey].contentWindow;
+        if (activeWin) activeWin.dispatchEvent(new Event('resize'));
+      } catch (e) {
+        // 跨框架保護
+      }
+
+      // 更新 URL Hash
+      if (history.replaceState) {
+        history.replaceState(null, '', '#' + tabKey);
+      } else {
+        location.hash = '#' + tabKey;
+      }
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    // 依據 URL Hash 初始化分頁
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = location.hash.replace('#', '');
+      if (hash && frames[hash]) {
+        switchTab(hash);
+      }
+    });
+
+    window.addEventListener('hashchange', () => {
+      const hash = location.hash.replace('#', '');
+      if (hash && frames[hash]) {
+        switchTab(hash);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>單狹縫繞射 - 主題三：空間幾何與小角度近似</title>
+<style>
+  :root {
+    --primary: #2c3e50;
+    --secondary: #e74c3c;
+    --highlight: #f39c12;
+    --good: #27ae60;
+    --bad: #c0392b;
+    --b-field: #3498db;
+    --panel-bg: #ffffff;
+  }
+  body {
+    font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #ecf0f1;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+  .container {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    width: 100%;
+    height: 100%;
+  }
+  .panel {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar {
+    flex: 0 0 380px;
+    overflow-y: auto;
+  }
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.4em;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 10px;
+  }
+  .author-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #7f8c8d;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .concept-box {
+    background: #eaf2f8;
+    border-left: 5px solid #3498db;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #2c3e50;
+    margin-bottom: 15px;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .control-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: #fdf2f0;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #fadbd8;
+  }
+  .control-item label {
+    font-weight: bold;
+    color: #34495e;
+    display: flex;
+    justify-content: space-between;
+  }
+  input[type=range] {
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .data-box {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-family: monospace;
+    font-size: 1.05em;
+  }
+  .data-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    color: var(--secondary);
+    font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+  }
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    color: #333;
+    align-items: center;
+  }
+  .data-row strong { color: var(--primary); font-size: 1.1em;}
+  .math-highlight {
+    background: #f1c40f;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #000;
+  }
+  .error-good { color: var(--good); font-weight: bold;}
+  .error-bad { color: var(--bad); font-weight: bold;}
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .instruction {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .instruction span {
+    background: rgba(44, 62, 80, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 1em;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sidebar panel">
+    <h1>主題三：空間幾何與小角度近似</h1>
+    <div class="author-tag">成德高中 陳家騏老師 設計</div>
+    
+    <div class="concept-box">
+      <strong>💡 巨觀測量與微觀光程差的橋樑</strong><br>
+      在實驗室中，我們只能量到屏幕距離 <strong>L</strong> 與亮暗紋位置 <strong>y</strong>。<br>
+      但干涉的條件取決於微觀的狹縫光程差 <strong>Δr = b·sinθ</strong>。<br>
+      因為 L 遠大於 y，θ 極小，我們可以利用 <strong>tanθ ≈ sinθ</strong> 進行完美轉換！
+    </div>
+
+    <div class="control-group">
+      <div class="control-item">
+        <label><span>狹縫到屏幕距離 (L)</span> <span id="val-L">100 cm</span></label>
+        <input type="range" id="slider-L" min="10" max="200" value="100" step="1">
+      </div>
+      
+      <div class="control-item">
+        <label><span>屏幕觀測位置 (y)</span> <span id="val-y">1.0 cm</span></label>
+        <input type="range" id="slider-y" min="0" max="20" value="1" step="0.1">
+      </div>
+      
+      <div class="control-item">
+        <label><span>狹縫寬度 (b)</span> <span id="val-b">0.50 mm</span></label>
+        <input type="range" id="slider-b" min="0.1" max="2.0" value="0.5" step="0.05">
+      </div>
+    </div>
+
+    <div class="data-box">
+      <h3>即時幾何計算 (小角度檢驗)</h3>
+      <div class="data-row" style="border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+        <span>夾角 θ = atan(y/L):</span>
+        <strong id="data-theta">0.573°</strong>
+      </div>
+      <div class="data-row" style="margin-top: 8px;">
+        <span>巨觀幾何 tan(θ):</span>
+        <strong id="data-tan">0.01000</strong>
+      </div>
+      <div class="data-row">
+        <span>微觀公式 sin(θ):</span>
+        <strong id="data-sin">0.01000</strong>
+      </div>
+      <div class="data-row" style="border-bottom: 2px solid #ccc; padding-bottom: 8px;">
+        <span>近似誤差 |tan-sin|/sin:</span>
+        <span id="data-error" class="error-good">0.00 %</span>
+      </div>
+      <div class="data-row" style="margin-top: 12px; font-size: 1.1em;">
+        <span>真實光程差 b·sinθ:</span>
+        <strong id="data-diff-real" style="color: var(--secondary);">0.00500 mm</strong>
+      </div>
+      <div class="data-row" style="font-size: 1.1em;">
+        <span>近似光程差 b·(y/L):</span>
+        <strong id="data-diff-approx" style="color: var(--b-field);">0.00500 mm</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <canvas id="simCanvas"></canvas>
+    <div class="instruction">
+      <span>🖱️ 拖曳左側滑桿，觀察巨觀實驗室尺度與放大鏡內微觀幾何的關聯</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // UI
+  const sliderL = document.getElementById('slider-L');
+  const sliderY = document.getElementById('slider-y');
+  const sliderB = document.getElementById('slider-b');
+  
+  const valL = document.getElementById('val-L');
+  const valY = document.getElementById('val-y');
+  const valB = document.getElementById('val-b');
+  
+  const dataTheta = document.getElementById('data-theta');
+  const dataTan = document.getElementById('data-tan');
+  const dataSin = document.getElementById('data-sin');
+  const dataError = document.getElementById('data-error');
+  const dataDiffReal = document.getElementById('data-diff-real');
+  const dataDiffApprox = document.getElementById('data-diff-approx');
+
+  let width, height;
+
+  // Variables
+  let L_cm = parseFloat(sliderL.value);
+  let y_cm = parseFloat(sliderY.value);
+  let b_mm = parseFloat(sliderB.value);
+
+  function resize() {
+    width = canvas.parentElement.clientWidth;
+    height = canvas.parentElement.clientHeight;
+    canvas.width = width;
+    canvas.height = height;
+    render();
+  }
+  window.addEventListener('resize', resize);
+  
+  function updateData() {
+    L_cm = parseFloat(sliderL.value);
+    y_cm = parseFloat(sliderY.value);
+    b_mm = parseFloat(sliderB.value);
+    
+    valL.innerText = L_cm.toFixed(0) + " cm";
+    valY.innerText = y_cm.toFixed(1) + " cm";
+    valB.innerText = b_mm.toFixed(2) + " mm";
+    
+    // Math
+    const tanTheta = y_cm / L_cm;
+    const thetaRad = Math.atan(tanTheta);
+    const thetaDeg = thetaRad * (180 / Math.PI);
+    const sinTheta = Math.sin(thetaRad);
+    
+    let errorPct = 0;
+    if (sinTheta > 0) {
+      errorPct = Math.abs(tanTheta - sinTheta) / sinTheta * 100;
+    }
+    
+    const diffReal = b_mm * sinTheta;
+    const diffApprox = b_mm * (y_cm / L_cm);
+    
+    // Update DOM
+    dataTheta.innerText = thetaDeg.toFixed(3) + "°";
+    dataTan.innerText = tanTheta.toFixed(5);
+    dataSin.innerText = sinTheta.toFixed(5);
+    
+    dataError.innerText = errorPct.toFixed(3) + " %";
+    if (errorPct < 1.0) {
+      dataError.className = "error-good";
+      dataError.innerText += " (極佳)";
+    } else if (errorPct < 5.0) {
+      dataError.className = "error-good";
+      dataError.innerText += " (尚可)";
+      dataError.style.color = "#f39c12";
+    } else {
+      dataError.className = "error-bad";
+      dataError.innerText += " (誤差大!)";
+    }
+    
+    dataDiffReal.innerText = diffReal.toFixed(5) + " mm";
+    dataDiffApprox.innerText = diffApprox.toFixed(5) + " mm";
+    
+    render();
+  }
+
+  [sliderL, sliderY, sliderB].forEach(el => el.addEventListener('input', updateData));
+
+  // Drawing functions
+  function drawArrow(x1, y1, x2, y2, color, lw=2) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const headLen = 10;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.fill();
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // --- 1. MACROSCOPIC VIEW (Lab Scale) ---
+    // Scaled for display. Let's fix the physical layout limits.
+    const screenDistX = width * 0.55; 
+    const originX = 100;
+    const originY = height * 0.7; // Center line Y
+    
+    // Visual mapping
+    // Max L is 200, mapped to screenDistX
+    const mapL = screenDistX * (L_cm / 200); 
+    const mapY = (y_cm / 20) * (height * 0.4); // max y is 20cm, maps to 40% height
+
+    // Draw Laser / Slit wall
+    ctx.fillStyle = '#555';
+    ctx.fillRect(originX - 10, originY - 100, 10, 200);
+    ctx.fillStyle = '#f1c40f'; // Slit light
+    ctx.fillRect(originX - 10, originY - 2, 12, 4);
+
+    // Draw Screen
+    const screenActualX = originX + mapL;
+    ctx.fillStyle = '#333';
+    ctx.fillRect(screenActualX, originY - height*0.6, 8, height*1.2);
+    
+    // Draw Center Line
+    ctx.strokeStyle = '#666';
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(screenActualX + 50, originY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw Target Point Y
+    const targetPy = originY - mapY;
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.arc(screenActualX, targetPy, 6, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Draw Ray to Y
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(screenActualX, targetPy);
+    ctx.stroke();
+
+    // Macroscopic Annotations
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    
+    // L label
+    drawArrow(originX, originY + 30, screenActualX, originY + 30, '#3498db');
+    drawArrow(screenActualX, originY + 30, originX, originY + 30, '#3498db');
+    ctx.fillStyle = '#3498db';
+    ctx.fillText("L", originX + mapL/2, originY + 50);
+
+    // Y label
+    if (mapY > 10) {
+      drawArrow(screenActualX + 25, originY, screenActualX + 25, targetPy, '#e74c3c');
+      drawArrow(screenActualX + 25, targetPy, screenActualX + 25, originY, '#e74c3c');
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillText("y", screenActualX + 40, originY - mapY/2 + 5);
+    }
+
+    // Theta arc Macroscopic
+    const thetaRad = Math.atan(y_cm / L_cm);
+    if (mapY > 0 && mapL > 0) {
+      ctx.strokeStyle = '#f39c12';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(originX, originY, 60, -thetaRad, 0);
+      ctx.stroke();
+      ctx.fillStyle = '#f39c12';
+      ctx.fillText("θ", originX + 75, originY - Math.sin(thetaRad/2)*60 + 5);
+    }
+
+
+    // --- 2. MICROSCOPIC VIEW (Magnifier) ---
+    const magRadius = 150;
+    const magX = width - 180;
+    const magY = 180;
+    
+    // Draw connection lines to magnifier
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(magX - magRadius, magY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Clip region for magnifier
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(magX, magY, magRadius, 0, Math.PI*2);
+    ctx.clip();
+    
+    // Magnifier background
+    ctx.fillStyle = '#222';
+    ctx.fill();
+    
+    // Draw magnified grid for scale feel
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    for(let i = -magRadius; i < magRadius; i+=20) {
+      ctx.beginPath(); ctx.moveTo(magX + i, magY - magRadius); ctx.lineTo(magX + i, magY + magRadius); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(magX - magRadius, magY + i); ctx.lineTo(magX + magRadius, magY + i); ctx.stroke();
+    }
+
+    // Slit (scaled up visually, not numerically)
+    // The width b_mm maps to a visual width B_vis
+    const B_vis = 40 + (b_mm / 2.0) * 80; // maps 0.1~2.0 to 44~120 pixels
+    const slitTopX = magX - 60;
+    const slitTopY = magY - B_vis/2;
+    const slitBotY = magY + B_vis/2;
+
+    // Slit wall
+    ctx.fillStyle = '#555';
+    ctx.fillRect(slitTopX - 20, magY - magRadius, 20, magRadius * 2);
+    ctx.fillStyle = '#222'; // hole
+    ctx.fillRect(slitTopX - 22, slitTopY, 24, B_vis);
+
+    // Draw parallel rays (since L >> b)
+    const rayLen = magRadius * 2;
+    const dx = rayLen * Math.cos(-thetaRad); // Negative because Y goes down in canvas
+    const dy = rayLen * Math.sin(-thetaRad);
+
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.9)';
+    ctx.lineWidth = 3;
+    // Top ray
+    drawArrow(slitTopX, slitTopY, slitTopX + dx, slitTopY + dy, 'rgba(231, 76, 60, 0.9)', 3);
+    // Bottom ray
+    drawArrow(slitTopX, slitBotY, slitTopX + dx, slitBotY + dy, 'rgba(231, 76, 60, 0.9)', 3);
+    
+    // Normal to rays
+    const normX = Math.sin(thetaRad); // Since ray dir is (cos, -sin)
+    const normY = Math.cos(thetaRad); 
+    
+    // Drop perpendicular from Top Ray to Bottom Ray
+    // The intersection on the bottom ray is at distance B_vis * sin(theta) from the slit bottom? No.
+    // Length of perpendicular is B_vis * cos(theta).
+    // Length along bottom ray is B_vis * sin(theta).
+    const pdLen = B_vis * Math.sin(thetaRad);
+    const pdPointX = slitTopX + pdLen * Math.cos(-thetaRad);
+    const pdPointY = slitBotY + pdLen * Math.sin(-thetaRad);
+
+    // Draw Wavefront (Perpendicular line)
+    ctx.strokeStyle = '#1abc9c';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(slitTopX, slitTopY);
+    ctx.lineTo(pdPointX, pdPointY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Right angle square
+    const sqSize = 8;
+    const p1x = pdPointX - sqSize * Math.cos(-thetaRad);
+    const p1y = pdPointY - sqSize * Math.sin(-thetaRad);
+    const p2x = p1x - sqSize * normX;
+    const p2y = p1y - sqSize * normY;
+    const p3x = pdPointX - sqSize * normX;
+    const p3y = pdPointY - sqSize * normY;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p2y); ctx.lineTo(p3x, p3y);
+    ctx.stroke();
+
+    // Highlight Path Difference (Δr)
+    ctx.strokeStyle = '#3498db';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(slitTopX, slitBotY);
+    ctx.lineTo(pdPointX, pdPointY);
+    ctx.stroke();
+
+    // Labels in Magnifier
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText("狹縫寬 b", slitTopX - 5, magY + 5);
+
+    // Path diff label
+    if (thetaRad > 0.05) {
+      ctx.fillStyle = '#3498db';
+      ctx.textAlign = 'left';
+      ctx.fillText("Δr = b·sinθ", slitTopX + pdLen/2 - 10, slitBotY + 25);
+    }
+
+    // Theta arc in micro
+    if (thetaRad > 0) {
+      ctx.strokeStyle = '#f39c12';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(slitTopX, slitBotY, 40, -Math.PI/2, -Math.PI/2 + thetaRad);
+      ctx.stroke();
+      ctx.fillStyle = '#f39c12';
+      ctx.fillText("θ", slitTopX + 15, slitBotY - 45);
+    }
+
+    ctx.restore(); // End clipping
+
+    // Magnifier Border
+    ctx.strokeStyle = '#f39c12';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(magX, magY, magRadius, 0, Math.PI*2);
+    ctx.stroke();
+    
+    // Label for magnifier
+    ctx.fillStyle = '#f39c12';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("微觀放大鏡 (平行光近似)", magX, magY + magRadius + 25);
+  }
+
+  // Init
+  resize();
+  updateData();
+
+</script>
+</body>
+</html>
