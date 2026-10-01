@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年10月1日"
+    entry: "新增「帶電球的近距離電力」，調整固定均勻帶電實心球的間距與電荷，對照球心庫倫公式和數值分割加總，驗證兩球不重疊時，近距離與遠距離的合力皆精確等於球心公式。"
   - date: "2026年9月14日"
     entry: "新增「單狹縫繞射四大核心主題」（成德高中陳家騏老師設計），循序引導學生探索惠更斯子波起振、光程差反相配對抵消、空間幾何小角度近似，以及真實光強度光譜曲線與繞射圖樣。"
   - date: "2026年9月14日"
@@ -39,6 +41,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "帶電球的近距離電力"
+    image: "/assets/img/apps/charged_spheres_thumbnail.svg"
+    description: "兩個固定均勻帶電實心球靠近時，合力仍精確等於球心庫倫公式。調整間距與電荷，對照解析公式和數值分割加總，驗證兩球不重疊時的近距離與遠距離結果。"
+    url: "/apps/charged-spheres/index.html"
+    category: "電磁學"
+    tags: ["Physics", "Electrostatics", "Coulomb's Law", "Uniform Charge", "Simulation"]
   - title: "單狹縫繞射四大核心主題"
     image: "/assets/img/apps/single_slit_diffraction_thumbnail.png"
     description: "由成德高中陳家騏老師設計。涵蓋四大進階主題：惠更斯波動模型、子波等分區塊配對抵消、空間幾何與小角度近似 (tanθ≈sinθ)，以及真實物理尺度與光強度分布 (Sinc²)。"

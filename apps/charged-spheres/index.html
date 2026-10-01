@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="均勻帶電的兩球靠近時，電力比球心庫倫公式大還是小？用局部受力與分割積分，驗證不重疊時的精確球心等效。">
+  <meta name="theme-color" content="#f6f1e7">
+  <title>帶電球的近距離電力 | Physics Lab</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="physics.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="light">
+  <header class="topbar">
+    <a class="back-link" href="../index.html"><span aria-hidden="true">←</span> Physics Lab</a>
+    <span class="topbar-label">INTERACTIVE ELECTROSTATICS</span>
+    <button id="theme-toggle" class="quiet-button" type="button" aria-pressed="true">切換深色</button>
+  </header>
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow"><span class="small-orbit" aria-hidden="true"></span> 均勻帶電球 · 庫倫定律探索</p>
+        <h1>靠得很近，<br class="mobile-break">電力就會不一樣嗎？</h1>
+        <p class="hero-description">兩顆均勻帶電球，不接觸。近側的電荷更靠近了，<br>整顆球的合力，會比把電荷放在球心的結果更大嗎？</p>
+      </div>
+      <div class="hero-note"><span>本實驗的關鍵條件</span><strong>均勻 · 球對稱 · 不重疊</strong><p>固定的體電荷分布，<br>不移動、不極化。</p></div>
+    </header>
+
+    <div class="experiment-layout">
+      <aside class="panel controls" aria-label="實驗控制">
+        <div class="section-heading"><span class="step-number">01</span><h2>設定你的實驗</h2><button id="reset" class="text-button" type="button">重設</button></div>
+        <div class="uniform-model"><span class="model-orbit" aria-hidden="true">⊕</span><div><strong>均勻帶電實心球</strong><small>體電荷密度 ρ = 3Q / (4πR³)</small></div></div>
+        <p class="control-note">電荷均勻分布在整個體積中。兩球固定、不接觸；改變間距時，分布保持不變。</p>
+        <div class="control-block distance-block">
+          <label for="gap">球面間隙 <span class="variable">g / R</span><output id="gap-output" for="gap">0.20</output></label>
+          <input id="gap" type="range" min="0" max="1000" step="1" value="131" aria-describedby="distance-hint">
+          <div class="range-labels"><span>靠近 · 0.05 R</span><span>拉遠 · 2000 R</span></div>
+          <p id="distance-hint">球心距 <span class="formula">d = 2R + g</span>，公式使用球心距，不是球面間隙。</p>
+        </div>
+        <div class="control-block">
+          <label for="radius">共同半徑 <span class="variable">R</span><output id="radius-output" for="radius">3.0 cm</output></label>
+          <input id="radius" type="range" min="1" max="10" step="0.5" value="3">
+          <div class="range-labels"><span>1 cm</span><span>10 cm</span></div>
+        </div>
+        <div class="control-block charge-a">
+          <label for="charge-a"><span><span class="sphere-tag">A</span> 總電荷 <span class="variable">Q₁</span></span><output id="charge-a-output" for="charge-a">+5.0 nC</output></label>
+          <input id="charge-a" type="range" min="-10" max="10" step="0.5" value="5">
+          <div class="range-labels"><span>−10 nC</span><span>+10 nC</span></div>
+        </div>
+        <div class="control-block charge-b">
+          <label for="charge-b"><span><span class="sphere-tag">B</span> 總電荷 <span class="variable">Q₂</span></span><output id="charge-b-output" for="charge-b">+5.0 nC</output></label>
+          <input id="charge-b" type="range" min="-10" max="10" step="0.5" value="5">
+          <div class="range-labels"><span>−10 nC</span><span>+10 nC</span></div>
+        </div>
+        <label class="checkbox-label"><input id="show-local" type="checkbox" checked> 顯示 A 對 B 各小塊的作用</label>
+        <label class="checkbox-label"><input id="show-pairs" type="checkbox" aria-controls="pair-comparison"> 比較水平最近／最遠電荷對</label>
+        <div class="presets"><h3>一鍵比較</h3><div class="preset-grid">
+          <button type="button" data-preset="like" class="preset active" aria-pressed="true"><strong>＋ / ＋</strong><span>等量同號</span></button>
+          <button type="button" data-preset="opposite" class="preset" aria-pressed="false"><strong>＋ / −</strong><span>等量異號</span></button>
+          <button type="button" data-preset="unequal" class="preset" aria-pressed="false"><strong>8 : 1</strong><span>不等量電荷</span></button>
+          <button type="button" data-preset="neutral" class="preset" aria-pressed="false"><strong>＋ / 0</strong><span>一球無電荷</span></button>
+        </div><button type="button" id="far-away" class="far-button">把目前的兩球拉遠 <span aria-hidden="true">↗</span></button></div>
+      </aside>
+
+      <section class="results" aria-label="實驗結果">
+        <div class="panel scene-panel">
+          <div class="scene-heading"><div><span class="step-number">02</span><h2>局部作用，與整球合力</h2></div><span class="status-pill">均勻帶電 · 不重疊</span></div>
+          <div class="view-controls" role="group" aria-label="畫面觀看控制">
+            <label for="view-zoom">畫面縮放</label>
+            <button id="view-out" type="button" aria-label="縮小畫面">−</button>
+            <input id="view-zoom" type="range" min="0" max="1000" step="1" value="167" aria-describedby="view-hint">
+            <button id="view-in" type="button" aria-label="放大畫面">＋</button>
+            <output id="view-zoom-output" for="view-zoom">1.00×</output>
+          </div>
+          <div class="view-navigation">
+            <div class="view-targets" role="group" aria-label="畫面聚焦">
+              <button id="view-fit" type="button">顯示全貌</button>
+              <button id="view-a" type="button">看球 A</button>
+              <button id="view-b" type="button">看球 B</button>
+            </div>
+            <small id="view-scale-readout">1R = — px · 等比例</small>
+          </div>
+          <p id="view-hint" class="view-hint">畫面保持等比例，遠距離時球會變小。<small id="view-note">拖曳平移，滾輪縮放；也可聚焦單球。</small></p>
+          <div class="scene-wrap"><canvas id="scene" tabindex="0" aria-describedby="view-hint" aria-label="兩球中央剖面的均勻體電荷與局部受力。可用方向鍵平移、加減鍵縮放、Home 顯示全貌；整球合力數值列於下方"></canvas></div>
+          <div class="scene-footer"><span class="legend-positive">＋ 正電荷</span><span class="legend-negative">− 負電荷</span><span id="distance-readout">球心距 d = 6.60 cm</span></div>
+          <p id="scene-caption" class="scene-caption">球內是三維分割電荷的中央剖面示意；細箭頭表示 A 對連續 B 球中等體積小塊的作用，粗箭頭表示兩球間的合力。合力由三維計算取得，箭頭長度僅供各自比較，兩球位置固定。</p>
+          <section id="pair-comparison" hidden aria-label="最近與最遠電荷對比較">
+            <div class="pair-comparison-heading"><h3>沿水平連心線，近遠作用差多少？</h3><span id="pair-direction">單對電荷 · 排斥</span></div>
+            <div class="pair-cards" aria-live="polite">
+              <article class="pair-card near"><p>水平最近的一對</p><strong id="near-pair-force">—</strong><small id="near-pair-distance">距離 r近 = —</small></article>
+              <article class="pair-card far"><p>水平最遠的一對</p><strong id="far-pair-force">—</strong><small id="far-pair-distance">距離 r遠 = —</small></article>
+            </div>
+            <div class="pair-ratio"><span>最近／最遠的受力大小比</span><strong id="pair-force-ratio">—</strong><span id="pair-relative-difference"></span></div>
+            <div class="pair-chart-legend"><span>最近電荷對</span><span class="far">最遠電荷對</span></div>
+            <canvas id="pair-chart" aria-label="最近與最遠電荷對的受力大小，用同一線性刻度比較"></canvas>
+            <p class="pair-note" id="pair-charge-note">沿兩球水平連心線，選出同一批小格中最近與最遠的電荷對。</p>
+            <p class="pair-note">兩組使用相同的 ΔqA 與 ΔqB；非零電荷時，F近 / F遠 = (r遠 / r近)²。最近的一對較強，但整球合力仍須把所有電荷對的方向一起加總。</p>
+          </section>
+        </div>
+
+        <div class="metrics" aria-live="polite" aria-atomic="true">
+          <article class="panel metric actual-metric"><p>逐對電荷加總 <span id="force-direction" class="direction">排斥</span></p><strong id="integrated-force">—</strong><small id="integral-description">計算所有 A–B 電荷對的三維作用力</small></article>
+          <article class="panel metric"><p>球心庫倫公式 <span class="formula">k |Q₁Q₂| / d²</span></p><strong id="coulomb-force">—</strong><small>球殼定理給出的精確合力</small></article>
+          <article class="panel metric ratio-metric"><p>大小比 <span class="formula">|F加總| / |F球心|</span></p><strong id="force-ratio">—</strong><small id="force-difference">連續均勻球的理論比值為 1</small></article>
+        </div>
+
+        <div class="insight" aria-live="polite"><span class="insight-icon" aria-hidden="true">＝</span><div><h3 id="insight-title">即使很靠近，整球合力仍精確相等</h3><p id="insight-text">近側的局部作用更強，遠側較弱；把所有電荷的受力連同方向與體積權重加總後，恰好得到球心公式。這是球對稱的結果，不只是遠距離近似。</p></div></div>
+
+        <div class="panel chart-panel">
+          <div class="chart-heading"><div><p class="eyebrow">即時逐對演算，對照解析理論</p><h2>改變距離，合力如何改變？</h2></div><div class="chart-legend"><span class="actual-line">分割電荷逐對加總</span><span class="point-line">球心庫倫公式</span></div></div>
+          <canvas id="force-chart" aria-label="合力與球面間隙的關係圖，比較數值逐對加總與球心公式"></canvas>
+          <div class="chart-footer"><p id="chart-description">正值排斥、負值吸引；橫軸為 g / R（對數刻度）。37 個間距各自演算，點間以直線連接。</p><span class="chart-marker-key">● 目前位置</span></div>
+          <div class="error-chart-heading"><span>放大觀察數值偏差</span><span id="chart-status">曲線演算中…</span></div>
+          <canvas id="error-chart" aria-label="數值力的大小相對球心公式的百分比偏差，正值偏大、負值偏小"></canvas>
+          <p class="error-caption">縱軸 = (|F加總| − |F球心|) / |F球心| × 100%。偏差來自有限小格近似，並非連續均勻球的物理偏差。</p>
+        </div>
+
+        <div class="panel integration-panel">
+          <div class="integration-heading"><div><p class="eyebrow">全部電荷對，實際套用庫倫定律</p><h2>提高分割精度，檢查收斂</h2></div><label for="grid-size">每軸格數 <output id="grid-output" for="grid-size">7</output></label></div>
+          <input id="grid-size" type="range" min="3" max="15" step="2" value="7" aria-describedby="integration-note">
+          <div class="calculation-breakdown"><span id="point-count">每球 — 個電荷點</span><span id="pair-count">共 — 對作用</span></div>
+          <div class="contribution-label"><span>B 球各切層的加總貢獻</span><span id="hemisphere-contribution">近側 — · 遠側 —</span></div>
+          <canvas id="slice-chart" aria-label="B 球各體積切層的受力貢獻，近側在左、遠側在右"></canvas>
+          <div class="integration-result"><span>連續體積分的獨立驗證</span><strong id="integration-error">—</strong></div>
+          <p id="integration-note">兩球都切成小格，以格心點電荷近似，每點帶 Q / N。逐對計算 k Δq₁ Δq₂ r⃗ / r³，再加總三維向量。邊界小格與格心近似會造成偏大或偏小；提高精度時不一定單調收斂。切層長條來自同一逐對加總，體積分另用 16 階積分驗證連續球結果。</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="learning-section" aria-labelledby="learning-title">
+      <div class="learning-heading"><p class="eyebrow">把問題帶回課堂</p><h2 id="learning-title">答案是相等。<br>但「均勻」是關鍵。</h2><p>不必先把球縮成一個點，<br>球對稱已經讓整球作用精確等效。</p></div>
+      <div class="learning-cards">
+        <article><span class="card-index">01 / 球殼定理</span><h3>球外的場，等同球心電荷</h3><p>均勻帶電球在球外的電場，精確等於把其總電荷放在球心。這是球對稱分布的性質，球很大或很靠近都不會改變，只要觀察點仍在球外。</p></article>
+        <article><span class="card-index">02 / 合力加總</span><h3>不是每一小塊都受一樣的力</h3><p>A 球在 B 球內各位置的電場不同。必須加總整顆 B 球的 ρ₂ E₁ dV，連同方向一起算；兩球不重疊時，結果精確等於 kQ₁Q₂ / d²。</p></article>
+        <article><span class="card-index">03 / 距離的意義</span><h3>靠近不會自動讓公式失效</h3><p>本模型不需要 d 遠大於 R。若電荷分布不再球對稱，通常才需要用遠距離的質點近似。本頁討論靜電作用，不是電磁輻射的近場／遠場分區。</p></article>
+      </div>
+    </section>
+
+    <section class="question-panel panel" aria-labelledby="question-title">
+      <div><p class="eyebrow">先預測，再驗證</p><h2 id="question-title">公式中的距離，是哪個距離？</h2><p>保持球的半徑與總電荷不變，把球面間隙縮到很小。<br>用間隙 g 或球心距 d 代入，結果會一樣嗎？</p></div>
+      <details><summary>看解釋 <span aria-hidden="true">＋</span></summary><p>應該使用球心距 d = 2R + g。球面快要接觸時 g 接近零，但球心距仍接近 2R，所以均勻球的合力保持有限，不會因為間隙趨近零而發散。</p></details>
+    </section>
+
+    <details class="method-details">
+      <summary>為什麼精確相等？模型、推導與參考資料</summary>
+      <div class="method-body"><p>模型是假設真空中兩顆固定、均勻帶電的實心球，各球的體電荷密度為 ρ = 3Q / (4πR³)，不允許電荷移動或介電極化。球心距 d 大於兩球半徑和，兩球不接觸。本頁用共同半徑控制；等效公式同樣適用於半徑不同、各自保持球對稱且不重疊的兩球。</p><p>球殼定理先把 A 球在球外的位勢等效為球心點電荷。將這個位勢對 B 球的球對稱電荷分布積分，再用一次球殼定理，可得交互作用能 U = kQ₁Q₂ / d。因此，B 球朝遠離 A 的方向所受合力為 F = −dU / dd = kQ₁Q₂ / d²。這並不假設整個雙球系統的場具有球對稱。</p><p>主要數值由兩球各自的三維立方網格求得：取格心位於球內的小格，各分配 Q / N 的點電荷，逐對套用向量庫倫公式。格心與球面邊界近似破壞了連續球的精確球對稱，有限格數的偏差是真正算出的數值誤差。所有間距的數值曲線都重新逐對演算，沒有直接抄解析公式。</p><p>獨立驗證用 16 階 Gauss–Legendre 體積分，將 B 球沿兩球連線切層，再對每個切層的圓盤積分 A 球的局部電場；橫向合力由對稱性抵消。連續球的精確物理結果始終為球心公式。Q = 0 時，本均勻體電荷模型的密度也為零，不包含感應電荷。</p><p id="solver-status">加總檢查中…</p><ul>
+        <li><a href="https://openstax.org/books/university-physics-volume-2/pages/6-3-applying-gausss-law" target="_blank" rel="noopener noreferrer">OpenStax：Applying Gauss’s Law — 球對稱分布的內外電場</a></li>
+        <li><a href="https://web.mit.edu/8.02t/www/802TEAL3D/visualizations/coursenotes/modules/guide04.pdf" target="_blank" rel="noopener noreferrer">MIT 8.02：Gauss’s Law — 球對稱電荷與均勻實心球的內外場</a></li>
+      </ul><p>兩球合力的推導是將上述球殼定理連續套用兩次。固定均勻帶電是理想限制；真實材料若發生極化或電荷重分布，應重新考慮分布。</p></div>
+    </details>
+    <footer class="page-footer"><a href="../index.html">← 回到 Physics Lab</a><span>帶電球的近距離電力 · 一個從學生提問開始的實驗</span></footer>
+  </main>
+</body>
+</html>

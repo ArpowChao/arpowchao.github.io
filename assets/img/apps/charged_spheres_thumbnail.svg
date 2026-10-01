@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480" role="img" aria-labelledby="title desc">
+  <title id="title">帶電球的近距離電力</title>
+  <desc id="desc">深墨藍背景上的橙色正電球與青色負電球，截面內的均勻電荷點表示固定均勻體電荷，箭頭標示互相吸引的合力，下方標示球心距離。</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#081525"/>
+      <stop offset="1" stop-color="#11293b"/>
+    </linearGradient>
+    <radialGradient id="positive" cx="34%" cy="27%" r="78%">
+      <stop stop-color="#ffc38a"/>
+      <stop offset=".45" stop-color="#ed9855"/>
+      <stop offset="1" stop-color="#b75129"/>
+    </radialGradient>
+    <radialGradient id="negative" cx="34%" cy="27%" r="78%">
+      <stop stop-color="#a4f3ed"/>
+      <stop offset=".45" stop-color="#59cfc9"/>
+      <stop offset="1" stop-color="#208e9a"/>
+    </radialGradient>
+    <pattern id="positive-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="11" r="2.5" fill="#fff0dd" fill-opacity=".88"/>
+    </pattern>
+    <pattern id="negative-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="11" r="2.5" fill="#e1fffb" fill-opacity=".88"/>
+    </pattern>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#9cc6dc" stroke-opacity=".06"/>
+    </pattern>
+    <marker id="positive-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 7 4 0 8" fill="#ffbc82"/>
+    </marker>
+    <marker id="negative-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 7 4 0 8" fill="#79e3dc"/>
+    </marker>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+  <rect width="800" height="480" rx="22" fill="url(#background)"/>
+  <rect width="800" height="480" rx="22" fill="url(#grid)"/>
+  <g font-family="'Noto Sans TC', 'Microsoft JhengHei', sans-serif">
+    <text x="44" y="49" fill="#eaf5f8" font-size="24" font-weight="700" letter-spacing="1">帶電球的近距離電力</text>
+    <text x="44" y="80" fill="#91a9b8" font-size="14" letter-spacing="2">CHARGED SPHERES · ELECTROSTATICS</text>
+    <rect x="608" y="30" width="148" height="35" rx="17.5" fill="#213b4d"/>
+    <text x="682" y="53" text-anchor="middle" fill="#b9d1dd" font-size="13">固定均勻體電荷</text>
+    <text x="400" y="124" text-anchor="middle" fill="#bfd8e4" font-size="16">球不重疊，近距離也精確</text>
+  </g>
+  <path d="M112 252H688" fill="none" stroke="#5c7a8f" stroke-width="1" stroke-dasharray="4 5"/>
+  <circle cx="222" cy="252" r="93" fill="#f29350" opacity=".18" filter="url(#glow)"/>
+  <circle cx="578" cy="252" r="93" fill="#59d8d0" opacity=".18" filter="url(#glow)"/>
+  <circle cx="222" cy="252" r="92" fill="url(#positive)" stroke="#f8b176" stroke-width="1.5"/>
+  <circle cx="578" cy="252" r="92" fill="url(#negative)" stroke="#82e5df" stroke-width="1.5"/>
+  <circle cx="222" cy="252" r="89" fill="url(#positive-dots)"/>
+  <circle cx="578" cy="252" r="89" fill="url(#negative-dots)"/>
+  <path d="M222 252H379" fill="none" stroke="#ffbc82" stroke-width="3.5" marker-end="url(#positive-arrow)"/>
+  <path d="M578 252H421" fill="none" stroke="#79e3dc" stroke-width="3.5" marker-end="url(#negative-arrow)"/>
+  <circle cx="222" cy="252" r="4" fill="#092131" stroke="#fff0dd" stroke-width="1.5"/>
+  <circle cx="578" cy="252" r="4" fill="#092131" stroke="#e1fffb" stroke-width="1.5"/>
+  <g font-family="Georgia, serif" font-size="22" font-style="italic">
+    <text x="222" y="151" text-anchor="middle" fill="#ffbc82">+Q₁</text>
+    <text x="578" y="151" text-anchor="middle" fill="#79e3dc">−Q₂</text>
+    <text x="349" y="238" text-anchor="middle" fill="#ffbc82">F₁</text>
+    <text x="451" y="238" text-anchor="middle" fill="#79e3dc">F₂</text>
+  </g>
+  <g fill="none" stroke="#7a99aa" stroke-width="1.1">
+    <path d="M222 352V394M578 352V394" stroke-dasharray="4 5"/>
+    <path d="M222 388H578M222 382V394M578 382V394"/>
+    <path d="M234 383 222 388 234 393M566 383 578 388 566 393"/>
+  </g>
+  <rect x="337" y="376" width="126" height="24" rx="12" fill="#0d2031"/>
+  <text x="400" y="393" text-anchor="middle" fill="#b8d0dc" font-size="14" font-family="'Noto Sans TC', 'Microsoft JhengHei', sans-serif">球心距離 d</text>
+  <text x="44" y="451" fill="#a7becc" font-size="14" font-family="'Noto Sans TC', 'Microsoft JhengHei', sans-serif">均勻體電荷（截面示意）</text>
+  <text x="756" y="451" text-anchor="end" fill="#bfd9e2" font-size="18" font-family="Georgia, serif" font-style="italic">|F| = k|Q₁Q₂| / d²</text>
+</svg>
