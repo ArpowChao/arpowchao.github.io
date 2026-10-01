@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">棒球氣流實驗室：光滑球與有縫線球的氣流比較</title>
+  <desc id="desc">深藍色背景上兩顆白球並排置於青色流線中，下方棒球具有紅色凸起縫線與不同的尾流，示意二維氣流比較。</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#071725"/>
+      <stop offset="1" stop-color="#142c3e"/>
+    </linearGradient>
+    <radialGradient id="ball" cx="32%" cy="25%" r="80%">
+      <stop stop-color="#ffffff"/>
+      <stop offset="0.7" stop-color="#e6e9e5"/>
+      <stop offset="1" stop-color="#a8b9b9"/>
+    </radialGradient>
+    <linearGradient id="wake">
+      <stop stop-color="#ef9457" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#44d7d2" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#cce7ed" stroke-opacity="0.045"/>
+    </pattern>
+    <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0 0L6 3L0 6" fill="none" stroke="#65e4df"/>
+    </marker>
+  </defs>
+  <rect width="960" height="560" fill="url(#bg)"/>
+  <rect width="960" height="560" fill="url(#grid)"/>
+  <path d="M50 290H910" stroke="#cce7ed" stroke-opacity="0.14" stroke-dasharray="6 10"/>
+  <g font-family="Inter, Noto Sans TC, sans-serif">
+    <text x="52" y="64" fill="#79e5db" font-size="18" font-weight="700" letter-spacing="4">BASEBALL · FLOW LAB</text>
+    <text x="52" y="104" fill="#edf6f5" font-size="27" font-weight="700">2D CFD / SEAM COMPARISON</text>
+    <text x="52" y="252" fill="#b8cdd4" font-size="17">SMOOTH</text>
+    <text x="52" y="486" fill="#b8cdd4" font-size="17">WITH SEAMS</text>
+    <text x="890" y="514" fill="#7c9ca8" text-anchor="end" font-size="15">D2Q9 · LBM</text>
+  </g>
+  <path d="M355 211C475 168 623 179 901 216C669 250 504 245 355 211Z" fill="url(#wake)"/>
+  <path d="M355 419C475 347 688 379 901 416C682 476 514 478 355 419Z" fill="url(#wake)"/>
+  <g fill="none" stroke="#65e4df" stroke-width="2.1" opacity="0.8">
+    <path d="M52 145H211C282 145 283 122 326 122S407 149 468 149H903" marker-end="url(#arrow)"/>
+    <path d="M52 180H215C258 180 268 144 326 144S412 178 488 178H903" marker-end="url(#arrow)"/>
+    <path d="M52 213H228M397 213C454 184 513 231 569 212S676 188 735 210S844 221 903 212"/>
+    <path d="M52 246H214C263 246 269 278 326 278S411 247 488 247H903" marker-end="url(#arrow)"/>
+    <path d="M52 278H211C277 278 283 300 326 300S407 275 468 275H903"/>
+    <path d="M52 350H209C278 350 288 331 328 331S407 355 469 351S790 326 903 350" marker-end="url(#arrow)"/>
+    <path d="M52 384H216C256 384 279 352 328 352S403 383 474 377S567 369 609 387S699 412 752 387S847 368 903 391" marker-end="url(#arrow)"/>
+    <path d="M52 417H228M397 418C453 394 497 463 554 434S653 382 707 418S806 460 903 423"/>
+    <path d="M52 451H215C264 451 276 484 328 484S405 457 480 465S578 465 619 444S710 425 752 452S845 478 903 459" marker-end="url(#arrow)"/>
+    <path d="M52 484H209C278 484 290 507 328 507S407 487 470 493H903"/>
+  </g>
+  <circle cx="328" cy="211" r="62" fill="url(#ball)" stroke="#dfeeed" stroke-width="2"/>
+  <circle cx="328" cy="418" r="62" fill="url(#ball)" stroke="#dfeeed" stroke-width="2"/>
+  <g fill="none" stroke="#e46c66" stroke-linecap="round">
+    <path d="M298 363C335 391 335 446 298 474M357 363C320 391 320 446 357 474" stroke-width="3.2"/>
+    <path d="M296 370L305 365M305 380L314 375M311 391L321 388M315 404L326 403M316 418H327M315 432L326 433M311 445L321 448M305 456L314 461M296 466L305 471M359 370L350 365M350 380L341 375M344 391L334 388M340 404L329 403M339 418H328M340 432L329 433M344 445L334 448M350 456L341 461M359 466L350 471" stroke-width="2.5"/>
+  </g>
+  <g fill="none" stroke="#efaa76" stroke-width="1.5" opacity="0.75">
+    <path d="M505 205C523 187 552 189 556 207S535 230 522 220S519 202 534 201"/>
+    <path d="M549 423C528 391 494 405 496 429S534 456 544 436S523 411 514 424"/>
+    <path d="M697 405C722 375 754 393 750 417S719 444 706 424S715 397 729 405"/>
+  </g>
+</svg>

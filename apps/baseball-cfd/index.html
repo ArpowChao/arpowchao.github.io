@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用二維格子玻爾茲曼 CFD 比較棒球光滑截面與凸起縫線的氣流、壓力和尾流。可調整球速、旋轉、縫線高度與方向。">
+  <meta name="theme-color" content="#f5f3eb">
+  <title>棒球氣流實驗室 | Physics Lab</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="../index.html">← <span>Physics Lab</span></a>
+    <span class="topbar-note">風洞實驗 / FLUID DYNAMICS</span>
+    <a class="method-link" href="#method">模型與原理 ↗</a>
+  </header>
+
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> THE SCIENCE BEHIND THE SEAMS</p>
+        <h1>一條縫線，<span>如何改變氣流？</span></h1>
+        <p class="hero-description">把棒球放進數值風洞。比較光滑表面與凸起縫線，<br class="desktop-break">觀察旋轉、壓力與球後方的尾流。</p>
+      </div>
+      <div class="hero-ball" aria-hidden="true">
+        <svg viewBox="0 0 200 160"><defs><radialGradient id="ball-shade" cx="35%" cy="28%"><stop stop-color="#fffefa"/><stop offset="1" stop-color="#dbd8cb"/></radialGradient></defs><path class="air-line" d="M0 41H44M0 78H33M0 115H47M148 41C175 30 180 50 200 41M158 78C174 56 179 102 200 78M148 115C175 128 184 98 200 115"/><circle cx="96" cy="78" r="58" fill="url(#ball-shade)"/><path class="ball-seam" d="M66 29C107 54 104 102 66 128M126 29C87 54 89 102 126 128"/><path class="ball-stitches" d="M69 34L63 43M79 44L73 52M87 58L79 63M91 74L83 76M90 90L82 87M84 106L77 100M73 119L67 111M122 34L129 43M112 45L119 52M105 59L113 64M101 75L109 76M102 91L110 88M108 106L115 101M119 119L125 111"/></svg>
+        <span>縫線 × 旋轉 × 尾流</span>
+      </div>
+    </header>
+
+    <div class="model-banner"><span class="model-tag">2D CFD</span><p>實際數值演算 · 二維低 Re 截面模型 · 縫線放大 6 倍以解析格點</p><a href="#method">了解適用範圍 ↓</a></div>
+
+    <div class="lab-layout">
+      <aside class="controls panel" aria-label="風洞控制">
+        <div class="panel-heading"><h2>設定風洞</h2><button id="reset" class="text-button" type="button">重設</button></div>
+        <div class="control-block">
+          <label for="speed">相對風速 <output id="speed-output" for="speed">130 <small>km/h</small></output></label>
+          <input id="speed" type="range" min="80" max="160" step="5" value="130">
+          <div class="range-labels"><span>80 km/h</span><span>160 km/h</span></div>
+        </div>
+        <div class="control-block">
+          <label for="spin">旋轉速率 <output id="spin-output" for="spin">1800 <small>rpm</small></output></label>
+          <input id="spin" type="range" min="-3000" max="3000" step="100" value="1800">
+          <div class="range-labels"><span>順時針 −3000</span><span>逆時針 +3000</span></div>
+          <p id="spin-direction" class="control-hint">↺ 逆時針：球頂表面向左移動</p>
+        </div>
+        <div class="control-divider"><span>縫線幾何</span><span class="seam-dot" aria-hidden="true"></span></div>
+        <div class="control-block">
+          <label for="seam-height">參考凸起高度 <output id="seam-height-output" for="seam-height">0.8 <small>mm</small></output></label>
+          <input id="seam-height" type="range" min="0" max="1.5" step="0.1" value="0.8">
+          <div class="range-labels"><span>0 · 光滑表面</span><span>1.5 mm</span></div>
+          <p class="control-hint">求解幾何使用上述高度 × 6；0 mm 時兩側完全相同。</p>
+        </div>
+        <div class="control-block">
+          <label for="seam-angle">縫線方位 <output id="seam-angle-output" for="seam-angle">35 <small>°</small></output></label>
+          <input id="seam-angle" type="range" min="0" max="180" step="5" value="35">
+          <div class="range-labels"><span>0° · 下游側</span><span>180° · 上游側</span></div>
+          <p class="control-hint">從右方起，逆時針量角；縫線方位固定。</p>
+        </div>
+        <fieldset class="seam-selection"><legend>截面上的縫線凸起數</legend><label><input type="radio" name="seam-count" value="2" checked><span>2 處</span></label><label><input type="radio" name="seam-count" value="4"><span>4 處</span></label></fieldset>
+        <p class="control-hint seam-count-hint">理想化截面凸起數，並非二縫線／四縫線握法。</p>
+        <div class="control-divider"><span>快速探索</span></div>
+        <div class="presets">
+          <button type="button" data-preset="still"><span>○</span>無旋轉</button>
+          <button type="button" data-preset="ccw"><span>↺</span>逆時針</button>
+          <button type="button" data-preset="cw"><span>↻</span>順時針</button>
+          <button type="button" data-preset="seams"><span>⌁</span>只看縫線</button>
+        </div>
+        <details class="advanced"><summary>數值模型設定</summary><div class="control-block"><label for="model-re">模型雷諾數 <output id="model-re-output" for="model-re">120</output></label><input id="model-re" type="range" min="60" max="160" step="10" value="120"><p class="control-hint">Re = UD / ν。這是低 Re 二維模型，與真球參考 Re 分開設定。固定模型 Re 時，球速會改變旋轉比與時間尺度。</p></div></details>
+      </aside>
+
+      <section class="results" aria-label="氣流結果">
+        <div class="experiment-toolbar">
+          <div class="field-tabs" role="group" aria-label="流場顯示方式">
+            <button type="button" data-field="speed" class="active" aria-pressed="true">流速</button>
+            <button type="button" data-field="pressure" aria-pressed="false">壓力</button>
+            <button type="button" data-field="vorticity" aria-pressed="false">渦度</button>
+          </div>
+          <div class="run-controls"><button id="toggle-run" class="run-button" type="button" disabled>暫停</button><button id="step" class="quiet-button" type="button" disabled>前進 24 步</button></div>
+        </div>
+
+        <div class="flow-comparison">
+          <article class="flow-card">
+            <div class="flow-heading"><div><span class="case-label">A / BASELINE</span><h2>光滑表面</h2></div><span class="surface-tag">無縫線</span></div>
+            <canvas id="smooth-canvas" width="576" height="288" aria-label="光滑棒球截面的數值氣流；色彩表示目前選擇的物理量"></canvas>
+            <div class="flow-footer"><span><i class="flow-direction" aria-hidden="true">→</i> 氣流由左向右</span><span class="spin-label">↺ 1800 rpm</span></div>
+          </article>
+          <article class="flow-card seamed-card">
+            <div class="flow-heading"><div><span class="case-label">B / RAISED SEAMS</span><h2>有縫線表面</h2></div><span class="surface-tag seam-tag">凸起參與求解</span></div>
+            <canvas id="seamed-canvas" width="576" height="288" aria-label="包含凸起縫線障礙物的數值氣流，與左側使用相同風速與旋轉"></canvas>
+            <div class="flow-footer"><span><i class="seam-dot" aria-hidden="true"></i> 紅色為截面縫線凸起</span><span id="seam-detail">2 處 · 放大 6×</span></div>
+          </article>
+        </div>
+        <div class="visual-legend">
+          <div class="color-legend"><span id="legend-min">0</span><div id="color-scale" class="color-scale speed-scale"></div><span id="legend-max">2.0</span><strong id="legend-label">流速 / 來流速度 U</strong></div>
+          <label class="checkbox-label"><input id="streamlines" type="checkbox" checked>數值流線</label>
+        </div>
+        <div class="solver-state" role="status"><span id="status-dot" class="live-dot" aria-hidden="true"></span><span id="status-text">正在初始化數值風洞…</span><span id="steps-label">0 步</span></div>
+        <noscript><p class="error-box">請啟用 JavaScript，才能執行氣流數值模擬。</p></noscript>
+
+        <div class="metrics">
+          <article class="metric panel"><p>真球參考 Re</p><strong id="real-re">1.76 <small>× 10⁵</small></strong><span>D = 73 mm · ν = 1.5 × 10⁻⁵ m²/s</span></article>
+          <article class="metric panel"><p>表面旋轉比 <span>S = ωR / U</span></p><strong id="spin-ratio">0.191</strong><span>正值逆時針，負值順時針</span></article>
+          <article class="metric panel difference-metric"><p>縫線造成的尾流差異</p><strong id="wake-difference">—</strong><span>共同流體區的速度差 RMS / U</span></article>
+        </div>
+
+        <section class="panel pressure-panel">
+          <div class="chart-heading"><div><p class="eyebrow">READ THE SURFACE</p><h2>球周圍的壓力，改變在哪裡？</h2></div><div class="chart-legend"><span class="smooth-key">光滑</span><span class="seamed-key">縫線</span></div></div>
+          <canvas id="pressure-chart" width="960" height="240" aria-label="沿截面外側取樣的壓力係數 Cp 與角度關係；灰綠色為光滑、紅色為有縫線"></canvas>
+          <p class="chart-caption">Cp = (p − p∞) / (½ρU²)。0° 在球的右方，90° 在上方；取樣於各截面表面外約 2 格，兩側沿各自幾何取樣。結果隨流場發展而變化。</p>
+        </section>
+
+        <div class="observation"><span class="observation-icon" aria-hidden="true">⌁</span><div><h3 id="observation-title">先讓氣流穿過球，再觀察尾流</h3><p id="observation-text">流場從均勻來流開始演算。切換條件會重新初始化；兩側始終使用相同網格、風速與旋轉，只改變表面的凸起。</p></div></div>
+        <div class="export-row"><span id="grid-label">288 × 144 格點 / 每側 · D2Q9</span><button id="export-csv" class="text-button" type="button" disabled>匯出目前流場 CSV ↓</button></div>
+      </section>
+    </div>
+
+    <section id="method" class="method-section">
+      <div class="method-intro"><p class="eyebrow">FROM SIMULATION TO UNDERSTANDING</p><h2>看見縫線的作用，<br>也理解模型的尺度。</h2><p>這裡的色彩與流線都來自數值求解。小小的幾何凸起，會改變它附近的速度與壓力，差異逐漸傳到下游。</p></div>
+      <div class="method-cards">
+        <article><span class="method-number">01</span><h3>流場怎麼算？</h3><p>D2Q9 格子玻爾茲曼法，以九個離散速度分布進行碰撞與傳播，近似求解低馬赫數的黏性流動。球面和凸起採反彈邊界；表面切向速度用來近似旋轉。</p></article>
+        <article><span class="method-number">02</span><h3>縫線真的參與計算嗎？</h3><p>有。右側的紅色凸起是流體無法穿透的障礙格點，與球體共同改變邊界。高度放大 6 倍，讓粗網格看得見縫線。方位固定，並未隨旋轉移動。</p></article>
+        <article><span class="method-number">03</span><h3>和真實棒球差在哪裡？</h3><p>二維圓形截面在流體力學上代表長圓柱。模型 Re 為 60–160；真球約為 10⁵ 量級。此模型沒有解析三維球面、高 Re 轉捩和移動縫線，不能定量預測投球軌跡或縫線偏移尾流（SSW）。</p></article>
+      </div>
+    </section>
+    <div class="reading"><span>延伸閱讀</span><a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-on-a-baseball/" target="_blank" rel="noopener noreferrer">NASA · 棒球阻力 ↗</a><a href="https://journals.sagepub.com/doi/10.1177/1754337120961609" target="_blank" rel="noopener noreferrer">Smith &amp; Smith · SSW 實驗 ↗</a><a href="https://link.springer.com/article/10.1007/s00348-023-03751-3" target="_blank" rel="noopener noreferrer">縫線與流動分離研究 ↗</a><a href="https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-47-flow-simulation-complex" target="_blank" rel="noopener noreferrer">D2Q9 方法 ↗</a></div>
+    <footer class="page-footer"><span>PHYSICS LAB / BASEBALL AERODYNAMICS</span><a href="../index.html">探索更多物理實驗 →</a></footer>
+  </main>
+</body>
+</html>
