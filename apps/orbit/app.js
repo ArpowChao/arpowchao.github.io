@@ -209,7 +209,7 @@
     }
     if ($('prediction').checked) for (const b of bodies) path(b.prediction,b.color,true,b.id===selected?.65:.4);
     for (const b of bodies) path(b.trail,b.color,false,b.id===selected?.95:.7,1.5);
-    if (drag && drag.prediction) path(drag.prediction,'#2b4259',true,.65,1.2);
+    if ($('prediction').checked && drag?.prediction) path(drag.prediction,'#2b4259',true,.65,1.2);
     planet();
     for (const b of bodies) {
       const s=b.state, p=point(s), outside=p.x<12||p.x>width-12||p.y<55||p.y>height-55;

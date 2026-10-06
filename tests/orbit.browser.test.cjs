@@ -21,6 +21,32 @@ fs.mkdirSync(artifacts, { recursive: true });
     await page.goto(url);await page.locator('#pause').click();
     assert.equal(await page.locator('#advanced-controls').getAttribute('open'), null);
     assert.equal(await page.locator('#clear-trails').isVisible(), false);
+    // Toggle prediction while a real pointer drag is still held. Space on the
+    // focused checkbox changes the setting without releasing pointer capture.
+    const prediction = page.locator('#prediction');
+    await prediction.uncheck();
+    await page.locator('#space').scrollIntoViewIfNeeded();
+    const previewBox = await page.locator('#space').boundingBox();
+    const previewX = previewBox.x + previewBox.width * .7;
+    const previewY = previewBox.y + previewBox.height * .5;
+    await page.mouse.move(previewX, previewY); await page.mouse.down();
+    await page.mouse.move(previewX, previewY - 90, { steps: 4 });
+    await prediction.focus();
+    assert.equal(await page.locator('#launch-preview').isVisible(), true);
+    const hiddenPreview = await page.locator('#space').screenshot();
+    await page.keyboard.press('Space'); assert.equal(await prediction.isChecked(), true);
+    const visiblePreview = await page.locator('#space').screenshot();
+    assert.notDeepEqual(visiblePreview, hiddenPreview, 'launch prediction must follow its checkbox');
+    await page.keyboard.press('Space'); assert.equal(await prediction.isChecked(), false);
+    assert.deepEqual(await page.locator('#space').screenshot(), hiddenPreview, 'unchecking removes the preview immediately');
+    await page.mouse.up();
+    assert.equal(await page.locator('#body-count').textContent(), '1 顆');
+    const hiddenOrbit = await page.locator('#space').screenshot();
+    await prediction.check();
+    assert.notDeepEqual(await page.locator('#space').screenshot(), hiddenOrbit, 'created orbit prediction is independently visible');
+    await prediction.uncheck();
+    assert.deepEqual(await page.locator('#space').screenshot(), hiddenOrbit, 'paused orbit prediction disappears immediately');
+    await page.locator('#clear').click(); await prediction.check();
     const drag = async (length, xFactor = .7) => {
       await page.locator('#space').scrollIntoViewIfNeeded();
       const box = await page.locator('#space').boundingBox();
