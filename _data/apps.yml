@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年10月6日"
+    entry: "新增「ORBIT 軌道實驗室」，按住設定起點、拖曳決定初速，以牛頓萬有引力觀察圓形、橢圓、拋物線與雙曲線軌跡；星體只受中央地球引力，支援軌道預測、速度向量與表面撞擊。"
   - date: "2026年10月01日"
     entry: "新增「棒球氣流實驗室」，以二維 D2Q9 格子波茲曼法並排模擬光滑球與有縫線球，調整來流、自轉與縫線方向，觀察速度、壓力及尾流。低雷諾數教學模型用於探索縫線影響。"
   - date: "2026年10月1日"
@@ -43,6 +45,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "ORBIT 軌道實驗室"
+    image: "/assets/img/apps/orbit.svg"
+    description: "按住選定起點，拖曳給星體初速，放開觀察萬有引力畫出的軌跡。以固定中心克卜勒模型探索圓軌道、橢圓與逃逸，支援預測路徑、速度與引力箭頭、時間倍率及撞擊觀察；星體彼此不影響。"
+    url: "/apps/orbit/index.html"
+    category: "力學"
+    tags: ["Physics", "Orbit", "Gravity", "Kepler", "Simulation"]
   - title: "棒球氣流實驗室"
     image: "/assets/img/apps/baseball-cfd.svg"
     description: "以二維 D2Q9 格子波茲曼法 (LBM) 進行 CFD，並排比較光滑球與有縫線球。調整來流、自轉及縫線方向，觀察速度、壓力和尾流變化；採低雷諾數教學模型，探索縫線對氣流的影響。"

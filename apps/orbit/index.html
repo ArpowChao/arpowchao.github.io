@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f6fa">
+  <meta name="description" content="按住、拖曳、放開，創造自己的星體。以牛頓萬有引力觀察圓軌道、橢圓、拋物線與雙曲線的形成。">
+  <title>ORBIT 軌道實驗室 | Physics Lab</title>
+  <link rel="icon" href="../../assets/img/apps/orbit.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="physics.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a href="../index.html" class="back-link">← Physics Lab</a><span>引力與軌道 / GRAVITY &amp; MOTION</span><a href="#principle">觀察原理 ↗</a></header>
+  <main>
+    <header class="hero">
+      <div class="hero-title"><p class="eyebrow">一個起點，無數種軌跡。</p><h1><span class="wordmark">ORBIT</span><span class="hero-subtitle">軌道實驗室</span></h1></div>
+      <p class="intro">在星空中按住、拖曳、放開。<br>給星體一個初速，讓引力畫出它的旅程。</p>
+    </header>
+    <div class="lab-layout">
+      <section class="universe" aria-label="軌道互動實驗">
+        <div class="scene-header"><span class="scene-label"><i aria-hidden="true"></i><span>地球引力場</span></span><span id="clock">模擬時間 00:00:00</span></div>
+        <canvas id="space" tabindex="0" aria-label="在地球外按住設定起點，沿箭頭方向拖曳決定初速，放開建立星體。鍵盤方向鍵移動起點，Shift 加方向鍵設定速度，Enter 發射，Escape 取消。">請使用支援 Canvas 的瀏覽器；也可使用右側的範例按鈕建立軌道。</canvas>
+        <div id="launch-preview" class="launch-preview" hidden><span id="preview-kind">橢圓軌道</span><strong id="preview-speed">0.00 <small>km/s</small></strong><span id="preview-reference">起點的圓軌道速度</span></div>
+        <div id="empty-hint" class="empty-hint"><span class="hint-symbol" aria-hidden="true">↗</span><p><strong>從這裡，給引力一個起點。</strong><br>按住設定位置，沿想飛的方向拖曳。</p></div>
+        <div class="scene-footer"><span class="scene-instructions"><span>拖越長，初速越大。箭頭就是發射方向。</span><span id="grid-scale">每格 1 R⊕ = 6,371 km</span></span><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="縮小視野">−</button><button id="zoom-reset" type="button" aria-label="重設視野">1×</button><button id="zoom-in" type="button" aria-label="放大視野">＋</button></div></div>
+      </section>
+      <aside class="instruments" aria-label="實驗控制與觀測">
+        <section class="panel transport"><div class="section-heading"><h2>讓時間流動</h2><span id="run-state">運行中</span></div>
+          <div class="play-actions"><button id="pause" class="primary-button" type="button">Ⅱ 暫停</button><button id="clear" class="secondary-button" type="button">清空星空</button></div>
+          <label class="speed-label" for="time-rate"><span>時間倍率</span><output id="rate-output">1800×</output></label>
+          <input id="time-rate" type="range" min="0" max="4" step="1" value="2">
+          <div class="range-labels"><span>慢慢觀察</span><span>快速繞行</span></div>
+          <label class="check-row"><input id="prediction" type="checkbox" checked><span>顯示預測軌道 <small>虛線</small></span></label>
+          <label class="check-row"><input id="measurement-grid" type="checkbox" checked><span>顯示量測方格 <small>球心為原點</small></span></label>
+          <label class="check-row"><input id="vectors" type="checkbox"><span>顯示速度與引力箭頭</span></label>
+        </section>
+        <section class="panel presets"><div class="section-heading"><h2>試試不同初速</h2><span>同一起點</span></div><p class="panel-copy">切線方向發射，看看速度如何改變軌道。</p>
+          <div class="preset-grid"><button data-preset="circle" type="button"><i class="swatch cyan"></i><span>圓軌道</span><small>v = v圓</small></button><button data-preset="ellipse" type="button"><i class="swatch lilac"></i><span>橢圓</span><small>v = 0.8 v圓</small></button><button data-preset="parabola" type="button"><i class="swatch peach"></i><span>臨界逃逸</span><small>v = √2 v圓</small></button><button data-preset="hyperbola" type="button"><i class="swatch pink"></i><span>雙曲線</span><small>v = 1.6 v圓</small></button></div>
+        </section>
+        <section class="panel observation"><div class="section-heading"><h2>星體觀測</h2><span id="body-count">0 顆</span></div>
+          <label class="sr-only" for="body-select">選擇觀測星體</label><select id="body-select" disabled><option>建立星體後開始觀測</option></select>
+          <p id="observation-empty" class="panel-copy">可以直接點一下，觀察沒有初速的星體如何落向地球。</p>
+          <div id="body-details" hidden><div class="orbit-name"><i id="body-color" class="swatch"></i><strong id="body-kind">圓軌道</strong><span id="body-status">運動中</span></div>
+            <dl class="readings"><div><dt>距離球心</dt><dd id="read-radius">—</dd></div><div><dt>目前速度</dt><dd id="read-speed">—</dd></div><div><dt>近點半徑</dt><dd id="read-periapsis">—</dd></div><div><dt>遠點半徑</dt><dd id="read-apoapsis">—</dd></div><div class="mean-radius"><dt>平均軌道半徑 a</dt><dd><span id="read-semimajor">—</span><small id="read-semimajor-earth">—</small></dd></div><div><dt>繞一圈的時間</dt><dd id="read-period">—</dd></div></dl>
+            <p id="radius-definition" class="panel-copy radius-definition">a =（最近距離＋最遠距離）÷ 2。距離都從中央球心量起。</p>
+            <p id="orbit-explanation" class="panel-copy"></p><button id="remove-body" class="text-button" type="button">移除這顆星體</button>
+            <details class="teacher-data"><summary>教師補充：更多數據</summary><dl class="readings"><div><dt>偏心率 e</dt><dd id="read-eccentricity">—</dd></div><div><dt>比機械能 ε</dt><dd id="read-energy">—</dd></div></dl></details>
+          </div>
+        </section>
+        <details id="advanced-controls" class="panel advanced-panel">
+          <summary><span>進階操作</span><small>軌跡與外觀</small></summary>
+          <div class="advanced-content">
+            <p class="panel-copy">設定軌跡顯示，以及新星體的外觀。</p>
+            <button id="clear-trails" class="secondary-button" type="button">只清除已走過的軌跡</button>
+            <div class="advanced-field"><label for="trail-length">軌跡保留長度</label><select id="trail-length"><option value="240">短尾跡</option><option value="960">中等長度</option><option value="2400" selected>長軌跡（預設）</option></select></div>
+            <div class="advanced-field"><label for="body-size">新星體的顯示大小</label><select id="body-size"><option value="3">小</option><option value="4" selected>標準（預設）</option><option value="7">大</option></select></div>
+            <div class="advanced-field"><label for="body-color-choice">新星體的顏色</label><select id="body-color-choice"><option value="auto">自動配色（預設）</option><option value="#007f89">藍綠</option><option value="#7454ba">紫色</option><option value="#a85b15">橘色</option><option value="#ba4872">粉紅</option><option value="#507c36">綠色</option><option value="#416bb8">藍色</option></select></div>
+            <p class="panel-copy advanced-note">大小與顏色套用到接下來建立的星體。顯示大小只為方便辨識，撞擊仍以星體的位置判定。</p>
+          </div>
+        </details>
+      </aside>
+    </div>
+    <p id="message" class="message" role="status" aria-live="polite">按住選位置 → 拖曳給速度 → 放開看軌跡。也可以從範例開始。</p>
+    <section id="principle" class="principles" aria-labelledby="principle-title"><div class="principle-intro"><p class="eyebrow">讓軌跡說明物理</p><h2 id="principle-title">不是每一次出發，<br>都會繞回原點。</h2><p>起點決定引力的大小；速度的大小與方向，決定軌道的形狀。星體靠近地球時加速，遠離時減速。</p></div>
+      <div class="principle-content"><div class="equation"><span>牛頓萬有引力</span><math display="block" aria-label="F 等於 G 乘 M 乘 m，除以 r 的平方"><mi>F</mi><mo>=</mo><mfrac><mrow><mi>G</mi><mi>M</mi><mi>m</mi></mrow><msup><mi>r</mi><mn>2</mn></msup></mfrac></math><p>G 是萬有引力常數，M 是中央星球的質量，m 是小星體的質量，r 是兩者球心之間的距離。</p><p>引力永遠朝向中央星球。距離變成 2 倍，引力就剩下原來的 1/4。</p></div><div class="energy-guide"><p><i class="swatch cyan"></i><span><strong>改變速度大小</strong><br>從同一起點出發，拉長一點、拉短一點，看看軌道有什麼不同。</span></p><p><i class="swatch peach"></i><span><strong>改變速度方向</strong><br>試試沿側面發射，再試試朝球心發射，哪一種容易繞行？</span></p><p><i class="swatch pink"></i><span><strong>比較近處與遠處</strong><br>星體靠近球心時，引力較大；遠離球心時，引力較小。</span></p></div>
+      <details><summary>教師補充：模擬設定</summary><p>中央是固定、球對稱的地球：半徑 6,371 km，GM = 398,600.4418 km³/s²。星體視為試驗質點，只受地球引力，彼此可穿越而不碰撞；地球不受反作用力移動。運動限制在同一平面，忽略大氣阻力、地球扁率、其他天體與相對論。</p><p>依初始位置與速度，以通用變數克卜勒方程求解各時刻位置。虛線是相同引力模型的預測軌道，實線是已走過的路徑。撞擊時間由軌道與球面交點求得，接觸後停止；畫面上的星體大小只為辨識，碰撞以質點位置判定。時間倍率只改變播放速度，縮放只改變視野。</p><p>參考：<a href="https://arxiv.org/abs/1508.02699" target="_blank" rel="noopener noreferrer">Wisdom &amp; Hernandez：通用變數克卜勒求解</a> · <a href="https://cdaweb.gsfc.nasa.gov/pub/documents/archived_websites/pwg.gsfc.nasa.gov/stargaze/Smars2.htm" target="_blank" rel="noopener noreferrer">NASA：軌道能量與逃逸</a></p></details></div>
+    </section>
+    <footer class="site-footer"><span>ORBIT / Physics Lab</span><span>每一條曲線，都從你的一次放手開始。</span></footer>
+  </main>
+</body>
+</html>

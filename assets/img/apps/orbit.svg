@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <defs><radialGradient id="earth" cx="30%" cy="25%" r="85%"><stop stop-color="#b8e3ea"/><stop offset=".6" stop-color="#609bb6"/><stop offset="1" stop-color="#233759"/></radialGradient></defs>
+  <rect width="800" height="500" fill="#111c36"/>
+  <g fill="#a6b5d0" opacity=".5"><circle cx="78" cy="96" r="1.5"/><circle cx="681" cy="91" r="1.5"/><circle cx="737" cy="270" r="1"/><circle cx="629" cy="417" r="1.5"/><circle cx="118" cy="374" r="1"/><circle cx="212" cy="174" r="1"/><circle cx="554" cy="77" r="1"/></g>
+  <g fill="none" stroke-width="2"><ellipse cx="400" cy="235" rx="133" ry="133" stroke="#8be0e4"/><ellipse cx="335" cy="235" rx="207" ry="156" transform="rotate(-30 400 235)" stroke="#bdb0ef"/><path d="M744 421Q214 234 733 75" stroke="#f6bd8b"/><path d="M780 373Q370 248 705 28" stroke="#f399ba" stroke-dasharray="5 7"/></g>
+  <circle cx="400" cy="235" r="41" fill="url(#earth)" stroke="#b8e3ea" stroke-opacity=".5"/>
+  <ellipse cx="400" cy="235" rx="40" ry="9" fill="none" stroke="#d6ecf2" stroke-opacity=".3"/><ellipse cx="400" cy="235" rx="17" ry="40" fill="none" stroke="#d6ecf2" stroke-opacity=".3"/>
+  <circle cx="533" cy="235" r="6" fill="#8be0e4"/><circle cx="209" cy="318" r="6" fill="#bdb0ef"/><circle cx="659" cy="112" r="6" fill="#f6bd8b"/>
+  <text x="40" y="445" fill="#e8edf7" font-family="Georgia,serif" font-size="39" letter-spacing="4">ORBIT</text><text x="224" y="442" fill="#a6b5d0" font-family="sans-serif" font-size="19">軌道實驗室</text>
+</svg>
