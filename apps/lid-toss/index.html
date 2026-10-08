@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7f5">
+  <meta name="description" content="拋體運動任務挑戰：調整仰角與速率投出紙團，第一球打中彈蓋讓蓋子彈開，第二球投進垃圾桶。手機觸控也能操作。">
+  <title>TOSS 彈蓋垃圾桶挑戰 | Physics Lab</title>
+  <link rel="icon" href="../../assets/img/apps/lid-toss.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="physics.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a href="../index.html" class="back-link">← Physics Lab</a><span>拋體運動 / PROJECTILE MOTION</span><a href="#principle">觀察原理 ↗</a></header>
+  <main>
+    <header class="hero">
+      <div class="hero-title"><p class="eyebrow">兩顆紙團，一個任務。</p><h1><span class="wordmark">TOSS</span><span class="hero-subtitle">彈蓋垃圾桶挑戰</span></h1></div>
+      <p class="intro">第一球打中蓋子讓它彈開，<br>第二球再穩穩投進去。</p>
+    </header>
+
+    <div class="lab-layout">
+      <section class="stage-wrap" aria-label="投球實驗">
+        <div id="stage" class="stage">
+          <canvas id="scene" tabindex="0" aria-label="投球場景。在畫面上拖曳設定投擲方向與速率，放開投出；拖曳垃圾桶可改變位置。鍵盤：上下鍵調仰角，左右鍵調速率，Enter 投球。"></canvas>
+          <div class="scene-header">
+            <ol class="mission" aria-label="任務進度">
+              <li id="step1" class="active"><i>1</i><span>打中蓋子</span></li>
+              <li id="step2"><i>2</i><span>投進桶子</span></li>
+            </ol>
+            <span id="attempts" class="attempts">準備第 1 球</span>
+          </div>
+          <div id="aim-chip" class="aim-chip" hidden><strong id="aim-chip-angle">45°</strong><strong id="aim-chip-speed">7.5 m/s</strong><span id="aim-chip-note">放開投出</span></div>
+          <div id="complete" class="complete" hidden>
+            <div class="complete-card" role="dialog" aria-labelledby="complete-title">
+              <p class="stars" id="stars" aria-hidden="true">★★★</p>
+              <h2 id="complete-title">任務完成！</h2>
+              <p id="complete-text"></p>
+              <div class="complete-actions">
+                <button id="again" class="primary-button" type="button">同位置再挑戰</button>
+                <button id="new-spot" class="secondary-button" type="button">換個位置</button>
+              </div>
+              <button id="close-complete" class="text-button" type="button">留在這裡繼續練習</button>
+            </div>
+          </div>
+        </div>
+        <div class="scene-footer">
+          <span id="can-info">桶口 x = 4.75 – 5.25 m ・ 桶高 0.80 m ・ 出手高 1.00 m</span>
+          <span class="drag-hint">拖曳畫面瞄準・拖桶子移動</span>
+        </div>
+        <p id="message" class="message" role="status" aria-live="polite">先投第一球：打中垃圾桶的蓋子，讓它彈開。</p>
+      </section>
+
+      <aside class="instruments" aria-label="投球控制">
+        <section class="panel aim-panel">
+          <div class="section-heading"><h2>出手設定</h2><span id="lock-note"></span></div>
+          <div class="control" id="angle-control">
+            <div class="control-head"><label for="angle">仰角 θ</label><output id="angle-out">45°</output></div>
+            <div class="stepper">
+              <button type="button" data-key="angle" data-delta="-0.5" aria-label="仰角減少">−</button>
+              <input id="angle" type="range" min="0" max="85" step="0.5" value="45">
+              <button type="button" data-key="angle" data-delta="0.5" aria-label="仰角增加">＋</button>
+            </div>
+          </div>
+          <div class="control" id="speed-control">
+            <div class="control-head"><label for="speed">出手速率 v₀</label><output id="speed-out">7.5 m/s</output></div>
+            <div class="stepper">
+              <button type="button" data-key="speed" data-delta="-0.1" aria-label="速率減少">−</button>
+              <input id="speed" type="range" min="1" max="15" step="0.1" value="7.5">
+              <button type="button" data-key="speed" data-delta="0.1" aria-label="速率增加">＋</button>
+            </div>
+          </div>
+          <p class="components" id="components">vₓ = 5.30 m/s ・ v_y = 5.30 m/s</p>
+          <button id="throw" class="throw-button" type="button">投出紙團</button>
+        </section>
+
+        <section class="panel setup-panel">
+          <div class="section-heading"><h2>關卡設定</h2><span id="mode-tag">自由挑戰</span></div>
+          <div class="control">
+            <div class="control-head"><label for="can-x">垃圾桶距離 d</label><output id="can-out">5.00 m</output></div>
+            <div class="stepper">
+              <button type="button" data-key="can" data-delta="-0.05" aria-label="距離減少">−</button>
+              <input id="can-x" type="range" min="2" max="9" step="0.05" value="5">
+              <button type="button" data-key="can" data-delta="0.05" aria-label="距離增加">＋</button>
+            </div>
+          </div>
+          <div class="two-buttons"><button id="random" class="secondary-button" type="button">🎲 隨機位置</button><button id="reset" class="secondary-button" type="button">↺ 重新挑戰</button></div>
+          <div class="field"><label for="mode">挑戰模式</label>
+            <select id="mode">
+              <option value="free">自由挑戰：兩球都能任意調整</option>
+              <option value="same-speed">同速率：第二球只能改仰角</option>
+              <option value="same-angle">同仰角：第二球只能改速率</option>
+            </select></div>
+          <div class="field"><label for="assist">瞄準輔助線</label>
+            <select id="assist">
+              <option value="short">只顯示前段</option>
+              <option value="full">完整預測軌跡</option>
+              <option value="off">關閉（考驗計算）</option>
+            </select></div>
+          <label class="check-row"><input id="auto-throw" type="checkbox" checked><span>在畫面拖曳後，放開就投出</span></label>
+          <label class="check-row"><input id="grid" type="checkbox" checked><span>顯示 1 m 方格刻度</span></label>
+          <label class="check-row"><input id="slow" type="checkbox"><span>慢動作播放 <small>0.3×</small></span></label>
+        </section>
+
+        <section class="panel log-panel">
+          <div class="section-heading"><h2>投球紀錄</h2><span id="log-count">0 球</span></div>
+          <p id="log-empty" class="panel-copy">每一球的仰角、速率與結果會記在這裡。</p>
+          <table id="log" class="log" hidden>
+            <thead><tr><th>#</th><th>θ</th><th>v₀</th><th>結果</th></tr></thead>
+            <tbody id="log-body"></tbody>
+          </table>
+        </section>
+
+        <details class="panel advanced-panel">
+          <summary><span>進階設定</span><small>出手高度與桶子</small></summary>
+          <div class="advanced-content">
+            <div class="control">
+              <div class="control-head"><label for="release-h">出手高度 h₀</label><output id="release-out">1.00 m</output></div>
+              <input id="release-h" type="range" min="0.6" max="2" step="0.05" value="1">
+            </div>
+            <div class="field"><label for="can-size">垃圾桶大小</label>
+              <select id="can-size">
+                <option value="small">小（口寬 0.40 m、高 0.65 m）</option>
+                <option value="medium" selected>中（口寬 0.50 m、高 0.80 m）</option>
+                <option value="large">大（口寬 0.62 m、高 0.95 m）</option>
+              </select></div>
+            <p class="panel-copy advanced-note">改變這些設定會重新開始任務。</p>
+          </div>
+        </details>
+      </aside>
+    </div>
+
+    <section id="principle" class="principles" aria-labelledby="principle-title">
+      <div class="principle-intro"><p class="eyebrow">讓軌跡說明物理</p><h2 id="principle-title">打到蓋子很容易，<br>從上方落進去才難。</h2><p>蓋子彈開後立在桶子後方。紙團要越過桶子前緣、又在撞到後方之前掉下去，必須在<strong>下降的時候</strong>經過桶口。</p></div>
+      <div class="principle-content">
+        <div class="equation"><span>水平拋射與斜拋（忽略空氣阻力）</span>
+          <p class="formula">x = v₀ cos θ · t</p>
+          <p class="formula">y = h₀ + v₀ sin θ · t − ½ g t²</p>
+          <p>出手點在 x = 0、高度 h₀，g = 9.8 m/s²。水平方向等速，鉛直方向等加速度。</p>
+        </div>
+        <div class="guide">
+          <p><i class="swatch lilac"></i><span><strong>同一個速率，兩個仰角</strong><br>固定 v₀，一高一低兩個仰角可以打到同一點。哪一個比較容易「從上方」掉進桶子？</span></p>
+          <p><i class="swatch cyan"></i><span><strong>先算再投</strong><br>把桶口的座標代進公式，算出需要的速率，再關掉輔助線驗證。</span></p>
+          <p><i class="swatch peach"></i><span><strong>讀懂失誤</strong><br>紀錄會告訴你紙團經過桶子前緣時有多高。比桶高還低，就會撞到桶身。</span></p>
+        </div>
+        <details><summary>教師補充：建議任務與模擬設定</summary>
+          <p><strong>建議任務：</strong>①固定 v₀ = 8 m/s，找出兩個都能打到蓋子的仰角；②切到「同速率」模式，第二球只能改仰角，說明為什麼高仰角較容易落入；③關閉輔助線，用公式先算出需要的 v₀ 再投；④按「隨機位置」，讓每位學生拿到不同距離。</p>
+          <p><strong>模型：</strong>紙團視為半徑 6 cm 的圓球，只受重力（g = 9.8 m/s²），不計空氣阻力與自轉效應，以解析的等加速度公式逐步更新（Δt = 1/600 s）。垃圾桶為薄壁圓筒的側視剖面；蓋子以後緣為轉軸，被碰到任何一點就以彈簧彈開，停在略向後傾的角度，之後可當作擋板。碰撞採恢復係數：地面 0.45、桶壁 0.45、蓋子 0.55、桶底垃圾袋 0.2，切向速度保留 85%。紙團球心降到桶口以下並停留在桶內，才算進桶；進去又彈出來不算。</p>
+        </details>
+      </div>
+    </section>
+    <footer class="site-footer"><span>TOSS / Physics Lab</span><span>一次打開，一次投進。</span></footer>
+  </main>
+</body>
+</html>

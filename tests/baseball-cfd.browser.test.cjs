@@ -86,49 +86,51 @@ fs.mkdirSync(artifactDir, { recursive: true });
     console.log(`default flow screenshots saved at ${pausedSteps} synchronized steps`);
 
     await page.locator('#step').click();
-    await page.waitForFunction((expected) => window.__cfdTest.snapshot.smooth.steps === expected, pausedSteps + 24);
-    assert.equal(await steps(), pausedSteps + 24, 'single-step must advance exactly 24 steps');
+    await page.waitForFunction((expected) => window.__cfdTest.snapshot.smooth.steps === expected, pausedSteps + 120);
+    assert.equal(await steps(), pausedSteps + 120, 'single-step must advance exactly half a diameter (120 steps)');
     await page.waitForTimeout(150);
-    assert.equal(await steps(), pausedSteps + 24, 'single-step must leave the solver paused');
-    assert.equal(await page.evaluate(() => window.__cfdTest.snapshot.seamed.steps), pausedSteps + 24, 'both cases advance together');
+    assert.equal(await steps(), pausedSteps + 120, 'single-step must leave the solver paused');
+    assert.equal(await page.evaluate(() => window.__cfdTest.snapshot.seamed.steps), pausedSteps + 120, 'both cases advance together');
 
     await setRange('speed', 150);
     await setRange('spin', -2000);
     await setRange('seam-height', 1.1);
     await setRange('seam-angle', 75);
-    await page.locator('.advanced summary').click();
-    await setRange('model-re', 140);
-    await waitReady('config', { speedKmh: 150, spinRpm: -2000, seamHeightMm: 1.1, seamAngleDeg: 75, modelRe: 140 });
+    await waitReady('config', { speedKmh: 150, spinRpm: -2000, seamHeightMm: 1.1, seamAngleDeg: 75, modelRe: 165 });
     assert.equal(await page.locator('#toggle-run').textContent(), '繼續', 'changing parameters must preserve paused state');
     assert.equal(await page.locator('#steps-label').textContent(), '0 步', 'changed conditions start a new snapshot');
     assert.match(await page.locator('#speed-output').textContent(), /150/);
     assert.match(await page.locator('#spin-output').textContent(), /2000/);
     assert.match(await page.locator('#spin-direction').textContent(), /順時針/);
     assert.match(await page.locator('#seam-height-output').textContent(), /1\.1/);
-    assert.equal(await page.locator('#model-re-output').textContent(), '140');
+    assert.match(await page.locator('#model-re').textContent(), /^165/, 'ball speed sets the model Re');
+    assert.match(await page.locator('#re-hint').textContent(), /165/);
     assert.match(await page.locator('#spin-ratio').textContent(), /^−/);
 
-    await page.locator('[name="seam-count"][value="4"]').check();
-    await waitReady('config', { seamCount: 4 });
-    assert.match(await page.locator('#seam-detail').textContent(), /^4 處/);
-    assert.equal(await page.evaluate(() => window.__cfdTest.snapshot.seamed.geometry.seamCenters.length), 4, 'four seams must reach numerical geometry');
+    await page.locator('[name="seam-count"][value="2"]').check();
+    await waitReady('config', { seamCount: 2 });
+    assert.match(await page.locator('#seam-detail').textContent(), /^2 處/);
+    assert.equal(await page.evaluate(() => window.__cfdTest.snapshot.seamed.geometry.seamCenters.length), 2, 'seam count must reach numerical geometry');
 
     await setRange('seam-height', 0);
     await waitReady('config', { seamHeightMm: 0 });
     await page.locator('#step').click();
-    await page.waitForFunction(() => window.__cfdTest.snapshot.smooth.steps === 24);
-    assert.equal((await page.locator('#wake-difference').textContent()).replace(/\s+/g, ''), '0.00%', 'zero-height control must produce zero numerical RMS difference');
+    await page.waitForFunction(() => window.__cfdTest.snapshot.smooth.steps === 120);
+    assert.ok(await page.evaluate(() => JSON.stringify(window.__cfdTest.snapshot.smooth.forces) === JSON.stringify(window.__cfdTest.snapshot.seamed.forces)), 'zero-height control must produce identical forces');
     assert.match(await page.locator('#observation-title').textContent(), /相同流場/);
 
+    assert.equal(await page.locator('[data-field="smoke"]').getAttribute('aria-pressed'), 'true', 'smoke tunnel view is the default');
+    await page.locator('[data-field="speed"]').click();
+    await page.waitForTimeout(40);
     const speedImage = await canvasImage();
-    for (const [field, legend] of [['pressure', '壓力係數 Cp'], ['vorticity', '渦度 × D / U'], ['speed', '流速 / 來流速度 U']]) {
+    for (const [field, legend] of [['pressure', '壓力係數 Cp'], ['vorticity', '渦度 × D / U'], ['smoke', '煙線顏色＝流速（來流速度在中間的綠色）'], ['speed', '流速 / 來流速度 U']]) {
       await page.locator(`[data-field="${field}"]`).click();
       assert.equal(await page.locator('#legend-label').textContent(), legend);
       assert.equal(await page.locator(`[data-field="${field}"]`).getAttribute('aria-pressed'), 'true');
       assert.equal(await page.locator('[data-field][aria-pressed="true"]').count(), 1);
       await page.waitForTimeout(40);
       if (field !== 'speed') assert.notEqual(await canvasImage(), speedImage, `${field} must render a different actual field`);
-      assert.equal(await steps(), 24, 'display modes must preserve the numerical snapshot');
+      assert.equal(await steps(), 120, 'display modes must preserve the numerical snapshot');
     }
     const linesImage = await canvasImage();
     await page.locator('#streamlines').uncheck();
@@ -138,7 +140,7 @@ fs.mkdirSync(artifactDir, { recursive: true });
 
     for (const [preset, config] of [
       ['still', { spinRpm: 0 }], ['ccw', { spinRpm: 1800 }],
-      ['cw', { spinRpm: -1800 }], ['seams', { spinRpm: 0, seamAngleDeg: 75, seamHeightMm: 1.2, seamCount: 2 }]
+      ['cw', { spinRpm: -1800 }], ['seams', { spinRpm: 0, seamAngleDeg: 95, seamHeightMm: 1.5, seamCount: 1 }]
     ]) {
       await page.locator(`[data-preset="${preset}"]`).click();
       await waitReady('config', config);
@@ -148,37 +150,37 @@ fs.mkdirSync(artifactDir, { recursive: true });
 
     // Export includes both complete grids, genuine current metadata, and finite fluid fields.
     await page.locator('#step').click();
-    await page.waitForFunction(() => window.__cfdTest.snapshot.smooth.steps === 24);
+    await page.waitForFunction(() => window.__cfdTest.snapshot.smooth.steps === 120);
     const grid = await page.evaluate(() => ({ nx: window.__cfdTest.snapshot.smooth.nx, ny: window.__cfdTest.snapshot.smooth.ny }));
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#export-csv').click();
     const download = await downloadPromise;
-    assert.equal(download.suggestedFilename(), 'baseball-cfd-Re140-24steps.csv');
+    assert.equal(download.suggestedFilename(), 'baseball-cfd-Re165-120steps.csv');
     const csvPath = path.join(artifactDir, 'baseball-cfd-export.csv');
     await download.saveAs(csvPath);
     const lines = fs.readFileSync(csvPath, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/);
     assert.match(lines[0], /2D low-Re cylinder model/);
-    assert.match(lines[1], /speed_kmh=150,spin_rpm=0,model_Re=140/);
-    assert.match(lines[1], /seam_reference_mm=1\.2/);
-    assert.match(lines[1], /seam_count=2,steps=24$/);
-    assert.equal(lines[3], 'case,x_grid,y_grid,solid,ux_lattice,uy_lattice,rho_lattice,Cp,vorticity_lattice');
-    const rows = lines.slice(4);
+    assert.match(lines[1], /speed_kmh=150,spin_rpm=0,model_Re=165/);
+    assert.match(lines[1], /seam_reference_mm=1\.5/);
+    assert.match(lines[1], /seam_count=1,steps=120$/);
+    assert.equal(lines[4], 'case,x_grid,y_grid,solid,ux_lattice,uy_lattice,rho_lattice,Cp,Cp_mean,vorticity_lattice');
+    const rows = lines.slice(5);
     assert.equal(rows.length, 2 * grid.nx * grid.ny, 'CSV must include every cell of both grids');
     assert.equal(rows[0].split(',').slice(0, 3).join(','), 'smooth,0,0');
     assert.equal(rows[grid.nx * grid.ny].split(',').slice(0, 3).join(','), 'seamed,0,0');
     assert.equal(rows.at(-1).split(',').slice(0, 3).join(','), `seamed,${grid.nx - 1},${grid.ny - 1}`);
     assert.ok(rows.every((row) => {
       const cells = row.split(',');
-      return cells.length === 9 && cells.slice(1).every((cell) => Number.isFinite(Number(cell)));
+      return cells.length === 10 && cells.slice(1).every((cell) => Number.isFinite(Number(cell)));
     }), 'CSV numerical fields must all be finite');
 
     await page.locator('#reset').click();
     await waitReady('steps', 24);
     const resetConfig = await page.evaluate(() => window.__cfdTest.snapshot.config);
-    for (const [key, expected] of Object.entries({ speedKmh: 130, spinRpm: 1800, seamHeightMm: .8, seamAngleDeg: 35, seamCount: 2, modelRe: 120 })) assert.equal(resetConfig[key], expected, `reset restores ${key}`);
+    for (const [key, expected] of Object.entries({ speedKmh: 130, spinRpm: 1800, seamHeightMm: .8, seamAngleDeg: 35, seamCount: 4, modelRe: 135 })) assert.equal(resetConfig[key], expected, `reset restores ${key}`);
     assert.equal(await page.locator('#toggle-run').textContent(), '暫停', 'reset must resume the solver');
     assert.equal(await page.locator('#step').isDisabled(), true);
-    assert.equal(await page.locator('[name="seam-count"][value="2"]').isChecked(), true);
+    assert.equal(await page.locator('[name="seam-count"][value="4"]').isChecked(), true);
     assert.equal(await page.locator('[data-preset].active').count(), 0, 'reset clears preset selection');
     assert.deepEqual(await page.evaluate(() => window.__cfdTest.errors), [], 'worker should report no solver errors');
     assert.deepEqual(pageErrors, [], 'browser should report no uncaught errors');

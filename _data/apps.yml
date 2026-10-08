@@ -1,6 +1,10 @@
 changelog:
   - date: "2026年10月9日"
     entry: "新增「都卜勒・水波實驗」，學生親手拖曳圓片組合波前，用大小方格量測、截圖作答；播放自己的排列，觀察 A、B 小鴨閃光、呱叫與接收間隔，並可進階自動比對。"
+  - date: "2026年10月8日"
+    entry: "改版「棒球氣流實驗室」：新增煙線風洞顯示、升力與阻力箭頭（只取完整渦旋週期平均）、時間平均流場與單側縫線預設；修正停滯點壓力偏高與風洞過窄的問題，球速改為對應模型雷諾數，演算約快 3–4 倍。"
+  - date: "2026年10月8日"
+    entry: "新增「TOSS 彈蓋垃圾桶挑戰」，調整仰角與出手速率投出紙團：第一球打中彈蓋讓蓋子彈開，第二球投進垃圾桶。可拖曳移動垃圾桶、隨機出題，並有同速率／同仰角挑戰模式，手機觸控即可操作。"
   - date: "2026年10月6日"
     entry: "新增「ORBIT 軌道實驗室」，按住設定起點、拖曳決定初速，以牛頓萬有引力觀察圓形、橢圓、拋物線與雙曲線軌跡；星體只受中央地球引力，支援軌道預測、速度向量與表面撞擊。"
   - date: "2026年10月01日"
@@ -53,6 +57,12 @@ projects:
     url: "/apps/doppler/index.html"
     category: "波動"
     tags: ["Physics", "Doppler", "Wave", "Worksheet", "Simulation"]
+  - title: "TOSS 彈蓋垃圾桶挑戰"
+    image: "/assets/img/apps/lid-toss.svg"
+    description: "拋體運動任務挑戰：在畫面上拖曳或用滑桿設定仰角與速率投出紙團，第一球打中彈蓋讓蓋子彈開，第二球投進垃圾桶。可移動垃圾桶、隨機出題，含同速率／同仰角挑戰模式與失誤分析，手機也能操作。"
+    url: "/apps/lid-toss/index.html"
+    category: "力學"
+    tags: ["Physics", "Projectile", "Game", "Mobile", "Simulation"]
   - title: "ORBIT 軌道實驗室"
     image: "/assets/img/apps/orbit.svg"
     description: "按住選定起點，拖曳給星體初速，放開觀察萬有引力畫出的軌跡。以固定中心克卜勒模型探索圓軌道、橢圓與逃逸，支援預測路徑、速度與引力箭頭、時間倍率及撞擊觀察；星體彼此不影響。"
@@ -61,7 +71,7 @@ projects:
     tags: ["Physics", "Orbit", "Gravity", "Kepler", "Simulation"]
   - title: "棒球氣流實驗室"
     image: "/assets/img/apps/baseball-cfd.svg"
-    description: "以二維 D2Q9 格子波茲曼法 (LBM) 進行 CFD，並排比較光滑球與有縫線球。調整來流、自轉及縫線方向，觀察速度、壓力和尾流變化；採低雷諾數教學模型，探索縫線對氣流的影響。"
+    description: "像煙霧風洞一樣看見棒球後方的卡門渦街。以二維格子波茲曼法 (LBM) 並排比較光滑球與有縫線球，調整球速、後旋／上旋與縫線位置，直接讀出升力與阻力，觀察馬格努斯效應與縫線讓尾流偏移。"
     url: "/apps/baseball-cfd/index.html"
     category: "力學"
     tags: ["Physics", "CFD", "Baseball", "LBM", "Simulation"]

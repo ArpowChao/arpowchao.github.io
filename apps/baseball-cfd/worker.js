@@ -11,7 +11,7 @@ function sendSnapshot() {
   if (!smoothFrame.diagnostics.stable || !seamedFrame.diagnostics.stable) running = false;
   const transfers = [];
   for (const frame of [smoothFrame, seamedFrame]) {
-    for (const key of ['ux', 'uy', 'rho', 'vorticity', 'cp', 'solid']) transfers.push(frame[key].buffer);
+    for (const key of ['ux', 'uy', 'rho', 'vorticity', 'cp', 'cpMean', 'meanSpeed', 'solid']) transfers.push(frame[key].buffer);
   }
   postMessage({ type: 'snapshot', generation, running, config, smooth: smoothFrame, seamed: seamedFrame }, transfers);
   lastSnapshotTime = Date.now();
@@ -25,9 +25,13 @@ function schedule() {
 function tick() {
   timer = null;
   if (!running) return;
-  // Short batches let pause and slider changes interrupt the solver promptly.
-  smooth.step(3); seamed.step(3);
-  if (Date.now() - lastSnapshotTime >= 50) sendSnapshot();
+  // Short time-boxed batches let pause and slider changes interrupt the solver promptly.
+  const start = Date.now();
+  for (let batch = 0; batch < 60; batch++) {
+    if (!smooth.step(4) || !seamed.step(4)) break;
+    if (Date.now() - start >= 24) break;
+  }
+  if (Date.now() - lastSnapshotTime >= 90) sendSnapshot();
   schedule();
 }
 
@@ -59,7 +63,7 @@ self.onmessage = function (event) {
       running = false;
       if (timer !== null) { clearTimeout(timer); timer = null; }
       if (!smooth) restart(config);
-      const count = Math.max(1, Math.min(120, Math.floor(Number(message.count) || 24)));
+      const count = Math.max(1, Math.min(1200, Math.floor(Number(message.count) || 24)));
       smooth.step(count); seamed.step(count); sendSnapshot();
     } else if (message.type === 'reset') {
       if (message.generation !== undefined) generation = message.generation;
