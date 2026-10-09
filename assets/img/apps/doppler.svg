@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#edf7f7"/>
+  <path d="M0 80H800M0 160H800M0 240H800M0 320H800M0 400H800M80 0V480M160 0V480M240 0V480M320 0V480M400 0V480M480 0V480M560 0V480M640 0V480M720 0V480" stroke="#cddfe3"/>
+  <g fill="none" stroke="#278aac" stroke-width="3"><circle cx="270" cy="240" r="150" stroke="#a47700"/><circle cx="460" cy="230" r="120"/><circle cx="325" cy="330" r="90"/><circle cx="480" cy="330" r="60"/><circle cx="380" cy="180" r="30"/></g>
+  <g fill="#fff" stroke="#278aac" stroke-width="2"><circle cx="270" cy="240" r="10"/><circle cx="460" cy="230" r="10"/><circle cx="325" cy="330" r="10"/><circle cx="480" cy="330" r="10"/><circle cx="380" cy="180" r="10"/></g>
+  <ellipse cx="490" cy="242" rx="19" ry="12" fill="#e9b93a"/><circle cx="501" cy="225" r="12" fill="#e9b93a"/><path d="m510 223 17 6-17 4" fill="#d99820"/><circle cx="505" cy="222" r="2" fill="#153f4d"/>
+  <text x="42" y="47" font-size="27" fill="#153f4d" font-family="sans-serif">都卜勒 · 水波實驗</text><text x="42" y="452" font-size="18" fill="#5d7b86" font-family="sans-serif">親手拖曳每一圈，組合你的水波圖。</text>
+</svg>

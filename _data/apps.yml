@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年10月9日"
+    entry: "新增「都卜勒・水波實驗」，學生親手拖曳圓片組合波前，用大小方格量測、截圖作答；播放自己的排列，觀察 A、B 小鴨閃光、呱叫與接收間隔，並可進階自動比對。"
   - date: "2026年10月6日"
     entry: "新增「ORBIT 軌道實驗室」，按住設定起點、拖曳決定初速，以牛頓萬有引力觀察圓形、橢圓、拋物線與雙曲線軌跡；星體只受中央地球引力，支援軌道預測、速度向量與表面撞擊。"
   - date: "2026年10月01日"
@@ -45,6 +47,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "都卜勒・水波實驗"
+    image: "/assets/img/apps/doppler.svg"
+    description: "每一圈水波都能獨立拖曳，學生可像排列透明片一樣，親手組合靜止及¼、½、¾波速的波形。支援大小方格與磁吸、座標定位、截圖作答；播放自己的排列，讓 A、B 小鴨閃光、呱叫並計次，比較接收間隔，進階區可開啟自動比對。"
+    url: "/apps/doppler/index.html"
+    category: "波動"
+    tags: ["Physics", "Doppler", "Wave", "Worksheet", "Simulation"]
   - title: "ORBIT 軌道實驗室"
     image: "/assets/img/apps/orbit.svg"
     description: "按住選定起點，拖曳給星體初速，放開觀察萬有引力畫出的軌跡。以固定中心克卜勒模型探索圓軌道、橢圓與逃逸，支援預測路徑、速度與引力箭頭、時間倍率及撞擊觀察；星體彼此不影響。"
