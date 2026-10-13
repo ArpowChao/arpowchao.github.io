@@ -3,9 +3,9 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const CFD = window.BaseballCFD;
-  const DEFAULTS = { speedKmh: 130, spinRpm: 1800, seamHeightMm: .8, seamAngleDeg: 35, seamCount: 2, seamMagnification: 6 };
+  const DEFAULTS = { speedKmh: 130, spinRpm: 1800, seamHeightMm: .8, seamAngleDeg: 35, seamCount: 4, seamMagnification: 6 };
   const controls = { speed: 'speedKmh', spin: 'spinRpm', 'seam-height': 'seamHeightMm', 'seam-angle': 'seamAngleDeg' };
-  const state = { config: { ...DEFAULTS }, field: 'smoke', running: true, streamlines: true, average: false, arrows: true, generation: 0, ready: false, error: '' };
+  const state = { config: { ...DEFAULTS }, field: 'smoke', running: true, streamlines: true, average: false, arrows: true, smokeColor: 'speed', generation: 0, ready: false, error: '' };
   let worker, frame = null, configureTimer, drawPending = false;
   const rasters = new Map();
   const ema = { smooth: null, seamed: null };
@@ -26,6 +26,11 @@
     }
     return stops.at(-1)[1];
   }
+  // Vivid scale for smoke on a dark background: slow = blue, free stream = cyan-green, fast = yellow-red.
+  const smokeStops = [[0, [74, 108, 255]], [.3, [60, 200, 230]], [.5, [120, 230, 120]], [.72, [250, 220, 80]], [1, [245, 90, 70]]];
+  const SMOKE_BINS = 24;
+  const smokeBinColors = Array.from({ length: SMOKE_BINS }, (_, i) => `rgb(${colorAt(smokeStops, i / (SMOKE_BINS - 1)).join(',')})`);
+  const rainbowColors = Array.from({ length: SMOKE_BINS }, (_, i) => `hsl(${Math.round(i * 300 / SMOKE_BINS)}, 85%, 62%)`);
   const palettes = {
     speed: Array.from({ length: 256 }, (_, i) => colorAt(speedStops, i / 255)),
     pressure: Array.from({ length: 256 }, (_, i) => colorAt(pressureStops, i / 255)),
@@ -59,13 +64,16 @@
   }
 
   function updateLegend() {
-    const names = { smoke: ['', '', '白色煙線：從左側噴嘴連續釋放，隨數值流場漂流'], speed: ['0', '≥ 2.0', '流速 / 來流速度 U'], pressure: ['≤ −2', '≥ +2', '壓力係數 Cp'], vorticity: ['≤ −12', '≥ +12', '渦度 × D / U'] };
+    const smokeLabel = { speed: ['慢', '快', '煙線顏色＝流速（來流速度在中間的綠色）'], rainbow: ['', '', '煙線：每條噴嘴一種顏色，看它們怎麼被捲進尾流'], white: ['', '', '白色煙線：像真實的煙霧風洞'] }[state.smokeColor];
+    const names = { smoke: smokeLabel, speed: ['0', '≥ 2.0', '流速 / 來流速度 U'], pressure: ['≤ −2', '≥ +2', '壓力係數 Cp'], vorticity: ['≤ −12', '≥ +12', '渦度 × D / U'] };
     const [min, max, label] = names[state.field];
     $('legend-min').textContent = min;
     $('legend-max').textContent = max;
     $('legend-label').textContent = label + (state.average && (state.field === 'speed' || state.field === 'pressure') ? '（時間平均）' : '');
-    $('color-scale').className = `color-scale ${state.field}-scale`;
-    $('color-scale').hidden = state.field === 'smoke';
+    $('color-scale').className = `color-scale ${state.field === 'smoke' ? (state.smokeColor === 'rainbow' ? 'rainbow' : 'smoke') : state.field}-scale`;
+    $('color-scale').hidden = state.field === 'smoke' && state.smokeColor === 'white';
+    document.querySelectorAll('.smoke-only').forEach((el) => { el.hidden = state.field !== 'smoke'; });
+    document.querySelectorAll('.non-smoke').forEach((el) => { el.hidden = state.field === 'smoke'; });
     document.querySelectorAll('[data-field]').forEach((button) => {
       const active = button.dataset.field === state.field;
       button.classList.toggle('active', active);
@@ -275,15 +283,15 @@
     if (!sm) {
       const g = solution.geometry, D = solution.config.diameterCells, nozzles = [];
       for (let y = g.cy - 2.4 * D; y <= g.cy + 2.4 * D + .01; y += D / 7) nozzles.push(y);
-      sm = smoke[solution.variant] = { x: new Float32Array(30000), y: new Float32Array(30000), age: new Float32Array(30000), n: 0, nozzles, carry: 0, rakeX: g.cx - 2 * D };
+      sm = smoke[solution.variant] = { x: new Float32Array(30000), y: new Float32Array(30000), age: new Float32Array(30000), v: new Float32Array(30000), row: new Uint8Array(30000), n: 0, nozzles, carry: 0, rakeX: g.cx - 2 * D };
       // Pre-fill the tunnel with straight smoke lines so the view is never empty; the solved flow bends them.
-      for (const ny of nozzles) {
+      nozzles.forEach((ny, row) => {
         for (let x = sm.rakeX; x < solution.nx - 3 && sm.n < sm.x.length; x += .5) {
           const p = Math.round(ny) * solution.nx + Math.round(x);
           if (solution.solid[p] || (x - g.cx) ** 2 + (ny - g.cy) ** 2 < (g.radius + 1) ** 2) continue;
-          sm.x[sm.n] = x; sm.y[sm.n] = ny; sm.age[sm.n] = 0; sm.n++;
+          sm.x[sm.n] = x; sm.y[sm.n] = ny; sm.age[sm.n] = 0; sm.v[sm.n] = solution.config.uIn; sm.row[sm.n] = row; sm.n++;
         }
-      }
+      });
     }
     return sm;
   }
@@ -293,47 +301,134 @@
     sm.carry += steps * U;
     while (sm.carry >= .5) {
       sm.carry -= .5;
-      for (const ny of sm.nozzles) {
-        if (sm.n >= sm.x.length) break;
-        sm.x[sm.n] = sm.rakeX + sm.carry; sm.y[sm.n] = ny; sm.age[sm.n] = 0; sm.n++;
-      }
+      sm.nozzles.forEach((ny, row) => {
+        if (sm.n >= sm.x.length) return;
+        sm.x[sm.n] = sm.rakeX + sm.carry; sm.y[sm.n] = ny; sm.age[sm.n] = 0; sm.v[sm.n] = U; sm.row[sm.n] = row; sm.n++;
+      });
     }
     const sub = Math.max(1, Math.ceil(steps * U * 2.5)), h = steps / sub;
     let w = 0;
     for (let i = 0; i < sm.n; i++) {
-      let x = sm.x[i], y = sm.y[i], alive = true;
+      let x = sm.x[i], y = sm.y[i], alive = true, speed = sm.v[i];
       for (let s = 0; s < sub; s++) {
         const v = sample(solution, x, y);
         if (!v) { alive = false; break; }
         const m = sample(solution, x + .5 * h * v.ux, y + .5 * h * v.uy);
         if (!m) { alive = false; break; }
-        x += h * m.ux; y += h * m.uy;
+        x += h * m.ux; y += h * m.uy; speed = Math.hypot(m.ux, m.uy);
       }
       if (!alive || x > solution.nx - 3) continue;
-      sm.x[w] = x; sm.y[w] = y; sm.age[w] = sm.age[i] + steps; w++;
+      sm.x[w] = x; sm.y[w] = y; sm.age[w] = sm.age[i] + steps; sm.v[w] = speed; sm.row[w] = sm.row[i]; w++;
     }
     sm.n = w;
   }
   function drawSmoke(ctx, solution, scale) {
     ctx.fillStyle = '#0d2128'; ctx.fillRect(0, 0, solution.nx, solution.ny);
     const sm = smokeState(solution), r = Math.max(.32, .9 / scale);
-    ctx.fillStyle = '#f3f1e6';
-    ctx.globalAlpha = .55;
-    for (let i = 0; i < sm.n; i++) ctx.fillRect(sm.x[i] - r, sm.y[i] - r, 2 * r, 2 * r);
+    if (state.smokeColor === 'white') {
+      ctx.fillStyle = '#f3f1e6'; ctx.globalAlpha = .55;
+      for (let i = 0; i < sm.n; i++) ctx.fillRect(sm.x[i] - r, sm.y[i] - r, 2 * r, 2 * r);
+    } else {
+      // Bucket particles by colour so each bucket is one fill style (fast on canvas).
+      const U2 = 2 * solution.config.uIn, rows = sm.nozzles.length, bins = Array.from({ length: SMOKE_BINS }, () => []);
+      for (let i = 0; i < sm.n; i++) {
+        const b = state.smokeColor === 'speed'
+          ? Math.min(SMOKE_BINS - 1, Math.max(0, Math.round(sm.v[i] / U2 * (SMOKE_BINS - 1))))
+          : Math.floor(sm.row[i] * SMOKE_BINS / rows);
+        bins[b].push(i);
+      }
+      const colors = state.smokeColor === 'speed' ? smokeBinColors : rainbowColors;
+      ctx.globalAlpha = .8;
+      bins.forEach((list, b) => {
+        if (!list.length) return;
+        ctx.fillStyle = colors[b];
+        for (const i of list) ctx.fillRect(sm.x[i] - r, sm.y[i] - r, 2 * r, 2 * r);
+      });
+    }
     ctx.globalAlpha = 1;
     // nozzle rake
     ctx.fillStyle = '#6f8b86';
     for (const ny of sm.nozzles) ctx.fillRect(sm.rakeX - 2.2, ny - .45, 2, .9);
   }
-  function drawSpinMarks(ctx, solution) {
+  // ---- Baseball drawing. The red stitched ridges are exactly the seam bumps the solver sees;
+  // the curves on the face join them like the seams of a real ball (decoration only). ----
+  const onCircle = (g, deg, r) => { const t = deg * Math.PI / 180; return { x: g.cx + r * Math.cos(t), y: g.cy - r * Math.sin(t) }; };
+  function seamCurve(g, a, b) {
+    const R = g.radius, A = onCircle(g, a, R * .97), B = onCircle(g, b, R * .97), pts = [];
+    const span = ((b - a) % 360 + 360) % 360;
+    if (Math.abs(span - 180) < 1) {
+      // antipodal bumps: S-shaped seam across the face
+      const ax = (A.x - g.cx) / R, ay = (A.y - g.cy) / R, nx = -ay, ny = ax;
+      const c1 = { x: g.cx + ax * R * .35 + nx * R * .6, y: g.cy + ay * R * .35 + ny * R * .6 };
+      const c2 = { x: g.cx - ax * R * .35 - nx * R * .6, y: g.cy - ay * R * .35 - ny * R * .6 };
+      for (let i = 0; i <= 48; i++) {
+        const t = i / 48, u = 1 - t;
+        pts.push({ x: u * u * u * A.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * B.x, y: u * u * u * A.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * B.y });
+      }
+    } else {
+      // neighbouring ends: a "C" that bows in toward the centre, like the classic ball face
+      const mid = onCircle(g, a + span / 2, R * .18);
+      for (let i = 0; i <= 40; i++) {
+        const t = i / 40, u = 1 - t;
+        pts.push({ x: u * u * A.x + 2 * u * t * mid.x + t * t * B.x, y: u * u * A.y + 2 * u * t * mid.y + t * t * B.y });
+      }
+    }
+    return pts;
+  }
+  function stitches(ctx, pts, size) {
+    ctx.strokeStyle = '#b8473c'; ctx.lineWidth = .3;
+    ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.stroke();
+    ctx.strokeStyle = '#d4392e'; ctx.lineWidth = .42; ctx.lineCap = 'round';
+    let acc = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const dx = pts[i].x - pts[i - 1].x, dy = pts[i].y - pts[i - 1].y, L = Math.hypot(dx, dy) || 1;
+      acc += L;
+      if (acc < size * 1.5) continue;
+      acc = 0;
+      const tx = dx / L, ty = dy / L, nx = -ty, ny = tx, p = pts[i];
+      ctx.beginPath();
+      ctx.moveTo(p.x + nx * size - tx * size * .55, p.y + ny * size - ty * size * .55); ctx.lineTo(p.x + nx * size * .2, p.y + ny * size * .2);
+      ctx.moveTo(p.x - nx * size - tx * size * .55, p.y - ny * size - ty * size * .55); ctx.lineTo(p.x - nx * size * .2, p.y - ny * size * .2);
+      ctx.stroke();
+    }
+  }
+  function drawBaseball(ctx, solution) {
+    const g = solution.geometry, R = g.radius, seams = g.seamCenters;
+    ctx.save(); ctx.globalAlpha = 1;
+    // soft shadow
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(g.cx + 1.2, g.cy + 1.6, R, R, 0, 0, Math.PI * 2); ctx.fill();
+    // raised seam ridges (the solver geometry) in leather colour
+    for (const s of seams) { ctx.fillStyle = '#efe9d6'; ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); ctx.fill(); }
+    const grad = ctx.createRadialGradient(g.cx - R * .38, g.cy - R * .42, R * .05, g.cx, g.cy, R * 1.02);
+    grad.addColorStop(0, '#ffffff'); grad.addColorStop(.65, '#f3efe2'); grad.addColorStop(1, '#cfc8b2');
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(g.cx, g.cy, R, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,110,85,.55)'; ctx.lineWidth = .35;
+    ctx.beginPath(); ctx.arc(g.cx, g.cy, R, 0, Math.PI * 2); ctx.stroke();
+    if (seams.length) {
+      const a = seams.map((s) => s.angleDeg), pairs = a.length === 4 ? [[a[0], a[1]], [a[2], a[3]]] : a.length === 2 ? [[a[0], a[1]]] : [[a[0] - 70, a[0] + 70]];
+      for (const [p, q] of pairs) stitches(ctx, seamCurve(g, p, q), .9);
+      // stitches across each raised ridge, right where the air meets it
+      for (const s of seams) {
+        const ridge = [];
+        const halfSpan = Math.min(28, (s.radius / R) * 75);
+        for (let d = -halfSpan; d <= halfSpan; d += 2) ridge.push(onCircle(g, s.angleDeg + d, R + Math.max(.4, g.seamHeightCells * .55)));
+        stitches(ctx, ridge, .75);
+      }
+    }
+    drawSpinRing(ctx, solution);
+    ctx.restore();
+  }
+  function drawSpinRing(ctx, solution) {
     const g = solution.geometry, om = solution.config.omegaLattice;
     if (!om) return;
-    const a0 = smoke.spin, R = g.radius * .62;
-    ctx.strokeStyle = '#b9b29a'; ctx.lineWidth = .7;
-    for (let k = 0; k < 3; k++) {
-      const a = a0 + k * 2 * Math.PI / 3;
-      ctx.beginPath(); ctx.arc(g.cx, g.cy, R, -a - .5, -a + .5); ctx.stroke();
-    }
+    const R = g.radius + 2.6, ccw = om > 0;
+    ctx.strokeStyle = 'rgba(255,211,107,.85)'; ctx.lineWidth = .55; ctx.setLineDash([2.2, 1.6]);
+    ctx.lineDashOffset = (ccw ? 1 : -1) * smoke.spin * R;
+    ctx.beginPath(); ctx.arc(g.cx, g.cy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    // arrowhead at the top showing the surface direction
+    const dir = ccw ? -1 : 1, x = g.cx, y = g.cy - R;
+    ctx.fillStyle = 'rgba(255,211,107,.95)'; ctx.beginPath();
+    ctx.moveTo(x + dir * 2.2, y); ctx.lineTo(x - dir * .4, y - 1.3); ctx.lineTo(x - dir * .4, y + 1.3); ctx.closePath(); ctx.fill();
   }
 
   function arrow(ctx, x0, y0, x1, y1, color, width, head) {
@@ -357,8 +452,11 @@
     if (Math.abs(liftLen) > 1.2) {
       const y0 = g.cy - Math.sign(liftLen) * (R + 1);
       arrow(ctx, g.cx, y0, g.cx, y0 - liftLen, '#ffd36b', 1.6, 4);
-      ctx.fillStyle = '#ffd36b'; ctx.font = '600 5.5px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(`升力 ${signed(force.cl)}${force.mean ? '' : '（瞬時）'}`, g.cx + 3, y0 - liftLen * .55);
+      const label = `升力 ${signed(force.cl)}${force.mean ? '（平均）' : '（瞬時）'}`, ly = y0 - liftLen * .55;
+      ctx.font = '600 5px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      const tw = ctx.measureText(label).width;
+      ctx.fillStyle = 'rgba(8,24,30,.78)'; ctx.beginPath(); ctx.roundRect(g.cx + 2.2, ly - 3.4, tw + 3.2, 6.8, 1.6); ctx.fill();
+      ctx.fillStyle = '#ffd36b'; ctx.fillText(label, g.cx + 3.8, ly + .2);
     }
     ctx.restore();
   }
@@ -382,21 +480,7 @@
       ctx.drawImage(fieldRaster(solution), 0, 0);
       if (state.streamlines) drawStreamlines(ctx, solution, scale);
     }
-    const g = solution.geometry;
-    if (state.field === 'smoke') {
-      const grad = ctx.createRadialGradient(g.cx - g.radius * .35, g.cy - g.radius * .4, 1, g.cx, g.cy, g.radius);
-      grad.addColorStop(0, '#fffef6'); grad.addColorStop(1, '#cfcab6');
-      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(g.cx, g.cy, g.radius, 0, Math.PI * 2); ctx.fill();
-      for (const seam of g.seamCenters) { ctx.fillStyle = '#d0644c'; ctx.beginPath(); ctx.arc(seam.x, seam.y, seam.radius, 0, Math.PI * 2); ctx.fill(); }
-      drawSpinMarks(ctx, solution);
-    }
-    ctx.lineWidth = .5; ctx.strokeStyle = '#fcfae48c';
-    ctx.beginPath(); ctx.arc(g.cx, g.cy, g.radius, 0, Math.PI * 2); ctx.stroke();
-    // Outline each solved seam bump where it actually protrudes from the surface.
-    for (const seam of g.seamCenters) {
-      ctx.strokeStyle = '#ffb59a'; ctx.lineWidth = .6;
-      ctx.beginPath(); ctx.arc(seam.x, seam.y, seam.radius + .3, 0, Math.PI * 2); ctx.stroke();
-    }
+    drawBaseball(ctx, solution);
     if (state.arrows) drawForces(ctx, solution);
     const D = solution.config.diameterCells;
     ctx.strokeStyle = '#75999299'; ctx.lineWidth = .6;
@@ -471,13 +555,13 @@
   function animate(now) {
     requestAnimationFrame(animate);
     const dt = Math.min(.1, (now - (smoke.lastTime || now)) / 1000); smoke.lastTime = now;
-    if (state.field !== 'smoke' || !frame || document.hidden) return;
+    if (!frame || document.hidden) return;
     const steps = state.running ? smoke.rate * dt : 0;
     if (steps > 0) {
-      advanceSmoke(frame.smooth, steps); advanceSmoke(frame.seamed, steps);
-      smoke.spin += frame.smooth.config.omegaLattice * steps;
+      smoke.spin += Math.abs(frame.smooth.config.omegaLattice) * steps;
+      if (state.field === 'smoke') { advanceSmoke(frame.smooth, steps); advanceSmoke(frame.seamed, steps); }
+      if (state.field === 'smoke' || frame.smooth.config.omegaLattice) scheduleDraw();
     }
-    scheduleDraw();
   }
   function noteSteps(steps) {
     const t = performance.now();
@@ -560,6 +644,7 @@
   document.querySelectorAll('[data-field]').forEach((button) => button.addEventListener('click', () => { state.field = button.dataset.field; updateLegend(); scheduleDraw(); }));
   $('streamlines').addEventListener('change', () => { state.streamlines = $('streamlines').checked; scheduleDraw(); });
   $('average-field').addEventListener('change', () => { state.average = $('average-field').checked; updateLegend(); scheduleDraw(); });
+  $('smoke-color').addEventListener('change', () => { state.smokeColor = $('smoke-color').value; updateLegend(); scheduleDraw(); });
   $('force-arrows').addEventListener('change', () => { state.arrows = $('force-arrows').checked; scheduleDraw(); });
   $('toggle-run').addEventListener('click', () => {
     state.running = !state.running;

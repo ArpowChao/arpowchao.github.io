@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年10月13日"
+    entry: "新增「SPIN 投球旋轉實驗室」：3D 真實縫線棒球依轉速、轉軸時鐘方向與有效旋轉轉動，計算馬格努斯力造成的球路位移，並和大聯盟各球種平均比較；另附 VPython 版（可直接貼到 Web VPython 執行）與 Colab 筆記本（高解析度 2D 風洞）。"
   - date: "2026年10月9日"
     entry: "新增「都卜勒・水波實驗」，學生親手拖曳圓片組合波前，用大小方格量測、截圖作答；播放自己的排列，觀察 A、B 小鴨閃光、呱叫與接收間隔，並可進階自動比對。"
   - date: "2026年10月8日"
@@ -51,6 +53,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "SPIN 投球旋轉實驗室"
+    image: "/assets/img/apps/pitch-spin.svg"
+    description: "3D 真實縫線的棒球照轉速、轉軸（時鐘方向）與有效旋轉轉動，看轉軸、馬格努斯力與前進方向的關係；捕手視角看進壘、位移圖比較各球種。附 VPython 版與 Colab 筆記本，可用 Python 自己改參數探究。"
+    url: "/apps/pitch-spin/index.html"
+    category: "力學"
+    tags: ["Physics", "Baseball", "Magnus", "3D", "VPython"]
   - title: "都卜勒・水波實驗"
     image: "/assets/img/apps/doppler.svg"
     description: "每一圈水波都能獨立拖曳，學生可像排列透明片一樣，親手組合靜止及¼、½、¾波速的波形。支援大小方格與磁吸、座標定位、截圖作答；播放自己的排列，讓 A、B 小鴨閃光、呱叫並計次，比較接收間隔，進階區可開啟自動比對。"

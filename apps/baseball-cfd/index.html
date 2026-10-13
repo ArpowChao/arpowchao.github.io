@@ -30,7 +30,7 @@
       </div>
     </header>
 
-    <div class="model-banner"><span class="model-tag">2D CFD</span><p>實際數值演算 · 二維低 Re 截面模型 · 球速對應教學用模型 Re · 縫線放大 6 倍</p><a href="#method">了解適用範圍 ↓</a></div>
+    <div class="model-banner"><span class="model-tag">2D CFD</span><p>實際數值演算 · 二維低 Re 截面模型 · 球速對應教學用模型 Re · 縫線放大 6 倍</p><a href="../pitch-spin/index.html">看真實球路 → SPIN 3D</a></div>
 
     <div class="lab-layout">
       <aside class="controls panel" aria-label="風洞控制">
@@ -60,7 +60,7 @@
           <div class="range-labels"><span>0° · 下游側</span><span>180° · 上游側</span></div>
           <p class="control-hint">從右方起，逆時針量角；縫線方位固定。</p>
         </div>
-        <fieldset class="seam-selection"><legend>截面上的縫線凸起數</legend><label><input type="radio" name="seam-count" value="1"><span>1 處</span></label><label><input type="radio" name="seam-count" value="2" checked><span>2 處</span></label><label><input type="radio" name="seam-count" value="4"><span>4 處</span></label></fieldset>
+        <fieldset class="seam-selection"><legend>截面上的縫線凸起數</legend><label><input type="radio" name="seam-count" value="1"><span>1 處</span></label><label><input type="radio" name="seam-count" value="2"><span>2 處</span></label><label><input type="radio" name="seam-count" value="4" checked><span>4 處</span></label></fieldset>
         <p class="control-hint seam-count-hint">理想化截面凸起數，並非二縫線／四縫線握法。1 處最容易看出單側縫線讓尾流偏移。</p>
         <div class="control-divider"><span>快速探索</span></div>
         <div class="presets">
@@ -92,12 +92,12 @@
           <article class="flow-card seamed-card">
             <div class="flow-heading"><div><span class="case-label">B / RAISED SEAMS</span><h2>有縫線表面</h2></div><span class="surface-tag seam-tag">凸起參與求解</span></div>
             <canvas id="seamed-canvas" width="576" height="288" aria-label="包含凸起縫線障礙物的數值氣流，與左側使用相同風速與旋轉"></canvas>
-            <div class="flow-footer"><span><i class="seam-dot" aria-hidden="true"></i> 紅色為截面縫線凸起</span><span id="seam-detail">2 處 · 放大 6×</span></div>
+            <div class="flow-footer"><span><i class="seam-dot" aria-hidden="true"></i> 縫線凸起的位置參與計算</span><span id="seam-detail">4 處 · 放大 6×</span></div>
           </article>
         </div>
         <div class="visual-legend">
           <div class="color-legend"><span id="legend-min">0</span><div id="color-scale" class="color-scale speed-scale"></div><span id="legend-max">2.0</span><strong id="legend-label">流速 / 來流速度 U</strong></div>
-          <div class="legend-toggles"><label class="checkbox-label"><input id="average-field" type="checkbox">時間平均</label><label class="checkbox-label"><input id="force-arrows" type="checkbox" checked>力的箭頭</label><label class="checkbox-label"><input id="streamlines" type="checkbox" checked>數值流線</label></div>
+          <div class="legend-toggles"><label class="checkbox-label smoke-only">煙線顏色 <select id="smoke-color" aria-label="煙線顏色"><option value="speed" selected>依流速</option><option value="rainbow">每條不同色</option><option value="white">白色</option></select></label><label class="checkbox-label non-smoke"><input id="average-field" type="checkbox">時間平均</label><label class="checkbox-label"><input id="force-arrows" type="checkbox" checked>力的箭頭</label><label class="checkbox-label non-smoke"><input id="streamlines" type="checkbox" checked>數值流線</label></div>
         </div>
         <div class="solver-state" role="status"><span id="status-dot" class="live-dot" aria-hidden="true"></span><span id="status-text">正在初始化數值風洞…</span><span id="steps-label">0 步</span></div>
         <noscript><p class="error-box">請啟用 JavaScript，才能執行氣流數值模擬。</p></noscript>
@@ -129,7 +129,7 @@
         <article><span class="method-number">03</span><h3>和真實棒球差在哪裡？</h3><p>二維圓形截面在流體力學上代表長圓柱。模型 Re 為 60–180，真球約為 10⁵ 量級，球速只是依比例對應到模型 Re。此模型沒有解析三維球面、高 Re 轉捩和移動縫線，力的方向可定性對照馬格努斯效應與縫線偏移尾流（SSW），數值不能用來預測真實球路。</p></article>
       </div>
     </section>
-    <div class="reading"><span>延伸閱讀</span><a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-on-a-baseball/" target="_blank" rel="noopener noreferrer">NASA · 棒球阻力 ↗</a><a href="https://journals.sagepub.com/doi/10.1177/1754337120961609" target="_blank" rel="noopener noreferrer">Smith &amp; Smith · SSW 實驗 ↗</a><a href="https://link.springer.com/article/10.1007/s00348-023-03751-3" target="_blank" rel="noopener noreferrer">縫線與流動分離研究 ↗</a><a href="https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-47-flow-simulation-complex" target="_blank" rel="noopener noreferrer">D2Q9 方法 ↗</a></div>
+    <div class="reading"><span>延伸閱讀</span><a href="../pitch-spin/index.html">SPIN 投球旋轉 3D 實驗室 ↗</a><a href="https://colab.research.google.com/github/ArpowChao/arpowchao.github.io/blob/main/notebooks/baseball_aerodynamics.ipynb" target="_blank" rel="noopener">Colab：高解析度 2D 風洞 ↗</a><a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-on-a-baseball/" target="_blank" rel="noopener noreferrer">NASA · 棒球阻力 ↗</a><a href="https://journals.sagepub.com/doi/10.1177/1754337120961609" target="_blank" rel="noopener noreferrer">Smith &amp; Smith · SSW 實驗 ↗</a><a href="https://link.springer.com/article/10.1007/s00348-023-03751-3" target="_blank" rel="noopener noreferrer">縫線與流動分離研究 ↗</a><a href="https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-47-flow-simulation-complex" target="_blank" rel="noopener noreferrer">D2Q9 方法 ↗</a></div>
     <footer class="page-footer"><span>PHYSICS LAB / BASEBALL AERODYNAMICS</span><a href="../index.html">探索更多物理實驗 →</a></footer>
   </main>
 </body>

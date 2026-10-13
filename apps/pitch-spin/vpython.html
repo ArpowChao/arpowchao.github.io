@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="SPIN 投球旋轉實驗室的 VPython 版：3D 球場上看整條球路，附可直接貼到 Web VPython 執行的 Python 程式。">
+  <title>SPIN · VPython 版 | Physics Lab</title>
+  <link rel="icon" href="../../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .vp-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+    .vp-layout>*{min-inline-size:0}
+    .glow-wrap{border-radius:18px;overflow:hidden;background:#0f1c26;border:1px solid #0d1820;position:relative}
+    .glow-wrap .glowscript{width:100%}
+    .glow-wrap canvas{display:block}
+    .glow-note{position:absolute;left:12px;bottom:10px;margin:0;font-size:11px;color:#9fb3bf;pointer-events:none}
+    .glow-result{position:absolute;right:12px;top:12px;background:#0b1620d9;border:1px solid #2a4252;color:#e6edf0;border-radius:10px;padding:8px 12px;font:12px/1.6 var(--mono);pointer-events:none;white-space:pre}
+    .code-panel{margin-top:16px}
+    .code-panel pre{margin:0;max-height:420px;overflow:auto;background:#0f1c26;color:#d8e4ea;border-radius:10px;padding:14px;font:12px/1.55 var(--mono);tab-size:4}
+    .code-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .steps{margin:8px 0 0;padding-left:20px;font-size:12.5px;color:var(--muted)}
+    .steps li{margin:3px 0}
+    .run-button{width:100%;margin-top:12px;padding:11px;border:0;border-radius:11px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;letter-spacing:.08em}
+    @media(max-width:860px){.vp-layout{grid-template-columns:minmax(0,1fr)}}
+  </style>
+  <script src="lib/glow/jquery.min.js" defer></script>
+  <script src="lib/glow/jquery-ui.custom.min.js" defer></script>
+  <script src="lib/glow/glow.min.js" defer></script>
+  <script src="pitch.js" defer></script>
+  <script src="vpython-app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a href="index.html" class="back-link">← SPIN 3D 版</a><span>VPython / GLOWSCRIPT</span><a href="../index.html">Physics Lab ↗</a></header>
+  <main>
+    <header class="hero">
+      <div><p class="eyebrow">同一套物理，用 VPython 寫出來。</p><h1><span class="wordmark">SPIN</span><span class="hero-subtitle">VPython 版</span></h1></div>
+      <p class="intro">站到球場上看整條球路，<br>也可以把程式碼帶回去自己改。</p>
+    </header>
+    <div class="vp-layout">
+      <section>
+        <div class="glow-wrap" id="glow-wrap">
+          <div id="glowscript" class="glowscript"></div>
+          <div id="glow-result" class="glow-result"></div>
+          <p class="glow-note">橘色：這顆球　灰色：同樣出手但不轉的球　黃：轉軸　橘箭頭：馬格努斯力　·　拖曳右鍵／兩指可轉動視角，滾輪縮放　·　球放大 3 倍顯示</p>
+        </div>
+        <section class="panel code-panel">
+          <div class="panel-head"><h2>Python 程式（Web VPython 3.2）</h2>
+            <div class="code-actions"><button id="copy" class="mini-button" type="button">複製程式碼</button><a class="mini-button" href="pitch_spin_vpython.py" download>下載 .py</a></div>
+          </div>
+          <ol class="steps">
+            <li>到 <a href="https://www.glowscript.org/" target="_blank" rel="noopener">glowscript.org</a> 登入，按「Create new program」。</li>
+            <li>保留第一行 <code>Web VPython 3.2</code>，把下面的程式整段貼在它下面，按「Run this program」。</li>
+            <li>也可以在電腦上 <code>pip install vpython</code>，直接用 Python 執行這個檔案。</li>
+          </ol>
+          <pre id="code">載入中…</pre>
+        </section>
+      </section>
+      <aside class="controls">
+        <section class="panel">
+          <div class="panel-head"><h2>投球設定</h2>
+            <div class="hand-toggle" role="group" aria-label="投手慣用手"><button type="button" data-hand="R" class="active">右投</button><button type="button" data-hand="L">左投</button></div>
+          </div>
+          <div class="control"><div class="control-head"><label for="vp-preset">球種</label></div><select id="vp-preset"></select></div>
+          <div class="control"><div class="control-head"><label for="vp-speed">球速</label><output id="vp-speed-out"></output></div><input id="vp-speed" type="range" min="100" max="165" step="1"></div>
+          <div class="control"><div class="control-head"><label for="vp-rpm">轉速</label><output id="vp-rpm-out"></output></div><input id="vp-rpm" type="range" min="0" max="3200" step="25"></div>
+          <div class="control"><div class="control-head"><label for="vp-tilt">轉軸方向（時鐘）</label><output id="vp-tilt-out"></output></div><input id="vp-tilt" type="range" min="0" max="11.75" step="0.25"></div>
+          <div class="control"><div class="control-head"><label for="vp-eff">有效旋轉比例</label><output id="vp-eff-out"></output></div><input id="vp-eff" type="range" min="0" max="100" step="1"></div>
+          <div class="control"><div class="control-head"><label for="vp-slow">慢動作</label></div><select id="vp-slow"><option value="4">4 倍</option><option value="8" selected>8 倍</option><option value="16">16 倍</option></select></div>
+          <div class="control"><div class="control-head"><label for="vp-cam">視角</label></div><select id="vp-cam"><option value="behind">捕手後方</option><option value="side">三壘側面</option><option value="pitcher">投手後方</option><option value="top">正上方</option></select></div>
+          <button id="vp-throw" class="run-button" type="button">▶ 投球</button>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>和 3D 版的關係</h2></div>
+          <p class="hint">兩個版本用同一套物理（重力、空氣阻力、馬格努斯力，C<sub>L</sub> = 1/(2.32+0.4/S)），算出來的位移相同。3D 版近看球的縫線與轉軸；這裡看整條球路從投手丘到本壘。</p>
+        </section>
+      </aside>
+    </div>
+    <footer class="site-footer"><span>SPIN · VPython / Physics Lab</span><span>GlowScript（vpython 套件內附，MIT 授權）</span></footer>
+  </main>
+</body>
+</html>

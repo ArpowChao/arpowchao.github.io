@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f5f2">
+  <meta name="description" content="3D 棒球旋轉實驗室：設定球速、轉速、轉軸時鐘方向與有效旋轉，看真實縫線的棒球怎麼轉，並算出馬格努斯力造成的球路位移。">
+  <title>SPIN 投球旋轉實驗室 | Physics Lab</title>
+  <link rel="icon" href="../../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="lib/three.min.js" defer></script>
+  <script src="pitch.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a href="../index.html" class="back-link">← Physics Lab</a><span>投球物理 / PITCH SPIN &amp; MOVEMENT</span><a href="#principle">觀察原理 ↗</a></header>
+  <main>
+    <header class="hero">
+      <div><p class="eyebrow">同樣是旋轉，為什麼球會往不同方向跑？</p><h1><span class="wordmark">SPIN</span><span class="hero-subtitle">投球旋轉實驗室</span></h1></div>
+      <p class="intro">轉軸的方向、轉得多快、<br>有多少是「有效」的旋轉，<br>決定了球路的位移。</p>
+    </header>
+
+    <div class="lab-layout">
+      <section class="stage-col" aria-label="3D 旋轉的棒球">
+        <div id="stage" class="stage">
+          <canvas id="ball-canvas" aria-label="3D 棒球：可拖曳旋轉視角。黃色為轉軸，橘色為馬格努斯力方向，藍色為前進方向。"></canvas>
+          <div class="stage-top">
+            <div class="view-buttons" role="group" aria-label="視角">
+              <button type="button" data-view="catcher" class="active">捕手視角</button>
+              <button type="button" data-view="pitcher">投手後方</button>
+              <button type="button" data-view="side">三壘側</button>
+            </div>
+            <label class="slow"><span>慢動作</span>
+              <select id="slow">
+                <option value="80">1/80</option>
+                <option value="40" selected>1/40</option>
+                <option value="20">1/20</option>
+                <option value="0">暫停</option>
+              </select></label>
+          </div>
+          <div class="stage-legend">
+            <span><i class="key axis"></i>轉軸</span>
+            <span><i class="key magnus"></i>馬格努斯力</span>
+            <span><i class="key velocity"></i>前進方向</span>
+          </div>
+          <p id="stage-note" class="stage-note">實際每秒 38 圈，畫面放慢 40 倍　·　拖曳可轉動視角</p>
+        </div>
+        <div class="two-panels">
+          <section class="panel">
+            <div class="panel-head"><h2>捕手看到的進壘</h2><button id="replay" class="mini-button" type="button">▶ 再投一次</button></div>
+            <canvas id="plate-canvas" class="plate-canvas" aria-label="從捕手後方看的球路：灰色虛線為完全不轉的球，橘色為實際球路"></canvas>
+            <p class="panel-note"><i class="dot ghost"></i>不轉的球　<i class="dot real"></i>這顆球（放慢 4 倍播放）</p>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>旋轉造成的位移</h2><span class="panel-tag">捕手視角 · 公分</span></div>
+            <canvas id="move-canvas" class="move-canvas" aria-label="位移圖：橫軸為水平位移，縱軸為垂直位移（扣除重力）"></canvas>
+            <p class="panel-note"><i class="dot real"></i>這顆球　<i class="dot preset"></i>其他球種（模型）　<i class="dot observed"></i>大聯盟約略平均</p>
+          </section>
+        </div>
+      </section>
+
+      <aside class="controls" aria-label="投球設定">
+        <section class="panel">
+          <div class="panel-head"><h2>選一種球</h2>
+            <div class="hand-toggle" role="group" aria-label="投手慣用手"><button type="button" data-hand="R" class="active">右投</button><button type="button" data-hand="L">左投</button></div>
+          </div>
+          <div id="presets" class="presets"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>調整旋轉</h2><span id="custom-tag" class="panel-tag"></span></div>
+          <div class="control">
+            <div class="control-head"><label for="speed">球速</label><output id="speed-out">152 km/h</output></div>
+            <input id="speed" type="range" min="100" max="165" step="1" value="152">
+          </div>
+          <div class="control">
+            <div class="control-head"><label for="rpm">轉速</label><output id="rpm-out">2300 rpm</output></div>
+            <input id="rpm" type="range" min="0" max="3200" step="25" value="2300">
+          </div>
+          <div class="control">
+            <div class="control-head"><label for="eff">有效旋轉比例</label><output id="eff-out">80 %</output></div>
+            <input id="eff" type="range" min="0" max="100" step="1" value="80">
+            <p class="hint">其餘是繞著前進方向轉的「陀螺旋轉」，不產生馬格努斯力。</p>
+          </div>
+          <div class="control clock-control">
+            <div class="clock-wrap">
+              <svg id="clock" viewBox="-60 -60 120 120" role="slider" tabindex="0" aria-label="轉軸方向（時鐘）" aria-valuemin="0" aria-valuemax="12"></svg>
+            </div>
+            <div class="clock-text">
+              <div class="control-head"><span>轉軸方向（時鐘）</span><output id="tilt-out">1:00</output></div>
+              <p class="hint">從投手背後看，旋轉把球推向時針指的方向：12:00 往上（純後旋），6:00 往下（純上旋）。拖曳時針可以調整。</p>
+              <div class="tilt-steps"><button type="button" data-tilt="-0.25" aria-label="逆時針 15 分">−15 分</button><button type="button" data-tilt="0.25" aria-label="順時針 15 分">＋15 分</button></div>
+            </div>
+          </div>
+          <div class="control">
+            <div class="control-head"><label for="seams">握法（縫線方位）</label></div>
+            <select id="seams"><option value="four">四縫線：每轉一圈有 4 段縫線劃過空氣</option><option value="two">二縫線：每轉一圈 2 段縫線</option></select>
+          </div>
+        </section>
+        <section class="panel readout-panel">
+          <div class="panel-head"><h2>數據</h2><span class="panel-tag">模型計算</span></div>
+          <dl class="readouts">
+            <div><dt>水平位移</dt><dd id="r-hb">—</dd></div>
+            <div><dt>垂直位移（扣除重力）</dt><dd id="r-ivb">—</dd></div>
+            <div><dt>飛行時間</dt><dd id="r-time">—</dd></div>
+            <div><dt>進壘球速</dt><dd id="r-plate">—</dd></div>
+            <div><dt>有效轉速</dt><dd id="r-active">—</dd></div>
+            <div><dt>馬格努斯力</dt><dd id="r-force">—</dd></div>
+            <div><dt>旋轉參數 S ／ 升力係數 C<sub>L</sub></dt><dd id="r-s">—</dd></div>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section id="principle" class="principles" aria-labelledby="principle-title">
+      <div class="principle-intro"><p class="eyebrow">讓旋轉說明球路</p><h2 id="principle-title">球往哪裡跑，<br>看轉軸怎麼擺。</h2>
+        <p>旋轉的球帶著周圍的空氣一起轉，把氣流往一側甩，反作用力就把球推往另一側。這個力和轉軸、前進方向都垂直：F 的方向就是 ω × v。</p>
+        <div class="links"><a href="vpython.html">VPython 版本 ↗</a><a id="colab-link" href="https://colab.research.google.com/github/ArpowChao/arpowchao.github.io/blob/main/notebooks/baseball_aerodynamics.ipynb" target="_blank" rel="noopener">Colab 筆記本 ↗</a><a href="../baseball-cfd/index.html">2D 煙線風洞 ↗</a></div>
+      </div>
+      <div class="principle-content">
+        <div class="equation"><span>馬格努斯力（升力）</span>
+          <p class="formula">F<sub>M</sub> = ½ ρ A C<sub>L</sub> v²　方向 ∥ ω<sub>⊥</sub> × v</p>
+          <p class="formula small">C<sub>L</sub> = 1 / (2.32 + 0.4 / S)，S = r ω<sub>⊥</sub> / v</p>
+          <p>ρ 空氣密度 1.2 kg/m³，A 球的截面積，r = 3.66 cm，m = 145 g。ω<sub>⊥</sub> 是和前進方向垂直的那部分旋轉（有效旋轉）。另外還有空氣阻力 ½ρAC<sub>D</sub>v²（C<sub>D</sub> = 0.33）與重力。</p>
+        </div>
+        <div class="guide">
+          <p><i class="swatch amber"></i><span><strong>後旋讓速球「浮」起來</strong><br>四縫線速球大約 1:00 方向的後旋，馬格努斯力往上，抵消了一部分重力，打者覺得球「沒有掉」。</span></p>
+          <p><i class="swatch blue"></i><span><strong>陀螺旋轉不推球</strong><br>滑球的轉軸大多指向前進方向，轉速再高，有效旋轉少，位移就小。試試把有效旋轉比例拉到 0。</span></p>
+          <p><i class="swatch red"></i><span><strong>縫線偏移尾流（SSW）</strong><br>伸卡球、變速球的實際位移常比「只算旋轉」更大：縫線讓兩側氣流在不同位置分離。這個效果需要風洞或 3D 高雷諾數模擬，本模型沒有包含。</span></p>
+        </div>
+        <details><summary>教師補充：模型與參考</summary>
+          <p>座標以捕手視角：x 向一壘側、y 由本壘指向投手丘、z 向上。出手點距本壘前緣約 16.3 m、高 1.78 m（右投在三壘側 0.55 m）。初速方向設定成這顆球會通過好球帶中心；灰色是同樣出手、但完全不轉的球，兩者的差就是旋轉造成的位移（從出手點起算）。轉軸在 0.4 秒內視為固定。以 RK4 積分（Δt = 0.5 ms）。</p>
+          <p>升力係數採 Sawicki, Hubbard &amp; Stronge (2003) 的經驗式；此式對慢速、高轉速的變化球可能略為高估，所以預設的有效旋轉比例取得較保守。「大聯盟約略平均」為近年右投手各球種位移的大致數值，僅供比較方向與量級。</p>
+          <p>參考：<a href="https://doi.org/10.1119/1.1604384" target="_blank" rel="noopener">Sawicki et al. 2003, Am. J. Phys.</a>　<a href="https://baseball.physics.illinois.edu/" target="_blank" rel="noopener">Alan Nathan：The Physics of Baseball</a>　<a href="https://baseballsavant.mlb.com/" target="_blank" rel="noopener">Baseball Savant</a></p>
+        </details>
+      </div>
+    </section>
+    <footer class="site-footer"><span>SPIN / Physics Lab</span><span>three.js r160（MIT）</span></footer>
+  </main>
+</body>
+</html>
