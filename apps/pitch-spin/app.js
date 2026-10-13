@@ -85,36 +85,157 @@
   const axisArrow = makeArrow(0xf5c542, .02), magnusArrow = makeArrow(0xef7a2c, .03), velArrow = makeArrow(0x6fa8ff, .025);
   scene.add(axisArrow, magnusArrow, velArrow);
 
-  // airflow streaks past the ball (relative wind = −v)
-  const streakCount = 70, streakGeo = new T.BufferGeometry(), streakPos = new Float32Array(streakCount * 6), streakSeed = [];
-  for (let i = 0; i < streakCount; i++) streakSeed.push({ a: Math.random() * Math.PI * 2, r: 1.15 + Math.random() * 1.1, s: Math.random() });
-  streakGeo.setAttribute('position', new T.BufferAttribute(streakPos, 3));
-  const streaks = new T.LineSegments(streakGeo, new T.LineBasicMaterial({ color: 0x9fb8c8, transparent: true, opacity: .35 }));
-  scene.add(streaks);
+  // ---------- airflow (ball frame, ball radius = 1) ----------
+  // Schematic field: potential flow past a sphere + swirl dragged by the spinning surface
+  // (strength = surface speed / air speed) + a wake pushed opposite to the Magnus force.
+  const flow = { a: new T.Vector3(0, 0, -1), F: new T.Vector3(0, 1, 0), side: new T.Vector3(1, 0, 0), W: new T.Vector3(), defl: 0, lines: [] };
+  const _x = new T.Vector3(), _p = new T.Vector3(), _t = new T.Vector3();
+  const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
+  function flowAt(x, out) {
+    const { a, W, F } = flow, r2 = x.lengthSq(), r = Math.sqrt(r2), r3 = r2 * r, ax = a.dot(x);
+    out.copy(a).multiplyScalar(1 + .5 / r3).addScaledVector(x, -1.5 * ax / (r3 * r2)); // potential flow
+    out.add(_t.crossVectors(W, x).multiplyScalar(1 / r3)); // rotating surface drags the air
+    if (ax > 0) { // wake: slower air behind the ball, pushed toward −F (Newton's third law)
+      const g = smooth(0, 1.6, ax);
+      _p.copy(x).addScaledVector(a, -ax);
+      const rho2 = _p.lengthSq();
+      out.addScaledVector(F, -flow.defl * g * Math.exp(-rho2 / 5));
+      out.addScaledVector(a, -.42 * g * Math.exp(-rho2 / 1.1) * Math.exp(-ax / 7));
+    }
+    return out;
+  }
+  const flowMat = new T.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false });
+  const flowGeo = new T.BufferGeometry();
+  const flowLines = new T.LineSegments(flowGeo, flowMat);
+  // tracer particles riding the streamlines (like smoke puffs)
+  const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.45, 'rgba(255,255,255,.85)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return new T.CanvasTexture(c); })();
+  const dotGeo = new T.BufferGeometry();
+  const dots = new T.Points(dotGeo, new T.PointsMaterial({ size: .1, map: dotTex, vertexColors: true, transparent: true, depthWrite: false }));
+  flowLines.add(dots);
+  scene.add(flowLines);
+  const speedColor = (s) => { // slow = blue … fast = red (relative to the free stream)
+    const stops = [[.5, [.25, .42, 1]], [.95, [.3, .8, 1]], [1.2, [.45, .95, .5]], [1.4, [1, .86, .25]], [1.62, [1, .32, .22]]];
+    if (s <= stops[0][0]) return stops[0][1];
+    for (let i = 1; i < stops.length; i++) if (s <= stops[i][0]) { const [s0, c0] = stops[i - 1], [s1, c1] = stops[i], u = (s - s0) / (s1 - s0); return c0.map((c, k) => c + (c1[k] - c) * u); }
+    return stops[stops.length - 1][1];
+  };
+  function traceLine(seed, weight) {
+    const pts = [], u = new T.Vector3(), k = new T.Vector3(), mid = new T.Vector3();
+    const x = seed.clone(); let t = 0;
+    for (let n = 0; n < 700; n++) {
+      flowAt(x, u); const sp = u.length();
+      pts.push({ x: x.clone(), t, sp });
+      if (flow.a.dot(x) > 5.6 || x.length() > 9) break;
+      const ds = .035;
+      mid.copy(x).addScaledVector(u, ds / sp / 2); flowAt(mid, k); // midpoint (RK2) in arc length
+      const ks = k.length(); x.addScaledVector(k, ds / ks); t += ds / ks;
+      const r = x.length(); if (r < 1.015) x.multiplyScalar(1.015 / r);
+    }
+    return { pts, weight };
+  }
+  function buildFlow() {
+    const r = state.result, a = vHat.clone().negate();
+    let F = r.magnusN > .01 ? toThree(r.magnusDirection) : new T.Vector3(0, 1, 0);
+    F.addScaledVector(a, -F.dot(a)); if (F.lengthSq() < 1e-6) F.set(1, 0, 0).addScaledVector(a, -a.x); F.normalize();
+    flow.a.copy(a); flow.F.copy(F); flow.side.crossVectors(a, F).normalize();
+    // swirl strength: surface speed / air speed, using the full spin vector (gyro spin swirls too)
+    flow.W.copy(toThree(r.omega)).multiplyScalar(P.BALL.radius / Math.hypot(...r.v0));
+    flow.defl = 1.8 * r.cl * (r.magnusN > .01 ? 1 : 0); // wake deflection, exaggerated for visibility
+    const seeds = [];
+    for (const o of [.12, .35, .6, .88, 1.2, 1.58, 2.02, 2.55]) for (const sg of [1, -1]) seeds.push([F.clone().multiplyScalar(o * sg), 1]);
+    for (const o of [.45, 1.0, 1.7]) for (const sg of [1, -1]) seeds.push([flow.side.clone().multiplyScalar(o * sg), .45]);
+    flow.lines = seeds.map(([off, w]) => traceLine(off.addScaledVector(a, -4.6), w));
+    const nSeg = flow.lines.reduce((s, l) => s + l.pts.length - 1, 0);
+    const pos = new Float32Array(nSeg * 6), col = new Float32Array(nSeg * 8);
+    let j = 0;
+    for (const l of flow.lines) for (let i = 1; i < l.pts.length; i++) {
+      const A = l.pts[i - 1], B = l.pts[i];
+      pos.set([A.x.x, A.x.y, A.x.z, B.x.x, B.x.y, B.x.z], j * 6);
+      const cA = speedColor(A.sp), cB = speedColor(B.sp);
+      col.set([...cA, 0, ...cB, 0], j * 8); j++;
+    }
+    flowGeo.setAttribute('position', new T.BufferAttribute(pos, 3));
+    flowGeo.setAttribute('color', new T.BufferAttribute(col, 4));
+    flowGeo.computeBoundingSphere();
+    for (const l of flow.lines) l.tEnd = l.pts[l.pts.length - 1].t;
+    const nDot = flow.lines.reduce((s, l) => s + Math.ceil(l.tEnd / DOT_GAP) + 1, 0);
+    dotGeo.setAttribute('position', new T.BufferAttribute(new Float32Array(nDot * 3), 3));
+    dotGeo.setAttribute('color', new T.BufferAttribute(new Float32Array(nDot * 4), 4));
+    dotGeo.setDrawRange(0, 0);
+  }
+  const DOT_GAP = .32;
+  function placeDots() {
+    const pos = dotGeo.attributes.position.array, col = dotGeo.attributes.color.array; let n = 0;
+    for (const l of flow.lines) {
+      const pts = l.pts, off = ((flowPhase * .55) % DOT_GAP + DOT_GAP) % DOT_GAP;
+      let i = 1;
+      for (let t = off; t < l.tEnd; t += DOT_GAP) {
+        while (i < pts.length - 1 && pts[i].t < t) i++;
+        const A = pts[i - 1], B = pts[i], u = clamp((t - A.t) / ((B.t - A.t) || 1), 0, 1);
+        const x = A.x.x + (B.x.x - A.x.x) * u, y = A.x.y + (B.x.y - A.x.y) * u, z = A.x.z + (B.x.z - A.x.z) * u;
+        const c = speedColor(A.sp + (B.sp - A.sp) * u);
+        const cx = x - camera.position.x, cy = y - camera.position.y, cz = z - camera.position.z;
+        const fade = smooth(0, .5, t) * smooth(5.6, 4.4, x * flow.a.x + y * flow.a.y + z * flow.a.z) * smooth(1.5, 3.5, Math.sqrt(cx * cx + cy * cy + cz * cz));
+        pos[n * 3] = x; pos[n * 3 + 1] = y; pos[n * 3 + 2] = z;
+        col.set([c[0], c[1], c[2], fade * Math.min(1, l.weight * 1.6)], n * 4); n++;
+      }
+    }
+    dotGeo.setDrawRange(0, n);
+    dotGeo.attributes.position.needsUpdate = true; dotGeo.attributes.color.needsUpdate = true;
+  }
+  let flowPhase = 0;
+  function animateFlow(dt) {
+    if (!flow.lines.length) return;
+    if (state.slow) flowPhase += dt * 40 / state.slow;
+    const col = flowGeo.attributes.color.array, L = .55; // pulse spacing in "time" units
+    let j = 0;
+    const cam = camera.position;
+    const alpha = (p, w) => { const f = ((p.t - flowPhase * .55) / L % 1 + 1) % 1, fade = smooth(0, .5, p.t) * smooth(5.6, 4.4, flow.a.dot(p.x)) * smooth(1.5, 3.5, p.x.distanceTo(cam)); return w * fade * (.45 + .5 * Math.pow(1 - f, 3)); };
+    for (const l of flow.lines) for (let i = 1; i < l.pts.length; i++) {
+      col[j * 8 + 3] = alpha(l.pts[i - 1], l.weight); col[j * 8 + 7] = alpha(l.pts[i], l.weight); j++;
+    }
+    flowGeo.attributes.color.needsUpdate = true;
+    placeDots();
+  }
 
-  // orbit camera
-  const orbit = { az: 0, el: 6 * DEG, r: 6.2 };
-  const VIEWS = { catcher: [0, 6], pitcher: [180, 8], side: [-90, 6] };
+  // orbit camera (custom = a fixed direction + up vector, used by the "flow" view)
+  const orbit = { az: 0, el: 6 * DEG, r: 6.2, custom: null };
+  const VIEWS = { catcher: [0, 6, 6.2], pitcher: [180, 8, 6.2], side: [-90, 6, 6.2] };
+  // "flow" view: face the plane that holds the flight direction and the Magnus force,
+  // with the flight running left → right and the force pointing up the screen (or down, if it points down)
+  function flowView() {
+    const up = flow.F.y < -.05 ? flow.F.clone().negate() : flow.F.clone();
+    const n = flow.side.clone(), right = new T.Vector3().crossVectors(n.clone().negate(), up);
+    if (right.dot(vHat) < 0) n.negate();
+    return { dir: n.addScaledVector(up, .14).normalize(), up };
+  }
   function placeCamera() {
-    const { az, el, r } = orbit;
-    camera.position.set(r * Math.cos(el) * Math.sin(az), r * Math.sin(el), r * Math.cos(el) * Math.cos(az));
+    const { az, el, r, custom } = orbit;
+    if (custom) { camera.up.copy(custom.up); camera.position.copy(custom.dir).multiplyScalar(r); }
+    else { camera.up.set(0, 1, 0); camera.position.set(r * Math.cos(el) * Math.sin(az), r * Math.sin(el), r * Math.cos(el) * Math.cos(az)); }
     camera.lookAt(0, 0, 0);
   }
   function setView(v) {
-    state.view = v; const [az, el] = VIEWS[v]; orbit.az = az * DEG; orbit.el = el * DEG; placeCamera();
+    state.view = v;
+    if (v === 'flow') { orbit.custom = flowView(); orbit.r = 8.6; }
+    else { const [az, el, r] = VIEWS[v]; orbit.custom = null; orbit.az = az * DEG; orbit.el = el * DEG; orbit.r = r; }
+    placeCamera();
     document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
   }
   let drag = null;
-  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, az: orbit.az, el: orbit.el }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointerdown', (e) => {
+    if (orbit.custom) { const n = orbit.custom.dir; orbit.az = Math.atan2(n.x, n.z); orbit.el = clamp(Math.asin(clamp(n.y, -1, 1)), -1.2, 1.2); orbit.custom = null; }
+    drag = { x: e.clientX, y: e.clientY, az: orbit.az, el: orbit.el }; canvas.setPointerCapture(e.pointerId);
+  });
   canvas.addEventListener('pointermove', (e) => {
     if (!drag) return;
     orbit.az = drag.az - (e.clientX - drag.x) * .008;
     orbit.el = clamp(drag.el + (e.clientY - drag.y) * .008, -1.2, 1.2);
-    placeCamera();
+    placeCamera(); state.view = null;
     document.querySelectorAll('[data-view]').forEach((b) => b.classList.remove('active'));
   });
   ['pointerup', 'pointercancel'].forEach((t) => canvas.addEventListener(t, () => { drag = null; }));
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.r = clamp(orbit.r * (1 + Math.sign(e.deltaY) * .08), 3.6, 11); placeCamera(); }, { passive: false });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.r = clamp(orbit.r * (1 + Math.sign(e.deltaY) * .08), 3.6, 13); placeCamera(); }, { passive: false });
 
   function resize3D() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -136,28 +257,20 @@
     magnusArrow.visible = r.magnusN > .01;
     if (magnusArrow.visible) setArrow(magnusArrow, mDir.clone().multiplyScalar(1.04), mDir, .35 + 1.6 * r.magnusOverWeight);
     setArrow(velArrow, vHat.clone().multiplyScalar(1.04), vHat, 1.0);
+    buildFlow();
+    if (state.view === 'flow') setView('flow');
     const rps = state.rpm / 60;
-    $('stage-note').textContent = state.slow ? `實際每秒 ${rps.toFixed(0)} 圈，畫面放慢 ${state.slow} 倍　·　拖曳可轉動視角` : `已暫停（實際每秒 ${rps.toFixed(0)} 圈）　·　拖曳可轉動視角`;
+    $('stage-note').textContent = state.slow ? `實際每秒 ${rps.toFixed(0)} 圈，畫面放慢 ${state.slow} 倍　·　氣流線為示意（看偏轉方向）　·　拖曳可轉動視角` : `已暫停（實際每秒 ${rps.toFixed(0)} 圈）　·　氣流線為示意　·　拖曳可轉動視角`;
   }
 
-  let lastT = performance.now(), streakPhase = 0;
+  let lastT = performance.now();
   function animate(now) {
     requestAnimationFrame(animate);
     const dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
     if (state.slow) spinAngle += omegaRate * dt / state.slow;
     const qs = new T.Quaternion().setFromAxisAngle(omegaHat, spinAngle);
     ball.quaternion.copy(qs.multiply(q0));
-    // streaks: move along −v̂ (relative wind), on a cylinder around the flight line
-    if (state.slow) streakPhase += dt * 1.2 * 40 / state.slow;
-    const up = Math.abs(vHat.y) < .9 ? new T.Vector3(0, 1, 0) : new T.Vector3(1, 0, 0);
-    const e1 = new T.Vector3().crossVectors(vHat, up).normalize(), e2 = new T.Vector3().crossVectors(vHat, e1).normalize();
-    for (let i = 0; i < streakCount; i++) {
-      const s = streakSeed[i], u = ((s.s + streakPhase) % 1) * 9 - 4.5; // along −v
-      const base = e1.clone().multiplyScalar(Math.cos(s.a) * s.r).addScaledVector(e2, Math.sin(s.a) * s.r);
-      const p1 = base.clone().addScaledVector(vHat, -u), p2 = base.clone().addScaledVector(vHat, -u - .45);
-      streakPos.set([p1.x, p1.y, p1.z, p2.x, p2.y, p2.z], i * 6);
-    }
-    streakGeo.attributes.position.needsUpdate = true;
+    animateFlow(dt);
     renderer.render(scene, camera);
     drawPlate(now);
   }
@@ -339,6 +452,7 @@
   $('eff').addEventListener('input', (e) => setParam('efficiency', Number(e.target.value) / 100));
   $('seams').addEventListener('change', (e) => setParam('seams', e.target.value));
   $('slow').addEventListener('change', (e) => { state.slow = Number(e.target.value); updateBallPose(); });
+  $('show-flow').addEventListener('change', (e) => { flowLines.visible = e.target.checked; });
   $('replay').addEventListener('click', () => { pitchStart = performance.now(); });
   document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
   document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
@@ -351,7 +465,7 @@
   if (window.ResizeObserver) new ResizeObserver(() => { resize3D(); drawMovement(); }).observe($('stage'));
 
   buildPresets(); computePresetResults(); applyPreset('fourSeam');
-  setView('catcher'); resize3D();
+  setView('flow'); resize3D();
   requestAnimationFrame(animate);
-  window.__spin = { state, P, setParam, applyPreset };
+  window.__spin = { state, P, setParam, applyPreset, flow, flowAt, setView };
 })();

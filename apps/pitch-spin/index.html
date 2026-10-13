@@ -26,10 +26,13 @@
           <canvas id="ball-canvas" aria-label="3D 棒球：可拖曳旋轉視角。黃色為轉軸，橘色為馬格努斯力方向，藍色為前進方向。"></canvas>
           <div class="stage-top">
             <div class="view-buttons" role="group" aria-label="視角">
-              <button type="button" data-view="catcher" class="active">捕手視角</button>
+              <button type="button" data-view="flow" class="active">看氣流</button>
+              <button type="button" data-view="catcher">捕手視角</button>
               <button type="button" data-view="pitcher">投手後方</button>
               <button type="button" data-view="side">三壘側</button>
             </div>
+            <div class="stage-tools">
+            <label class="flow-toggle"><input id="show-flow" type="checkbox" checked><span>氣流線</span></label>
             <label class="slow"><span>慢動作</span>
               <select id="slow">
                 <option value="80">1/80</option>
@@ -37,11 +40,13 @@
                 <option value="20">1/20</option>
                 <option value="0">暫停</option>
               </select></label>
+            </div>
           </div>
           <div class="stage-legend">
             <span><i class="key axis"></i>轉軸</span>
             <span><i class="key magnus"></i>馬格努斯力</span>
             <span><i class="key velocity"></i>前進方向</span>
+            <span class="flow-key"><i class="key speedbar"></i>氣流：慢 → 快</span>
           </div>
           <p id="stage-note" class="stage-note">實際每秒 38 圈，畫面放慢 40 倍　·　拖曳可轉動視角</p>
         </div>
@@ -124,11 +129,13 @@
         </div>
         <div class="guide">
           <p><i class="swatch amber"></i><span><strong>後旋讓速球「浮」起來</strong><br>四縫線速球大約 1:00 方向的後旋，馬格努斯力往上，抵消了一部分重力，打者覺得球「沒有掉」。</span></p>
+          <p><i class="swatch amber"></i><span><strong>看氣流：空氣往反方向被甩出去</strong><br>切到「看氣流」視角：轉動的表面帶著空氣，順著氣流的一側流得快（偏黃、紅），逆著的一側流得慢（偏藍）；球後方的尾流被甩向馬格努斯力的反方向。空氣被推往一邊，球就被推往另一邊。</span></p>
           <p><i class="swatch blue"></i><span><strong>陀螺旋轉不推球</strong><br>滑球的轉軸大多指向前進方向，轉速再高，有效旋轉少，位移就小。試試把有效旋轉比例拉到 0。</span></p>
           <p><i class="swatch red"></i><span><strong>縫線偏移尾流（SSW）</strong><br>伸卡球、變速球的實際位移常比「只算旋轉」更大：縫線讓兩側氣流在不同位置分離。這個效果需要風洞或 3D 高雷諾數模擬，本模型沒有包含。</span></p>
         </div>
         <details><summary>教師補充：模型與參考</summary>
           <p>座標以捕手視角：x 向一壘側、y 由本壘指向投手丘、z 向上。出手點距本壘前緣約 16.3 m、高 1.78 m（右投在三壘側 0.55 m）。初速方向設定成這顆球會通過好球帶中心；灰色是同樣出手、但完全不轉的球，兩者的差就是旋轉造成的位移（從出手點起算）。轉軸在 0.4 秒內視為固定。以 RK4 積分（Δt = 0.5 ms）。</p>
+          <p>「看氣流」的流線是示意圖，不是數值模擬：以繞球的位勢流為底，加上旋轉表面帶動的環流（強度＝表面速度／風速），再讓尾流往馬格努斯力的反方向偏（偏轉幅度依 C<sub>L</sub> 放大顯示）。要看真正解出來的流場，請用 2D 煙線風洞或 Colab 筆記本。</p>
           <p>升力係數採 Sawicki, Hubbard &amp; Stronge (2003) 的經驗式；此式對慢速、高轉速的變化球可能略為高估，所以預設的有效旋轉比例取得較保守。「大聯盟約略平均」為近年右投手各球種位移的大致數值，僅供比較方向與量級。</p>
           <p>參考：<a href="https://doi.org/10.1119/1.1604384" target="_blank" rel="noopener">Sawicki et al. 2003, Am. J. Phys.</a>　<a href="https://baseball.physics.illinois.edu/" target="_blank" rel="noopener">Alan Nathan：The Physics of Baseball</a>　<a href="https://baseballsavant.mlb.com/" target="_blank" rel="noopener">Baseball Savant</a></p>
         </details>
