@@ -175,7 +175,7 @@ projects:
     tags: ["Semiconductor", "Physics"]
   - title: "半導體製程 3D 模擬"
     image: "/apps/semiconductor-process/thumbnail.svg"
-    description: "從單晶拉晶、晶錠切片到微影、蝕刻、摻雜與金屬連線，逐步操作 3D 製程模型。"
+    description: "十步觀察薄氧化層、厚光阻與斜向植入，再經 W 接觸、銅種子層、電鍍及 CMP 建立互連。"
     url: "/apps/semiconductor-process/"
     category: "現代物理"
     tags: ["Semiconductor", "Three.js", "Interactive"]

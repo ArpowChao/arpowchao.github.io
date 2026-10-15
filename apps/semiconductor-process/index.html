@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07111f">
-  <meta name="description" content="可操作的半導體製程 3D 流程模擬：從矽單晶拉晶、切片到微影、蝕刻、摻雜與金屬連線。">
+  <meta name="description" content="半導體製程 3D 模擬：薄氧化層、厚光阻、7° 斜向離子植入、去光阻與退火、W contact、銅種子層、電鍍與 CMP。">
   <title>從矽到晶片｜半導體製程 3D 模擬</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +24,7 @@
     <main>
       <section class="intro" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow"><span class="signal-dot"></span> SILICON FABRICATION · 01—07</p>
+          <p class="eyebrow"><span class="signal-dot"></span> SILICON FABRICATION · 01—10</p>
           <h1 id="page-title">看見每一層，<span>如何形成電路</span></h1>
           <p class="intro-copy">先看拉晶與切片，再放大晶圓局部剖面。選擇一道工序、播放或拖動進度，直接觀察材料從哪裡長出、在哪裡被移除。</p>
         </div>
@@ -42,12 +42,12 @@
           <div class="viewer" id="viewer">
             <canvas id="scene" aria-label="可旋轉的半導體製程 3D 模型"></canvas>
             <div id="scene-labels" aria-hidden="true"></div>
-            <div class="viewer-top"><span class="live-badge" id="view-type">設備與材料示意</span><span id="stage-counter">01 / 07</span></div>
+            <div class="viewer-top"><span class="live-badge" id="view-type">設備與材料示意</span><span id="stage-counter">01 / 10</span></div>
             <div class="view-actions"><button id="front-view" type="button" aria-pressed="false" hidden>剖面正視</button><button id="reset-view" type="button">重設視角</button></div>
             <div class="viewer-bottom"><span id="scene-label">CRYSTAL GROWTH</span><span class="view-hint">拖曳旋轉 · 滾輪縮放</span></div>
             <div class="viewer-error" id="viewer-error" hidden>無法啟動 3D 場景。請確認瀏覽器支援 WebGL，或重新整理頁面。</div>
           </div>
-          <div class="phase-panel"><div id="phase-list" aria-label="本步驟的子工序"></div><p id="phase-detail"></p></div>
+          <div class="phase-panel"><dl id="process-readout" class="process-readout" aria-label="目前製程狀態"></dl><div id="phase-list" aria-label="本步驟的子工序"></div><p id="phase-detail"></p></div>
           <div class="transport" aria-label="播放控制">
             <button id="previous" class="icon-button" type="button" aria-label="上一步">←</button>
             <button id="play" class="play-button" type="button" aria-label="播放本步"><span id="play-icon">▶</span><span id="play-label">播放本步</span></button>
@@ -62,18 +62,18 @@
         <aside class="info-panel" aria-live="polite">
           <div class="panel-heading"><span>步驟解說</span><span class="panel-heading-en">FIELD NOTES</span></div>
           <div class="info-content">
-            <div class="step-count" id="info-step">STEP 01 / 07</div>
+            <div class="step-count" id="info-step">STEP 01 / 10</div>
             <h2 id="info-title">單晶拉晶</h2>
             <p class="info-en" id="info-en">CRYSTAL GROWTH</p>
             <p class="info-description" id="info-description"></p>
             <div class="keypoint"><span>觀察重點</span><p id="info-keypoint"></p></div>
             <div class="material-stack"><span>涉及材料</span><div id="layer-list" class="layer-list"></div></div>
           </div>
-          <div class="info-foot">局部剖面的膜厚與時間均經放大。七步呈現代表性工序；完整晶片需要多次重複加工與其他未示出的步驟。</div>
+          <div class="info-foot">十步呈現一條植入 → W 接觸 → Cu 互連的教學路徑。局部剖面的膜厚與時間均經放大；未示出完整電晶體與所有中間工序。</div>
         </aside>
       </section>
 
-      <div class="page-foot"><span>資料參照：<a href="https://www.sumcosi.com/english/products/process/" target="_blank" rel="noopener">SUMCO 晶圓製造</a> · <a href="https://www.asml.com/en/technology/all-about-microchips/how-microchips-are-made" target="_blank" rel="noopener">ASML 圖案轉移</a> · <a href="https://newsroom.lamresearch.com/Tech-Brief-An-Introduction-to-Interconnects" target="_blank" rel="noopener">Lam 銅互連</a></span><span>← → 切換步驟 · 空白鍵播放／暫停</span></div>
+      <div class="page-foot"><span>資料參照：<a href="https://www.sumcosi.com/english/products/process/" target="_blank" rel="noopener">SUMCO 晶圓</a> · <a href="https://www.asml.com/en/technology/all-about-microchips/how-microchips-are-made" target="_blank" rel="noopener">ASML 微影</a> · <a href="https://www.iue.tuwien.ac.at/phd/wittmann/node7.html" target="_blank" rel="noopener">TU Wien 植入</a> · <a href="https://www.appliedmaterials.com/us/en/blog/blog-posts/introducing-a-breakthrough-in-2d-scaling.html" target="_blank" rel="noopener">Applied W 接觸</a> · <a href="https://www.appliedmaterials.com/tw/zh_tw/semiconductor/products/create/metals-deposition/endura-amber-pvd.html" target="_blank" rel="noopener">Applied 銅種子層</a> · <a href="https://newsroom.lamresearch.com/Tech-Brief-An-Introduction-to-Interconnects" target="_blank" rel="noopener">Lam 互連</a></span><span>← → 切換步驟 · 空白鍵播放／暫停</span></div>
     </main>
   </div>
 </body>

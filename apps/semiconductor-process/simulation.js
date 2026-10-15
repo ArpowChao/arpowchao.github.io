@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from './lib/OrbitControls.js';
-import { STEPS, SECTIONS, WINDOWS, OXIDE, RESIST, SAW, cutPieces, clamp, stateAt, resistHeight, etchedOxideHeight, inOpening, ionStop } from './process-model.mjs';
+import { STEPS, SECTIONS, WINDOWS, OXIDE, RESIST, IMPLANT, CONTACT, CU, SAW, cutPieces, clamp, stateAt, resistHeight, implantPath, contactProfile, copperProfile, coatingRects } from './process-model.mjs';
 
 const $=id=>document.getElementById(id);
-const colors={si:'#536b86',oxide:'#22b9de',resist:'#a96bdd',exposed:'#f4b45d',copper:'#e9a060',dielectric:'#78aaba',dopant:'#e394ed'};
+const colors={si:'#536b86',oxide:'#22b9de',resist:'#a96bdd',exposed:'#f4b45d',copper:'#e9a060',dielectric:'#78aaba',dopant:'#e394ed',damage:'#ff9b71',w:'#d7e0e8',barrier:'#8c97ae',seed:'#ffe0a3'};
 let renderer,scene,camera,controls,group,model,current=0,time=0,playing=false,last=performance.now(),ready=false;
 let labels=[],activePhase=-1,viewMode='3d';
 const depth=1.8;
@@ -41,17 +41,13 @@ function sectionLayers(parent,color,bottom,height) {
   });
 }
 function fullOxide(parent) {const item=block(parent,colors.oxide);sizeBox(item,-2.8,2.8,OXIDE.bottom,OXIDE.top);return item;}
-function oxideMask(parent) {
-  const result=sectionLayers(parent,colors.oxide,OXIDE.bottom,OXIDE.thickness);
-  result.forEach(({item,open})=>{item.visible=!open;});return result;
-}
 function dopantDots(parent,count=70) {
   const result=[];
   WINDOWS.forEach(([left,right],region)=>{
     for(let i=0;i<count;i++) {
-      const u=((i*.61803398875)%1),v=((i*.41421356237)%1);
-      const x=left+.08+(right-left-.16)*u;
-      const y=-.22-.38*v;
+      const u=((i*.61803398875)%1);
+      const path=implantPath(left+.10+(right-left-.26)*u,i*.41421356237);
+      const [x,y]=path.stop;
       const dot=ball(parent,.022,colors.dopant);dot.position.set(x,y,.025);
       result.push({dot,rank:(i+.5)/count,region});
     }
@@ -158,11 +154,11 @@ function buildLithography(parent) {
   const beams=WINDOWS.map(([l,r])=>{const item=block(optics,lightMaterial);sizeBox(item,l,r,RESIST.bottom+RESIST.thickness,1.62);return item;});
   const developer=new THREE.Group();parent.add(developer);
   const nozzle=block(developer,'#7a9db0');sizeBox(nozzle,-3,3,.92,1.03,-.66,.48);
-  const liquid=block(developer,new THREE.MeshBasicMaterial({color:'#66d9eb',transparent:true,opacity:.17,depthWrite:false}));sizeBox(liquid,-2.88,2.88,.51,.56,.05,depth+.1);
-  for(const x of [-2.2,-.6,.6,2.2]){const flow=block(developer,new THREE.MeshBasicMaterial({color:'#73e4f2',transparent:true,opacity:.36,depthWrite:false}));sizeBox(flow,x-.025,x+.025,.55,.92,-.78,.10);}
+  const liquid=block(developer,new THREE.MeshBasicMaterial({color:'#66d9eb',transparent:true,opacity:.17,depthWrite:false}));sizeBox(liquid,-2.88,2.88,.65,.69,.05,depth+.1);
+  for(const x of [-2.2,-.6,.6,2.2]){const flow=block(developer,new THREE.MeshBasicMaterial({color:'#73e4f2',transparent:true,opacity:.36,depthWrite:false}));sizeBox(flow,x-.025,x+.025,.69,.92,-.78,.10);}
   let state;
   tag('SiO₂',[-2.2,.015,.04],colors.oxide);
-  tag('保留的光阻',()=>[-2.24,.18+.15*(state?.coat||0),.04],colors.resist,()=>state?.coat>.5);
+  tag('厚光阻',()=>[-2.24,RESIST.bottom+RESIST.thickness*.65*(state?.coat||0),.04],colors.resist,()=>state?.coat>.5);
   tag('光罩：深色區遮光',()=>[0,1.85+2.6*(state?.retract||0),-.7],'#bfcad9',()=>state?.retract<.9);
   tag('橙色：已曝光、厚度不變',[1.4,.64,.08],colors.exposed,()=>state?.exposure>0&&state?.retract<.5);
   tag('顯影液',[0,1.18,-.7],'#73e4f2',()=>state?.p>=.65&&state?.p<.99);
@@ -179,90 +175,172 @@ function buildLithography(parent) {
   }};
 }
 
-function buildEtching(parent) {
-  sectionBase(parent);
-  const oxide=sectionLayers(parent,colors.oxide,OXIDE.bottom,OXIDE.thickness);
-  const resist=sectionLayers(parent,colors.resist,RESIST.bottom,RESIST.thickness);resist.filter(s=>s.open).forEach(s=>s.item.visible=false);
-  const chamber=new THREE.Group();parent.add(chamber);
-  const electrode=block(chamber,'#446278');sizeBox(electrode,-3,3,1.6,1.73,.08,depth+.16);
-  const plasma=block(chamber,new THREE.MeshBasicMaterial({color:'#81bee8',transparent:true,opacity:.08,depthWrite:false}));sizeBox(plasma,-2.95,2.95,.80,1.57,.03,depth+.06);
-  const arrows=Array.from({length:9},(_,i)=>{const x=-2.5+i*.625;const arrow=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(x,1.35,-.7),.6,'#84d6f0',.12,.07);chamber.add(arrow);return {arrow,x};});
-  let state;
-  tag('SiO₂ 遮罩',[-2.2,.015,.04],colors.oxide);
-  tag('保護光阻',[-2.2,.37,.04],colors.resist,()=>state?.strip<.95);
-  tag('蝕刻面向下移動',()=>[1.4,OXIDE.bottom+OXIDE.thickness*(1-(state?.etch||0))+.08,.08],'#8ce9ee',()=>state?.p>.15&&state?.p<.72);
-  tag('去光阻處理',[0,1.1,-.6],colors.resist,()=>state?.p>=.72&&state?.p<.98);
-  return {update(s){
-    state=s;
-    oxide.forEach(({item,left,right,open})=>sizeBox(item,left,right,OXIDE.bottom,OXIDE.bottom+etchedOxideHeight(s,open)));
-    resist.forEach(({item,left,right,open})=>{if(!open)sizeBox(item,left,right,RESIST.bottom,RESIST.bottom+RESIST.thickness*(1-s.strip));else item.visible=false;});
-    chamber.visible=s.p>=.15&&s.p<.72;
-    arrows.forEach(({arrow,x})=>arrow.setLength(inOpening(x)?1.35-(OXIDE.bottom+OXIDE.thickness*(1-s.etch)):.82,.12,.07));
-  }};
-}
-
-function buildDoping(parent) {
-  sectionBase(parent);oxideMask(parent);const dots=dopantDots(parent);
-  const beamGroup=new THREE.Group();parent.add(beamGroup);
-  const head=block(beamGroup,'#446278');sizeBox(head,-3,3,1.8,1.94,0,depth);
-  const ions=Array.from({length:28},(_,i)=>{
-    const x=-2.66+i*.196;
-    const dot=ball(beamGroup,.035,inOpening(x)?'#eab0fa':'#f8d59a');
-    const arrow=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3(x,1.56,-.76),.2,'#c4d9eb',.08,.035);beamGroup.add(arrow);
-    return {dot,arrow,x,seed:i*.613,stop:ionStop(x,i)};
+// Front cut-face markers show lattice displacement, not a deposited film.
+function lattice(parent) {
+  const sites=[];
+  WINDOWS.forEach(([left,right])=>{
+    for(let col=0;col<6;col++)for(let row=0;row<5;row++){
+      const x=left+.12+col*.105,y=-.10-row*.125,rank=((col*7+row*11)%29)/30;
+      const atom=ball(parent,.016,colors.si);
+      const vacancy=line(parent,[[x-.025,y-.025,.04],[x+.025,y+.025,.04],[x,y,.04],[x-.025,y+.025,.04],[x+.025,y-.025,.04]],colors.damage);
+      sites.push({atom,vacancy,x,y,rank,col,row});
+    }
   });
-  const heat=block(parent,new THREE.MeshBasicMaterial({color:'#ff8c51',transparent:true,opacity:.07,depthWrite:false}));sizeBox(heat,-3,3,-1.12,.8,.06,depth+.12);
+  return {update(dose,repair){sites.forEach(({atom,vacancy,x,y,rank,col,row})=>{
+    const damaged=dose>rank,amount=damaged?1-repair:0;
+    atom.position.set(x+.046*Math.sin(col*5+row)*amount,y+.045*Math.cos(col+row*7)*amount,.045);
+    atom.material.color.set(amount>.08?colors.damage:'#9bb6cc');vacancy.visible=amount>.08;
+  });}};
+}
+function patternedResist(parent) {
+  return sectionLayers(parent,colors.resist,RESIST.bottom,RESIST.thickness).filter(s=>{
+    if(s.open)s.item.visible=false;return !s.open;
+  });
+}
+function buildImplant(parent) {
+  sectionBase(parent);fullOxide(parent);
+  patternedResist(parent);
+  const dots=dopantDots(parent),crystal=lattice(parent);
+  const beamGroup=new THREE.Group();parent.add(beamGroup);
+  const head=block(beamGroup,'#446278');sizeBox(head,-2.9,2.9,2.0,2.13,0,depth);
+  const direction=new THREE.Vector3(Math.sin(IMPLANT.tilt*Math.PI/180),-Math.cos(IMPLANT.tilt*Math.PI/180),0);
+  const ions=Array.from({length:38},(_,i)=>{
+    const path=implantPath(-2.68+i*.143,i),dot=ball(beamGroup,.032,path.blocked?'#f8d59a':colors.dopant);
+    const arrow=new THREE.ArrowHelper(direction,new THREE.Vector3(),.23,'#d1dcf4',.07,.035);beamGroup.add(arrow);
+    return {dot,arrow,path,seed:i*.613};
+  });
+  // Both lines share their origin: this is a true 7 degree angle, not an exaggerated beam.
+  line(parent,[[.1,1.88,.08],[.1,.76,.08]],'#8497a9',true);
+  line(parent,[[.1,1.88,.08],[.1+Math.tan(IMPLANT.tilt*Math.PI/180)*1.12,.76,.08]],'#e9b9fa');
   let state;
-  tag('遮罩擋住離子',[-2.25,.30,.04],colors.oxide);
-  tag('摻雜在矽內部',[-1.4,-.63,.06],colors.dopant,()=>state?.dose>.12);
-  tag('退火：修復、活化',[0,1.1,-.7],'#ffb481',()=>state?.anneal>0);
+  tag('厚光阻擋住離子',[-2.25,.43,.04],colors.resist);
+  tag('連續薄 SiO₂',[-2.18,.015,.06],colors.oxide);
+  tag('法線 ↕　偏離 7°',[.15,2.30,-.3],'#dfc1f1');
+  tag('Si(100) 內部：摻雜＋損傷',[-.03,-.83,.06],colors.damage,()=>state?.dose>.1);
   return {update(s,t){
-    state=s;beamGroup.visible=s.beam;heat.visible=s.anneal>0&&s.anneal<.99;
-    ions.forEach(({dot,arrow,x,seed,stop})=>{
+    state=s;beamGroup.visible=s.beam;
+    ions.forEach(({dot,arrow,path,seed})=>{
       const cycle=(t*1.1+seed)%1;
-      dot.position.set(x,1.63-(1.63-stop)*cycle,-.76);
-      arrow.position.y=dot.position.y+.27;arrow.visible=cycle<.86;
+      const x=path.start[0]+(path.stop[0]-path.start[0])*cycle,y=path.start[1]+(path.stop[1]-path.start[1])*cycle;
+      dot.position.set(x,y,.065);arrow.position.set(x-direction.x*.28,y-direction.y*.28,.065);arrow.visible=cycle<.83;
     });
-    dots.forEach(({dot,rank})=>{dot.visible=rank<=s.dose;dot.material.color.set(s.anneal>.65?'#f1b8f1':colors.dopant);});
+    dots.forEach(({dot,rank})=>dot.visible=rank<=s.dose);crystal.update(s.dose,0);
   }};
 }
-
-function buildMetal(parent) {
-  sectionBase(parent);const dots=dopantDots(parent,45);dots.forEach(({dot})=>dot.visible=true);
-  const lower=sectionLayers(parent,colors.dielectric,OXIDE.bottom,.59);
-  const upper=[[-2.8,-1.8,false],[-1.8,1.8,true],[1.8,2.8,false]].map(([left,right,channel])=>({item:block(parent,colors.dielectric),left,right,channel}));
-  const viaCopper=WINDOWS.map(([left,right])=>({item:block(parent,material(colors.copper,{metalness:.6,roughness:.34})),left,right}));
-  const trenchCopper=block(parent,material(colors.copper,{metalness:.6,roughness:.34}));
-  const excess=block(parent,material(colors.copper,{metalness:.6,roughness:.34}));
-  const padGroup=new THREE.Group();parent.add(padGroup);
-  const pad=cylinder(padGroup,1.42,.20,material('#a7bac2',{roughness:.9}));
-  ring(padGroup,1.05,.018,'#4e6777',.105);
-  line(padGroup,[[-1.15,.11,0],[1.15,.11,0]],'#4e6777');
+function buildAnneal(parent) {
+  sectionBase(parent);fullOxide(parent);
+  const resist=patternedResist(parent),dots=dopantDots(parent),crystal=lattice(parent);
+  const heat=block(parent,new THREE.MeshBasicMaterial({color:'#ff8c51',transparent:true,opacity:.08,depthWrite:false}));sizeBox(heat,-2.95,2.95,-1.12,.12,.06,depth+.12);
+  const lamps=new THREE.Group();parent.add(lamps);
+  for(const x of [-2,-1,0,1,2]){const lamp=cylinder(lamps,.08,1.9,material('#ffbb70',{emissive:'#ff6a26',emissiveIntensity:1}),[x,1.45,-.9],16);lamp.rotation.x=Math.PI/2;}
   let state;
-  tag('介電絕緣層',[2.24,.40,.04],colors.dielectric,()=>state?.dielectric>.5);
-  tag('導通孔內的銅',[-1.4,.17,.04],colors.copper,()=>state?.fill>.15);
-  tag('銅線：連接兩個接點',[0,.70,.04],colors.copper,()=>state?.fill>.85);
-  tag('CMP 研磨墊',()=>[padGroup.position.x,padGroup.position.y+.27,-.6],'#c8d9e2',()=>state?.p>=.77&&state?.p<.995);
+  tag('薄 SiO₂ 保留',[-2.15,.015,.07],colors.oxide);
+  tag('先去光阻',[0,.95,-.5],colors.resist,()=>state?.strip<1);
+  tag('再退火：修復晶格、活化摻雜',[0,1.85,-.5],'#ffbb83',()=>state?.anneal>0&&state?.anneal<1);
+  tag('矽內摻雜區',[-1.4,-.73,.06],colors.dopant);
+  return {update(s){
+    state=s;resist.forEach(({item,left,right})=>sizeBox(item,left,right,RESIST.bottom,RESIST.bottom+RESIST.thickness*(1-s.strip)));
+    crystal.update(1,s.anneal);dots.forEach(({dot})=>dot.material.color.set(s.anneal>.8?'#f5ccff':colors.dopant));
+    heat.visible=lamps.visible=s.anneal>0&&s.anneal<1;
+  }};
+}
+function surfaceCoating(parent,color) {
+  const surface=material(color,{metalness:.55,roughness:.38}),pool=[];
+  return {update(profile,outer,inner=0,ceiling=Infinity){
+    const rects=coatingRects(profile,outer,inner,ceiling);
+    while(pool.length<rects.length)pool.push(block(parent,surface));
+    pool.forEach((item,i)=>{const r=rects[i];if(r)sizeBox(item,r.left,r.right,r.bottom,r.top);else item.visible=false;});
+  }};
+}
+function finishedContacts(parent) {
+  sectionBase(parent);dopantDots(parent,40);
+  SECTIONS.forEach(s=>{
+    if(!s.open){const oxide=block(parent,colors.oxide);sizeBox(oxide,s.left,s.right,OXIDE.bottom,OXIDE.top);
+      const ild=block(parent,colors.dielectric);sizeBox(ild,s.left,s.right,OXIDE.top,CONTACT.top);}
+  });
+  const profile=contactProfile();
+  surfaceCoating(parent,'#b6bfc9').update(profile,CONTACT.liner,0,CONTACT.top);
+  surfaceCoating(parent,colors.w).update(profile,CONTACT.liner+CONTACT.deposition,CONTACT.liner,CONTACT.top);
+}
+function cmpPad(parent) {
+  const group=new THREE.Group();parent.add(group);
+  cylinder(group,1.42,.20,material('#a7bac2',{roughness:.9}));ring(group,1.05,.018,'#4e6777',.105);
+  line(group,[[-1.15,.11,0],[1.15,.11,0]],'#4e6777');
+  return group;
+}
+function buildContact(parent) {
+  sectionBase(parent);dopantDots(parent,40);
+  const oxides=sectionLayers(parent,colors.oxide,OXIDE.bottom,OXIDE.thickness);
+  const dielectric=sectionLayers(parent,colors.dielectric,OXIDE.top,CONTACT.top-OXIDE.top);
+  const resist=SECTIONS.filter(s=>!s.open).map(s=>({...s,item:block(parent,colors.resist)}));
+  const liner=surfaceCoating(parent,'#b6bfc9'),tungsten=surfaceCoating(parent,colors.w),pad=cmpPad(parent);
+  const etchArrows=WINDOWS.map(([l,r])=>{const a=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3((l+r)/2,1.2,-.7),.7,'#7ee3ec',.12,.07);parent.add(a);return a;});
+  let state;
+  tag('薄 SiO₂：contact 才開窗',[-2.05,.01,.06],colors.oxide,()=>state?.fill<.3);
+  tag('接觸介電層',[2.20,.30,.06],colors.dielectric,()=>state?.dielectric>.5);
+  tag('接觸介面／liner',[-1.4,-.04,.08],'#b6bfc9',()=>state?.liner>.5);
+  tag('W contact',[1.4,.28,.08],colors.w,()=>state?.fill>.7);
+  tag('W CMP',[0,1.4,-.4],colors.w,()=>state?.polish>0&&state?.polish<1);
   return {update(s,t){
-    state=s;const grownTop=OXIDE.bottom+.94*s.dielectric;
-    lower.forEach(({item,left,right,open})=>{
-      const top=Math.min(.45,grownTop);
-      sizeBox(item,left,right,OXIDE.bottom,OXIDE.bottom+(top-OXIDE.bottom)*(open?1-s.via:1));
-    });
-    upper.forEach(({item,left,right,channel})=>{
-      const h=Math.max(0,Math.min(.8,grownTop)-.45);
-      sizeBox(item,left,right,.45,.45+h*(channel?1-s.trench:1));
-    });
-    const viaFill=clamp(s.fill/.6),trenchFill=clamp((s.fill-.6)/.4);
-    viaCopper.forEach(({item,left,right})=>sizeBox(item,left,right,OXIDE.bottom,OXIDE.bottom+.59*viaFill));
-    sizeBox(trenchCopper,-1.8,1.8,.45,.45+.35*trenchFill);
-    sizeBox(excess,-2.8,2.8,.8,.8+.18*s.overburden);
-    padGroup.visible=s.p>=.77&&s.p<.995;
-    padGroup.position.set(-3.5+7*s.polish,.8+.18*s.overburden+.103,-.9);padGroup.rotation.y=t*2;
+    state=s;
+    const front=CONTACT.top-(CONTACT.top-OXIDE.bottom)*s.etch;
+    oxides.forEach(({item,left,right,open})=>sizeBox(item,left,right,OXIDE.bottom,open?Math.min(OXIDE.top,front):OXIDE.top));
+    dielectric.forEach(({item,left,right,open})=>sizeBox(item,left,right,OXIDE.top,Math.min(OXIDE.top+(CONTACT.top-OXIDE.top)*s.dielectric,open?front:CONTACT.top)));
+    resist.forEach(({item,left,right})=>sizeBox(item,left,right,CONTACT.top,CONTACT.top+.23*s.mask*(1-s.strip)));
+    etchArrows.forEach(a=>{a.visible=s.p>=.23&&s.p<.47;a.setLength(1.2-front,.12,.07);});
+    const profile=contactProfile(),ceiling=CONTACT.top+(CONTACT.liner+CONTACT.deposition)*(1-s.polish);
+    liner.update(profile,CONTACT.liner*s.liner,0,ceiling);
+    tungsten.update(profile,CONTACT.liner+CONTACT.deposition*s.fill,CONTACT.liner,ceiling);
+    pad.visible=s.polish>0&&s.polish<1;pad.position.set(-3.2+6.4*s.polish,ceiling+.103,-.9);pad.rotation.y=t*2;
+  }};
+}
+function copperBase(parent) {
+  finishedContacts(parent);
+  const sections=SECTIONS.map(s=>({...s,item:block(parent,colors.dielectric)}));
+  const barrier=surfaceCoating(parent,colors.barrier),seed=surfaceCoating(parent,colors.seed),copper=surfaceCoating(parent,colors.copper);
+  return {update(s){
+    const profile=copperProfile(s);
+    sections.forEach((section,i)=>sizeBox(section.item,section.left,section.right,CONTACT.top,profile[i].height));
+    const b=CU.barrier*s.barrier,se=CU.seed*s.seed,pl=CU.plating*s.plating;
+    const ceiling=CU.top+(CU.barrier+CU.seed+CU.plating)*(1-s.polish);
+    barrier.update(profile,b,0,ceiling);seed.update(profile,b+se,b,ceiling);copper.update(profile,b+se+pl,b+se,ceiling);
+  }};
+}
+function buildSeed(parent) {
+  const base=copperBase(parent);let state;
+  const arrows=WINDOWS.map(([l,r])=>{const a=new THREE.ArrowHelper(new THREE.Vector3(0,-1,0),new THREE.Vector3((l+r)/2,1.95,-.7),.7,'#8ae5ee',.12,.07);parent.add(a);return a;});
+  tag('下方 W 接點',[1.4,.22,.06],colors.w);
+  tag('互連氧化層',[2.24,.98,.06],colors.dielectric,()=>state?.dielectric>.5);
+  tag('阻障 → seed：頂面、側壁、孔底',[0,1.9,-.6],colors.seed,()=>state?.barrier>0);
+  tag('via 底部停在 W',[-1.4,.56,.06],colors.w,()=>state?.via>.95&&state?.seed<.1);
+  return {update(s){state=s;base.update(s);arrows.forEach(a=>{a.visible=s.p>=.16&&s.p<.46;const front=s.p<.30?CU.top-(CU.top-CU.floor)*s.trench:CU.floor-CU.viaDepth*s.via;a.setLength(1.95-front,.12,.07);});}};
+}
+function buildPlating(parent) {
+  const base=copperBase(parent);let state;
+  // Arrows point OUT of each seeded surface, showing the coating offset.
+  const vectors=[{x:-2.25,y:CU.top,dx:0,dy:1},{x:-1.8,y:.7,dx:1,dy:0},{x:-1,y:.7,dx:-1,dy:0},{x:1,y:.7,dx:1,dy:0},{x:1.8,y:.7,dx:-1,dy:0},{x:-1.4,y:CONTACT.top,dx:0,dy:1},{x:1.4,y:CONTACT.top,dx:0,dy:1},{x:0,y:CU.floor,dx:0,dy:1}];
+  const arrows=vectors.map(v=>{const a=new THREE.ArrowHelper(new THREE.Vector3(v.dx,v.dy,0),new THREE.Vector3(),.16,'#ffd79a',.07,.045);parent.add(a);return {a,...v};});
+  tag('整面過鍍銅',()=>[-2.08,CU.top+CU.barrier+CU.seed+CU.plating*(state?.plating||0)+.06,.06],colors.copper,()=>state?.plating>.12);
+  tag('Cu²⁺ + 2e⁻ → Cu',[0,2.5,-.5],colors.copper);
+  tag('下方 W 接點',[1.4,.22,.06],colors.w);
+  return {update(s){state=s;base.update(s);const thickness=CU.barrier+CU.seed+CU.plating*s.plating;
+    arrows.forEach(({a,x,y,dx,dy})=>{a.visible=s.plating>0&&s.plating<.97&&(dy===1||thickness<.32);a.position.set(x+dx*thickness,y+dy*thickness,.07);});
+  }};
+}
+function buildCopperCMP(parent) {
+  const base=copperBase(parent),pad=cmpPad(parent);let state;
+  line(parent,[[-2.9,CU.top,.10],[2.9,CU.top,.10]],'#83e8e2',true);
+  tag('氧化層頂面＝CMP 終點',[2.0,CU.top+.025,.12],colors.dielectric);
+  tag('W contact 接 Si',[1.4,.20,.06],colors.w);
+  tag('孔槽內 Cu 保留',[0,1.05,.06],colors.copper,()=>state?.polish>.8);
+  tag('移除場區 Cu／seed／barrier',()=>[pad.position.x,pad.position.y+.32,-.5],colors.copper,()=>state?.polish>0&&state?.polish<1);
+  return {update(s,t){state=s;base.update(s);
+    const ceiling=CU.top+(CU.barrier+CU.seed+CU.plating)*(1-s.polish);
+    pad.visible=s.polish>0&&s.polish<1;pad.position.set(-3+6*s.polish,ceiling+.103,-.9);pad.rotation.y=t*2;
   }};
 }
 
-const builders=[buildCrystal,buildSlicing,buildOxidation,buildLithography,buildEtching,buildDoping,buildMetal];
+const builders=[buildCrystal,buildSlicing,buildOxidation,buildLithography,buildImplant,buildAnneal,buildContact,buildSeed,buildPlating,buildCopperCMP];
 function disposeGroup(item) {
   const geometries=new Set(),materials=new Set();
   item.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)(Array.isArray(object.material)?object.material:[object.material]).forEach(m=>materials.add(m));});
@@ -305,12 +383,31 @@ function togglePlaying(){if(!playing&&time>=STEPS[current].duration)time=0;setPl
 function renderModel() {
   const p=clamp(time/STEPS[current].duration),state=stateAt(current,p);
   model?.update(state,time);
+  updateReadout(state);
   $('timeline-fill').style.width=`${p*100}%`;$('timeline-track').style.setProperty('--progress',`${p*100}%`);
   $('timeline-scrub').value=String(p*100);$('progress-label').textContent=`${Math.round(p*100)}%`;
   if(activePhase!==state.phase.index){
     activePhase=state.phase.index;$('scene-label').textContent=state.phase.title;$('phase-detail').textContent=state.phase.detail;
     [...$('phase-list').children].forEach((button,i)=>{button.classList.toggle('active',i===activePhase);button.setAttribute('aria-current',i===activePhase?'step':'false');});
   }
+}
+let lastReadout='';
+function updateReadout(s) {
+  const percent=n=>`${Math.round(n*100)}%`;
+  const metrics=[
+    [['拉出長度',percent(s.growth||0)],['晶錠旋轉','隨拉桿旋轉'],['生長位置','固液交界']],
+    [['切穿進度',percent(s.cut||0)],['分離進度',percent(s.separation||0)],['切割方式','平行金剛石線']],
+    [['氧化進度',percent(s.growth||0)],['用途','薄保護／screen'],['植入前開窗','不開窗']],
+    [['光阻','厚正型光阻'],['顯影進度',percent(s.develop||0)],['薄 SiO₂','完整保留']],
+    [['離法線傾角','7° · 本例設定'],['植入劑量進度',percent(s.dose||0)],['遮罩／薄氧化層','厚光阻／連續']],
+    [['去光阻',percent(s.strip||0)],['修復／活化',percent(s.anneal||0)],['薄 SiO₂','保留到 contact']],
+    [['接觸孔蝕刻',percent(s.etch||0)],['W 填孔',percent(s.fill||0)],['W 平坦化',percent(s.polish||0)]],
+    [['via 蝕刻',percent(s.via||0)],['阻障層',percent(s.barrier||0)],['seed 覆蓋',percent(s.seed||0)]],
+    [['平面電鍍厚度',`${(CU.ratio*(s.plating||0)).toFixed(2)} × via 深度`],['目標鍍厚','1.75 × · 本例設定'],['成長表面','頂面＋孔底＋側壁']],
+    [['CMP 進度',percent(s.polish||0)],['終點','氧化層頂面'],['接觸路徑','Cu → W → Si']]
+  ][current];
+  const html=metrics.map(([name,value])=>`<div><dt>${name}</dt><dd>${value}</dd></div>`).join('');
+  if(html!==lastReadout){$('process-readout').innerHTML=html;lastReadout=html;}
 }
 function updateLabels() {
   const rect=$('viewer').getBoundingClientRect();
