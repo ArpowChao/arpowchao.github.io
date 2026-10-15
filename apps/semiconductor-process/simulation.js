@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from './lib/OrbitControls.js';
-import { STEPS, SECTIONS, WINDOWS, OXIDE, RESIST, IMPLANT, CONTACT, CU, SAW, cutPieces, clamp, stateAt, resistHeight, implantPath, contactProfile, copperProfile, coatingRects } from './process-model.mjs';
+import { STEPS, SECTIONS, WINDOWS, OXIDE, RESIST, IMPLANT, CONTACT, CU, SAW, cutPieces, clamp, stateAt, resistHeight, implantPath, sample01, contactProfile, copperProfile, coatingRects } from './process-model.mjs';
 
 const $=id=>document.getElementById(id);
 const colors={si:'#536b86',oxide:'#22b9de',resist:'#a96bdd',exposed:'#f4b45d',copper:'#e9a060',dielectric:'#78aaba',dopant:'#e394ed',damage:'#ff9b71',w:'#d7e0e8',barrier:'#8c97ae',seed:'#ffe0a3'};
@@ -45,8 +45,8 @@ function dopantDots(parent,count=70) {
   const result=[];
   WINDOWS.forEach(([left,right],region)=>{
     for(let i=0;i<count;i++) {
-      const u=((i*.61803398875)%1);
-      const path=implantPath(left+.10+(right-left-.26)*u,i*.41421356237);
+      const u=sample01(i,0);
+      const path=implantPath(left+.10+(right-left-.26)*u,i);
       const [x,y]=path.stop;
       const dot=ball(parent,.022,colors.dopant);dot.position.set(x,y,.025);
       result.push({dot,rank:(i+.5)/count,region});

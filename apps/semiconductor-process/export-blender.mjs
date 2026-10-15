@@ -1,5 +1,5 @@
 // Emit the same final cut-section solids used by the browser, in Three.js axes.
-import {SECTIONS,WINDOWS,OXIDE,CONTACT,CU,contactProfile,copperProfile,coatingRects,implantPath} from './process-model.mjs';
+import {SECTIONS,WINDOWS,OXIDE,CONTACT,CU,contactProfile,copperProfile,coatingRects,implantPath,sample01} from './process-model.mjs';
 const solids=[],markers=[];
 const add=(name,color,left,right,bottom,top)=>solids.push({name,color,size:[right-left,top-bottom,1.8],position:[(left+right)/2,(bottom+top)/2,-.9]});
 add('Silicon substrate','#536b86',-2.8,2.8,-1.14,OXIDE.bottom);
@@ -17,7 +17,7 @@ coat('Cu diffusion barrier','#8c97ae',copperProfile(),CU.barrier,0,CU.top);
 coat('Cu seed','#ffe0a3',copperProfile(),CU.barrier+CU.seed,CU.barrier,CU.top);
 coat('Embedded Cu interconnect','#e9a060',copperProfile(),CU.barrier+CU.seed+CU.plating,CU.barrier+CU.seed,CU.top);
 WINDOWS.forEach(([left,right])=>{for(let i=0;i<45;i++){
-  const path=implantPath(left+.10+(right-left-.26)*(i*.61803398875%1),i*.41421356237);
+  const path=implantPath(left+.10+(right-left-.26)*sample01(i,0),i);
   markers.push({position:[...path.stop,.025],radius:.022,color:'#e394ed'});
 }});
 process.stdout.write(JSON.stringify({solids,markers},null,2));

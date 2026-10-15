@@ -106,6 +106,12 @@ export function stateAt(index,progress) {
 export function resistHeight(state,open) {
   return RESIST.thickness*state.coat*(open ? 1-state.develop : 1);
 }
+export function sample01(seed,stream=0) {
+  let x=(Math.round(seed*104729)^Math.imul(stream+1,0x9e3779b9))|0;
+  x=Math.imul(x^(x>>>16),0x21f0aaad);
+  x=Math.imul(x^(x>>>15),0x735a2d97);
+  return ((x^(x>>>15))>>>0)/4294967296;
+}
 export function implantPath(xAtMask,seed=0) {
   const slope=Math.tan(IMPLANT.tilt*Math.PI/180),maskTop=RESIST.bottom+RESIST.thickness;
   let stopY=maskTop-.12,blocked=!inOpening(xAtMask);
@@ -114,7 +120,7 @@ export function implantPath(xAtMask,seed=0) {
     const sideY=maskTop-(right-xAtMask)/slope;
     if(sideY>RESIST.bottom){stopY=sideY;blocked=true;}
     else {
-      const u=((seed+1)*.754877666)%1,v=((seed+1)*.569840296)%1;
+      const u=sample01(seed,1),v=sample01(seed,2);
       const normal=Math.sqrt(-2*Math.log(.001+.998*u))*Math.cos(2*Math.PI*v);
       stopY=-.27+.05*Math.max(-2.5,Math.min(2.5,normal));
     }
