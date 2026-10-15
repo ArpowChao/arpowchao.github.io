@@ -173,6 +173,12 @@ projects:
     url: "/apps/semiconductor.html"
     category: "現代物理"
     tags: ["Semiconductor", "Physics"]
+  - title: "半導體製程 3D 模擬"
+    image: "/apps/semiconductor-process/thumbnail.svg"
+    description: "從單晶拉晶、晶錠切片到微影、蝕刻、摻雜與金屬連線，逐步操作 3D 製程模型。"
+    url: "/apps/semiconductor-process/"
+    category: "現代物理"
+    tags: ["Semiconductor", "Three.js", "Interactive"]
   - title: "隨機數值抽樣產生器"
     image: "https://i.postimg.cc/2618V8Tf/2025-10-19-134155.png"
     description: "生成指定範圍內隨機數值，並進行統計分析的工具。"
