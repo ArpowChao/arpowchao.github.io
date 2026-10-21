@@ -140,6 +140,10 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   for (const col of ['gold', 'magenta', 'cyan', 'white']) {
     assert.match(html, new RegExp(`data-color="${col}"`), `color option ${col}`);
   }
+  // KaTeX math rendering assets in HTML
+  assert.match(html, /katex(\.min)?\.css/);
+  assert.match(html, /katex(\.min)?\.js/);
+  assert.match(html, /auto-render(\.min)?\.js/);
   assert.match(css, /color-scheme:\s*light/);
   assert.match(html, /60°–90°/);
   assert.equal(B.STORY_CHAPTERS.length, 8);

@@ -1872,4 +1872,28 @@
   resizeRenderer();
   computeAll(true);
   requestAnimationFrame(tick);
+
+  // KaTeX Auto-Rendering for Aerodynamic Formulas
+  function renderAllMath() {
+    if (typeof window.renderMathInElement === 'function') {
+      try {
+        window.renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false }
+          ],
+          throwOnError: false
+        });
+      } catch (e) {
+        console.warn('KaTeX render warning:', e);
+      }
+    } else {
+      setTimeout(renderAllMath, 80);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderAllMath);
+  } else {
+    renderAllMath();
+  }
 })();
