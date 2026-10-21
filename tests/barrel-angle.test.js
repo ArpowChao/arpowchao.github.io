@@ -137,6 +137,9 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   for (const cam of ['stadium', 'catcher', 'batter', 'side', 'top', 'outfield', 'follow']) {
     assert.match(html, new RegExp(`data-cam="${cam}"`), `camera preset ${cam}`);
   }
+  for (const col of ['gold', 'magenta', 'cyan', 'white']) {
+    assert.match(html, new RegExp(`data-color="${col}"`), `color option ${col}`);
+  }
   assert.match(css, /color-scheme:\s*light/);
   assert.match(html, /60°–90°/);
   assert.equal(B.STORY_CHAPTERS.length, 8);
@@ -145,7 +148,7 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   assert.deepEqual(popupChapter.fanRange, [0, 90]);
 });
 
-test('app.js and styles.css configure black night stadium sky and thin luminous tracers', () => {
+test('app.js and styles.css configure black night stadium sky, high-contrast non-green default (gold), and thin luminous tracers', () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const appJs = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/app.js'), 'utf8');
@@ -159,8 +162,9 @@ test('app.js and styles.css configure black night stadium sky and thin luminous 
   assert.match(appJs, /coreRadius:\s*0\.105/);
   // High-intensity optic center filament
   assert.match(appJs, /filamentRadius:\s*0\.048/);
-  // Vibrant neon emerald color for Barrel
-  assert.match(appJs, /0x00ff88/);
+  // Default Barrel color is high-contrast Golden Yellow (not green!)
+  assert.match(appJs, /trajColor:\s*'gold'/);
+  assert.match(appJs, /0xffea00/);
   // Additive blending for luminous bloom
   assert.match(appJs, /AdditiveBlending/);
   // Apex marker and vertical guide

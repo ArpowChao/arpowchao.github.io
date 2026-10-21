@@ -116,6 +116,14 @@
             </div>
           </div>
 
+          <div class="color-picker-row" role="group" aria-label="全壘打軌跡顏色">
+            <span class="color-picker-label">軌跡高亮色：</span>
+            <button type="button" data-color="gold" class="color-pill active">🌟 耀眼金黃 (最清楚)</button>
+            <button type="button" data-color="magenta" class="color-pill">💖 霓虹洋紅 (極高對比)</button>
+            <button type="button" data-color="cyan" class="color-pill">⚡ 冰極亮青</button>
+            <button type="button" data-color="white" class="color-pill">⚪ 極光亮白</button>
+          </div>
+
           <div class="mode-row">
             <div class="mode-buttons" role="group" aria-label="發球模式">
               <button type="button" data-mode="single" class="active">單球三模型對照</button>
@@ -146,13 +154,13 @@
         <!-- 畫布下方圖例列 -->
         <div class="stage-footer">
           <div class="stage-legend">
-            <span><i class="key real-key"></i>真實軌跡（空氣阻力＋後旋）</span>
-            <span><i class="key barrel-key"></i>MLB Barrel 甜蜜區</span>
-            <span><i class="key foul-key"></i>界外球 ／ 60°–90° 沖天炮倒退</span>
-            <span><i class="key drag-key"></i>僅空氣阻力（無旋轉）</span>
-            <span><i class="key vac-key"></i>真空無阻力（45° 最遠）</span>
+            <span><i id="legend-barrel-key" class="key barrel-key"></i>MLB Barrel 全壘打（<strong id="legend-barrel-name">耀眼金黃</strong>）</span>
+            <span><i class="key real-key"></i>一般界內球（鮮明琥珀橘）</span>
+            <span><i class="key foul-key"></i>界外球 ／ 60°–90° 沖天炮倒退（雷射緋紅）</span>
+            <span><i class="key drag-key"></i>僅空氣阻力（皇家藍）</span>
+            <span><i class="key vac-key"></i>真空無阻力（冰極青，45° 最遠）</span>
           </div>
-          <p id="stage-note" class="stage-note">滑鼠拖曳可自由旋轉視角 · 滾輪縮放 · 界內為 ±45° 邊線內（含邊線），越過本壘板後方或邊線外皆為界外</p>
+          <p id="stage-note" class="stage-note">全壘打軌跡已切換為高對比色調（可在上方即時切換金黃／洋紅／亮青／亮白）· 滑鼠拖曳旋轉 · 滾輪縮放</p>
         </div>
 
         <!-- 兩個 2D 物理分析面板 -->

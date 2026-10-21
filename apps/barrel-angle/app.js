@@ -20,6 +20,7 @@
     mode: 'single',        // 'single' | 'fan'
     fanFilter: '0-90',     // '0-90' | '0-60' | '60-90'
     cameraPreset: 'stadium',
+    trajColor: 'gold',     // 'gold' | 'magenta' | 'cyan' | 'white' (預設極致清晰耀眼金黃，杜絕草皮綠色混雜)
     timeScale: 1.0,
     paused: false,
     showVacuum: true,
@@ -32,6 +33,49 @@
     comparison: null,
     sweep: null,
     fanTrajectories: []
+  };
+
+  const TRAJ_PALETTES = {
+    gold: {
+      name: '耀眼金黃',
+      coreHex: 0xffea00,
+      filamentHex: 0xffffff,
+      haloHex: 0xffd600,
+      badgeBorder: '#facc15',
+      badgeBg: 'rgba(254, 240, 138, 0.95)',
+      badgeColor: '#78350f',
+      keyCss: '#ffe600'
+    },
+    magenta: {
+      name: '霓虹洋紅',
+      coreHex: 0xff1493,
+      filamentHex: 0xffffff,
+      haloHex: 0xff007f,
+      badgeBorder: '#ff1493',
+      badgeBg: 'rgba(255, 228, 242, 0.95)',
+      badgeColor: '#831843',
+      keyCss: '#ff1493'
+    },
+    cyan: {
+      name: '冰極亮青',
+      coreHex: 0x00f0ff,
+      filamentHex: 0xffffff,
+      haloHex: 0x00d9ff,
+      badgeBorder: '#00f0ff',
+      badgeBg: 'rgba(207, 250, 254, 0.95)',
+      badgeColor: '#164e63',
+      keyCss: '#00f0ff'
+    },
+    white: {
+      name: '極光亮白',
+      coreHex: 0xffffff,
+      filamentHex: 0xffffff,
+      haloHex: 0xf1f5f9,
+      badgeBorder: '#ffffff',
+      badgeBg: 'rgba(255, 255, 255, 0.95)',
+      badgeColor: '#0f172a',
+      keyCss: '#ffffff'
+    }
   };
 
   const PRESETS = {
@@ -608,7 +652,7 @@
   const trajGroup = new T.Group();
   scene.add(trajGroup);
 
-  const ballGlowTex = makeGlowTexture('#00ff88');
+  const ballGlowTex = makeGlowTexture('#ffe600');
   const activeBall = new T.Mesh(
     new T.SphereGeometry(0.42, 20, 16),
     new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 })
@@ -616,7 +660,7 @@
   const activeBallHalo = new T.Sprite(
     new T.SpriteMaterial({
       map: ballGlowTex,
-      color: 0x00ff88,
+      color: 0xffea00,
       transparent: true,
       blending: T.AdditiveBlending,
       depthWrite: false
@@ -629,13 +673,13 @@
   const dropLineGeo = new T.BufferGeometry().setFromPoints([new T.Vector3(), new T.Vector3()]);
   const dropLine = new T.Line(
     dropLineGeo,
-    new T.LineBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.65, blending: T.AdditiveBlending })
+    new T.LineBasicMaterial({ color: 0xffea00, transparent: true, opacity: 0.7, blending: T.AdditiveBlending })
   );
   scene.add(dropLine);
 
   const groundShadow = new T.Mesh(
     new T.RingGeometry(0.25, 0.95, 24),
-    new T.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.85, side: T.DoubleSide })
+    new T.MeshBasicMaterial({ color: 0xffea00, transparent: true, opacity: 0.85, side: T.DoubleSide })
   );
   groundShadow.rotation.x = -Math.PI / 2;
   groundShadow.position.y = 0.04;
@@ -752,45 +796,50 @@
       const fullPts = samplePathUpToTime(cmp.full.path, state.animTime, state.sprayDeg);
       const isFoul = !cmp.full.isFair;
       const isBarrel = cmp.full.isBarrel && cmp.full.isFair;
+      const barrelPal = TRAJ_PALETTES[state.trajColor] || TRAJ_PALETTES.gold;
 
       let tracerOpts;
       let haloColorHex;
+      let apexBorderColor;
       if (isFoul) {
-        // Laser Ruby Red (界外球 / 倒退界外)
+        // Laser Crimson (界外球 / 倒退界外)
         tracerOpts = {
           coreRadius: 0.10,
-          coreColor: 0xff2442,
+          coreColor: 0xff0033,
           filamentRadius: 0.045,
           filamentColor: 0xfff1f2,
           haloRadius: 0.22,
-          haloColor: 0xff334b,
+          haloColor: 0xff1744,
           haloOpacity: 0.42
         };
-        haloColorHex = 0xff2442;
+        haloColorHex = 0xff0033;
+        apexBorderColor = '#ff0033';
       } else if (isBarrel) {
-        // Electric Neon Emerald (MLB Barrel 全壘打甜蜜區 — 黑色夜空下極致清晰明亮！)
+        // MLB Barrel 全壘打甜蜜區 — 預設「耀眼金黃」白金光束，徹底杜絕草皮綠色混雜問題！
         tracerOpts = {
           coreRadius: 0.105,
-          coreColor: 0x00ff88,
+          coreColor: barrelPal.coreHex,
           filamentRadius: 0.048,
-          filamentColor: 0xf0fdf4,
+          filamentColor: barrelPal.filamentHex,
           haloRadius: 0.24,
-          haloColor: 0x00ff88,
+          haloColor: barrelPal.haloHex,
           haloOpacity: 0.46
         };
-        haloColorHex = 0x00ff88;
+        haloColorHex = barrelPal.haloHex;
+        apexBorderColor = barrelPal.badgeBorder;
       } else {
-        // Blazing Radiant Gold / Orange (一般界內安打 / 飛球接殺)
+        // Vivid Neon Coral / Magenta (一般界內安打 / 飛球接殺 — 與綠色草皮 180° 完全互補！)
         tracerOpts = {
           coreRadius: 0.10,
-          coreColor: 0xff8c00,
+          coreColor: 0xff2a6d,
           filamentRadius: 0.045,
-          filamentColor: 0xfffbeb,
+          filamentColor: 0xfff1f2,
           haloRadius: 0.22,
-          haloColor: 0xff9900,
+          haloColor: 0xff0055,
           haloOpacity: 0.42
         };
-        haloColorHex = 0xff8c00;
+        haloColorHex = 0xff2a6d;
+        apexBorderColor = '#ff2a6d';
       }
 
       addStatcastTracer(trajGroup, fullPts, tracerOpts);
@@ -846,8 +895,8 @@
 
           const apexLbl = makeTextSprite(`▲ 最高點 ${apexY.toFixed(1)}m`, {
             w: 280, h: 72, font: 'bold 28px "Segoe UI", sans-serif',
-            color: '#0f172a', bg: 'rgba(255, 255, 255, 0.92)',
-            border: isFoul ? '#ff2442' : (isBarrel ? '#00ff88' : '#ff8c00'),
+            color: '#0f172a', bg: 'rgba(255, 255, 255, 0.94)',
+            border: apexBorderColor,
             scaleX: 7.5, scaleY: 2.0
           });
           apexLbl.position.set(apexX, apexY + 2.0, apexZ);
@@ -864,6 +913,7 @@
       const webPoints = [];
       const barrelApexSum = new T.Vector3();
       let barrelCount = 0;
+      const barrelPal = TRAJ_PALETTES[state.trajColor] || TRAJ_PALETTES.gold;
 
       state.fanTrajectories.forEach((sim) => {
         const deg = sim.config.angleDeg;
@@ -879,18 +929,18 @@
         if (inBarrel) {
           addStatcastTracer(trajGroup, pts, {
             coreRadius: 0.08,
-            coreColor: 0x00ff88,
+            coreColor: barrelPal.coreHex,
             filamentRadius: 0.035,
-            filamentColor: 0xf0fdf4,
+            filamentColor: barrelPal.filamentHex,
             haloRadius: 0.18,
-            haloColor: 0x00ff88,
-            haloOpacity: 0.42
+            haloColor: barrelPal.haloHex,
+            haloOpacity: 0.44
           });
           const sRad = state.sprayDeg * DEG;
           barrelApexSum.add(new T.Vector3(sim.apexX * Math.cos(sRad), sim.apexM, sim.apexX * Math.sin(sRad)));
           barrelCount++;
         } else if (isHighPopup || !sim.isFair) {
-          const col = !sim.isFair ? 0xff2442 : 0xf97316;
+          const col = !sim.isFair ? 0xff0033 : 0xff7700;
           addStatcastTracer(trajGroup, pts, {
             coreRadius: 0.055,
             coreColor: col,
@@ -935,9 +985,9 @@
           w: 320,
           h: 92,
           font: 'bold 40px "Segoe UI", sans-serif',
-          color: '#064e3b',
-          bg: '#a7f3d0',
-          border: '#00ff88',
+          color: barrelPal.badgeColor,
+          bg: barrelPal.badgeBg,
+          border: barrelPal.badgeBorder,
           scaleX: 11.5,
           scaleY: 3.4
         });
@@ -1521,6 +1571,28 @@
 
   document.querySelectorAll('[data-cam]').forEach((btn) => {
     btn.addEventListener('click', () => setCameraPreset(btn.dataset.cam, false));
+  });
+
+  document.querySelectorAll('[data-color]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const c = btn.dataset.color;
+      if (!TRAJ_PALETTES[c]) return;
+      state.trajColor = c;
+      document.querySelectorAll('[data-color]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.color === c);
+      });
+      const pal = TRAJ_PALETTES[c];
+      const legendKey = $('legend-barrel-key');
+      if (legendKey) {
+        legendKey.style.background = pal.keyCss;
+        legendKey.style.boxShadow = `0 0 7px ${pal.keyCss}`;
+      }
+      const legendName = $('legend-barrel-name');
+      if (legendName) {
+        legendName.textContent = pal.name;
+      }
+      rebuild3DTrajectories();
+    });
   });
 
   document.querySelectorAll('[data-mode]').forEach((btn) => {
