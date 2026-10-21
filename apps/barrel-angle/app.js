@@ -20,7 +20,6 @@
     mode: 'single',        // 'single' | 'fan'
     fanFilter: '0-90',     // '0-90' | '0-60' | '60-90'
     cameraPreset: 'stadium',
-    trajColor: 'gold',     // 'gold' | 'magenta' | 'cyan' | 'white' (預設極致清晰耀眼金黃，杜絕草皮綠色混雜)
     timeScale: 1.0,
     paused: false,
     showVacuum: true,
@@ -33,49 +32,6 @@
     comparison: null,
     sweep: null,
     fanTrajectories: []
-  };
-
-  const TRAJ_PALETTES = {
-    gold: {
-      name: '耀眼金黃',
-      coreHex: 0xffea00,
-      filamentHex: 0xffffff,
-      haloHex: 0xffd600,
-      badgeBorder: '#facc15',
-      badgeBg: 'rgba(254, 240, 138, 0.95)',
-      badgeColor: '#78350f',
-      keyCss: '#ffe600'
-    },
-    magenta: {
-      name: '霓虹洋紅',
-      coreHex: 0xff1493,
-      filamentHex: 0xffffff,
-      haloHex: 0xff007f,
-      badgeBorder: '#ff1493',
-      badgeBg: 'rgba(255, 228, 242, 0.95)',
-      badgeColor: '#831843',
-      keyCss: '#ff1493'
-    },
-    cyan: {
-      name: '冰極亮青',
-      coreHex: 0x00f0ff,
-      filamentHex: 0xffffff,
-      haloHex: 0x00d9ff,
-      badgeBorder: '#00f0ff',
-      badgeBg: 'rgba(207, 250, 254, 0.95)',
-      badgeColor: '#164e63',
-      keyCss: '#00f0ff'
-    },
-    white: {
-      name: '極光亮白',
-      coreHex: 0xffffff,
-      filamentHex: 0xffffff,
-      haloHex: 0xf1f5f9,
-      badgeBorder: '#ffffff',
-      badgeBg: 'rgba(255, 255, 255, 0.95)',
-      badgeColor: '#0f172a',
-      keyCss: '#ffffff'
-    }
   };
 
   const PRESETS = {
@@ -803,23 +759,41 @@
       const cmp = state.comparison;
       if (!cmp) return;
 
-      // 1. Vacuum comparison trajectory (delicate Ice Cyan, 45° 最遠)
-      if (state.showVacuum) {
+      const sRad = (Number(state.sprayDeg) || 0) * DEG;
+      const cosS = Math.cos(sRad);
+      const sinS = Math.sin(sRad);
+
+      // 1. Vacuum comparison trajectory (⚪ 銀白對照線，教科書拋物線，45° 最遠)
+      if (state.showVacuum && cmp.vacuum) {
         const vacPts = samplePathUpToTime(cmp.vacuum.path, state.animTime, state.sprayDeg);
         addStatcastTracer(trajGroup, vacPts, {
           coreRadius: 0.065,
-          coreColor: 0x38bdf8,
+          coreColor: 0xe2e8f0,
           coreOpacity: 0.85,
-          filamentRadius: 0.028,
-          filamentColor: 0xf0f9ff,
-          haloRadius: 0.14,
-          haloColor: 0x38bdf8,
-          haloOpacity: 0.32
+          filamentRadius: 0.025,
+          filamentColor: 0xffffff,
+          haloRadius: 0.13,
+          haloColor: 0x94a3b8,
+          haloOpacity: 0.30
         });
+
+        // 3D floating badge on Vacuum trajectory
+        if (state.animTime >= Math.min(0.8, cmp.vacuum.apexTimeS) && vacPts.length > 3) {
+          const vx = cmp.vacuum.apexX * cosS;
+          const vz = cmp.vacuum.apexX * sinS;
+          const vy = cmp.vacuum.apexM;
+          const vacLbl = makeTextSprite(`⚪ 真空無阻力 · 最高點 ${vy.toFixed(1)}m`, {
+            w: 380, h: 76, font: 'bold 26px "Segoe UI", sans-serif',
+            color: '#0f172a', bg: 'rgba(241, 245, 249, 0.94)', border: '#94a3b8',
+            scaleX: 9.8, scaleY: 2.3
+          });
+          vacLbl.position.set(vx, vy + 2.4, vz);
+          trajGroup.add(vacLbl);
+        }
       }
 
-      // 2. Drag-only comparison trajectory (sleek Royal Sapphire Blue, 無旋轉)
-      if (state.showDragOnly) {
+      // 2. Drag-only comparison trajectory (🔵 皇家藍，僅空氣阻力，無後旋升力)
+      if (state.showDragOnly && cmp.dragOnly) {
         const dragPts = samplePathUpToTime(cmp.dragOnly.path, state.animTime, state.sprayDeg);
         addStatcastTracer(trajGroup, dragPts, {
           coreRadius: 0.075,
@@ -829,58 +803,84 @@
           filamentColor: 0xeff6ff,
           haloRadius: 0.16,
           haloColor: 0x60a5fa,
-          haloOpacity: 0.34
+          haloOpacity: 0.35
         });
+
+        // 3D floating badge on Drag-only trajectory
+        if (state.animTime >= Math.min(0.7, cmp.dragOnly.apexTimeS) && dragPts.length > 3) {
+          const dx = cmp.dragOnly.apexX * cosS;
+          const dz = cmp.dragOnly.apexX * sinS;
+          const dy = cmp.dragOnly.apexM;
+          const dragLbl = makeTextSprite(`🔵 僅空氣阻力 · 最高點 ${dy.toFixed(1)}m`, {
+            w: 360, h: 76, font: 'bold 26px "Segoe UI", sans-serif',
+            color: '#1e3a8a', bg: 'rgba(219, 234, 254, 0.94)', border: '#3b82f6',
+            scaleX: 9.2, scaleY: 2.3
+          });
+          dragLbl.position.set(dx, dy + 2.4, dz);
+          trajGroup.add(dragLbl);
+        }
       }
 
-      // 3. Full Aerodynamic trajectory (color-coded by Fair/Foul/Barrel)
+      // 3. Full Aerodynamic trajectory (🌟 耀眼金黃 for Fair; 🔴 雷射紅 for Foul)
       const fullPts = samplePathUpToTime(cmp.full.path, state.animTime, state.sprayDeg);
       const isFoul = !cmp.full.isFair;
       const isBarrel = cmp.full.isBarrel && cmp.full.isFair;
-      const barrelPal = TRAJ_PALETTES[state.trajColor] || TRAJ_PALETTES.gold;
 
       let tracerOpts;
       let haloColorHex;
       let apexBorderColor;
+      let apexBgColor;
+      let apexTextColor;
+      let apexTitle;
+
       if (isFoul) {
-        // Laser Crimson (界外球 / 倒退界外)
-        tracerOpts = {
-          coreRadius: 0.10,
-          coreColor: 0xff0033,
-          filamentRadius: 0.045,
-          filamentColor: 0xfff1f2,
-          haloRadius: 0.22,
-          haloColor: 0xff1744,
-          haloOpacity: 0.42
-        };
-        haloColorHex = 0xff0033;
-        apexBorderColor = '#ff0033';
-      } else if (isBarrel) {
-        // MLB Barrel 全壘打甜蜜區 — 預設「耀眼金黃」白金光束，徹底杜絕草皮綠色混雜問題！
+        // Laser Crimson (界外球 / 60°~90° 倒退沖天炮)
         tracerOpts = {
           coreRadius: 0.105,
-          coreColor: barrelPal.coreHex,
-          filamentRadius: 0.048,
-          filamentColor: barrelPal.filamentHex,
-          haloRadius: 0.24,
-          haloColor: barrelPal.haloHex,
-          haloOpacity: 0.46
-        };
-        haloColorHex = barrelPal.haloHex;
-        apexBorderColor = barrelPal.badgeBorder;
-      } else {
-        // Vivid Neon Coral / Magenta (一般界內安打 / 飛球接殺 — 與綠色草皮 180° 完全互補！)
-        tracerOpts = {
-          coreRadius: 0.10,
-          coreColor: 0xff2a6d,
+          coreColor: 0xff1744,
           filamentRadius: 0.045,
           filamentColor: 0xfff1f2,
-          haloRadius: 0.22,
-          haloColor: 0xff0055,
+          haloRadius: 0.23,
+          haloColor: 0xff0033,
           haloOpacity: 0.42
         };
-        haloColorHex = 0xff2a6d;
-        apexBorderColor = '#ff2a6d';
+        haloColorHex = 0xff1744;
+        apexBorderColor = '#ff1744';
+        apexBgColor = 'rgba(254, 226, 226, 0.95)';
+        apexTextColor = '#991b1b';
+        apexTitle = '🔴 界外球';
+      } else if (isBarrel) {
+        // MLB Barrel 全壘打甜蜜區 — 耀眼金黃白金光束
+        tracerOpts = {
+          coreRadius: 0.108,
+          coreColor: 0xffea00,
+          filamentRadius: 0.048,
+          filamentColor: 0xffffff,
+          haloRadius: 0.24,
+          haloColor: 0xffd600,
+          haloOpacity: 0.46
+        };
+        haloColorHex = 0xffea00;
+        apexBorderColor = '#eab308';
+        apexBgColor = 'rgba(254, 240, 138, 0.95)';
+        apexTextColor = '#78350f';
+        apexTitle = '🌟 真實擊球 (Barrel 全壘打)';
+      } else {
+        // 一般界內球 — 亦為耀眼金黃白金光束，完全避免與草皮綠色混淆
+        tracerOpts = {
+          coreRadius: 0.102,
+          coreColor: 0xffea00,
+          filamentRadius: 0.045,
+          filamentColor: 0xffffff,
+          haloRadius: 0.22,
+          haloColor: 0xffd600,
+          haloOpacity: 0.42
+        };
+        haloColorHex = 0xffea00;
+        apexBorderColor = '#eab308';
+        apexBgColor = 'rgba(254, 240, 138, 0.95)';
+        apexTextColor = '#78350f';
+        apexTitle = '🌟 真實擊球 (阻力+升力)';
       }
 
       addStatcastTracer(trajGroup, fullPts, tracerOpts);
@@ -906,9 +906,8 @@
 
       // Apex Marker & Vertical Guide (最高點標記)
       if (cmp.full.apexM > 2 && fullPts.length > 3) {
-        const sRad = (Number(state.sprayDeg) || 0) * DEG;
-        const apexX = cmp.full.apexX * Math.cos(sRad);
-        const apexZ = cmp.full.apexX * Math.sin(sRad);
+        const apexX = cmp.full.apexX * cosS;
+        const apexZ = cmp.full.apexX * sinS;
         const apexY = cmp.full.apexM;
         const apexPos = new T.Vector3(apexX, apexY, apexZ);
 
@@ -934,13 +933,13 @@
           ringMesh.rotation.x = -Math.PI / 2;
           trajGroup.add(ringMesh);
 
-          const apexLbl = makeTextSprite(`▲ 最高點 ${apexY.toFixed(1)}m`, {
-            w: 280, h: 72, font: 'bold 28px "Segoe UI", sans-serif',
-            color: '#0f172a', bg: 'rgba(255, 255, 255, 0.94)',
+          const apexLbl = makeTextSprite(`${apexTitle} · 最高點 ${apexY.toFixed(1)}m`, {
+            w: 430, h: 80, font: 'bold 27px "Segoe UI", sans-serif',
+            color: apexTextColor, bg: apexBgColor,
             border: apexBorderColor,
-            scaleX: 7.5, scaleY: 2.0
+            scaleX: 11.2, scaleY: 2.3
           });
-          apexLbl.position.set(apexX, apexY + 2.0, apexZ);
+          apexLbl.position.set(apexX, apexY + 2.5, apexZ);
           trajGroup.add(apexLbl);
         }
       }
@@ -954,7 +953,6 @@
       const webPoints = [];
       const barrelApexSum = new T.Vector3();
       let barrelCount = 0;
-      const barrelPal = TRAJ_PALETTES[state.trajColor] || TRAJ_PALETTES.gold;
 
       state.fanTrajectories.forEach((sim) => {
         const deg = sim.config.angleDeg;
@@ -970,18 +968,18 @@
         if (inBarrel) {
           addStatcastTracer(trajGroup, pts, {
             coreRadius: 0.08,
-            coreColor: barrelPal.coreHex,
+            coreColor: 0xffea00,
             filamentRadius: 0.035,
-            filamentColor: barrelPal.filamentHex,
+            filamentColor: 0xffffff,
             haloRadius: 0.18,
-            haloColor: barrelPal.haloHex,
+            haloColor: 0xffd600,
             haloOpacity: 0.44
           });
           const sRad = state.sprayDeg * DEG;
           barrelApexSum.add(new T.Vector3(sim.apexX * Math.cos(sRad), sim.apexM, sim.apexX * Math.sin(sRad)));
           barrelCount++;
         } else if (isHighPopup || !sim.isFair) {
-          const col = !sim.isFair ? 0xff0033 : 0xff7700;
+          const col = !sim.isFair ? 0xff1744 : 0xff7700;
           addStatcastTracer(trajGroup, pts, {
             coreRadius: 0.055,
             coreColor: col,
@@ -1022,15 +1020,15 @@
 
       if (bz.isBarrelEligible && barrelCount > 0 && state.animTime > 1.2 && state.fanFilter !== '60-90') {
         barrelApexSum.multiplyScalar(1 / barrelCount);
-        const label = makeTextSprite(`Barrel ${bz.minDeg}～${bz.maxDeg}°`, {
-          w: 320,
+        const label = makeTextSprite(`Barrel 全壘打區間 ${bz.minDeg}～${bz.maxDeg}°`, {
+          w: 380,
           h: 92,
-          font: 'bold 40px "Segoe UI", sans-serif',
-          color: barrelPal.badgeColor,
-          bg: barrelPal.badgeBg,
-          border: barrelPal.badgeBorder,
+          font: 'bold 36px "Segoe UI", sans-serif',
+          color: '#78350f',
+          bg: 'rgba(254, 240, 138, 0.95)',
+          border: '#eab308',
           scaleX: 11.5,
-          scaleY: 3.4
+          scaleY: 3.2
         });
         label.position.set(barrelApexSum.x, barrelApexSum.y + 4.5, barrelApexSum.z);
         trajGroup.add(label);
@@ -1612,28 +1610,6 @@
 
   document.querySelectorAll('[data-cam]').forEach((btn) => {
     btn.addEventListener('click', () => setCameraPreset(btn.dataset.cam, false));
-  });
-
-  document.querySelectorAll('[data-color]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const c = btn.dataset.color;
-      if (!TRAJ_PALETTES[c]) return;
-      state.trajColor = c;
-      document.querySelectorAll('[data-color]').forEach((b) => {
-        b.classList.toggle('active', b.dataset.color === c);
-      });
-      const pal = TRAJ_PALETTES[c];
-      const legendKey = $('legend-barrel-key');
-      if (legendKey) {
-        legendKey.style.background = pal.keyCss;
-        legendKey.style.boxShadow = `0 0 7px ${pal.keyCss}`;
-      }
-      const legendName = $('legend-barrel-name');
-      if (legendName) {
-        legendName.textContent = pal.name;
-      }
-      rebuild3DTrajectories();
-    });
   });
 
   document.querySelectorAll('[data-mode]').forEach((btn) => {

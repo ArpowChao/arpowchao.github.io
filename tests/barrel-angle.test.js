@@ -137,9 +137,11 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   for (const cam of ['stadium', 'catcher', 'batter', 'side', 'top', 'outfield', 'follow']) {
     assert.match(html, new RegExp(`data-cam="${cam}"`), `camera preset ${cam}`);
   }
-  for (const col of ['gold', 'magenta', 'cyan', 'white']) {
-    assert.match(html, new RegExp(`data-color="${col}"`), `color option ${col}`);
-  }
+  // Clear, non-overlapping legend for all 3 models
+  assert.match(html, /真實擊球（空氣阻力＋後旋升力，耀眼金黃）/);
+  assert.match(html, /界外球 ／ 60°–90° 沖天炮倒退（雷射紅）/);
+  assert.match(html, /僅空氣阻力（無後旋升力，皇家藍）/);
+  assert.match(html, /真空無阻力（銀白對照線，45° 最遠）/);
   // KaTeX math rendering assets in HTML
   assert.match(html, /katex(\.min)?\.css/);
   assert.match(html, /katex(\.min)?\.js/);
@@ -166,9 +168,16 @@ test('app.js and styles.css configure black night stadium sky, high-contrast non
   assert.match(appJs, /coreRadius:\s*0\.105/);
   // High-intensity optic center filament
   assert.match(appJs, /filamentRadius:\s*0\.048/);
-  // Default Barrel color is high-contrast Golden Yellow (not green!)
-  assert.match(appJs, /trajColor:\s*'gold'/);
-  assert.match(appJs, /0xffea00/);
+  // Non-overlapping color signatures for 3 models + foul
+  assert.match(appJs, /0xffea00/); // Real trajectory (Golden Yellow)
+  assert.match(appJs, /0xff1744/); // Foul trajectory (Laser Crimson)
+  assert.match(appJs, /0x3b82f6/); // Drag-only trajectory (Royal Blue)
+  assert.match(appJs, /0xe2e8f0/); // Vacuum trajectory (Silver-White)
+  assert.match(appJs, /0x94a3b8/); // Vacuum halo (Silver Slate)
+  // Direct 3D trajectory badges for instant line identification
+  assert.match(appJs, /apexTitle = '🌟 真實擊球/);
+  assert.match(appJs, /makeTextSprite\(`🔵 僅空氣阻力/);
+  assert.match(appJs, /makeTextSprite\(`⚪ 真空無阻力/);
   // Additive blending for luminous bloom
   assert.match(appJs, /AdditiveBlending/);
   // Apex marker and vertical guide
