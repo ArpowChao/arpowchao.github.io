@@ -169,5 +169,14 @@ test('app.js and styles.css configure black night stadium sky, high-contrast non
   assert.match(appJs, /AdditiveBlending/);
   // Apex marker and vertical guide
   assert.match(appJs, /最高點/);
+
+  // Authentic MLB field: single seamless master field, infield dirt arc, inner grass diamond
+  assert.match(appJs, /masterField/);
+  assert.match(appJs, /dirtShape/);
+  assert.match(appJs, /innerGrassShape/);
+  assert.match(appJs, /outfieldTrack/);
+  // Ensure tacky ground decals are removed
+  assert.doesNotMatch(appJs, /groundText\('界外 FOUL'\)/);
+  assert.doesNotMatch(appJs, /groundText\('界內 FAIR'\)/);
 });
 

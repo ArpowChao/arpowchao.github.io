@@ -226,112 +226,165 @@
       return [t * ux + off * nx, t * uz + off * nz];
     };
 
-    function groundText(text, color, w, h, x, z, size) {
-      const c = document.createElement('canvas');
-      c.width = w;
-      c.height = h;
-      const g = c.getContext('2d');
-      g.fillStyle = color;
-      g.font = `900 ${Math.round(h * 0.6)}px "Segoe UI", "Microsoft JhengHei", sans-serif`;
-      g.textAlign = 'center';
-      g.textBaseline = 'middle';
-      g.fillText(text, w / 2, h / 2);
-      const m = new T.Mesh(
-        new T.PlaneGeometry(size, (size * h) / w),
-        new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false })
-      );
-      m.rotation.order = 'YXZ';
-      m.rotation.y = -Math.PI / 2;
-      m.rotation.x = -Math.PI / 2;
-      m.position.set(x, 0.05, z);
-      return m;
-    }
-
-    const stripeTex = (base) => {
+    // Authentic Major League Baseball Mowed Lawn Texture (alternating stripes)
+    const makeGrassTexture = () => {
       const cv = document.createElement('canvas');
       cv.width = cv.height = 512;
       const gg = cv.getContext('2d');
-      gg.fillStyle = base;
+      gg.fillStyle = '#2f7c34';
       gg.fillRect(0, 0, 512, 512);
-      for (let i = 0; i < 32; i++) {
-        gg.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
-        gg.fillRect(0, i * 16, 512, 16);
+      gg.fillStyle = '#39943f';
+      const stripeW = 32;
+      for (let i = 0; i < 512; i += stripeW * 2) {
+        gg.fillRect(i, 0, stripeW, 512);
       }
+      const idata = gg.getImageData(0, 0, 512, 512);
+      const d = idata.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (Math.random() - 0.5) * 10;
+        d[i] = clamp(d[i] + n, 0, 255);
+        d[i + 1] = clamp(d[i + 1] + n, 0, 255);
+        d[i + 2] = clamp(d[i + 2] + n, 0, 255);
+      }
+      gg.putImageData(idata, 0, 0);
       const tex = new T.CanvasTexture(cv);
       tex.wrapS = tex.wrapT = T.RepeatWrapping;
-      tex.repeat.set(12, 12);
+      tex.repeat.set(18, 18);
       return tex;
     };
 
-    // 1. Foul-territory grass (muted sage green) + Fair-territory 90° wedge (vibrant mowed green)
-    const foulGround = new T.Mesh(
-      new T.CircleGeometry(240, 96),
-      new T.MeshStandardMaterial({ color: 0x738c6d, roughness: 0.95 })
-    );
-    foulGround.rotation.x = -Math.PI / 2;
-    foulGround.position.set(30, -0.03, 0);
-    stadium.add(foulGround);
+    // Authentic MLB Red Infield Clay Texture
+    const makeDirtTexture = () => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 256;
+      const gg = cv.getContext('2d');
+      gg.fillStyle = '#b8703f';
+      gg.fillRect(0, 0, 256, 256);
+      const idata = gg.getImageData(0, 0, 256, 256);
+      const d = idata.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (Math.random() - 0.5) * 14;
+        d[i] = clamp(d[i] + n, 0, 255);
+        d[i + 1] = clamp(d[i + 1] + n * 0.7, 0, 255);
+        d[i + 2] = clamp(d[i + 2] + n * 0.4, 0, 255);
+      }
+      gg.putImageData(idata, 0, 0);
+      const tex = new T.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = T.RepeatWrapping;
+      tex.repeat.set(10, 10);
+      return tex;
+    };
 
-    const fairGrass = new T.Mesh(
-      new T.CircleGeometry(WALL_R, 96, -LINE, 2 * LINE),
-      new T.MeshStandardMaterial({ map: stripeTex('#388e48'), roughness: 0.88 })
-    );
-    fairGrass.rotation.x = -Math.PI / 2;
-    fairGrass.position.y = -0.01;
-    stadium.add(fairGrass);
+    const grassMat = new T.MeshStandardMaterial({ map: makeGrassTexture(), roughness: 0.88 });
+    const dirtMat = new T.MeshStandardMaterial({ map: makeDirtTexture(), roughness: 0.92 });
+    const chalkMat = new T.MeshBasicMaterial({ color: 0xffffff });
 
-    // Warning track
-    const dirtMat = new T.MeshStandardMaterial({ color: 0xb57c50, roughness: 0.95 });
-    const track = new T.Mesh(new T.RingGeometry(WALL_R - 4.5, WALL_R, 96, 1, -LINE, 2 * LINE), dirtMat);
-    track.rotation.x = -Math.PI / 2;
-    track.position.y = 0.0;
-    stadium.add(track);
+    // 1. Single Seamless Master Grass Ground across entire ballpark (Fair & Foul are one uniform manicured field!)
+    const masterField = new T.Mesh(new T.CircleGeometry(160, 96), grassMat);
+    masterField.rotation.x = -Math.PI / 2;
+    masterField.position.y = -0.01;
+    stadium.add(masterField);
 
-    // 2. Infield dirt & diamond
-    const homeDirt = new T.Mesh(new T.CircleGeometry(7.9, 48), dirtMat);
-    homeDirt.rotation.x = -Math.PI / 2;
-    homeDirt.position.set(0, 0.01, 0);
-    stadium.add(homeDirt);
+    // 2. MLB Regulation Infield Dirt Arc (centered at pitcher's rubber 18.44m, outer arc radius 28.96m / 95ft)
+    const dirtShape = new T.Shape();
+    dirtShape.moveTo(0, 0); // Home plate
+    dirtShape.lineTo(27.51, -27.51); // 3B foul line intersection
+    dirtShape.absarc(18.44, 0, 28.96, -1.252, 1.252, false); // Sweeping arc behind 2nd base
+    dirtShape.lineTo(27.51, 27.51); // 1B foul line intersection
+    dirtShape.closePath();
 
-    const infieldDirt = new T.Mesh(new T.CircleGeometry(29, 64, -LINE, 2 * LINE), dirtMat);
+    const infieldDirt = new T.Mesh(new T.ShapeGeometry(dirtShape), dirtMat);
     infieldDirt.rotation.x = -Math.PI / 2;
-    infieldDirt.position.set(0, 0.008, 0);
+    infieldDirt.position.y = 0.003;
     stadium.add(infieldDirt);
 
-    const baseDist = F.basePathM;
-    const diag = baseDist * Math.SQRT2;
+    // 3. Inner Grass Diamond (lush green diamond between basepaths)
     const innerGrassShape = new T.Shape();
-    innerGrassShape.moveTo(2.8, 0);
-    innerGrassShape.lineTo(diag / 2, -diag / 2 + 2.0);
-    innerGrassShape.lineTo(diag - 2.8, 0);
-    innerGrassShape.lineTo(diag / 2, diag / 2 - 2.0);
+    innerGrassShape.moveTo(4.2, 0);
+    innerGrassShape.lineTo(18.0, 15.6);
+    innerGrassShape.lineTo(35.0, 0);
+    innerGrassShape.lineTo(18.0, -15.6);
     innerGrassShape.closePath();
-    const innerGrass = new T.Mesh(
-      new T.ShapeGeometry(innerGrassShape),
-      new T.MeshStandardMaterial({ map: stripeTex('#388e48'), roughness: 0.88 })
-    );
+
+    const innerGrass = new T.Mesh(new T.ShapeGeometry(innerGrassShape), grassMat);
     innerGrass.rotation.x = -Math.PI / 2;
-    innerGrass.position.y = 0.015;
+    innerGrass.position.y = 0.008;
     stadium.add(innerGrass);
 
-    const mound = new T.Mesh(new T.CylinderGeometry(2.2, 2.8, 0.25, 32), dirtMat);
-    mound.position.set(18.44, 0.12, 0);
+    // 4. Elevated Pitcher's Mound & Pitching Rubber (18.44m from home plate)
+    const mound = new T.Mesh(new T.CylinderGeometry(2.1, 2.74, 0.25, 36), dirtMat);
+    mound.position.set(18.44, 0.125, 0);
     stadium.add(mound);
 
-    const chalkMat = new T.MeshBasicMaterial({ color: 0xffffff });
-    const baseGeo = new T.BoxGeometry(0.42, 0.08, 0.42);
-    [[diag / 2, diag / 2], [diag, 0], [diag / 2, -diag / 2]].forEach(([bx, bz]) => {
+    const rubber = new T.Mesh(new T.BoxGeometry(0.61, 0.05, 0.15), chalkMat);
+    rubber.position.set(18.44, 0.25, 0);
+    stadium.add(rubber);
+
+    // Home plate dirt circle cutout
+    const homeDirt = new T.Mesh(new T.CircleGeometry(4.0, 48), dirtMat);
+    homeDirt.rotation.x = -Math.PI / 2;
+    homeDirt.position.set(0, 0.006, 0);
+    stadium.add(homeDirt);
+
+    // Sliding pit dirt cutouts around 1B, 2B, 3B
+    [[19.4, 19.4], [38.79, 0], [19.4, -19.4]].forEach(([bx, bz]) => {
+      const pit = new T.Mesh(new T.CircleGeometry(3.5, 32), dirtMat);
+      pit.rotation.x = -Math.PI / 2;
+      pit.position.set(bx, 0.007, bz);
+      stadium.add(pit);
+    });
+
+    // Bases (1B, 2B, 3B regulation white cushions)
+    const baseGeo = new T.BoxGeometry(0.38, 0.07, 0.38);
+    [[19.4, 19.4], [38.79, 0], [19.4, -19.4]].forEach(([bx, bz]) => {
       const b = new T.Mesh(baseGeo, chalkMat);
-      b.position.set(bx, 0.05, bz);
+      b.position.set(bx, 0.045, bz);
       b.rotation.y = Math.PI / 4;
       stadium.add(b);
     });
 
-    // 3. Foul lines (±45°) & Foul Poles on the 110m wall
+    // Home plate & Batter's Boxes
+    const plate = new T.Mesh(new T.BoxGeometry(0.43, 0.04, 0.43), chalkMat);
+    plate.position.set(0, 0.02, 0);
+    stadium.add(plate);
+
+    for (const zOff of [-1.02, 1.02]) {
+      const box = new T.Mesh(new T.BoxGeometry(1.8, 0.02, 1.15), chalkMat);
+      const boxInner = new T.Mesh(new T.BoxGeometry(1.68, 0.022, 1.03), dirtMat);
+      box.position.set(0.12, 0.015, zOff);
+      boxInner.position.set(0.12, 0.016, zOff);
+      stadium.add(box, boxInner);
+    }
+
+    // Coaches' boxes in foul territory
     for (const sign of [-1, 1]) {
-      const line = new T.Mesh(new T.BoxGeometry(WALL_R, 0.03, 0.22), chalkMat);
+      const cBox = new T.Mesh(new T.BoxGeometry(6.0, 0.02, 1.6), chalkMat);
+      const cInner = new T.Mesh(new T.BoxGeometry(5.8, 0.022, 1.4), grassMat);
+      cBox.position.set(22.0, 0.015, sign * 26.5);
+      cBox.rotation.y = -sign * LINE;
+      cInner.position.copy(cBox.position);
+      cInner.rotation.copy(cBox.rotation);
+      stadium.add(cBox, cInner);
+    }
+
+    // On-deck circles in foul territory
+    const onDeckMat = new T.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.8 });
+    const onDeckInnerMat = new T.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 });
+    for (const sign of [-1, 1]) {
+      const deckRing = new T.Mesh(new T.RingGeometry(0.75, 1.5, 32), onDeckMat);
+      deckRing.rotation.x = -Math.PI / 2;
+      deckRing.position.set(5.5, 0.012, sign * 11.5);
+      const deckCore = new T.Mesh(new T.CircleGeometry(0.75, 32), onDeckInnerMat);
+      deckCore.rotation.x = -Math.PI / 2;
+      deckCore.position.set(5.5, 0.013, sign * 11.5);
+      stadium.add(deckRing, deckCore);
+    }
+
+    // 5. Foul lines (±45°) & Foul Poles on the 110m wall
+    for (const sign of [-1, 1]) {
+      const line = new T.Mesh(new T.BoxGeometry(WALL_R, 0.03, 0.15), chalkMat);
       line.rotation.y = -sign * LINE;
-      line.position.set((WALL_R / 2) * Math.cos(LINE), 0.03, sign * (WALL_R / 2) * Math.sin(LINE));
+      line.position.set((WALL_R / 2) * Math.cos(LINE), 0.018, sign * (WALL_R / 2) * Math.sin(LINE));
       stadium.add(line);
 
       const pole = new T.Mesh(
@@ -349,20 +402,16 @@
       stadium.add(poleLbl);
     }
 
-    // Batter's boxes & home plate
-    const plate = new T.Mesh(new T.BoxGeometry(0.45, 0.04, 0.45), chalkMat);
-    plate.position.set(0, 0.025, 0);
-    stadium.add(plate);
-    const boxFrameGeo = new T.RingGeometry(0.9, 1.02, 4);
-    for (const zOff of [-0.95, 0.95]) {
-      const box = new T.Mesh(boxFrameGeo, chalkMat);
-      box.rotation.x = -Math.PI / 2;
-      box.rotation.z = Math.PI / 4;
-      box.position.set(0, 0.026, zOff);
-      stadium.add(box);
-    }
+    // 6. Outfield warning track (4.5m wide along 110m wall) + Foul perimeter tracks
+    const outfieldTrack = new T.Mesh(
+      new T.RingGeometry(WALL_R - 4.5, WALL_R, 96, 1, -LINE, 2 * LINE),
+      dirtMat
+    );
+    outfieldTrack.rotation.x = -Math.PI / 2;
+    outfieldTrack.position.y = 0.003;
+    stadium.add(outfieldTrack);
 
-    // 4. Foul-territory side walls + 18.3m Backstop behind home plate
+    // 7. Foul-territory side walls + 18.3m Backstop behind home plate
     const sideOff = 16;
     const tJoin = Math.sqrt(Math.max(0, F.backstopM ** 2 - sideOff ** 2));
     const padMat = new T.MeshStandardMaterial({ color: 0x2c4c3e, roughness: 0.7 });
@@ -381,6 +430,14 @@
       cap.rotation.y = -Math.atan2(z2 - pz, x2 - px);
       cap.position.set((x2 + px) / 2, 1.25, (z2 + pz) / 2);
       stadium.add(cap);
+
+      // Warning track along foul perimeter walls
+      const foulTrack = new T.Mesh(new T.PlaneGeometry(3.2, len), dirtMat);
+      foulTrack.rotation.order = 'YXZ';
+      foulTrack.rotation.x = -Math.PI / 2;
+      foulTrack.rotation.z = Math.atan2(z2 - z1, x2 - x1) - Math.PI / 2;
+      foulTrack.position.set((x1 + x2) / 2, 0.004, (z1 + z2) / 2);
+      stadium.add(foulTrack);
     }
 
     const phiJoin = LINE + Math.atan2(sideOff, tJoin);
@@ -407,23 +464,15 @@
     backLbl.position.set(-F.backstopM - 1, 12.2, 0);
     stadium.add(backLbl);
 
-    // Ground decals: FAIR inside the wedge, FOUL outside
-    stadium.add(groundText('界內 FAIR', 'rgba(255,255,255,0.45)', 512, 128, 68, 0, 20));
-    for (const sign of [-1, 1]) {
-      const [fx, fz] = toXZ(52, 8.5, sign);
-      stadium.add(groundText('界外 FOUL', 'rgba(153,27,27,0.45)', 512, 128, fx, fz, 13));
-    }
-    stadium.add(groundText('界外 FOUL', 'rgba(153,27,27,0.45)', 512, 128, -11, 0, 10));
-
-    // 5. Distance arcs inside fair territory (50m, 100m)
-    const arcMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: T.DoubleSide });
+    // 8. Distance arcs inside fair territory (50m, 100m)
+    const arcMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, side: T.DoubleSide });
     for (const dist of [50, 100]) {
-      const ring = new T.Mesh(new T.RingGeometry(dist - 0.18, dist + 0.18, 64, 1, -LINE, 2 * LINE), arcMat);
+      const ring = new T.Mesh(new T.RingGeometry(dist - 0.16, dist + 0.16, 64, 1, -LINE, 2 * LINE), arcMat);
       ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.03;
+      ring.position.y = 0.016;
       stadium.add(ring);
       const lbl = makeTextSprite(`${dist}m`, {
-        color: '#1f3140', bg: 'rgba(255,255,255,0.9)', border: '#cbd5e1', scaleX: 7, scaleY: 2.5
+        color: '#1f3140', bg: 'rgba(255,255,255,0.92)', border: '#cbd5e1', scaleX: 7, scaleY: 2.5
       });
       lbl.position.set(dist, 1.5, 10);
       stadium.add(lbl);
