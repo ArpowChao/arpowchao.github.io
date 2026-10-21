@@ -1,8 +1,6 @@
 changelog:
   - date: "2026年10月21日"
     entry: "新增「BARREL 全壘打仰角與空氣阻力實驗室」：3D 夜間球場重現 158 km/h 下全壘打甜蜜仰角僅有 4 度（26°–30° Barrel），完整展開 0°～90° 全仰角軌跡，同場比較真空拋物線、純空氣阻力與後旋馬格努斯升力，並探索 60°～90° 沖天炮往本壘後方倒退的逆向迴旋奇觀。"
-  - date: "2026年10月12日"
-    entry: "新增「LUMEN 光學實驗室」3D 光學桌，自由擺放蠟燭、雷射、LED、光源箱與透鏡、面鏡、稜鏡、針孔板、屏幕；以真實光線追跡計算折射、全反射、菲涅耳反射與色散，屏幕影像以蒙地卡羅光子累積，可直接看到倒立實像與彩虹光譜。"
   - date: "2026年10月13日"
     entry: "新增「SPIN 投球旋轉實驗室」：3D 真實縫線棒球依轉速、轉軸時鐘方向與有效旋轉轉動，計算馬格努斯力造成的球路位移，並和大聯盟各球種平均比較；另附 VPython 版（可直接貼到 Web VPython 執行）與 Colab 筆記本（高解析度 2D 風洞）。"
   - date: "2026年10月9日"
@@ -99,12 +97,6 @@ projects:
     url: "/apps/charged-spheres/index.html"
     category: "電磁學"
     tags: ["Physics", "Electrostatics", "Coulomb's Law", "Uniform Charge", "Simulation"]
-  - title: "LUMEN 光學實驗室"
-    image: "/assets/img/apps/lumen-optics.svg"
-    description: "3D 光學桌：自由擺放蠟燭、雷射、LED、光源箱與凸凹透鏡、面鏡、三稜鏡、玻璃磚、針孔板、屏幕。以真實光線追跡計算反射、折射、全反射與色散，屏幕上的影像由蒙地卡羅光子累積而成，蠟燭會在屏幕上成倒立實像。"
-    url: "/apps/optics-lab/index.html"
-    category: "波動與光學"
-    tags: ["Physics", "Optics", "Ray Tracing", "3D", "Simulation"]
   - title: "單狹縫繞射四大核心主題"
     image: "/assets/img/apps/single_slit_diffraction_thumbnail.png"
     description: "由成德高中陳家騏老師設計。涵蓋四大進階主題：惠更斯波動模型、子波等分區塊配對抵消、空間幾何與小角度近似 (tanθ≈sinθ)，以及真實物理尺度與光強度分布 (Sinc²)。"
