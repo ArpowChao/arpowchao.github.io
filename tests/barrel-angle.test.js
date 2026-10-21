@@ -58,7 +58,12 @@ test('60° to 90° high pop-ups and paradoxical backward loop with backspin', ()
   // At 85°~90°, backspin Magnus force pushes rising ball backward (-x), landing behind home plate!
   const r90Spin = B.simulateBattedBall({ speedKmh: 158, angleDeg: 90, spinEnabled: true });
   assert.ok(r90Spin.carryM < -10, `90° with backspin loops behind home plate: ${r90Spin.carryM}m`);
-  assert.equal(r90Spin.outcome, 'POPUP_BACK');
+  assert.equal(r90Spin.isFair, false, 'behind home plate is foul territory');
+  assert.equal(r90Spin.outcome, 'FOUL_BACKSTOP', 'lands beyond the 18.3 m backstop');
+
+  const r85 = B.simulateBattedBall({ speedKmh: 158, angleDeg: 85 });
+  assert.ok(r85.carryM < 0 && r85.carryM > -B.FIELD.backstopM, `85° lands just behind the plate: ${r85.carryM}`);
+  assert.equal(r85.outcome, 'FOUL_POP', 'catchable foul pop-up');
 
   // Without spin, 90° goes straight up and lands at x = 0
   const r90NoSpin = B.simulateBattedBall({ speedKmh: 158, angleDeg: 90, spinEnabled: false });
@@ -81,6 +86,34 @@ test('compareModels and sweepAngles (0°~90°) show optimal angle lowering from 
   assert.ok(sweep.optimal.full.angleDeg >= 26 && sweep.optimal.full.angleDeg <= 31, `aero optimal angle ${sweep.optimal.full.angleDeg}°`);
 });
 
+test('fair / foul territory: foul lines at ±45°, behind home plate is foul', () => {
+  assert.equal(B.judgeFair(100, 0).fair, true);
+  assert.equal(B.judgeFair(100, 45).fair, true, 'on the line is fair');
+  assert.equal(B.judgeFair(100, -45).fair, true);
+  assert.equal(B.judgeFair(100, 46).fair, false);
+  assert.equal(B.judgeFair(100, -50).fair, false);
+  assert.equal(B.judgeFair(-5, 0).fair, false, 'behind the plate');
+  const side = B.judgeFair(100, 30);
+  near(side.landingX, 100 * Math.cos(30 * Math.PI / 180), 0.01);
+  near(side.landingZ, 50, 0.01, '+spray = right-field side');
+
+  // Same 28° home-run swing: inside the left-field pole → HR, just outside → long foul ball.
+  const inside = B.simulateBattedBall({ speedKmh: 158, angleDeg: 28, sprayDeg: -44 });
+  assert.equal(inside.outcome, 'HR');
+  const outside = B.simulateBattedBall({ speedKmh: 158, angleDeg: 28, sprayDeg: -47 });
+  assert.equal(outside.isFair, false);
+  assert.equal(outside.outcome, 'FOUL_HR');
+  assert.equal(outside.clearsWall, false, 'a foul ball never counts as clearing the wall');
+
+  const shortFoul = B.simulateBattedBall({ speedKmh: 158, angleDeg: 10, sprayDeg: 55 });
+  assert.equal(shortFoul.outcome, 'FOUL');
+
+  // Wind toward center field only helps along the flight direction.
+  const cf = B.simulateBattedBall({ speedKmh: 158, angleDeg: 28, windMs: 6, sprayDeg: 0 });
+  const line = B.simulateBattedBall({ speedKmh: 158, angleDeg: 28, windMs: 6, sprayDeg: 45 });
+  assert.ok(cf.carryM > line.carryM, 'tailwind component shrinks toward the lines');
+});
+
 test('altitude (Coors Field) and tailwind increase carry distance', () => {
   const sea = B.simulateBattedBall({ speedKmh: 158, angleDeg: 28, altitudeM: 0, windMs: 0 });
   const highAlt = B.simulateBattedBall({ speedKmh: 158, angleDeg: 28, altitudeM: 1600, windMs: 0 });
@@ -89,11 +122,22 @@ test('altitude (Coors Field) and tailwind increase carry distance', () => {
   assert.ok(tailwind.carryM > sea.carryM + 5, `Tailwind adds carry: ${tailwind.carryM} vs ${sea.carryM}`);
 });
 
-test('HTML and Storyboard include full 0°~90° angle range and 60°~90° pop-up chapter', () => {
+test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, playback controls, and 7 camera presets', () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const html = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/styles.css'), 'utf8');
   assert.match(html, /id="angle-slider"[^>]*min="0"[^>]*max="90"/);
+  assert.match(html, /id="spray-slider"[^>]*min="-65"[^>]*max="65"/);
+  assert.match(html, /id="play-pause-btn"/);
+  assert.match(html, /data-speed="0\.125"/);
+  assert.match(html, /data-speed="0\.5"/);
+  assert.match(html, /data-speed="1"/);
+  assert.match(html, /data-speed="2"/);
+  for (const cam of ['stadium', 'catcher', 'batter', 'side', 'top', 'outfield', 'follow']) {
+    assert.match(html, new RegExp(`data-cam="${cam}"`), `camera preset ${cam}`);
+  }
+  assert.match(css, /color-scheme:\s*light/);
   assert.match(html, /60°–90°/);
   assert.equal(B.STORY_CHAPTERS.length, 8);
   const popupChapter = B.STORY_CHAPTERS.find((c) => c.id === 'popup60_90');

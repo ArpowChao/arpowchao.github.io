@@ -12,6 +12,7 @@
   const state = {
     speedKmh: 158,
     angleDeg: 28,
+    sprayDeg: 0,
     rpm: 1260,
     cd: 0.398,
     altitudeM: 0,
@@ -20,6 +21,7 @@
     fanFilter: '0-90',     // '0-90' | '0-60' | '60-90'
     cameraPreset: 'stadium',
     timeScale: 1.0,
+    paused: false,
     showVacuum: true,
     showDragOnly: true,
     storyPlaying: false,
@@ -33,26 +35,28 @@
   };
 
   const PRESETS = {
-    deg10:  { speedKmh: 158, angleDeg: 10, rpm: 1260, cd: 0.398, altitudeM: 0, windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 },
-    deg28:  { speedKmh: 158, angleDeg: 28, rpm: 1260, cd: 0.398, altitudeM: 0, windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 },
-    deg45:  { speedKmh: 158, angleDeg: 45, rpm: 1260, cd: 0.398, altitudeM: 0, windMs: 0, mode: 'single', cam: 'stadium', scale: 1.5 },
-    deg68:  { speedKmh: 158, angleDeg: 68, rpm: 1260, cd: 0.398, altitudeM: 0, windMs: 0, mode: 'single', cam: 'side',    scale: 1.5 },
-    deg88:  { speedKmh: 158, angleDeg: 88, rpm: 1260, cd: 0.398, altitudeM: 0, windMs: 0, mode: 'single', cam: 'side',    scale: 1.5 },
-    ohtani: { speedKmh: 187, angleDeg: 28, rpm: 1260, cd: 0.398, altitudeM: 0, windMs: 0, mode: 'fan',    cam: 'stadium', scale: 1.25 }
+    deg10:    { speedKmh: 158, angleDeg: 10, sprayDeg: 0,   rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 },
+    deg28:    { speedKmh: 158, angleDeg: 28, sprayDeg: 0,   rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 },
+    deg45:    { speedKmh: 158, angleDeg: 45, sprayDeg: 0,   rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 },
+    deg68:    { speedKmh: 158, angleDeg: 68, sprayDeg: 0,   rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'single', cam: 'side',    scale: 1.0 },
+    deg88:    { speedKmh: 158, angleDeg: 88, sprayDeg: 0,   rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'single', cam: 'side',    scale: 1.0 },
+    foulPole: { speedKmh: 158, angleDeg: 28, sprayDeg: 48,  rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'single', cam: 'catcher', scale: 1.0 },
+    ohtani:   { speedKmh: 187, angleDeg: 28, sprayDeg: 0,   rpm: 1260, cd: 0.398, altitudeM: 0,    windMs: 0, mode: 'fan',    cam: 'stadium', scale: 1.0 },
+    coors:    { speedKmh: 158, angleDeg: 28, sprayDeg: -15, rpm: 1260, cd: 0.398, altitudeM: 1600, windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 }
   };
 
-  // ---------- Three.js Scene Setup ----------
+  // ---------- Three.js Scene Setup (Bright Daylight Stadium) ----------
   const canvas = $('stadium-canvas');
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0x050a12, 1);
+  renderer.setClearColor(0xdbeeff, 1);
 
   const scene = new T.Scene();
-  scene.fog = new T.FogExp2(0x060c16, 0.0022);
+  scene.fog = new T.FogExp2(0xe4f1fc, 0.0013);
 
   const camera = new T.PerspectiveCamera(40, 16 / 9, 0.5, 650);
 
-  // Orbit camera state (spherical coordinates around target)
+  // Orbit camera state
   const camOrbit = {
     target: new T.Vector3(52, 12, 0),
     GoalTarget: new T.Vector3(52, 12, 0),
@@ -62,11 +66,15 @@
     spherical: { radius: 85, theta: -0.38, phi: 1.28 }
   };
 
+  // 7 Distinct Observation Perspectives
   const CAMERA_PRESETS = {
-    stadium:  { pos: new T.Vector3(-22, 24, 56),  target: new T.Vector3(52, 13, -2), fov: 40 },
-    batter:   { pos: new T.Vector3(4.2, 2.0, 5.2), target: new T.Vector3(0.5, 1.45, 0), fov: 36 },
-    side:     { pos: new T.Vector3(42, 24, 118),  target: new T.Vector3(42, 18, 0),  fov: 42 },
-    outfield: { pos: new T.Vector3(136, 22, 34),  target: new T.Vector3(55, 12, 0),  fov: 42 }
+    stadium:  { pos: new T.Vector3(-22, 25, 56),   target: new T.Vector3(52, 12, 0),  fov: 40 },
+    catcher:  { pos: new T.Vector3(-12, 5.5, 0),   target: new T.Vector3(65, 9, 0),   fov: 48 },
+    batter:   { pos: new T.Vector3(4.2, 2.0, 5.2), target: new T.Vector3(0.5, 1.4, 0), fov: 36 },
+    side:     { pos: new T.Vector3(42, 22, 118),   target: new T.Vector3(42, 16, 0),  fov: 40 },
+    top:      { pos: new T.Vector3(46, 165, 0.5),  target: new T.Vector3(46, 0, 0),   fov: 44 },
+    outfield: { pos: new T.Vector3(138, 22, 32),   target: new T.Vector3(52, 10, 0),  fov: 42 },
+    follow:   { pos: new T.Vector3(-14, 10, 28),   target: new T.Vector3(20, 5, 0),   fov: 42 }
   };
 
   function setCameraPreset(name, instant) {
@@ -94,24 +102,23 @@
     camOrbit.spherical.theta = Math.atan2(offset.x, offset.z);
   }
 
-  // Lighting
-  scene.add(new T.HemisphereLight(0xdbeafe, 0x1a2e1a, 0.85));
-  const sun = new T.DirectionalLight(0xfff8e7, 1.35);
-  sun.position.set(-30, 85, 50);
+  // Daylight Lighting
+  scene.add(new T.HemisphereLight(0xffffff, 0x5c7a58, 1.15));
+  const sun = new T.DirectionalLight(0xfffdf6, 1.25);
+  sun.position.set(-40, 110, 65);
   scene.add(sun);
-  const fillLight = new T.DirectionalLight(0x60a5fa, 0.55);
-  fillLight.position.set(90, 40, -60);
+  const fillLight = new T.DirectionalLight(0x93c5fd, 0.45);
+  fillLight.position.set(100, 50, -70);
   scene.add(fillLight);
 
-  // Glow sprite helper
   function makeGlowTexture(colorHex) {
     const c = document.createElement('canvas');
     c.width = c.height = 128;
     const g = c.getContext('2d');
     const grad = g.createRadialGradient(64, 64, 2, 64, 64, 64);
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.28, colorHex);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.35, colorHex);
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = grad;
     g.fillRect(0, 0, 128, 128);
     return new T.CanvasTexture(c);
@@ -125,9 +132,8 @@
     const g = c.getContext('2d');
     if (opts.bg) {
       g.fillStyle = opts.bg;
-      const r = 16;
       g.beginPath();
-      g.roundRect(6, 12, c.width - 12, c.height - 24, r);
+      g.roundRect(6, 12, c.width - 12, c.height - 24, 16);
       g.fill();
     }
     if (opts.border) {
@@ -137,8 +143,8 @@
       g.roundRect(6, 12, c.width - 12, c.height - 24, 16);
       g.stroke();
     }
-    g.fillStyle = opts.color || '#ffffff';
-    g.font = opts.font || 'bold 40px "Segoe UI", sans-serif';
+    g.fillStyle = opts.color || '#1f3140';
+    g.font = opts.font || 'bold 38px "Segoe UI", sans-serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(text, c.width / 2, c.height / 2);
@@ -149,103 +155,149 @@
     return sp;
   }
 
-  // ---------- Build 3D Night Stadium ----------
+  // ---------- Build 3D Daylight Stadium (with Fair vs Foul Territory) ----------
   const batterGroup = new T.Group();
   let batterBatPivot = null;
 
   function buildStadium() {
     const stadium = new T.Group();
 
-    // 1. Outfield & Infield Grass Plane with mowed stripes texture
-    const grassCanvas = document.createElement('canvas');
-    grassCanvas.width = grassCanvas.height = 512;
-    const gg = grassCanvas.getContext('2d');
-    gg.fillStyle = '#1f5427';
-    gg.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 32; i++) {
-      gg.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)';
-      gg.fillRect(0, i * 16, 512, 16);
+    const F = B.FIELD;
+    const LINE = F.foulLineDeg * DEG;
+    const WALL_R = F.wallDistanceM;
+    const toXZ = (t, off, sign) => {
+      const ux = Math.cos(LINE), uz = sign * Math.sin(LINE);
+      const nx = -Math.sin(LINE), nz = sign * Math.cos(LINE);
+      return [t * ux + off * nx, t * uz + off * nz];
+    };
+
+    function groundText(text, color, w, h, x, z, size) {
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const g = c.getContext('2d');
+      g.fillStyle = color;
+      g.font = `900 ${Math.round(h * 0.6)}px "Segoe UI", "Microsoft JhengHei", sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(text, w / 2, h / 2);
+      const m = new T.Mesh(
+        new T.PlaneGeometry(size, (size * h) / w),
+        new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false })
+      );
+      m.rotation.order = 'YXZ';
+      m.rotation.y = -Math.PI / 2;
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(x, 0.05, z);
+      return m;
     }
-    const grassTex = new T.CanvasTexture(grassCanvas);
-    grassTex.wrapS = grassTex.wrapT = T.RepeatWrapping;
-    grassTex.repeat.set(14, 14);
 
-    const ground = new T.Mesh(
+    const stripeTex = (base) => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 512;
+      const gg = cv.getContext('2d');
+      gg.fillStyle = base;
+      gg.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 32; i++) {
+        gg.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+        gg.fillRect(0, i * 16, 512, 16);
+      }
+      const tex = new T.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = T.RepeatWrapping;
+      tex.repeat.set(12, 12);
+      return tex;
+    };
+
+    // 1. Foul-territory grass (muted sage green) + Fair-territory 90° wedge (vibrant mowed green)
+    const foulGround = new T.Mesh(
       new T.CircleGeometry(240, 96),
-      new T.MeshStandardMaterial({ map: grassTex, roughness: 0.92, metalness: 0.02 })
+      new T.MeshStandardMaterial({ color: 0x738c6d, roughness: 0.95 })
     );
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(45, -0.02, 0);
-    stadium.add(ground);
+    foulGround.rotation.x = -Math.PI / 2;
+    foulGround.position.set(30, -0.03, 0);
+    stadium.add(foulGround);
 
-    // 2. Infield Clay Dirt & Base Diamond (aligned so +X is center field, foul lines at ±45° in XZ)
-    const dirtMat = new T.MeshStandardMaterial({ color: 0x8b6240, roughness: 0.95 });
-    const homeDirt = new T.Mesh(new T.CircleGeometry(7.2, 48), dirtMat);
+    const fairGrass = new T.Mesh(
+      new T.CircleGeometry(WALL_R, 96, -LINE, 2 * LINE),
+      new T.MeshStandardMaterial({ map: stripeTex('#388e48'), roughness: 0.88 })
+    );
+    fairGrass.rotation.x = -Math.PI / 2;
+    fairGrass.position.y = -0.01;
+    stadium.add(fairGrass);
+
+    // Warning track
+    const dirtMat = new T.MeshStandardMaterial({ color: 0xb57c50, roughness: 0.95 });
+    const track = new T.Mesh(new T.RingGeometry(WALL_R - 4.5, WALL_R, 96, 1, -LINE, 2 * LINE), dirtMat);
+    track.rotation.x = -Math.PI / 2;
+    track.position.y = 0.0;
+    stadium.add(track);
+
+    // 2. Infield dirt & diamond
+    const homeDirt = new T.Mesh(new T.CircleGeometry(7.9, 48), dirtMat);
     homeDirt.rotation.x = -Math.PI / 2;
     homeDirt.position.set(0, 0.01, 0);
     stadium.add(homeDirt);
 
-    // Infield dirt arc (radius ~29m around mound at x=18.44m)
-    const infieldDirt = new T.Mesh(new T.CircleGeometry(28.5, 64, -Math.PI / 4, Math.PI / 2), dirtMat);
+    const infieldDirt = new T.Mesh(new T.CircleGeometry(29, 64, -LINE, 2 * LINE), dirtMat);
     infieldDirt.rotation.x = -Math.PI / 2;
     infieldDirt.position.set(0, 0.008, 0);
     stadium.add(infieldDirt);
 
-    // Inner grass diamond (27.4m base paths rotated so 2B is along +X at 38.79m)
-    const baseDist = 27.43;
-    const diag = baseDist * Math.SQRT2; // 38.79m to 2B along +X
+    const baseDist = F.basePathM;
+    const diag = baseDist * Math.SQRT2;
     const innerGrassShape = new T.Shape();
-    innerGrassShape.moveTo(2.5, 0);
+    innerGrassShape.moveTo(2.8, 0);
     innerGrassShape.lineTo(diag / 2, -diag / 2 + 2.0);
-    innerGrassShape.lineTo(diag - 2.5, 0);
+    innerGrassShape.lineTo(diag - 2.8, 0);
     innerGrassShape.lineTo(diag / 2, diag / 2 - 2.0);
     innerGrassShape.closePath();
     const innerGrass = new T.Mesh(
       new T.ShapeGeometry(innerGrassShape),
-      new T.MeshStandardMaterial({ color: 0x24612d, roughness: 0.9 })
+      new T.MeshStandardMaterial({ map: stripeTex('#388e48'), roughness: 0.88 })
     );
     innerGrass.rotation.x = -Math.PI / 2;
     innerGrass.position.y = 0.015;
     stadium.add(innerGrass);
 
-    // Pitcher's mound at x = 18.44m
     const mound = new T.Mesh(new T.CylinderGeometry(2.2, 2.8, 0.25, 32), dirtMat);
     mound.position.set(18.44, 0.12, 0);
     stadium.add(mound);
 
-    // Foul lines (1B line: +X, -Z; 3B line: +X, +Z at ±45°) & Foul Poles
-    const chalkMat = new T.MeshBasicMaterial({ color: 0xf1f5f9 });
+    const chalkMat = new T.MeshBasicMaterial({ color: 0xffffff });
+    const baseGeo = new T.BoxGeometry(0.42, 0.08, 0.42);
+    [[diag / 2, diag / 2], [diag, 0], [diag / 2, -diag / 2]].forEach(([bx, bz]) => {
+      const b = new T.Mesh(baseGeo, chalkMat);
+      b.position.set(bx, 0.05, bz);
+      b.rotation.y = Math.PI / 4;
+      stadium.add(b);
+    });
+
+    // 3. Foul lines (±45°) & Foul Poles on the 110m wall
     for (const sign of [-1, 1]) {
-      const foulLen = 98;
-      const lineGeo = new T.PlaneGeometry(foulLen, 0.22);
-      const line = new T.Mesh(lineGeo, chalkMat);
-      line.rotation.x = -Math.PI / 2;
-      line.rotation.z = sign * (Math.PI / 4);
-      line.position.set(
-        (foulLen / 2) * Math.cos(Math.PI / 4),
-        0.025,
-        sign * (foulLen / 2) * Math.sin(Math.PI / 4)
-      );
+      const line = new T.Mesh(new T.BoxGeometry(WALL_R, 0.03, 0.22), chalkMat);
+      line.rotation.y = -sign * LINE;
+      line.position.set((WALL_R / 2) * Math.cos(LINE), 0.03, sign * (WALL_R / 2) * Math.sin(LINE));
       stadium.add(line);
 
-      // Yellow foul pole at the end of foul line
       const pole = new T.Mesh(
-        new T.CylinderGeometry(0.18, 0.18, 22, 12),
-        new T.MeshBasicMaterial({ color: 0xfacc15 })
+        new T.CylinderGeometry(0.22, 0.22, 24, 12),
+        new T.MeshBasicMaterial({ color: 0xeab308 })
       );
-      pole.position.set(
-        foulLen * Math.cos(Math.PI / 4),
-        11,
-        sign * foulLen * Math.sin(Math.PI / 4)
-      );
+      pole.position.set(WALL_R * Math.cos(LINE), 12, sign * WALL_R * Math.sin(LINE));
       stadium.add(pole);
+
+      const poleLbl = makeTextSprite(sign < 0 ? '左外野標竿 (−45°)' : '右外野標竿 (+45°)', {
+        w: 380, h: 86, font: 'bold 30px "Segoe UI", sans-serif',
+        color: '#1f3140', bg: 'rgba(254,240,138,0.94)', border: '#ca8a04', scaleX: 10.5, scaleY: 2.3
+      });
+      poleLbl.position.set(WALL_R * Math.cos(LINE), 25.5, sign * WALL_R * Math.sin(LINE));
+      stadium.add(poleLbl);
     }
 
-    // Batter's box & home plate chalk lines
-    const plate = new T.Mesh(new T.BoxGeometry(0.43, 0.04, 0.43), chalkMat);
+    // Batter's boxes & home plate
+    const plate = new T.Mesh(new T.BoxGeometry(0.45, 0.04, 0.45), chalkMat);
     plate.position.set(0, 0.025, 0);
     stadium.add(plate);
-
     const boxFrameGeo = new T.RingGeometry(0.9, 1.02, 4);
     for (const zOff of [-0.95, 0.95]) {
       const box = new T.Mesh(boxFrameGeo, chalkMat);
@@ -255,90 +307,110 @@
       stadium.add(box);
     }
 
-    // 3. Distance Ground Arcs (-20m, 50m, 100m, 110m Outfield Wall)
-    const arcMat = new T.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.35, side: T.DoubleSide });
+    // 4. Foul-territory side walls + 18.3m Backstop behind home plate
+    const sideOff = 16;
+    const tJoin = Math.sqrt(Math.max(0, F.backstopM ** 2 - sideOff ** 2));
+    const padMat = new T.MeshStandardMaterial({ color: 0x2c4c3e, roughness: 0.7 });
+    for (const sign of [-1, 1]) {
+      const [x1, z1] = toXZ(tJoin, sideOff, sign);
+      const [x2, z2] = toXZ(WALL_R + 2, sideOff, sign);
+      const len = Math.hypot(x2 - x1, z2 - z1);
+      const wall = new T.Mesh(new T.BoxGeometry(len, 1.4, 0.35), padMat);
+      wall.rotation.y = -Math.atan2(z2 - z1, x2 - x1);
+      wall.position.set((x1 + x2) / 2, 0.7, (z1 + z2) / 2);
+      stadium.add(wall);
+
+      const [px, pz] = [WALL_R * Math.cos(LINE), sign * WALL_R * Math.sin(LINE)];
+      const len2 = Math.hypot(x2 - px, z2 - pz);
+      const cap = new T.Mesh(new T.BoxGeometry(len2, 2.5, 0.35), padMat);
+      cap.rotation.y = -Math.atan2(z2 - pz, x2 - px);
+      cap.position.set((x2 + px) / 2, 1.25, (z2 + pz) / 2);
+      stadium.add(cap);
+    }
+
+    const phiJoin = LINE + Math.atan2(sideOff, tJoin);
+    const thStart = Math.PI / 2 - (2 * Math.PI - phiJoin);
+    const thLen = 2 * Math.PI - 2 * phiJoin;
+    const backstopWall = new T.Mesh(
+      new T.CylinderGeometry(F.backstopM, F.backstopM, 2.5, 48, 1, true, thStart, thLen),
+      new T.MeshStandardMaterial({ color: 0x2c4c3e, roughness: 0.7, side: T.DoubleSide })
+    );
+    backstopWall.position.y = 1.25;
+    stadium.add(backstopWall);
+
+    const backstopNet = new T.Mesh(
+      new T.CylinderGeometry(F.backstopM, F.backstopM, 8.5, 48, 6, true, thStart, thLen),
+      new T.MeshBasicMaterial({ color: 0x475569, wireframe: true, transparent: true, opacity: 0.25 })
+    );
+    backstopNet.position.y = 6.75;
+    stadium.add(backstopNet);
+
+    const backLbl = makeTextSprite('本壘後方擋網 18.3m（界外區）', {
+      w: 500, h: 90, font: 'bold 30px "Segoe UI", "Microsoft JhengHei", sans-serif',
+      color: '#991b1b', bg: 'rgba(254,226,226,0.94)', border: '#dc2626', scaleX: 11.5, scaleY: 2.1
+    });
+    backLbl.position.set(-F.backstopM - 1, 12.2, 0);
+    stadium.add(backLbl);
+
+    // Ground decals: FAIR inside the wedge, FOUL outside
+    stadium.add(groundText('界內 FAIR', 'rgba(255,255,255,0.45)', 512, 128, 68, 0, 20));
+    for (const sign of [-1, 1]) {
+      const [fx, fz] = toXZ(52, 8.5, sign);
+      stadium.add(groundText('界外 FOUL', 'rgba(153,27,27,0.45)', 512, 128, fx, fz, 13));
+    }
+    stadium.add(groundText('界外 FOUL', 'rgba(153,27,27,0.45)', 512, 128, -11, 0, 10));
+
+    // 5. Distance arcs inside fair territory (50m, 100m)
+    const arcMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: T.DoubleSide });
     for (const dist of [50, 100]) {
-      const ring = new T.Mesh(new T.RingGeometry(dist - 0.18, dist + 0.18, 64, 1, -Math.PI / 3.8, (2 * Math.PI) / 3.8), arcMat);
+      const ring = new T.Mesh(new T.RingGeometry(dist - 0.18, dist + 0.18, 64, 1, -LINE, 2 * LINE), arcMat);
       ring.rotation.x = -Math.PI / 2;
       ring.position.y = 0.03;
       stadium.add(ring);
-
       const lbl = makeTextSprite(`${dist}m`, {
-        color: '#e2e8f0',
-        bg: 'rgba(15,23,42,0.75)',
-        scaleX: 7.5,
-        scaleY: 2.8
+        color: '#1f3140', bg: 'rgba(255,255,255,0.9)', border: '#cbd5e1', scaleX: 7, scaleY: 2.5
       });
-      lbl.position.set(dist, 1.6, 12);
+      lbl.position.set(dist, 1.5, 10);
       stadium.add(lbl);
     }
 
-    // Backward pop-up zone marker (-20m behind home plate)
-    const backArcMat = new T.MeshBasicMaterial({ color: 0xff9f43, transparent: true, opacity: 0.4, side: T.DoubleSide });
-    const backRing = new T.Mesh(new T.RingGeometry(19.8, 20.2, 48, 1, Math.PI - 0.7, 1.4), backArcMat);
-    backRing.rotation.x = -Math.PI / 2;
-    backRing.position.y = 0.03;
-    stadium.add(backRing);
-    const backLbl = makeTextSprite('−20m 本壘後方 (85°–90° 後旋倒退區)', {
-      w: 520,
-      h: 96,
-      font: 'bold 30px "Segoe UI", sans-serif',
-      color: '#ffbe76',
-      bg: 'rgba(20,12,4,0.82)',
-      border: '#ff9f43',
-      scaleX: 13,
-      scaleY: 2.4
-    });
-    backLbl.position.set(-20, 2.2, 0);
-    stadium.add(backLbl);
-
-    // 4. Outfield Wall at R = 110m (height = 2.5m) with yellow top rail
-    const wallRadius = 110;
-    const wallHeight = 2.5;
-    const wallArc = Math.PI * 0.56;
-    const wallGeo = new T.CylinderGeometry(wallRadius, wallRadius, wallHeight, 72, 1, true, Math.PI / 2 - wallArc / 2, wallArc);
+    // 6. Outfield wall (110 m) from foul pole to foul pole
+    const wallHeight = F.wallHeightM;
+    const wallArc = 2 * LINE;
     const wallMesh = new T.Mesh(
-      wallGeo,
-      new T.MeshStandardMaterial({ color: 0x0f291e, roughness: 0.7, side: T.DoubleSide })
+      new T.CylinderGeometry(WALL_R, WALL_R, wallHeight, 72, 1, true, Math.PI / 2 - wallArc / 2, wallArc),
+      new T.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.7, side: T.DoubleSide })
     );
     wallMesh.position.y = wallHeight / 2;
     stadium.add(wallMesh);
-
     const yellowTop = new T.Mesh(
-      new T.CylinderGeometry(wallRadius, wallRadius, 0.22, 72, 1, true, Math.PI / 2 - wallArc / 2, wallArc),
+      new T.CylinderGeometry(WALL_R, WALL_R, 0.24, 72, 1, true, Math.PI / 2 - wallArc / 2, wallArc),
       new T.MeshBasicMaterial({ color: 0xfacc15, side: T.DoubleSide })
     );
-    yellowTop.position.y = wallHeight + 0.1;
+    yellowTop.position.y = wallHeight + 0.12;
     stadium.add(yellowTop);
 
     const wall110Label = makeTextSprite('110m 全壘打牆', {
-      w: 320,
-      h: 88,
-      font: 'bold 34px "Segoe UI", sans-serif',
-      color: '#facc15',
-      bg: 'rgba(10,20,15,0.88)',
-      border: '#facc15',
-      scaleX: 9.5,
-      scaleY: 2.6
+      w: 320, h: 88, font: 'bold 32px "Segoe UI", sans-serif',
+      color: '#1f3140', bg: 'rgba(254,240,138,0.95)', border: '#ca8a04', scaleX: 9.2, scaleY: 2.5
     });
     wall110Label.position.set(110, 4.2, 0);
     stadium.add(wall110Label);
 
-    // 5. Outfield & Infield Grandstands with Colorful Instanced Crowd (matching IG Reel!)
+    // 7. Outfield & Infield Grandstands
     const standSlopes = [
-      { rStart: 112, rEnd: 142, yStart: 2.8, yEnd: 17.5, thMin: -0.78, thMax: 0.78, rows: 14, cols: 88 },
-      { rStart: 22,  rEnd: 46,  yStart: 2.0, yEnd: 14.0, thMin: 2.05,  thMax: 4.25, rows: 10, cols: 64 }
+      { rStart: 112, rEnd: 140, yStart: 2.8, yEnd: 16.5, thMin: -0.78, thMax: 0.78, rows: 12, cols: 80 },
+      { rStart: 22,  rEnd: 42,  yStart: 2.0, yEnd: 12.0, thMin: 2.05,  thMax: 4.25, rows: 8,  cols: 54 }
     ];
-    const seatGeo = new T.BoxGeometry(0.95, 0.75, 0.95);
+    const seatGeo = new T.BoxGeometry(0.95, 0.7, 0.95);
     const seatMat = new T.MeshBasicMaterial({ color: 0xffffff });
     const palette = [
-      new T.Color(0xe11d48), new T.Color(0xfacc15), new T.Color(0x38bdf8),
-      new T.Color(0xf8fafc), new T.Color(0x4ade80), new T.Color(0xfb923c),
-      new T.Color(0x1e293b), new T.Color(0x334155)
+      new T.Color(0x2563eb), new T.Color(0x3b82f6), new T.Color(0x60a5fa),
+      new T.Color(0xf8fafc), new T.Color(0x16a34a), new T.Color(0xf59e0b),
+      new T.Color(0xef4444), new T.Color(0x64748b)
     ];
 
     standSlopes.forEach((sec) => {
-      // Dark structure behind seats
       const tierGeo = new T.CylinderGeometry(
         sec.rEnd,
         sec.rStart,
@@ -351,7 +423,7 @@
       );
       const tier = new T.Mesh(
         tierGeo,
-        new T.MeshStandardMaterial({ color: 0x0c1420, roughness: 0.9, side: T.DoubleSide })
+        new T.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85, side: T.DoubleSide })
       );
       tier.position.y = (sec.yStart + sec.yEnd) / 2;
       stadium.add(tier);
@@ -372,8 +444,7 @@
           dummy.makeRotationY(-ang);
           dummy.setPosition(px, y, pz);
           crowd.setMatrixAt(idx, dummy);
-          const col = palette[(r * 13 + c * 7) % palette.length];
-          crowd.setColorAt(idx, col);
+          crowd.setColorAt(idx, palette[(r * 13 + c * 7) % palette.length]);
           idx++;
         }
       }
@@ -382,40 +453,10 @@
       stadium.add(crowd);
     });
 
-    // 6. Four Tall Stadium Floodlight Towers with Glow Halos
-    const lightCoords = [
-      [98, -72], [126, -34], [126, 34], [98, 72]
-    ];
-    const glowTex = makeGlowTexture('rgba(255,252,225,0.85)');
-    const poleMat = new T.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5, roughness: 0.5 });
-    const bankMat = new T.MeshBasicMaterial({ color: 0xfffef0 });
-
-    lightCoords.forEach(([lx, lz]) => {
-      const tower = new T.Mesh(new T.CylinderGeometry(0.45, 0.75, 38, 10), poleMat);
-      tower.position.set(lx, 19, lz);
-      stadium.add(tower);
-
-      const bank = new T.Mesh(new T.BoxGeometry(1.2, 4.5, 8.5), bankMat);
-      bank.position.set(lx, 39, lz);
-      bank.lookAt(50, 0, 0);
-      stadium.add(bank);
-
-      const halo = new T.Sprite(new T.SpriteMaterial({
-        map: glowTex,
-        color: 0xfffbeb,
-        transparent: true,
-        blending: T.AdditiveBlending,
-        depthWrite: false
-      }));
-      halo.position.set(lx, 39, lz);
-      halo.scale.set(26, 26, 1);
-      stadium.add(halo);
-    });
-
     scene.add(stadium);
   }
 
-  // ---------- Build 3D Mannequins (Batter, Catcher, Umpire, Outfielders) ----------
+  // ---------- Build 3D Mannequins ----------
   function makeLimb(r, len, mat) {
     const g = new T.Group();
     const cyl = new T.Mesh(new T.CylinderGeometry(r, r * 0.9, len, 14), mat);
@@ -426,9 +467,8 @@
   }
 
   function buildMannequins() {
-    // 1. Batter Mannequin (Right-handed batter at z = +0.85m, x = 0m)
-    const batterMat = new T.MeshStandardMaterial({ color: 0x7c8b9e, roughness: 0.45, metalness: 0.25 });
-    batterGroup.position.set(-0.15, 0, 0.88);
+    const batterMat = new T.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.15 });
+    batterGroup.position.set(-0.15, 0, -0.88); // Right-handed batter stands on 3B side (−Z)
 
     const torso = new T.Mesh(new T.CylinderGeometry(0.19, 0.16, 0.62, 16), batterMat);
     torso.position.set(0, 1.15, 0);
@@ -437,36 +477,34 @@
     batterGroup.add(torso, head);
 
     const lLeg = makeLimb(0.085, 0.82, batterMat);
-    lLeg.position.set(0.12, 0.84, -0.06);
+    lLeg.position.set(0.12, 0.84, 0.06);
     lLeg.rotation.z = 0.12;
     const rLeg = makeLimb(0.085, 0.82, batterMat);
-    rLeg.position.set(-0.12, 0.84, 0.08);
+    rLeg.position.set(-0.12, 0.84, -0.08);
     rLeg.rotation.z = -0.15;
     batterGroup.add(lLeg, rLeg);
 
-    // Pivot for arms + wooden bat so it swings dynamically at launch!
     batterBatPivot = new T.Group();
-    batterBatPivot.position.set(0.05, 1.32, -0.15);
+    batterBatPivot.position.set(0.05, 1.32, 0.15);
 
     const armL = makeLimb(0.065, 0.48, batterMat);
     armL.rotation.x = Math.PI / 2.4;
     armL.rotation.z = -0.35;
     batterBatPivot.add(armL);
 
-    const batMat = new T.MeshStandardMaterial({ color: 0xb07d4f, roughness: 0.55 });
+    const batMat = new T.MeshStandardMaterial({ color: 0x9a5b25, roughness: 0.55 });
     const bat = new T.Mesh(new T.CylinderGeometry(0.036, 0.018, 0.92, 14), batMat);
-    bat.position.set(0.28, 0.05, -0.38);
-    bat.rotation.x = Math.PI / 2.2;
+    bat.position.set(0.28, 0.05, 0.38);
+    bat.rotation.x = -Math.PI / 2.2;
     bat.rotation.z = -0.45;
     batterBatPivot.add(bat);
 
     batterGroup.add(batterBatPivot);
     scene.add(batterGroup);
 
-    // 2. Catcher & Umpire Mannequins (dark silhouettes behind home plate, matching IG Reel!)
-    const darkMat = new T.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 });
+    const darkMat = new T.MeshStandardMaterial({ color: 0x475569, roughness: 0.55 });
     const catcher = new T.Group();
-    catcher.position.set(-1.35, 0, 0.05);
+    catcher.position.set(-1.35, 0, 0);
     const cTorso = new T.Mesh(new T.CylinderGeometry(0.2, 0.17, 0.52, 14), darkMat);
     cTorso.position.set(0, 0.78, 0);
     cTorso.rotation.z = -0.25;
@@ -482,7 +520,7 @@
     scene.add(catcher);
 
     const umpire = new T.Group();
-    umpire.position.set(-2.25, 0, -0.12);
+    umpire.position.set(-2.25, 0, 0.12);
     const uTorso = new T.Mesh(new T.CylinderGeometry(0.21, 0.18, 0.65, 14), darkMat);
     uTorso.position.set(0, 1.15, 0);
     const uHead = new T.Mesh(new T.SphereGeometry(0.15, 16, 14), darkMat);
@@ -494,12 +532,11 @@
     umpire.add(uTorso, uHead, uLegL, uLegR);
     scene.add(umpire);
 
-    // 3. Fielders on the field (for scale reference)
     const fielderCoords = [
       [18.4, 0], [34, -14], [34, 14], [26, -22], [26, 22],
       [78, -36], [86, 0], [78, 36]
     ];
-    const fielderMat = new T.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.7 });
+    const fielderMat = new T.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
     fielderCoords.forEach(([fx, fz]) => {
       const f = new T.Mesh(new T.CylinderGeometry(0.25, 0.25, 1.75, 10), fielderMat);
       f.position.set(fx, 0.88, fz);
@@ -514,35 +551,33 @@
   const trajGroup = new T.Group();
   scene.add(trajGroup);
 
-  const ballGlowTex = makeGlowTexture('#c8ff2e');
+  const ballGlowTex = makeGlowTexture('#ef7a2c');
   const activeBall = new T.Mesh(
-    new T.SphereGeometry(0.55, 20, 16),
-    new T.MeshBasicMaterial({ color: 0xffffff })
+    new T.SphereGeometry(0.6, 20, 16),
+    new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
   );
   const activeBallHalo = new T.Sprite(
     new T.SpriteMaterial({
       map: ballGlowTex,
-      color: 0xc8ff2e,
+      color: 0xe8590c,
       transparent: true,
-      blending: T.AdditiveBlending,
       depthWrite: false
     })
   );
-  activeBallHalo.scale.set(5.5, 5.5, 1);
+  activeBallHalo.scale.set(4.2, 4.2, 1);
   activeBall.add(activeBallHalo);
   scene.add(activeBall);
 
-  // Vertical laser drop line from ball to ground shadow
   const dropLineGeo = new T.BufferGeometry().setFromPoints([new T.Vector3(), new T.Vector3()]);
   const dropLine = new T.Line(
     dropLineGeo,
-    new T.LineBasicMaterial({ color: 0xc8ff2e, transparent: true, opacity: 0.55 })
+    new T.LineBasicMaterial({ color: 0x1f3140, transparent: true, opacity: 0.55 })
   );
   scene.add(dropLine);
 
   const groundShadow = new T.Mesh(
-    new T.RingGeometry(0.2, 0.95, 24),
-    new T.MeshBasicMaterial({ color: 0xc8ff2e, transparent: true, opacity: 0.65, side: T.DoubleSide })
+    new T.RingGeometry(0.25, 1.1, 24),
+    new T.MeshBasicMaterial({ color: 0xc92a2a, transparent: true, opacity: 0.75, side: T.DoubleSide })
   );
   groundShadow.rotation.x = -Math.PI / 2;
   groundShadow.position.y = 0.04;
@@ -559,21 +594,23 @@
     }
   }
 
-  function samplePathUpToTime(path, tMax) {
+  // Convert 2D plane path (x, y) + horizontal sprayDeg into 3D coordinates (X, Y, Z)
+  function samplePathUpToTime(path, tMax, sprayDeg) {
+    const sRad = (Number(sprayDeg) || 0) * DEG;
+    const cosS = Math.cos(sRad);
+    const sinS = Math.sin(sRad);
     const pts = [];
     for (let i = 0; i < path.length; i++) {
       const p = path[i];
       if (p.t <= tMax) {
-        pts.push(new T.Vector3(p.x, p.y, 0));
+        pts.push(new T.Vector3(p.x * cosS, p.y, p.x * sinS));
       } else {
         if (i > 0) {
           const prev = path[i - 1];
           const f = clamp((tMax - prev.t) / Math.max(1e-6, p.t - prev.t), 0, 1);
-          pts.push(new T.Vector3(
-            prev.x + f * (p.x - prev.x),
-            prev.y + f * (p.y - prev.y),
-            0
-          ));
+          const x = prev.x + f * (p.x - prev.x);
+          const y = prev.y + f * (p.y - prev.y);
+          pts.push(new T.Vector3(x * cosS, y, x * sinS));
         }
         break;
       }
@@ -581,17 +618,16 @@
     return pts;
   }
 
-  function buildTubeFromPoints(pts, radius, color, opacity, additive) {
+  function buildTubeFromPoints(pts, radius, color, opacity) {
     if (pts.length < 2) return null;
     const curve = new T.CatmullRomCurve3(pts);
     const segs = Math.min(140, Math.max(12, pts.length * 2));
     const geo = new T.TubeGeometry(curve, segs, radius, 8, false);
     const mat = new T.MeshBasicMaterial({
       color,
-      transparent: opacity < 1 || additive,
+      transparent: opacity < 1,
       opacity,
-      blending: additive ? T.AdditiveBlending : T.NormalBlending,
-      depthWrite: !additive
+      depthWrite: opacity >= 0.85
     });
     return new T.Mesh(geo, mat);
   }
@@ -603,32 +639,32 @@
       const cmp = state.comparison;
       if (!cmp) return;
 
-      // 1. Vacuum comparison trajectory (white-blue translucent arch)
+      // 1. Vacuum comparison trajectory (slate grey)
       if (state.showVacuum) {
-        const vacPts = samplePathUpToTime(cmp.vacuum.path, state.animTime);
-        const vacLine = buildTubeFromPoints(vacPts, 0.14, 0xb8c9d9, 0.38, false);
+        const vacPts = samplePathUpToTime(cmp.vacuum.path, state.animTime, state.sprayDeg);
+        const vacLine = buildTubeFromPoints(vacPts, 0.16, 0x64748b, 0.45);
         if (vacLine) trajGroup.add(vacLine);
       }
 
-      // 2. Drag-only comparison trajectory (coral-orange translucent arch)
+      // 2. Drag-only comparison trajectory (blue)
       if (state.showDragOnly) {
-        const dragPts = samplePathUpToTime(cmp.dragOnly.path, state.animTime);
-        const dragLine = buildTubeFromPoints(dragPts, 0.16, 0xff6b6b, 0.55, false);
+        const dragPts = samplePathUpToTime(cmp.dragOnly.path, state.animTime, state.sprayDeg);
+        const dragLine = buildTubeFromPoints(dragPts, 0.18, 0x2563eb, 0.6);
         if (dragLine) trajGroup.add(dragLine);
       }
 
-      // 3. Full Aerodynamic trajectory (glowing neon yellow-green core + additive bloom tube)
-      const fullPts = samplePathUpToTime(cmp.full.path, state.animTime);
-      const isPopup = state.angleDeg >= 60;
-      const coreColor = isPopup ? 0xffbe76 : 0xeaff7b;
-      const glowColor = isPopup ? 0xff9f43 : 0xc8ff2e;
+      // 3. Full Aerodynamic trajectory (color-coded by Fair/Foul/Barrel)
+      const fullPts = samplePathUpToTime(cmp.full.path, state.animTime, state.sprayDeg);
+      const isFoul = !cmp.full.isFair;
+      const isBarrel = cmp.full.isBarrel && cmp.full.isFair;
+      const coreColor = isFoul ? 0xc92a2a : (isBarrel ? 0x15803d : 0xe8590c);
+      const haloColor = isFoul ? 0xfca5a5 : (isBarrel ? 0x86efac : 0xfdba74);
 
-      const coreTube = buildTubeFromPoints(fullPts, 0.34, coreColor, 0.98, false);
-      const glowTube = buildTubeFromPoints(fullPts, 0.92, glowColor, 0.34, true);
+      const coreTube = buildTubeFromPoints(fullPts, 0.36, coreColor, 0.98);
+      const glowTube = buildTubeFromPoints(fullPts, 0.78, haloColor, 0.35);
       if (coreTube) trajGroup.add(coreTube);
       if (glowTube) trajGroup.add(glowTube);
 
-      // Update active ball & ground drop line
       if (fullPts.length > 0) {
         const tip = fullPts[fullPts.length - 1];
         activeBall.visible = true;
@@ -640,6 +676,7 @@
         ]);
         groundShadow.visible = true;
         groundShadow.position.set(tip.x, 0.04, tip.z);
+        groundShadow.material.color.setHex(isFoul ? 0xc92a2a : 0x15803d);
       }
     } else {
       // FAN MODE: 0° ~ 90° simultaneous fan trajectories!
@@ -649,7 +686,7 @@
 
       const bz = B.barrelZone(state.speedKmh);
       const webPoints = [];
-      let barrelApexSum = new T.Vector3();
+      const barrelApexSum = new T.Vector3();
       let barrelCount = 0;
 
       state.fanTrajectories.forEach((sim) => {
@@ -657,35 +694,32 @@
         if (state.fanFilter === '0-60' && deg > 60) return;
         if (state.fanFilter === '60-90' && deg < 60) return;
 
-        const pts = samplePathUpToTime(sim.path, state.animTime);
+        const pts = samplePathUpToTime(sim.path, state.animTime, state.sprayDeg);
         if (pts.length < 2) return;
 
-        const inBarrel = bz.isBarrelEligible && deg >= bz.minDeg && deg <= bz.maxDeg;
+        const inBarrel = bz.isBarrelEligible && deg >= bz.minDeg && deg <= bz.maxDeg && sim.isFair;
         const isHighPopup = deg >= 60;
 
         if (inBarrel) {
-          const core = buildTubeFromPoints(pts, 0.36, 0xf4ff9e, 0.98, false);
-          const halo = buildTubeFromPoints(pts, 0.95, 0xc8ff2e, 0.38, true);
+          const core = buildTubeFromPoints(pts, 0.38, 0x15803d, 0.98);
+          const halo = buildTubeFromPoints(pts, 0.85, 0x4ade80, 0.35);
           if (core) trajGroup.add(core);
           if (halo) trajGroup.add(halo);
-          barrelApexSum.add(new T.Vector3(sim.apexX, sim.apexM, 0));
+          const sRad = state.sprayDeg * DEG;
+          barrelApexSum.add(new T.Vector3(sim.apexX * Math.cos(sRad), sim.apexM, sim.apexX * Math.sin(sRad)));
           barrelCount++;
-        } else if (isHighPopup) {
-          // 60°~90° high pop-up & backward-looping trajectories in warm amber/coral
-          const isBackward = sim.carryM < 0;
-          const col = isBackward ? 0xff5e7e : 0xff9f43;
-          const tube = buildTubeFromPoints(pts, 0.18, col, 0.72, false);
+        } else if (isHighPopup || !sim.isFair) {
+          const col = !sim.isFair ? 0xc92a2a : 0xd97706;
+          const tube = buildTubeFromPoints(pts, 0.19, col, 0.78);
           if (tube) trajGroup.add(tube);
         } else {
-          // 0°~58° non-barrel trajectories in crisp translucent white
-          const tube = buildTubeFromPoints(pts, 0.13, 0xe2e8f0, 0.42, false);
+          const tube = buildTubeFromPoints(pts, 0.14, 0x475569, 0.45);
           if (tube) trajGroup.add(tube);
         }
 
         webPoints.push(pts);
       });
 
-      // Cross-rib lines connecting neighboring angles (matching the IG Reel fan web!)
       if (webPoints.length > 2) {
         const ribVerts = [];
         const maxLen = Math.max(...webPoints.map((p) => p.length));
@@ -703,25 +737,24 @@
           ribGeo.setAttribute('position', new T.Float32BufferAttribute(ribVerts, 3));
           const ribLines = new T.LineSegments(
             ribGeo,
-            new T.LineBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.28 })
+            new T.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.28 })
           );
           trajGroup.add(ribLines);
         }
       }
 
-      // Floating 3D Barrel callout label (just like "26~30°" / "24~33°" / "8~50°" in IG Reel!)
       if (bz.isBarrelEligible && barrelCount > 0 && state.animTime > 1.2 && state.fanFilter !== '60-90') {
         barrelApexSum.multiplyScalar(1 / barrelCount);
-        const label = makeTextSprite(`${bz.minDeg}～${bz.maxDeg}°`, {
-          w: 280,
-          h: 96,
-          font: 'bold 46px "Segoe UI", sans-serif',
-          color: '#0b1400',
-          bg: '#c8ff2e',
-          scaleX: 11,
-          scaleY: 3.8
+        const label = makeTextSprite(`Barrel ${bz.minDeg}～${bz.maxDeg}°`, {
+          w: 320,
+          h: 92,
+          font: 'bold 40px "Segoe UI", sans-serif',
+          color: '#ffffff',
+          bg: '#15803d',
+          scaleX: 11.5,
+          scaleY: 3.4
         });
-        label.position.set(barrelApexSum.x + 4, barrelApexSum.y + 4.5, 0);
+        label.position.set(barrelApexSum.x, barrelApexSum.y + 4.5, barrelApexSum.z);
         trajGroup.add(label);
       }
     }
@@ -732,6 +765,7 @@
     const cfg = {
       speedKmh: state.speedKmh,
       angleDeg: state.angleDeg,
+      sprayDeg: state.sprayDeg,
       rpm: state.rpm,
       cd: state.cd,
       altitudeM: state.altitudeM,
@@ -741,7 +775,6 @@
     state.comparison = B.compareModels(cfg);
     state.sweep = B.sweepAngles(cfg, 90, 1);
 
-    // Precompute 0°~90° fan every 2°
     state.fanTrajectories = [];
     for (let deg = 0; deg <= 90; deg += 2) {
       state.fanTrajectories.push(B.simulateBattedBall({ ...cfg, angleDeg: deg }));
@@ -771,6 +804,15 @@
     return `0:${String(whole).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
   }
 
+  function sprayDescription(sprayDeg) {
+    const s = Math.round(sprayDeg);
+    if (Math.abs(s) > 45) return `${s > 0 ? '+' : ''}${s}° (${s > 0 ? '右' : '左'}界外)`;
+    if (s === 0) return `0° (中外野)`;
+    if (s === -45) return `−45° (三壘邊線)`;
+    if (s === 45) return `+45° (一壘邊線)`;
+    return `${s > 0 ? '+' : ''}${s}° (${s > 0 ? '右' : '左'}外野)`;
+  }
+
   function updateHUD() {
     const full = state.comparison ? state.comparison.full : null;
     if (!full) return;
@@ -781,7 +823,10 @@
       ? (state.fanFilter === '60-90' ? `60–90<small>度</small>` : `0–90<small>度</small>`)
       : `${Math.round(state.angleDeg)}<small>度</small>`;
 
-    // Live interpolated distance & time during flight
+    const sDeg = Math.round(state.sprayDeg);
+    const sDir = sDeg === 0 ? '中外野' : (sDeg > 0 ? '右外野' : '左外野');
+    $('hud-spray').innerHTML = `${sDeg > 0 ? '+' : ''}${sDeg}°<small>${sDir}</small>`;
+
     const tCur = Math.min(state.animTime, full.hangTimeS);
     let curX = full.carryM;
     for (let i = 0; i < full.path.length; i++) {
@@ -793,53 +838,54 @@
     $('hud-time').textContent = formatHangTime(tCur);
     $('hud-dist').innerHTML = `${Math.round(curX)}<small>m</small>`;
 
+    // Fair / Foul badge
+    const fairBadge = $('hud-fair-badge');
+    if (full.isFair) {
+      fairBadge.textContent = '界內 FAIR';
+      fairBadge.className = 'hud-fair-badge fair';
+    } else {
+      fairBadge.textContent = full.carryM <= 0 ? '界外 FOUL (本壘後方)' : '界外 FOUL (邊線外)';
+      fairBadge.className = 'hud-fair-badge foul';
+    }
+
     const outcomeEl = $('hud-outcome');
-    const finished = state.animTime >= full.hangTimeS - 0.05;
+    outcomeEl.hidden = false;
+    outcomeEl.className = `hud-outcome outcome-${full.outcome}`;
+    outcomeEl.textContent = full.outcomeLabel;
 
     if (!state.storyPlaying) {
       const windStr = state.windMs === 0 ? '無風' : (state.windMs > 0 ? `順風 +${state.windMs}m/s` : `逆風 ${state.windMs}m/s`);
-      $('hud-eyebrow').textContent = `${state.speedKmh} km/h · 海拔 ${state.altitudeM}m · ${windStr}`;
+      $('hud-eyebrow').textContent = `${state.speedKmh} km/h · 水平 ${sprayDescription(state.sprayDeg)} · 海拔 ${state.altitudeM}m · ${windStr}`;
+      $('hud-badge').textContent = state.paused ? '已暫停' : `播放 ×${state.timeScale === 0.125 ? '1/8' : state.timeScale}`;
 
       if (state.mode === 'fan') {
-        $('hud-badge').textContent = bz.isBarrelEligible
-          ? `MLB Barrel：${bz.minDeg}°～${bz.maxDeg}°（寬 ${bz.widthDeg}°）`
-          : `初速未達 158 km/h Barrel 門檻`;
-        outcomeEl.hidden = true;
         if (state.fanFilter === '60-90') {
-          $('hud-title').textContent = `60°～90° 沖天炮與後旋倒退軌跡`;
-          $('hud-subtitle').textContent = `超過 83° 的沖天炮因上升段馬格努斯力 (−vy) 飛往本壘板後方 (x < 0)！`;
+          $('hud-title').textContent = `60°～90° 沖天炮與後旋倒退界外球`;
+          $('hud-subtitle').textContent = `超過 83° 的沖天炮因上升段後旋馬格努斯力 (−vy) 倒退飛進本壘板後方界外區 (x < 0)！`;
         } else {
           $('hud-title').textContent = bz.isBarrelEligible
-            ? `${state.speedKmh} km/h：黃金仰角 ${bz.minDeg}°～${bz.maxDeg}°`
-            : `0°～90° 全仰角軌跡展開`;
-          $('hud-subtitle').textContent = `亮綠色為 MLB Barrel 甜蜜區 · 橘粉色為 60°～90° 沖天炮與倒退球`;
+            ? `${state.speedKmh} km/h：MLB Barrel 黃金仰角 ${bz.minDeg}°～${bz.maxDeg}°（寬 ${bz.widthDeg}°）`
+            : `0°～90° 全仰角軌跡展開（初速未達 158 km/h Barrel 門檻）`;
+          $('hud-subtitle').textContent = `深綠色為 MLB Barrel 甜蜜區 · 紅色為 83°–90° 倒退界外球 · 橘色為 60°–82° 沖天炮`;
         }
       } else {
-        $('hud-badge').textContent = state.timeScale < 1
-          ? `スロー ×${state.timeScale === 0.125 ? '1/8' : state.timeScale}`
-          : (state.timeScale > 1 ? `早送り ×${state.timeScale}` : `實時模擬 ×1.0`);
-
-        outcomeEl.hidden = !finished;
-        outcomeEl.className = `hud-outcome outcome-${full.outcome}`;
-        outcomeEl.textContent = full.outcome === 'HR' ? 'ホームラン 全壘打'
-          : full.outcome === 'HIT' ? 'ヒット 安打'
-          : full.outcome === 'POPUP_BACK' ? '本壘後方倒退飛球'
-          : 'アウト 接殺';
-
-        if (state.angleDeg >= 82 && full.carryM < 0) {
-          $('hud-title').textContent = `${state.angleDeg}度：往本壘後方倒退 ${Math.abs(Math.round(full.carryM))}m！`;
-          $('hud-subtitle').textContent = `上升段後旋馬格努斯力推向捕手後方 · 滯空 ${full.hangTimeS.toFixed(1)} 秒`;
+        if (!full.isFair && full.carryM <= 0) {
+          $('hud-title').textContent = `${state.angleDeg}度：往本壘後方倒退 ${Math.abs(Math.round(full.carryM))}m（界外球）！`;
+          $('hud-subtitle').textContent = `${full.outcomeLabel} · 上升段後旋馬格努斯力把球推向捕手後方 · 滯空 ${full.hangTimeS.toFixed(1)} 秒`;
+        } else if (!full.isFair) {
+          $('hud-title').textContent = `水平 ${sDeg > 0 ? '+' : ''}${sDeg}°：越過 ±45° 邊線形成界外球！`;
+          $('hud-subtitle').textContent = `${full.outcomeLabel} · 飛行距離 ${Math.round(full.carryM)}m，但落點在界外標竿外側，不計全壘打或安打`;
         } else if (state.angleDeg >= 60) {
           $('hud-title').textContent = `${state.angleDeg}度：超高沖天炮（最高點 ${Math.round(full.apexM)}m）`;
-          $('hud-subtitle').textContent = `飛距離僅 ${Math.round(full.carryM)}m · 滯空長達 ${full.hangTimeS.toFixed(1)} 秒（真空原本可飛 ${Math.round(state.comparison.vacuum.carryM)}m）`;
+          $('hud-subtitle').textContent = `界內飛距離僅 ${Math.round(full.carryM)}m · 滯空長達 ${full.hangTimeS.toFixed(1)} 秒（真空原本可飛 ${Math.round(state.comparison.vacuum.carryM)}m）`;
         } else if (full.outcome === 'HR') {
-          $('hud-title').textContent = `${state.angleDeg}度：飛進看台的全壘打！`;
-          $('hud-subtitle').textContent = `飛距離 ${Math.round(full.carryM)}m · 滯空 ${full.hangTimeS.toFixed(1)} 秒${full.isBarrel ? ' · 位於 MLB Barrel 甜蜜區' : ''}`;
+          $('hud-title').textContent = `${state.angleDeg}度：飛進 ${Math.round(full.carryM)}m 外野看台的全壘打！`;
+          $('hud-subtitle').textContent = `界內有效全壘打 · 滯空 ${full.hangTimeS.toFixed(1)} 秒${full.isBarrel ? ' · 位於 MLB Barrel 甜蜜區' : ''}`;
         } else if (state.angleDeg <= 16) {
           $('hud-title').textContent = `${state.angleDeg}度：仰角太低（平飛安打）`;
-          $('hud-subtitle').textContent = `${Math.round(full.carryM)}m · ${full.hangTimeS.toFixed(1)} 秒落地（靠後旋升力比真空 ${Math.round(state.comparison.vacuum.carryM)}m 還遠！）`;
+          $('hud-subtitle').textContent = `界內 ${Math.round(full.carryM)}m · ${full.hangTimeS.toFixed(1)} 秒落地（靠後旋升力比真空 ${Math.round(state.comparison.vacuum.carryM)}m 還遠！）`;
         } else {
-          $('hud-title').textContent = `${state.angleDeg}度：外野高飛接殺`;
+          $('hud-title').textContent = `${state.angleDeg}度：界內外野高飛接殺`;
           $('hud-subtitle').textContent = `真實飛距離 ${Math.round(full.carryM)}m · 滯空 ${full.hangTimeS.toFixed(1)} 秒（空氣阻力吃掉 ${Math.round(state.comparison.netAeroLossM)}m）`;
         }
       }
@@ -854,12 +900,16 @@
     const mph = (state.speedKmh / 1.609344).toFixed(1);
     $('speed-out').textContent = `${state.speedKmh} km/h (${mph} mph)`;
     $('angle-out').textContent = `${state.angleDeg}°${state.angleDeg >= 60 ? ' (沖天炮區)' : ''}`;
+    $('spray-out').textContent = `${sprayDescription(state.sprayDeg)} · ${cmp.full.isFair ? '界內' : '界外'}`;
     $('rpm-out').textContent = `${state.rpm} rpm`;
     $('cd-out').textContent = state.cd.toFixed(2);
     $('alt-out').textContent = state.altitudeM === 0 ? `0 m (海平面)` : `${state.altitudeM} m (ρ=${cmp.full.airDensity})`;
     $('wind-out').textContent = state.windMs === 0 ? `0 m/s (無風)` : `${state.windMs > 0 ? '+' : ''}${state.windMs} m/s (${state.windMs > 0 ? '順風' : '逆風'})`;
 
-    $('r-full-dist').textContent = `${cmp.full.carryM.toFixed(1)} m (${cmp.full.outcomeLabel.split(' ')[0]})`;
+    $('r-fair-status').textContent = cmp.full.isFair
+      ? `界內 FAIR (${cmp.full.outcomeLabel.split(' ')[0]})`
+      : `界外 FOUL (${cmp.full.carryM <= 0 ? '本壘後方' : '±45°邊線外'})`;
+    $('r-full-dist').textContent = `${cmp.full.carryM.toFixed(1)} m`;
     $('r-drag-dist').textContent = `${cmp.dragOnly.carryM.toFixed(1)} m`;
     $('r-vac-dist').textContent = `${cmp.vacuum.carryM.toFixed(1)} m`;
     $('r-drag-loss').textContent = `−${cmp.dragLossM.toFixed(1)} m`;
@@ -876,7 +926,7 @@
       : `未達 98 mph 門檻`;
   }
 
-  // ---------- 2D Chart 1: 0°~90° Angle vs Carry Distance ----------
+  // ---------- 2D Chart 1: 0°~90° Angle vs Carry Distance (Light Theme) ----------
   const angleCanvas = $('angle-chart');
   const angleCtx = angleCanvas.getContext('2d');
 
@@ -908,63 +958,71 @@
     const xToPx = (deg) => pad.l + (deg / 90) * pw;
     const yToPx = (dist) => pad.t + (1 - (dist - yMin) / (yMax - yMin)) * ph;
 
-    // 1. Shaded 60°~90° Pop-up & Backward Loop Zone
-    g.fillStyle = 'rgba(255, 159, 67, 0.08)';
+    // 1. Shaded 60°~90° Pop-up & Backward Foul Zone
+    g.fillStyle = 'rgba(201, 42, 42, 0.06)';
     g.fillRect(xToPx(60), pad.t, xToPx(90) - xToPx(60), ph);
+
+    // Shaded x < 0 (Behind home plate = Foul territory)
+    const pyZero = yToPx(0);
+    g.fillStyle = 'rgba(201, 42, 42, 0.09)';
+    g.fillRect(pad.l, pyZero, pw, pad.t + ph - pyZero);
 
     // 2. Shaded MLB Barrel Zone
     if (sw.barrel.isBarrelEligible) {
       const bx1 = xToPx(sw.barrel.minDeg);
       const bx2 = xToPx(sw.barrel.maxDeg);
-      g.fillStyle = 'rgba(200, 255, 46, 0.16)';
+      g.fillStyle = 'rgba(21, 128, 61, 0.16)';
       g.fillRect(bx1, pad.t, Math.max(3, bx2 - bx1), ph);
     }
 
-    // 3. Grid lines & Horizontal reference lines (0m home plate, 110m HR wall)
+    // 3. Grid lines
     g.font = '11px "Cascadia Code", Consolas, monospace';
     g.textAlign = 'right';
     g.textBaseline = 'middle';
     for (const yVal of [-20, 0, 50, 100, 150, 200]) {
       if (yVal > yMax) continue;
       const py = yToPx(yVal);
-      g.strokeStyle = yVal === 0 ? 'rgba(255,255,255,0.28)' : 'rgba(148,163,184,0.12)';
-      g.lineWidth = yVal === 0 ? 1.2 : 1;
+      g.strokeStyle = yVal === 0 ? 'rgba(31, 49, 64, 0.45)' : 'rgba(31, 49, 64, 0.1)';
+      g.lineWidth = yVal === 0 ? 1.3 : 1;
       g.beginPath();
       g.moveTo(pad.l, py);
       g.lineTo(w - pad.r, py);
       g.stroke();
-      g.fillStyle = '#8fa5ba';
+      g.fillStyle = '#5d7080';
       g.fillText(`${yVal}m`, pad.l - 6, py);
     }
 
     // 110m Home Run Wall dashed line
     const pyWall = yToPx(110);
-    g.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+    g.strokeStyle = '#d97706';
+    g.lineWidth = 1.3;
     g.setLineDash([5, 4]);
     g.beginPath();
     g.moveTo(pad.l, pyWall);
     g.lineTo(w - pad.r, pyWall);
     g.stroke();
     g.setLineDash([]);
-    g.fillStyle = '#facc15';
+    g.fillStyle = '#b45309';
     g.textAlign = 'left';
     g.fillText('110m 全壘打牆', pad.l + 6, pyWall - 8);
+
+    g.fillStyle = '#c92a2a';
+    g.fillText('x < 0 本壘後方界外區', pad.l + 6, pyZero + 11);
 
     // X-axis angle labels (0° ~ 90°)
     g.textAlign = 'center';
     g.textBaseline = 'top';
     for (const deg of [0, 15, 30, 45, 60, 75, 90]) {
       const px = xToPx(deg);
-      g.strokeStyle = deg === 60 ? 'rgba(255,159,67,0.35)' : 'rgba(148,163,184,0.1)';
+      g.strokeStyle = deg === 60 ? 'rgba(201, 42, 42, 0.3)' : 'rgba(31, 49, 64, 0.08)';
       g.beginPath();
       g.moveTo(px, pad.t);
       g.lineTo(px, pad.t + ph);
       g.stroke();
-      g.fillStyle = deg >= 60 ? '#ffbe76' : '#8fa5ba';
+      g.fillStyle = deg >= 60 ? '#c92a2a' : '#5d7080';
       g.fillText(`${deg}°`, px, pad.t + ph + 7);
     }
 
-    // Helper to stroke curve
     function plotCurve(arr, color, width, dash) {
       g.strokeStyle = color;
       g.lineWidth = width;
@@ -980,14 +1038,12 @@
       g.setLineDash([]);
     }
 
-    // Plot Vacuum, Drag-Only, and Full (Drag + Backspin)
-    plotCurve(sw.vacuum, 'rgba(184, 201, 217, 0.65)', 1.6, [4, 4]);
-    plotCurve(sw.dragOnly, '#ff5e7e', 1.8, [2, 3]);
-    plotCurve(sw.full, '#c8ff2e', 2.6, []);
+    plotCurve(sw.vacuum, '#64748b', 1.6, [5, 4]);
+    plotCurve(sw.dragOnly, '#2563eb', 1.8, [2, 3]);
+    plotCurve(sw.full, '#e8590c', 2.6, []);
 
-    // Current selected angle vertical line & dots
     const curX = xToPx(state.angleDeg);
-    g.strokeStyle = 'rgba(200, 255, 46, 0.5)';
+    g.strokeStyle = 'rgba(31, 49, 64, 0.45)';
     g.lineWidth = 1.2;
     g.beginPath();
     g.moveTo(curX, pad.t);
@@ -996,9 +1052,9 @@
 
     if (state.comparison) {
       const pts = [
-        { y: state.comparison.vacuum.carryM, c: '#b8c9d9', r: 3.5 },
-        { y: state.comparison.dragOnly.carryM, c: '#ff5e7e', r: 4 },
-        { y: state.comparison.full.carryM, c: '#c8ff2e', r: 5.5 }
+        { y: state.comparison.vacuum.carryM, c: '#64748b', r: 3.5 },
+        { y: state.comparison.dragOnly.carryM, c: '#2563eb', r: 4 },
+        { y: state.comparison.full.carryM, c: '#e8590c', r: 5.5 }
       ];
       pts.forEach((p) => {
         g.fillStyle = p.c;
@@ -1011,7 +1067,7 @@
     g.restore();
   }
 
-  // ---------- 2D Chart 2: Speed × Angle (0°~90°) Phase Diagram ----------
+  // ---------- 2D Chart 2: Speed × Angle (0°~90°) Phase Diagram (Light Theme) ----------
   const phaseCanvas = $('phase-chart');
   const phaseCtx = phaseCanvas.getContext('2d');
 
@@ -1039,17 +1095,17 @@
     const vToPx = (v) => pad.l + ((v - vMin) / (vMax - vMin)) * pw;
     const aToPx = (deg) => pad.t + (1 - deg / 90) * ph;
 
-    // 1. 60°~90° Pop-up & Backward Loop Zone
-    g.fillStyle = 'rgba(255, 159, 67, 0.1)';
+    // 1. 60°~90° Pop-up & Backward Foul Zone
+    g.fillStyle = 'rgba(201, 42, 42, 0.08)';
     g.fillRect(pad.l, aToPx(90), pw, aToPx(60) - aToPx(90));
-    g.fillStyle = '#ffbe76';
+    g.fillStyle = '#c92a2a';
     g.font = '11px "Segoe UI", sans-serif';
     g.textAlign = 'left';
-    g.fillText('60°–90° 沖天炮與後旋倒退區 (83°+ 飛向本壘後方)', pad.l + 8, aToPx(82));
+    g.fillText('60°–90° 沖天炮區 (83°+ 倒退至本壘後方界外)', pad.l + 8, aToPx(82));
 
-    // 2. MLB Statcast Barrel Polygon (158 ~ 195 km/h)
-    g.fillStyle = 'rgba(200, 255, 46, 0.25)';
-    g.strokeStyle = '#c8ff2e';
+    // 2. MLB Statcast Barrel Polygon
+    g.fillStyle = 'rgba(21, 128, 61, 0.22)';
+    g.strokeStyle = '#15803d';
     g.lineWidth = 2;
     g.beginPath();
     const speeds = [];
@@ -1076,13 +1132,13 @@
     g.textBaseline = 'middle';
     for (const deg of [0, 15, 30, 45, 60, 75, 90]) {
       const py = aToPx(deg);
-      g.strokeStyle = deg === 60 ? 'rgba(255,159,67,0.35)' : 'rgba(148,163,184,0.12)';
+      g.strokeStyle = deg === 60 ? 'rgba(201, 42, 42, 0.3)' : 'rgba(31, 49, 64, 0.1)';
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(pad.l, py);
       g.lineTo(w - pad.r, py);
       g.stroke();
-      g.fillStyle = deg >= 60 ? '#ffbe76' : '#8fa5ba';
+      g.fillStyle = deg >= 60 ? '#c92a2a' : '#5d7080';
       g.fillText(`${deg}°`, pad.l - 6, py);
     }
 
@@ -1090,32 +1146,30 @@
     g.textBaseline = 'top';
     for (const v of [120, 140, 158, 175, 190]) {
       const px = vToPx(v);
-      g.strokeStyle = v === 158 ? 'rgba(200,255,46,0.35)' : 'rgba(148,163,184,0.1)';
+      g.strokeStyle = v === 158 ? 'rgba(21, 128, 61, 0.4)' : 'rgba(31, 49, 64, 0.08)';
       g.beginPath();
       g.moveTo(px, pad.t);
       g.lineTo(px, pad.t + ph);
       g.stroke();
-      g.fillStyle = v === 158 ? '#c8ff2e' : '#8fa5ba';
+      g.fillStyle = v === 158 ? '#15803d' : '#5d7080';
       g.fillText(`${v}`, px, pad.t + ph + 7);
     }
 
-    // Label Barrel region
-    g.fillStyle = '#c8ff2e';
+    g.fillStyle = '#15803d';
     g.font = 'bold 11.5px "Segoe UI", sans-serif';
     g.textAlign = 'center';
     g.fillText('MLB BARREL 甜蜜區', vToPx(178), aToPx(29));
 
-    // Current (speedKmh, angleDeg) crosshair
     const cx = vToPx(state.speedKmh);
     const cy = aToPx(state.angleDeg);
-    g.strokeStyle = '#ffffff';
-    g.lineWidth = 1.4;
+    g.strokeStyle = '#1f3140';
+    g.lineWidth = 1.6;
     g.beginPath();
-    g.arc(cx, cy, 6, 0, Math.PI * 2);
+    g.arc(cx, cy, 6.5, 0, Math.PI * 2);
     g.stroke();
-    g.fillStyle = state.comparison && state.comparison.full.isBarrel ? '#c8ff2e' : '#38bdf8';
+    g.fillStyle = state.comparison && state.comparison.full.isBarrel ? '#15803d' : '#e8590c';
     g.beginPath();
-    g.arc(cx, cy, 3.5, 0, Math.PI * 2);
+    g.arc(cx, cy, 3.8, 0, Math.PI * 2);
     g.fill();
 
     g.restore();
@@ -1143,6 +1197,8 @@
     state.angleDeg = Math.round(u * 90);
     $('angle-slider').value = state.angleDeg;
     state.mode = 'single';
+    state.paused = false;
+    syncPlaybackButtons();
     syncModeButtons();
     computeAll(true);
   });
@@ -1157,7 +1213,38 @@
     state.angleDeg = Math.round((1 - uy) * 90);
     $('speed-slider').value = state.speedKmh;
     $('angle-slider').value = state.angleDeg;
+    state.paused = false;
+    syncPlaybackButtons();
     computeAll(true);
+  });
+
+  // ---------- Playback Controls (Pause / Play / Speed Buttons) ----------
+  function syncPlaybackButtons() {
+    const pauseBtn = $('play-pause-btn');
+    if (pauseBtn) {
+      pauseBtn.textContent = state.paused ? '▶ 繼續播放' : '⏸ 暫停';
+      pauseBtn.classList.toggle('paused', state.paused);
+    }
+    document.querySelectorAll('[data-speed]').forEach((btn) => {
+      const sp = Number(btn.dataset.speed);
+      btn.classList.toggle('active', Math.abs(sp - state.timeScale) < 0.05);
+    });
+  }
+
+  $('play-pause-btn').addEventListener('click', () => {
+    state.paused = !state.paused;
+    if (state.paused) stopStoryMode();
+    syncPlaybackButtons();
+    updateHUD();
+  });
+
+  document.querySelectorAll('[data-speed]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.timeScale = Number(btn.dataset.speed) || 1;
+      state.paused = false;
+      syncPlaybackButtons();
+      updateHUD();
+    });
   });
 
   // ---------- Story Reel Mode ----------
@@ -1166,9 +1253,11 @@
     if (!ch) return;
     state.storyIndex = index;
     state.storyTimer = 0;
+    state.paused = false;
 
     state.speedKmh = ch.config.speedKmh;
     state.angleDeg = ch.config.angleDeg;
+    state.sprayDeg = 0;
     state.rpm = ch.config.rpm;
     state.altitudeM = ch.config.altitudeM;
     state.windMs = ch.config.windMs;
@@ -1178,17 +1267,14 @@
 
     $('speed-slider').value = state.speedKmh;
     $('angle-slider').value = state.angleDeg;
+    $('spray-slider').value = state.sprayDeg;
     $('rpm-slider').value = state.rpm;
     $('alt-slider').value = state.altitudeM;
     $('wind-slider').value = state.windMs;
-    $('time-scale').value = String(
-      [0.125, 0.5, 1, 1.5].reduce((prev, curr) =>
-        Math.abs(curr - state.timeScale) < Math.abs(prev - state.timeScale) ? curr : prev
-      )
-    );
 
     setCameraPreset(ch.camera, false);
     syncModeButtons();
+    syncPlaybackButtons();
 
     document.querySelectorAll('.chapter-pill').forEach((btn, idx) => {
       btn.classList.toggle('active', idx === index);
@@ -1196,11 +1282,10 @@
 
     computeAll(true);
 
-    // Set custom HUD text from Story chapter
     $('hud-badge').textContent = ch.badge;
     $('hud-title').textContent = ch.title;
     $('hud-subtitle').textContent = ch.subtitle;
-    $('hud-eyebrow').textContent = `IG Reel 故事展演 (${index + 1}/${B.STORY_CHAPTERS.length}) · 打球計算（空氣阻力・後旋）`;
+    $('hud-eyebrow').textContent = `故事展演 (${index + 1}/${B.STORY_CHAPTERS.length}) · 打球計算（空氣阻力・後旋）`;
   }
 
   function stopStoryMode() {
@@ -1218,13 +1303,15 @@
       state.storyPlaying = true;
       const btn = $('story-play');
       btn.classList.add('playing');
-      btn.textContent = '⏸ 暫停故事展演';
+      btn.textContent = '⏸ 停止故事連播';
       applyStoryChapter(0);
     }
   });
 
   $('replay-shot').addEventListener('click', () => {
     state.animTime = 0;
+    state.paused = false;
+    syncPlaybackButtons();
   });
 
   document.querySelectorAll('.chapter-pill').forEach((btn) => {
@@ -1253,6 +1340,8 @@
     btn.addEventListener('click', () => {
       stopStoryMode();
       state.mode = btn.dataset.mode;
+      state.paused = false;
+      syncPlaybackButtons();
       syncModeButtons();
       computeAll(true);
     });
@@ -1267,11 +1356,14 @@
         setCameraPreset('side', false);
       }
       state.animTime = 0;
+      state.paused = false;
+      syncPlaybackButtons();
     });
   });
 
   $('time-scale').addEventListener('change', (e) => {
     state.timeScale = Number(e.target.value) || 1;
+    syncPlaybackButtons();
   });
 
   document.querySelectorAll('[data-preset]').forEach((btn) => {
@@ -1282,6 +1374,7 @@
       document.querySelectorAll('[data-preset]').forEach((b) => b.classList.toggle('active', b === btn));
       state.speedKmh = p.speedKmh;
       state.angleDeg = p.angleDeg;
+      state.sprayDeg = p.sprayDeg || 0;
       state.rpm = p.rpm;
       state.cd = p.cd;
       state.altitudeM = p.altitudeM;
@@ -1289,15 +1382,18 @@
       state.mode = p.mode;
       state.timeScale = p.scale;
       state.fanFilter = '0-90';
+      state.paused = false;
 
       $('speed-slider').value = state.speedKmh;
       $('angle-slider').value = state.angleDeg;
+      $('spray-slider').value = state.sprayDeg;
       $('rpm-slider').value = state.rpm;
       $('cd-slider').value = state.cd;
       $('alt-slider').value = state.altitudeM;
       $('wind-slider').value = state.windMs;
       setCameraPreset(p.cam, false);
       syncModeButtons();
+      syncPlaybackButtons();
       computeAll(true);
     });
   });
@@ -1306,12 +1402,15 @@
     $(id).addEventListener('input', (e) => {
       stopStoryMode();
       state[key] = Number(e.target.value);
+      state.paused = false;
+      syncPlaybackButtons();
       computeAll(restartAnim);
     });
   }
 
   bindSlider('speed-slider', 'speedKmh', true);
   bindSlider('angle-slider', 'angleDeg', true);
+  bindSlider('spray-slider', 'sprayDeg', false);
   bindSlider('rpm-slider', 'rpm', true);
   bindSlider('cd-slider', 'cd', true);
   bindSlider('alt-slider', 'altitudeM', true);
@@ -1324,8 +1423,19 @@
       state.angleDeg = clamp(state.angleDeg + d, 0, 90);
       $('angle-slider').value = state.angleDeg;
       state.mode = 'single';
+      state.paused = false;
+      syncPlaybackButtons();
       syncModeButtons();
       computeAll(true);
+    });
+  });
+
+  document.querySelectorAll('[data-set-spray]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      stopStoryMode();
+      state.sprayDeg = Number(btn.dataset.setSpray) || 0;
+      $('spray-slider').value = state.sprayDeg;
+      computeAll(false);
     });
   });
 
@@ -1340,6 +1450,7 @@
     stopStoryMode();
     state.speedKmh = 158;
     state.angleDeg = 28;
+    state.sprayDeg = 0;
     state.rpm = 1260;
     state.cd = 0.398;
     state.altitudeM = 0;
@@ -1347,14 +1458,17 @@
     state.mode = 'single';
     state.fanFilter = '0-90';
     state.timeScale = 1.0;
+    state.paused = false;
     $('speed-slider').value = 158;
     $('angle-slider').value = 28;
+    $('spray-slider').value = 0;
     $('rpm-slider').value = 1260;
     $('cd-slider').value = 0.40;
     $('alt-slider').value = 0;
     $('wind-slider').value = 0;
     setCameraPreset('stadium', false);
     syncModeButtons();
+    syncPlaybackButtons();
     computeAll(true);
   });
 
@@ -1371,7 +1485,7 @@
     const dy = e.clientY - lastPtr.y;
     lastPtr = { x: e.clientX, y: e.clientY };
     camOrbit.spherical.theta -= dx * 0.0055;
-    camOrbit.spherical.phi = clamp(camOrbit.spherical.phi - dy * 0.0055, 0.15, Math.PI / 2 - 0.04);
+    camOrbit.spherical.phi = clamp(camOrbit.spherical.phi - dy * 0.0055, 0.12, Math.PI / 2 - 0.04);
     const r = camOrbit.spherical.radius;
     camOrbit.goalPos.set(
       camOrbit.GoalTarget.x + r * Math.sin(camOrbit.spherical.phi) * Math.sin(camOrbit.spherical.theta),
@@ -1410,37 +1524,43 @@
     const dt = Math.min(0.05, (now - prevClock) / 1000);
     prevClock = now;
 
-    // Advance trajectory flight animation
-    state.animTime += dt * state.timeScale;
-    if (state.animTime > state.maxAnimTime + 1.4) {
-      if (!state.storyPlaying) {
-        state.animTime = 0; // loop flight smoothly
+    if (!state.paused) {
+      state.animTime += dt * state.timeScale;
+      if (state.animTime > state.maxAnimTime + 1.4) {
+        if (!state.storyPlaying) {
+          state.animTime = 0;
+        }
+      }
+
+      if (state.storyPlaying) {
+        state.storyTimer += dt;
+        const ch = B.STORY_CHAPTERS[state.storyIndex];
+        if (ch && state.storyTimer >= ch.durationS) {
+          const nextIdx = (state.storyIndex + 1) % B.STORY_CHAPTERS.length;
+          applyStoryChapter(nextIdx);
+        }
       }
     }
 
-    // Story mode auto-advance
-    if (state.storyPlaying) {
-      state.storyTimer += dt;
-      const ch = B.STORY_CHAPTERS[state.storyIndex];
-      if (ch && state.storyTimer >= ch.durationS) {
-        const nextIdx = (state.storyIndex + 1) % B.STORY_CHAPTERS.length;
-        applyStoryChapter(nextIdx);
-      }
-    }
-
-    // Animate batter swing around t = 0
     if (batterBatPivot) {
       const swingProgress = clamp(state.animTime / 0.22, 0, 1);
       batterBatPivot.rotation.y = -0.85 + swingProgress * 1.95;
     }
 
-    // Smooth camera interpolation
+    rebuild3DTrajectories();
+
+    // Dynamic "follow" camera tracks the ball in flight
+    if (state.cameraPreset === 'follow' && activeBall.visible && !camOrbit.userDragging) {
+      const bp = activeBall.position;
+      camOrbit.GoalTarget.copy(bp);
+      camOrbit.goalPos.set(bp.x - 18, Math.max(3.5, bp.y + 6), bp.z + 24);
+    }
+
     camOrbit.pos.lerp(camOrbit.goalPos, Math.min(1, dt * 6));
     camOrbit.target.lerp(camOrbit.GoalTarget, Math.min(1, dt * 6));
     camera.position.copy(camOrbit.pos);
     camera.lookAt(camOrbit.target);
 
-    rebuild3DTrajectories();
     updateHUD();
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
@@ -1448,6 +1568,7 @@
 
   // Initialize
   setCameraPreset('stadium', true);
+  syncPlaybackButtons();
   resizeRenderer();
   computeAll(true);
   requestAnimationFrame(tick);

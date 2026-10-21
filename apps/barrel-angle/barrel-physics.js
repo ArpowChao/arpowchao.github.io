@@ -37,12 +37,48 @@
     clScale: 1.0,
     altitudeM: 0,        // sea level = 0 m, Coors Field = 1600 m
     windMs: 0,           // + = tailwind toward center field, - = headwind
+    sprayDeg: 0,         // horizontal direction: 0 = center field, −45 = left-field (3B) line, +45 = right-field (1B) line
     h0: 1.0,             // bat contact height (m)
-    wallDistanceM: 110,  // center-field wall distance (m)
+    wallDistanceM: 110,  // outfield wall distance (m), same at every fair angle in this model
     wallHeightM: 2.5,    // outfield wall height (m)
     dragEnabled: true,
     spinEnabled: true
   };
+
+  /**
+   * Field geometry used for the fair / foul call (top view, metres from the tip of home plate).
+   * Fair territory is the 90° wedge between the two foul lines (|spray| ≤ 45°) in front of home plate.
+   * Everything else — beyond the foul lines or behind home plate — is foul territory.
+   */
+  const FIELD = {
+    foulLineDeg: 45,
+    basePathM: 27.43,     // 90 ft
+    backstopM: 18.3,      // 60 ft from home plate to the backstop (MLB minimum)
+    wallDistanceM: 110,
+    wallHeightM: 2.5
+  };
+
+  /**
+   * Fair / foul from the landing point. Simplified rule: a fly ball is judged where it first lands
+   * (or where it crosses the fence). A ball landing exactly on the foul line is fair.
+   *   - |spray| ≤ 45° and forward (carry > 0)  → fair
+   *   - |spray| > 45° or carry ≤ 0 (behind the plate) → foul
+   */
+  function judgeFair(carryM, sprayDeg) {
+    const s = Number(sprayDeg) || 0;
+    const xFwd = carryM * Math.cos(s * DEG);        // along the center-field line
+    const zSide = carryM * Math.sin(s * DEG);       // + = right-field (1B) side
+    // Angle of the landing point measured from the center-field line (handles carry < 0 → behind home).
+    const landingAngle = Math.atan2(zSide, xFwd) / DEG;
+    const fair = carryM > 0 && Math.abs(landingAngle) <= FIELD.foulLineDeg + 1e-9;
+    return {
+      fair,
+      landingX: +xFwd.toFixed(2),
+      landingZ: +zSide.toFixed(2),
+      landingAngleDeg: +landingAngle.toFixed(1),
+      distanceFromHomeM: +Math.abs(carryM).toFixed(2)
+    };
+  }
 
   function clamp(v, lo, hi) {
     const n = Number(v);
@@ -130,6 +166,7 @@
       clScale: num(raw.clScale, 0, 2.5, DEFAULTS.clScale),
       altitudeM: num(raw.altitudeM, 0, 4000, DEFAULTS.altitudeM),
       windMs: num(raw.windMs, -20, 20, DEFAULTS.windMs),
+      sprayDeg: num(raw.sprayDeg, -90, 90, DEFAULTS.sprayDeg),
       h0: num(raw.h0, 0.2, 3.0, DEFAULTS.h0),
       wallDistanceM: num(raw.wallDistanceM, 80, 140, DEFAULTS.wallDistanceM),
       wallHeightM: num(raw.wallHeightM, 1.0, 12.0, DEFAULTS.wallHeightM),
@@ -149,7 +186,9 @@
     const k = 0.5 * rho * BALL.area / BALL.mass;
     const cdEff = cfg.dragEnabled ? cfg.cd : 0;
     const w = (cfg.dragEnabled && cfg.spinEnabled) ? (cfg.rpm * 2 * Math.PI / 60) : 0;
-    const windX = cfg.dragEnabled ? cfg.windMs : 0;
+    // Wind blows toward center field; only its component along the batted-ball direction is modelled
+    // (the cross-wind component would drift the ball sideways and is neglected here).
+    const windX = cfg.dragEnabled ? cfg.windMs * Math.cos(cfg.sprayDeg * DEG) : 0;
 
     let x = 0;
     let y = cfg.h0;
@@ -258,18 +297,34 @@
     const carryM = +x.toFixed(2);
     const hangTimeS = +t.toFixed(2);
     const impactSpeedKmh = +(Math.hypot(vx, vy) * 3.6).toFixed(1);
-    const clearsWall = carryM >= cfg.wallDistanceM && (heightAtWall === null || heightAtWall >= cfg.wallHeightM);
     const isBarrel = isAngleInBarrel(cfg.speedKmh, cfg.angleDeg);
+    const judge = judgeFair(carryM, cfg.sprayDeg);
+    const clearsWall = judge.fair && carryM >= cfg.wallDistanceM &&
+      (heightAtWall === null || heightAtWall >= cfg.wallHeightM);
 
-    // Outcome classification (matching baseball physics & IG Reel tags)
+    // Outcome classification. Fair / foul is decided first, then the type of batted ball.
     let outcome = 'OUT';
     let outcomeLabel = '外野接殺 アウト';
-    if (clearsWall) {
+    if (!judge.fair) {
+      if (carryM <= 0) {
+        // Behind home plate (e.g. 85°–90° pop-ups pushed backward by backspin).
+        if (judge.distanceFromHomeM <= FIELD.backstopM) {
+          outcome = 'FOUL_POP';
+          outcomeLabel = '界外高飛（本壘後方，捕手可接殺）';
+        } else {
+          outcome = 'FOUL_BACKSTOP';
+          outcomeLabel = '界外：飛過捕手、打進本壘後方擋網';
+        }
+      } else if (carryM >= cfg.wallDistanceM) {
+        outcome = 'FOUL_HR';
+        outcomeLabel = '大號界外（從標竿外側飛出）ファウル';
+      } else {
+        outcome = 'FOUL';
+        outcomeLabel = '界外球 ファウル';
+      }
+    } else if (clearsWall) {
       outcome = 'HR';
       outcomeLabel = '全壘打 ホームラン';
-    } else if (carryM < 0) {
-      outcome = 'POPUP_BACK';
-      outcomeLabel = '本壘後方倒退飛球（後旋迴旋）';
     } else if (cfg.angleDeg >= 55 || (carryM < 52 && cfg.angleDeg >= 38)) {
       outcome = 'POPUP';
       outcomeLabel = '沖天炮高飛接殺 アウト';
@@ -292,6 +347,10 @@
       heightAtWall: heightAtWall !== null ? +heightAtWall.toFixed(2) : null,
       clearsWall,
       isBarrel,
+      isFair: judge.fair,
+      landingX: judge.landingX,
+      landingZ: judge.landingZ,
+      landingAngleDeg: judge.landingAngleDeg,
       outcome,
       outcomeLabel,
       airDensity: +rho.toFixed(4),
@@ -424,7 +483,7 @@
       id: 'popup60_90',
       badge: '60°～90° 沖天炮奇觀',
       title: '60～90 度：沖天炮為何會「往本壘後方倒退」？',
-      subtitle: '仰角超過 60° 不僅嚴重失速，80°～90° 時上升段的後旋馬格努斯力（ω×v）更把球推向捕手後方（85° 落點 −7m、90° 落點 −23m）！',
+      subtitle: '80°～90° 時上升段的後旋馬格努斯力（ω×v）把球推向捕手後方：85° 落在本壘後 7m（界外，捕手可接），90° 落在 23m 外、越過 18.3m 擋網！',
       mode: 'fan',
       fanRange: [0, 90],
       highlightRange: [60, 90],
@@ -475,11 +534,13 @@
     BALL,
     G,
     DEFAULTS,
+    FIELD,
     STORY_CHAPTERS,
     airDensity,
     liftCoefficient,
     barrelZone,
     isAngleInBarrel,
+    judgeFair,
     normalizeConfig,
     simulateBattedBall,
     compareModels,

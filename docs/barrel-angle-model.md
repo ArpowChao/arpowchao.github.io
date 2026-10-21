@@ -1,13 +1,17 @@
 # BARREL 全壘打仰角與空氣阻力實驗室：模型說明
 
-入口：`apps/barrel-angle/index.html`（Three.js 3D 夜間球場 + 2D 仰角與相圖分析）。核心物理模組：`apps/barrel-angle/barrel-physics.js`。
+入口：`apps/barrel-angle/index.html`（Three.js 3D 日間球場 + 7 種觀察視角 + 2D 仰角與相圖分析）。核心物理模組：`apps/barrel-angle/barrel-physics.js`。
 
-## 座標與輸入
+## 座標、界內／界外與輸入
 
-- 平面座標 $(x, y)$：$x$ 由本壘板指向中外野（公尺，落在本壘後方時 $x < 0$），$y$ 為離地高度（公尺，擊球點 $x = 0, y = 1.0\text{ m}$）。
+- 空間座標 $(x, y, z)$：$x = d\cos\psi$ 由本壘板指向中外野（公尺，落在本壘後方時 $x \le 0$），$y$ 為離地高度（公尺，擊球點 $x = 0, y = 1.0\text{ m}$），$z = d\sin\psi$ 為橫向偏移（$+z$ 為一壘／右外野側，$-z$ 為三壘／左外野側）。
+- **界內區（Fair Territory）与界外區（Foul Territory）**：
+  - 界內區為本壘板前方（$d > 0$）且水平噴射角 $|\psi| \le 45^\circ$（左、右外野邊線與兩側黃色界標竿 Foul Poles 之間）的 $90^\circ$ 扇形區域。
+  - $|\psi| > 45^\circ$ 為一、三壘側界外球（即便飛行距離超過全壘打牆也算界外長打 `FOUL_HR`）；$d \le 0$ 為本壘板後方界外區（距本壘後方 $18.3\text{ m}$ 設有捕手護網 Backstop）。
 - 輸入參數：
   - 打球初速 $v_0$（km/h，對應 Statcast Exit Velocity）
   - 打球仰角 $\theta \in [0^\circ, 90^\circ]$（Launch Angle，完整涵蓋平飛球、飛球與 $60^\circ\text{–}90^\circ$ 沖天炮）
+  - 水平方向角 $\psi \in [-65^\circ, +65^\circ]$（Spray Angle，$\pm 45^\circ$ 為左、右外野界線）
   - 後旋轉速 $\text{rpm}$（正值為後旋 Backspin，負值為上旋 Topspin）
   - 空氣阻力係數 $C_D$（預設 $0.398$）
   - 海拔高度 $h$（以國際標準大氣公式計算空氣密度 $\rho(h) = 1.225 (1 - 2.25577\times 10^{-5} h)^{4.25588}\text{ kg/m}^3$）
