@@ -145,3 +145,25 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   assert.deepEqual(popupChapter.fanRange, [0, 90]);
 });
 
+test('app.js and styles.css configure black night stadium sky and thin luminous tracers', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const appJs = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/app.js'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/styles.css'), 'utf8');
+
+  // Black sky
+  assert.match(appJs, /setClearColor\(0x05070e,\s*1\)/);
+  assert.match(css, /\.stage\s*\{[^}]*#060913/);
+
+  // Thinner tracer: core tube radius <= 0.12 (previous bulky tube was 0.36m!)
+  assert.match(appJs, /coreRadius:\s*0\.105/);
+  // High-intensity optic center filament
+  assert.match(appJs, /filamentRadius:\s*0\.048/);
+  // Vibrant neon emerald color for Barrel
+  assert.match(appJs, /0x00ff88/);
+  // Additive blending for luminous bloom
+  assert.match(appJs, /AdditiveBlending/);
+  // Apex marker and vertical guide
+  assert.match(appJs, /最高點/);
+});
+

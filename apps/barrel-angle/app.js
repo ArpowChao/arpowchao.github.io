@@ -45,14 +45,14 @@
     coors:    { speedKmh: 158, angleDeg: 28, sprayDeg: -15, rpm: 1260, cd: 0.398, altitudeM: 1600, windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 }
   };
 
-  // ---------- Three.js Scene Setup (Bright Daylight Stadium) ----------
+  // ---------- Three.js Scene Setup (Black Night Stadium Sky & Glowing Tracers) ----------
   const canvas = $('stadium-canvas');
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0xdbeeff, 1);
+  renderer.setClearColor(0x05070e, 1);
 
   const scene = new T.Scene();
-  scene.fog = new T.FogExp2(0xe4f1fc, 0.0013);
+  scene.fog = new T.FogExp2(0x060914, 0.0016);
 
   const camera = new T.PerspectiveCamera(40, 16 / 9, 0.5, 650);
 
@@ -102,14 +102,25 @@
     camOrbit.spherical.theta = Math.atan2(offset.x, offset.z);
   }
 
-  // Daylight Lighting
-  scene.add(new T.HemisphereLight(0xffffff, 0x5c7a58, 1.15));
-  const sun = new T.DirectionalLight(0xfffdf6, 1.25);
-  sun.position.set(-40, 110, 65);
-  scene.add(sun);
-  const fillLight = new T.DirectionalLight(0x93c5fd, 0.45);
-  fillLight.position.set(100, 50, -70);
-  scene.add(fillLight);
+  // Night Stadium Floodlight Illumination
+  scene.add(new T.AmbientLight(0x273444, 0.95));
+  scene.add(new T.HemisphereLight(0xdbeafe, 0x1e293b, 0.8));
+
+  const homeFlood = new T.DirectionalLight(0xfff7ed, 1.4);
+  homeFlood.position.set(-35, 95, 45);
+  scene.add(homeFlood);
+
+  const cfFlood = new T.DirectionalLight(0xdbeafe, 0.95);
+  cfFlood.position.set(125, 80, -35);
+  scene.add(cfFlood);
+
+  const lfFlood = new T.DirectionalLight(0xf8fafc, 0.75);
+  lfFlood.position.set(50, 75, -90);
+  scene.add(lfFlood);
+
+  const rfFlood = new T.DirectionalLight(0xf8fafc, 0.75);
+  rfFlood.position.set(50, 75, 90);
+  scene.add(rfFlood);
 
   function makeGlowTexture(colorHex) {
     const c = document.createElement('canvas');
@@ -453,6 +464,52 @@
       stadium.add(crowd);
     });
 
+    // 8. Four Stadium Floodlight Towers (authentic night-game lighting towers)
+    const towerCoords = [
+      [-14, -40], [-14, 40], [120, -64], [120, 64]
+    ];
+    const towerPillarGeo = new T.CylinderGeometry(0.45, 0.75, 42, 8);
+    const towerMat = new T.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.4 });
+    const bankGeo = new T.BoxGeometry(7.2, 3.4, 1.2);
+    const bankHeadMat = new T.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const bankBulbGeo = new T.PlaneGeometry(6.6, 2.8);
+    const bulbMat = new T.MeshBasicMaterial({ color: 0xfffbee });
+    const lightGlowTex = makeGlowTexture('#ffe58f');
+
+    towerCoords.forEach(([tx, tz]) => {
+      const tower = new T.Group();
+      tower.position.set(tx, 0, tz);
+
+      const pillar = new T.Mesh(towerPillarGeo, towerMat);
+      pillar.position.y = 21;
+      tower.add(pillar);
+
+      const head = new T.Mesh(bankGeo, bankHeadMat);
+      head.position.y = 42.5;
+      const angleToField = Math.atan2(-tz, 45 - tx);
+      head.rotation.y = angleToField;
+
+      const bulbs = new T.Mesh(bankBulbGeo, bulbMat);
+      bulbs.position.set(0, 0, 0.62);
+      bulbs.rotation.x = 0.22;
+      head.add(bulbs);
+
+      const glowSprite = new T.Sprite(new T.SpriteMaterial({
+        map: lightGlowTex,
+        color: 0xfffae0,
+        transparent: true,
+        opacity: 0.65,
+        blending: T.AdditiveBlending,
+        depthWrite: false
+      }));
+      glowSprite.scale.set(18, 18, 1);
+      glowSprite.position.set(0, 0, 0.9);
+      head.add(glowSprite);
+
+      tower.add(head);
+      stadium.add(tower);
+    });
+
     scene.add(stadium);
   }
 
@@ -547,37 +604,38 @@
   buildStadium();
   buildMannequins();
 
-  // ---------- Dynamic 3D Trajectory Group ----------
+  // ---------- Dynamic 3D Trajectory Group (Sleek Luminous Tracers) ----------
   const trajGroup = new T.Group();
   scene.add(trajGroup);
 
-  const ballGlowTex = makeGlowTexture('#ef7a2c');
+  const ballGlowTex = makeGlowTexture('#00ff88');
   const activeBall = new T.Mesh(
-    new T.SphereGeometry(0.6, 20, 16),
-    new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+    new T.SphereGeometry(0.42, 20, 16),
+    new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 })
   );
   const activeBallHalo = new T.Sprite(
     new T.SpriteMaterial({
       map: ballGlowTex,
-      color: 0xe8590c,
+      color: 0x00ff88,
       transparent: true,
+      blending: T.AdditiveBlending,
       depthWrite: false
     })
   );
-  activeBallHalo.scale.set(4.2, 4.2, 1);
+  activeBallHalo.scale.set(3.4, 3.4, 1);
   activeBall.add(activeBallHalo);
   scene.add(activeBall);
 
   const dropLineGeo = new T.BufferGeometry().setFromPoints([new T.Vector3(), new T.Vector3()]);
   const dropLine = new T.Line(
     dropLineGeo,
-    new T.LineBasicMaterial({ color: 0x1f3140, transparent: true, opacity: 0.55 })
+    new T.LineBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.65, blending: T.AdditiveBlending })
   );
   scene.add(dropLine);
 
   const groundShadow = new T.Mesh(
-    new T.RingGeometry(0.25, 1.1, 24),
-    new T.MeshBasicMaterial({ color: 0xc92a2a, transparent: true, opacity: 0.75, side: T.DoubleSide })
+    new T.RingGeometry(0.25, 0.95, 24),
+    new T.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.85, side: T.DoubleSide })
   );
   groundShadow.rotation.x = -Math.PI / 2;
   groundShadow.position.y = 0.04;
@@ -618,18 +676,39 @@
     return pts;
   }
 
-  function buildTubeFromPoints(pts, radius, color, opacity) {
+  // High-Grade Sleek Statcast Trajectory Renderer (Multi-Layer Luminous Tracer)
+  function buildTubeMesh(pts, radius, color, opacity, additive, depthWrite) {
     if (pts.length < 2) return null;
-    const curve = new T.CatmullRomCurve3(pts);
-    const segs = Math.min(140, Math.max(12, pts.length * 2));
-    const geo = new T.TubeGeometry(curve, segs, radius, 8, false);
+    const curve = new T.CatmullRomCurve3(pts, false, 'centripetal');
+    const segs = Math.min(220, Math.max(16, pts.length * 3));
+    const geo = new T.TubeGeometry(curve, segs, radius, 10, false);
     const mat = new T.MeshBasicMaterial({
       color,
-      transparent: opacity < 1,
+      transparent: opacity < 1 || additive,
       opacity,
-      depthWrite: opacity >= 0.85
+      blending: additive ? T.AdditiveBlending : T.NormalBlending,
+      depthWrite: additive ? false : (depthWrite !== undefined ? depthWrite : true)
     });
     return new T.Mesh(geo, mat);
+  }
+
+  function addStatcastTracer(grp, pts, opts) {
+    if (pts.length < 2) return;
+    // 1. Sleek, thin main core tube (radius 0.08m ~ 0.105m instead of previous chunky 0.36m!)
+    const core = buildTubeMesh(pts, opts.coreRadius || 0.10, opts.coreColor, opts.coreOpacity !== undefined ? opts.coreOpacity : 1.0, false, true);
+    if (core) grp.add(core);
+
+    // 2. High-intensity optic center filament (bright luminous core, radius ~0.045m)
+    if (opts.filamentColor) {
+      const filament = buildTubeMesh(pts, opts.filamentRadius || 0.045, opts.filamentColor, 0.95, false, true);
+      if (filament) grp.add(filament);
+    }
+
+    // 3. Subtle luminous neon bloom halo (radius ~0.22m, additive blending)
+    if (opts.haloColor) {
+      const halo = buildTubeMesh(pts, opts.haloRadius || 0.22, opts.haloColor, opts.haloOpacity || 0.38, true, false);
+      if (halo) grp.add(halo);
+    }
   }
 
   function rebuild3DTrajectories() {
@@ -639,44 +718,141 @@
       const cmp = state.comparison;
       if (!cmp) return;
 
-      // 1. Vacuum comparison trajectory (slate grey)
+      // 1. Vacuum comparison trajectory (delicate Ice Cyan, 45° 最遠)
       if (state.showVacuum) {
         const vacPts = samplePathUpToTime(cmp.vacuum.path, state.animTime, state.sprayDeg);
-        const vacLine = buildTubeFromPoints(vacPts, 0.16, 0x64748b, 0.45);
-        if (vacLine) trajGroup.add(vacLine);
+        addStatcastTracer(trajGroup, vacPts, {
+          coreRadius: 0.065,
+          coreColor: 0x38bdf8,
+          coreOpacity: 0.85,
+          filamentRadius: 0.028,
+          filamentColor: 0xf0f9ff,
+          haloRadius: 0.14,
+          haloColor: 0x38bdf8,
+          haloOpacity: 0.32
+        });
       }
 
-      // 2. Drag-only comparison trajectory (blue)
+      // 2. Drag-only comparison trajectory (sleek Royal Sapphire Blue, 無旋轉)
       if (state.showDragOnly) {
         const dragPts = samplePathUpToTime(cmp.dragOnly.path, state.animTime, state.sprayDeg);
-        const dragLine = buildTubeFromPoints(dragPts, 0.18, 0x2563eb, 0.6);
-        if (dragLine) trajGroup.add(dragLine);
+        addStatcastTracer(trajGroup, dragPts, {
+          coreRadius: 0.075,
+          coreColor: 0x3b82f6,
+          coreOpacity: 0.9,
+          filamentRadius: 0.032,
+          filamentColor: 0xeff6ff,
+          haloRadius: 0.16,
+          haloColor: 0x60a5fa,
+          haloOpacity: 0.34
+        });
       }
 
       // 3. Full Aerodynamic trajectory (color-coded by Fair/Foul/Barrel)
       const fullPts = samplePathUpToTime(cmp.full.path, state.animTime, state.sprayDeg);
       const isFoul = !cmp.full.isFair;
       const isBarrel = cmp.full.isBarrel && cmp.full.isFair;
-      const coreColor = isFoul ? 0xc92a2a : (isBarrel ? 0x15803d : 0xe8590c);
-      const haloColor = isFoul ? 0xfca5a5 : (isBarrel ? 0x86efac : 0xfdba74);
 
-      const coreTube = buildTubeFromPoints(fullPts, 0.36, coreColor, 0.98);
-      const glowTube = buildTubeFromPoints(fullPts, 0.78, haloColor, 0.35);
-      if (coreTube) trajGroup.add(coreTube);
-      if (glowTube) trajGroup.add(glowTube);
+      let tracerOpts;
+      let haloColorHex;
+      if (isFoul) {
+        // Laser Ruby Red (界外球 / 倒退界外)
+        tracerOpts = {
+          coreRadius: 0.10,
+          coreColor: 0xff2442,
+          filamentRadius: 0.045,
+          filamentColor: 0xfff1f2,
+          haloRadius: 0.22,
+          haloColor: 0xff334b,
+          haloOpacity: 0.42
+        };
+        haloColorHex = 0xff2442;
+      } else if (isBarrel) {
+        // Electric Neon Emerald (MLB Barrel 全壘打甜蜜區 — 黑色夜空下極致清晰明亮！)
+        tracerOpts = {
+          coreRadius: 0.105,
+          coreColor: 0x00ff88,
+          filamentRadius: 0.048,
+          filamentColor: 0xf0fdf4,
+          haloRadius: 0.24,
+          haloColor: 0x00ff88,
+          haloOpacity: 0.46
+        };
+        haloColorHex = 0x00ff88;
+      } else {
+        // Blazing Radiant Gold / Orange (一般界內安打 / 飛球接殺)
+        tracerOpts = {
+          coreRadius: 0.10,
+          coreColor: 0xff8c00,
+          filamentRadius: 0.045,
+          filamentColor: 0xfffbeb,
+          haloRadius: 0.22,
+          haloColor: 0xff9900,
+          haloOpacity: 0.42
+        };
+        haloColorHex = 0xff8c00;
+      }
+
+      addStatcastTracer(trajGroup, fullPts, tracerOpts);
 
       if (fullPts.length > 0) {
         const tip = fullPts[fullPts.length - 1];
         activeBall.visible = true;
         activeBall.position.copy(tip);
+        activeBallHalo.material.color.setHex(haloColorHex);
+
         dropLine.visible = true;
         dropLine.geometry.setFromPoints([
           tip,
           new T.Vector3(tip.x, 0.02, tip.z)
         ]);
+        dropLine.material.color.setHex(haloColorHex);
+        dropLine.material.opacity = 0.65;
+
         groundShadow.visible = true;
         groundShadow.position.set(tip.x, 0.04, tip.z);
-        groundShadow.material.color.setHex(isFoul ? 0xc92a2a : 0x15803d);
+        groundShadow.material.color.setHex(haloColorHex);
+      }
+
+      // Apex Marker & Vertical Guide (最高點標記)
+      if (cmp.full.apexM > 2 && fullPts.length > 3) {
+        const sRad = (Number(state.sprayDeg) || 0) * DEG;
+        const apexX = cmp.full.apexX * Math.cos(sRad);
+        const apexZ = cmp.full.apexX * Math.sin(sRad);
+        const apexY = cmp.full.apexM;
+        const apexPos = new T.Vector3(apexX, apexY, apexZ);
+
+        // 球行經或越過最高點時顯現標記
+        const curMaxY = fullPts.reduce((m, p) => Math.max(m, p.y), 0);
+        if (curMaxY >= apexY * 0.94 || state.animTime >= cmp.full.hangTimeS * 0.45) {
+          const apexDropGeo = new T.BufferGeometry().setFromPoints([
+            apexPos,
+            new T.Vector3(apexX, 0.03, apexZ)
+          ]);
+          const apexDropLine = new T.Line(
+            apexDropGeo,
+            new T.LineBasicMaterial({ color: haloColorHex, transparent: true, opacity: 0.45, depthWrite: false })
+          );
+          trajGroup.add(apexDropLine);
+
+          const ringGeo = new T.RingGeometry(0.32, 0.62, 24);
+          const ringMesh = new T.Mesh(
+            ringGeo,
+            new T.MeshBasicMaterial({ color: haloColorHex, side: T.DoubleSide, transparent: true, opacity: 0.85 })
+          );
+          ringMesh.position.copy(apexPos);
+          ringMesh.rotation.x = -Math.PI / 2;
+          trajGroup.add(ringMesh);
+
+          const apexLbl = makeTextSprite(`▲ 最高點 ${apexY.toFixed(1)}m`, {
+            w: 280, h: 72, font: 'bold 28px "Segoe UI", sans-serif',
+            color: '#0f172a', bg: 'rgba(255, 255, 255, 0.92)',
+            border: isFoul ? '#ff2442' : (isBarrel ? '#00ff88' : '#ff8c00'),
+            scaleX: 7.5, scaleY: 2.0
+          });
+          apexLbl.position.set(apexX, apexY + 2.0, apexZ);
+          trajGroup.add(apexLbl);
+        }
       }
     } else {
       // FAN MODE: 0° ~ 90° simultaneous fan trajectories!
@@ -701,19 +877,29 @@
         const isHighPopup = deg >= 60;
 
         if (inBarrel) {
-          const core = buildTubeFromPoints(pts, 0.38, 0x15803d, 0.98);
-          const halo = buildTubeFromPoints(pts, 0.85, 0x4ade80, 0.35);
-          if (core) trajGroup.add(core);
-          if (halo) trajGroup.add(halo);
+          addStatcastTracer(trajGroup, pts, {
+            coreRadius: 0.08,
+            coreColor: 0x00ff88,
+            filamentRadius: 0.035,
+            filamentColor: 0xf0fdf4,
+            haloRadius: 0.18,
+            haloColor: 0x00ff88,
+            haloOpacity: 0.42
+          });
           const sRad = state.sprayDeg * DEG;
           barrelApexSum.add(new T.Vector3(sim.apexX * Math.cos(sRad), sim.apexM, sim.apexX * Math.sin(sRad)));
           barrelCount++;
         } else if (isHighPopup || !sim.isFair) {
-          const col = !sim.isFair ? 0xc92a2a : 0xd97706;
-          const tube = buildTubeFromPoints(pts, 0.19, col, 0.78);
-          if (tube) trajGroup.add(tube);
+          const col = !sim.isFair ? 0xff2442 : 0xf97316;
+          addStatcastTracer(trajGroup, pts, {
+            coreRadius: 0.055,
+            coreColor: col,
+            haloRadius: 0.13,
+            haloColor: col,
+            haloOpacity: 0.35
+          });
         } else {
-          const tube = buildTubeFromPoints(pts, 0.14, 0x475569, 0.45);
+          const tube = buildTubeMesh(pts, 0.045, 0x64748b, 0.45, false, true);
           if (tube) trajGroup.add(tube);
         }
 
@@ -737,7 +923,7 @@
           ribGeo.setAttribute('position', new T.Float32BufferAttribute(ribVerts, 3));
           const ribLines = new T.LineSegments(
             ribGeo,
-            new T.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.28 })
+            new T.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.28, blending: T.AdditiveBlending })
           );
           trajGroup.add(ribLines);
         }
@@ -749,8 +935,9 @@
           w: 320,
           h: 92,
           font: 'bold 40px "Segoe UI", sans-serif',
-          color: '#ffffff',
-          bg: '#15803d',
+          color: '#064e3b',
+          bg: '#a7f3d0',
+          border: '#00ff88',
           scaleX: 11.5,
           scaleY: 3.4
         });

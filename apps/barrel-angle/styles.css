@@ -523,15 +523,15 @@ h1 .hero-subtitle {
   font-weight: 600;
 }
 
-/* 3D Stage (Light Daylight Sky, Unobstructed!) */
+/* 3D Stage (Black Night Stadium Sky for Ultra-Clear Luminous Tracers) */
 .stage {
   position: relative;
   height: 490px;
   border-radius: 16px;
   overflow: hidden;
-  background: linear-gradient(180deg, #cfe7fa 0%, #eaf4fc 60%, #d8ead8 100%);
-  border: 1px solid var(--line);
-  box-shadow: 0 6px 20px rgba(31, 49, 64, 0.08);
+  background: radial-gradient(circle at 50% 100%, #0d1527 0%, #060913 60%, #020408 100%);
+  border: 1px solid #1e293b;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 #stadium-canvas {
@@ -574,23 +574,28 @@ h1 .hero-subtitle {
 }
 
 .key.real-key {
-  background: var(--orange);
+  background: #ff8c00;
+  box-shadow: 0 0 5px rgba(255, 140, 0, 0.5);
 }
 
 .key.barrel-key {
-  background: var(--green);
+  background: #00ff88;
+  box-shadow: 0 0 7px rgba(0, 255, 136, 0.8);
 }
 
 .key.foul-key {
-  background: var(--red);
+  background: #ff2442;
+  box-shadow: 0 0 5px rgba(255, 36, 66, 0.6);
 }
 
 .key.drag-key {
-  background: var(--blue);
+  background: #3b82f6;
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
 }
 
 .key.vac-key {
-  background: var(--vac);
+  background: #38bdf8;
+  box-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
 }
 
 .stage-note {
