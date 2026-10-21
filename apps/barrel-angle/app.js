@@ -430,14 +430,6 @@
       cap.rotation.y = -Math.atan2(z2 - pz, x2 - px);
       cap.position.set((x2 + px) / 2, 1.25, (z2 + pz) / 2);
       stadium.add(cap);
-
-      // Warning track along foul perimeter walls
-      const foulTrack = new T.Mesh(new T.PlaneGeometry(3.2, len), dirtMat);
-      foulTrack.rotation.order = 'YXZ';
-      foulTrack.rotation.x = -Math.PI / 2;
-      foulTrack.rotation.z = Math.atan2(z2 - z1, x2 - x1) - Math.PI / 2;
-      foulTrack.position.set((x1 + x2) / 2, 0.004, (z1 + z2) / 2);
-      stadium.add(foulTrack);
     }
 
     const phiJoin = LINE + Math.atan2(sideOff, tJoin);
