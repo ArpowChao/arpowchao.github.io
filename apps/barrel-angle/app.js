@@ -1367,7 +1367,7 @@
     const pw = w - pad.l - pad.r;
     const ph = h - pad.t - pad.b;
 
-    const vMin = 120, vMax = 195;
+    const vMin = 80, vMax = 195;
     const vToPx = (v) => pad.l + ((v - vMin) / (vMax - vMin)) * pw;
     const aToPx = (deg) => pad.t + (1 - deg / 90) * ph;
 
@@ -1420,7 +1420,7 @@
 
     g.textAlign = 'center';
     g.textBaseline = 'top';
-    for (const v of [120, 140, 158, 175, 190]) {
+    for (const v of [80, 100, 120, 140, 158, 175, 190]) {
       const px = vToPx(v);
       g.strokeStyle = v === 158 ? 'rgba(21, 128, 61, 0.4)' : 'rgba(31, 49, 64, 0.08)';
       g.beginPath();
@@ -1485,7 +1485,7 @@
     const padL = 42, padR = 18, padT = 18, padB = 30;
     const ux = clamp((e.clientX - rect.left - padL) / Math.max(1, rect.width - padL - padR), 0, 1);
     const uy = clamp((e.clientY - rect.top - padT) / Math.max(1, rect.height - padT - padB), 0, 1);
-    state.speedKmh = Math.round(120 + ux * (195 - 120));
+    state.speedKmh = Math.round(80 + ux * (195 - 80));
     state.angleDeg = Math.round((1 - uy) * 90);
     $('speed-slider').value = state.speedKmh;
     $('angle-slider').value = state.angleDeg;

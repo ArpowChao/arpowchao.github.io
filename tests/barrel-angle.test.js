@@ -127,6 +127,7 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   const path = require('node:path');
   const html = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/index.html'), 'utf8');
   const css = fs.readFileSync(path.join(__dirname, '../apps/barrel-angle/styles.css'), 'utf8');
+  assert.match(html, /id="speed-slider"[^>]*min="80"[^>]*max="195"/);
   assert.match(html, /id="angle-slider"[^>]*min="0"[^>]*max="90"/);
   assert.match(html, /id="spray-slider"[^>]*min="-65"[^>]*max="65"/);
   assert.match(html, /id="play-pause-btn"/);
