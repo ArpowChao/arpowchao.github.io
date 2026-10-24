@@ -45,6 +45,36 @@
     coors:    { speedKmh: 158, angleDeg: 28, sprayDeg: -15, rpm: 1260, cd: 0.398, altitudeM: 1600, windMs: 0, mode: 'single', cam: 'stadium', scale: 1.0 }
   };
 
+  const SLIDER_META = [
+    { sliderId: 'speed-slider', numId: 'speed-num', key: 'speedKmh',  min: 80,    max: 195,  step: 1,    decimals: 0, restart: true },
+    { sliderId: 'angle-slider', numId: 'angle-num', key: 'angleDeg',  min: 0,     max: 90,   step: 1,    decimals: 0, restart: true },
+    { sliderId: 'spray-slider', numId: 'spray-num', key: 'sprayDeg',  min: -65,   max: 65,   step: 1,    decimals: 0, restart: false },
+    { sliderId: 'rpm-slider',   numId: 'rpm-num',   key: 'rpm',       min: -1500, max: 3500, step: 50,   decimals: 0, restart: true },
+    { sliderId: 'cd-slider',    numId: 'cd-num',    key: 'cd',        min: 0.00,  max: 0.65, step: 0.01, decimals: 2, restart: true },
+    { sliderId: 'alt-slider',   numId: 'alt-num',   key: 'altitudeM', min: 0,     max: 2400, step: 100,  decimals: 0, restart: true },
+    { sliderId: 'wind-slider',  numId: 'wind-num',  key: 'windMs',    min: -12,   max: 12,   step: 1,    decimals: 0, restart: true }
+  ];
+
+  function formatControlVal(meta, val) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return '';
+    return meta.decimals > 0 ? n.toFixed(meta.decimals) : String(Math.round(n));
+  }
+
+  function syncControlInputs() {
+    SLIDER_META.forEach((meta) => {
+      const sliderEl = $(meta.sliderId);
+      const numEl = $(meta.numId);
+      const formatted = formatControlVal(meta, state[meta.key]);
+      if (sliderEl && document.activeElement !== sliderEl) {
+        sliderEl.value = formatted;
+      }
+      if (numEl && document.activeElement !== numEl) {
+        numEl.value = formatted;
+      }
+    });
+  }
+
   // ---------- Three.js Scene Setup (Black Night Stadium Sky & Glowing Tracers) ----------
   const canvas = $('stadium-canvas');
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -1200,6 +1230,8 @@
     $('barrel-tag').textContent = bz.isBarrelEligible
       ? `Barrel ${bz.minDeg}°–${bz.maxDeg}° (寬 ${bz.widthDeg}°)`
       : `未達 98 mph 門檻`;
+
+    syncControlInputs();
   }
 
   // ---------- 2D Chart 1: 0°~90° Angle vs Carry Distance (Light Theme) ----------
@@ -1674,23 +1706,115 @@
     });
   });
 
-  function bindSlider(id, key, restartAnim) {
-    $(id).addEventListener('input', (e) => {
-      stopStoryMode();
-      state[key] = Number(e.target.value);
-      state.paused = false;
-      syncPlaybackButtons();
-      computeAll(restartAnim);
-    });
+  function applyControlValue(meta, rawVal, commitInput) {
+    stopStoryMode();
+    const factor = Math.pow(10, meta.decimals);
+    const clamped = clamp(Math.round(Number(rawVal) * factor) / factor, meta.min, meta.max);
+    state[meta.key] = clamped;
+    const formatted = formatControlVal(meta, clamped);
+    const sliderEl = $(meta.sliderId);
+    const numEl = $(meta.numId);
+    if (sliderEl) sliderEl.value = formatted;
+    if (numEl && commitInput) numEl.value = formatted;
+    state.paused = false;
+    syncPlaybackButtons();
+    computeAll(meta.restart);
   }
 
-  bindSlider('speed-slider', 'speedKmh', true);
-  bindSlider('angle-slider', 'angleDeg', true);
-  bindSlider('spray-slider', 'sprayDeg', false);
-  bindSlider('rpm-slider', 'rpm', true);
-  bindSlider('cd-slider', 'cd', true);
-  bindSlider('alt-slider', 'altitudeM', true);
-  bindSlider('wind-slider', 'windMs', true);
+  function stepControl(meta, dir) {
+    const cur = Number(state[meta.key]) || 0;
+    applyControlValue(meta, cur + dir * meta.step, true);
+  }
+
+  SLIDER_META.forEach((meta) => {
+    const sliderEl = $(meta.sliderId);
+    const numEl = $(meta.numId);
+
+    if (sliderEl) {
+      sliderEl.addEventListener('input', (e) => {
+        applyControlValue(meta, Number(e.target.value), true);
+      });
+    }
+
+    if (numEl) {
+      numEl.addEventListener('focus', () => {
+        numEl.select();
+      });
+
+      numEl.addEventListener('input', () => {
+        const raw = numEl.value.trim();
+        if (raw === '' || raw === '-' || raw === '.') return;
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed >= meta.min && parsed <= meta.max) {
+          applyControlValue(meta, parsed, false);
+        }
+      });
+
+      const commitNum = () => {
+        const raw = numEl.value.trim();
+        const parsed = raw === '' ? state[meta.key] : Number(raw);
+        const safe = Number.isFinite(parsed) ? parsed : state[meta.key];
+        applyControlValue(meta, safe, true);
+      };
+
+      numEl.addEventListener('change', commitNum);
+      numEl.addEventListener('blur', commitNum);
+      numEl.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          stepControl(meta, 1);
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          stepControl(meta, -1);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          commitNum();
+          numEl.blur();
+        }
+      });
+    }
+  });
+
+  // Up/Down triangle stepper buttons (supports single click + press-and-hold auto-repeat)
+  document.querySelectorAll('.tri-btn[data-step-target]').forEach((btn) => {
+    const targetId = btn.dataset.stepTarget;
+    const dir = Number(btn.dataset.stepDir) || 1;
+    const meta = SLIDER_META.find((m) => m.sliderId === targetId);
+    if (!meta) return;
+
+    let holdTimeout = null;
+    let holdInterval = null;
+    let didHold = false;
+
+    const clearHold = () => {
+      if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+      if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+    };
+
+    btn.addEventListener('pointerdown', (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      didHold = false;
+      clearHold();
+      holdTimeout = setTimeout(() => {
+        didHold = true;
+        stepControl(meta, dir);
+        holdInterval = setInterval(() => stepControl(meta, dir), 75);
+      }, 360);
+    });
+
+    ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach((evt) => {
+      btn.addEventListener(evt, clearHold);
+    });
+
+    btn.addEventListener('click', () => {
+      clearHold();
+      if (didHold) {
+        didHold = false;
+        return;
+      }
+      stepControl(meta, dir);
+    });
+  });
 
   document.querySelectorAll('[data-d-angle]').forEach((btn) => {
     btn.addEventListener('click', () => {

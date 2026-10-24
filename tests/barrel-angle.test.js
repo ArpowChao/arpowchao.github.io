@@ -130,6 +130,12 @@ test('HTML and Storyboard include full 0°~90° angle range, fair/foul spray, pl
   assert.match(html, /id="speed-slider"[^>]*min="80"[^>]*max="195"/);
   assert.match(html, /id="angle-slider"[^>]*min="0"[^>]*max="90"/);
   assert.match(html, /id="spray-slider"[^>]*min="-65"[^>]*max="65"/);
+  for (const id of ['speed', 'angle', 'spray', 'rpm', 'cd', 'alt', 'wind']) {
+    assert.match(html, new RegExp(`id="${id}-slider"[^>]*type="range"`), `${id} range slider preserved`);
+    assert.match(html, new RegExp(`id="${id}-num"[^>]*type="number"`), `${id} direct numeric input`);
+    assert.match(html, new RegExp(`data-step-target="${id}-slider"[^>]*data-step-dir="1"[^>]*>▲<`), `${id} up triangle button`);
+    assert.match(html, new RegExp(`data-step-target="${id}-slider"[^>]*data-step-dir="-1"[^>]*>▼<`), `${id} down triangle button`);
+  }
   assert.match(html, /id="play-pause-btn"/);
   assert.match(html, /data-speed="0\.125"/);
   assert.match(html, /data-speed="0\.5"/);

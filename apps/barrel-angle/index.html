@@ -249,7 +249,16 @@
               <label for="speed-slider">打球初速 Exit Velocity</label>
               <output id="speed-out">158 km/h (98.2 mph)</output>
             </div>
-            <input id="speed-slider" type="range" min="80" max="195" step="1" value="158">
+            <div class="slider-row">
+              <input id="speed-slider" type="range" min="80" max="195" step="1" value="158">
+              <div class="num-stepper">
+                <input id="speed-num" class="num-input" type="number" min="80" max="195" step="1" value="158" aria-label="直接輸入打球初速 (km/h)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="speed-slider" data-step-dir="1" title="增加 1 km/h" aria-label="打球初速增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="speed-slider" data-step-dir="-1" title="減少 1 km/h" aria-label="打球初速減少">▼</button>
+                </div>
+              </div>
+            </div>
             <div class="range-marks"><span>80 km/h</span><span>158 (Barrel門檻)</span><span>195 km/h</span></div>
           </div>
 
@@ -258,7 +267,16 @@
               <label for="angle-slider">打球仰角 Launch Angle (0°–90°)</label>
               <output id="angle-out">28°</output>
             </div>
-            <input id="angle-slider" type="range" min="0" max="90" step="1" value="28">
+            <div class="slider-row">
+              <input id="angle-slider" type="range" min="0" max="90" step="1" value="28">
+              <div class="num-stepper">
+                <input id="angle-num" class="num-input" type="number" min="0" max="90" step="1" value="28" aria-label="直接輸入打球仰角 (度)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="angle-slider" data-step-dir="1" title="增加 1°" aria-label="打球仰角增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="angle-slider" data-step-dir="-1" title="減少 1°" aria-label="打球仰角減少">▼</button>
+                </div>
+              </div>
+            </div>
             <div class="range-marks">
               <span>0° 平飛</span>
               <span>28° 甜蜜點</span>
@@ -278,7 +296,16 @@
               <label for="spray-slider">水平方向 Spray Angle (界內 ±45°)</label>
               <output id="spray-out">0° (中外野・界內)</output>
             </div>
-            <input id="spray-slider" type="range" min="-65" max="65" step="1" value="0">
+            <div class="slider-row">
+              <input id="spray-slider" type="range" min="-65" max="65" step="1" value="0">
+              <div class="num-stepper">
+                <input id="spray-num" class="num-input" type="number" min="-65" max="65" step="1" value="0" aria-label="直接輸入水平方向角 (度)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="spray-slider" data-step-dir="1" title="向右 +1°" aria-label="水平方向增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="spray-slider" data-step-dir="-1" title="向左 −1°" aria-label="水平方向減少">▼</button>
+                </div>
+              </div>
+            </div>
             <div class="range-marks">
               <span>−65° 左界外</span>
               <span>−45° 三壘線</span>
@@ -299,7 +326,16 @@
               <label for="rpm-slider">後旋轉速 Backspin</label>
               <output id="rpm-out">1260 rpm</output>
             </div>
-            <input id="rpm-slider" type="range" min="-1500" max="3500" step="50" value="1260">
+            <div class="slider-row">
+              <input id="rpm-slider" type="range" min="-1500" max="3500" step="50" value="1260">
+              <div class="num-stepper">
+                <input id="rpm-num" class="num-input" type="number" min="-1500" max="3500" step="50" value="1260" aria-label="直接輸入後旋轉速 (rpm)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="rpm-slider" data-step-dir="1" title="增加 50 rpm" aria-label="後旋轉速增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="rpm-slider" data-step-dir="-1" title="減少 50 rpm" aria-label="後旋轉速減少">▼</button>
+                </div>
+              </div>
+            </div>
             <p class="hint">正值為後旋；83°–90° 沖天炮會因上升段馬格努斯力往本壘後方倒退成界外球。</p>
           </div>
 
@@ -308,7 +344,16 @@
               <label for="cd-slider">空氣阻力係數 C<sub>D</sub></label>
               <output id="cd-out">0.40</output>
             </div>
-            <input id="cd-slider" type="range" min="0.00" max="0.65" step="0.01" value="0.40">
+            <div class="slider-row">
+              <input id="cd-slider" type="range" min="0.00" max="0.65" step="0.01" value="0.40">
+              <div class="num-stepper">
+                <input id="cd-num" class="num-input" type="number" min="0.00" max="0.65" step="0.01" value="0.40" aria-label="直接輸入空氣阻力係數">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="cd-slider" data-step-dir="1" title="增加 0.01" aria-label="空氣阻力係數增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="cd-slider" data-step-dir="-1" title="減少 0.01" aria-label="空氣阻力係數減少">▼</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="control">
@@ -316,7 +361,16 @@
               <label for="alt-slider">球場海拔 Altitude</label>
               <output id="alt-out">0 m (海平面)</output>
             </div>
-            <input id="alt-slider" type="range" min="0" max="2400" step="100" value="0">
+            <div class="slider-row">
+              <input id="alt-slider" type="range" min="0" max="2400" step="100" value="0">
+              <div class="num-stepper">
+                <input id="alt-num" class="num-input" type="number" min="0" max="2400" step="100" value="0" aria-label="直接輸入球場海拔 (m)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="alt-slider" data-step-dir="1" title="增加 100 m" aria-label="球場海拔增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="alt-slider" data-step-dir="-1" title="減少 100 m" aria-label="球場海拔減少">▼</button>
+                </div>
+              </div>
+            </div>
             <div class="range-marks"><span>0m 海平面</span><span>1600m 洛磯山高原</span><span>2400m</span></div>
           </div>
 
@@ -325,7 +379,16 @@
               <label for="wind-slider">外野風速 Wind</label>
               <output id="wind-out">0 m/s (無風)</output>
             </div>
-            <input id="wind-slider" type="range" min="-12" max="12" step="1" value="0">
+            <div class="slider-row">
+              <input id="wind-slider" type="range" min="-12" max="12" step="1" value="0">
+              <div class="num-stepper">
+                <input id="wind-num" class="num-input" type="number" min="-12" max="12" step="1" value="0" aria-label="直接輸入外野風速 (m/s)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="wind-slider" data-step-dir="1" title="增加 1 m/s" aria-label="外野風速增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="wind-slider" data-step-dir="-1" title="減少 1 m/s" aria-label="外野風速減少">▼</button>
+                </div>
+              </div>
+            </div>
             <div class="range-marks"><span>−12 m/s 逆風</span><span>無風</span><span>+12 m/s 順風</span></div>
           </div>
 
