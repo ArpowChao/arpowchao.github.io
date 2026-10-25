@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年10月25日"
+    entry: "新增「CANNON 牛頓大砲與軌道誕生實驗室」：完整重現 1687《自然哲學的數學原理》高山大砲思想實驗與 Reel 五發連射（低速墜地、跨洲弧線、第一宇宙速度圓軌道、橢圓軌道、第二宇宙速度逃逸），結合保辛 Velocity Verlet 數值積分、地球曲率 8 km 落差 5 m 幾何放大鏡與能量相圖。"
   - date: "2026年10月21日"
     entry: "新增「BARREL 全壘打仰角與空氣阻力實驗室」：3D 夜間球場重現 158 km/h 下全壘打甜蜜仰角僅有 4 度（26°–30° Barrel），完整展開 0°～90° 全仰角軌跡，同場比較真空拋物線、純空氣阻力與後旋馬格努斯升力，並探索 60°～90° 沖天炮往本壘後方倒退的逆向迴旋奇觀。"
   - date: "2026年10月13日"
@@ -55,6 +57,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "CANNON 牛頓大砲與軌道誕生實驗室"
+    image: "/assets/img/apps/newton-cannon.svg"
+    description: "重現牛頓 1687《自然哲學的數學原理》高山大砲思想實驗與 Reel 五發連射：從低速墜地、跨洲弧線，到第一宇宙速度圓軌道（7.50 km/s 永遠下墜卻永不落地）、克卜勒橢圓軌道與第二宇宙速度星際逃逸，結合地球曲率 8 km 落差 5 m 放大鏡與能量相圖。"
+    url: "/apps/newton-cannon/index.html"
+    category: "力學"
+    tags: ["Physics", "Newton", "Orbit", "Gravity", "Principia", "Simulation"]
   - title: "BARREL 全壘打仰角與空氣阻力實驗室"
     image: "/assets/img/apps/barrel-angle.svg"
     description: "在 158 km/h 下，容易成為全壘打的仰角只有區區 4 度（26°–30° Barrel）。以 3D 夜間球場與 RK4 空氣動力模型完整展開 0°～90° 擊球軌跡，同場對照真空拋體（45°最遠）、純空氣阻力與後旋馬格努斯力，並觀察 60°～90° 沖天炮往本壘後方倒退的物理奇觀。"

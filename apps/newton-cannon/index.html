@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f5f2">
+  <meta name="description" content="牛頓大砲思想實驗室 (Newton's Cannonball, Principia 1687)：完整重現高山大砲五發連射（低速墜地、跨洲弧線、第一宇宙速度圓軌道、橢圓軌道、第二宇宙速度逃逸），結合保辛 Velocity Verlet 數值積分、地球曲率 8km 落差 5m 放大鏡與能量相圖。">
+  <title>CANNON 牛頓大砲與軌道誕生實驗室 | Physics Lab</title>
+  <link rel="icon" href="../../assets/img/apps/newton-cannon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- KaTeX for Mathematics Formula Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
+
+  <script src="cannon-physics.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html" class="back-link">← Physics Lab</a>
+    <span>萬有引力與天體力學 / NEWTON'S CANNONBALL (PRINCIPIA, 1687)</span>
+    <a href="#principle">物理原理 ↗</a>
+  </header>
+
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">為什麼人造衛星與月球不會掉下來？其實它們「每一秒都在往下掉」，只是地球表面彎曲得一樣快！</p>
+        <h1>
+          <span class="wordmark">CANNON</span>
+          <span class="hero-subtitle">牛頓大砲與軌道誕生實驗室</span>
+        </h1>
+      </div>
+      <p class="intro">
+        1687 年牛頓在《自然哲學的數學原理》提出物理史上最著名的思想實驗：<br>
+        在極高山巔架設一門水平大砲，隨初速遞增，<strong>地面拋體運動</strong>將無縫化為<strong>圓軌道、橢圓軌道與星際逃逸</strong>——徹底統一地面力學與天體軌道。
+      </p>
+    </header>
+
+    <!-- Reel 故事分鏡導覽列 -->
+    <section class="story-bar" aria-label="Reel 影片五發連射分鏡展演">
+      <div class="story-controls">
+        <button id="story-play" type="button" class="story-play-btn playing">⏸ 連射展演中 (5 發)</button>
+        <button id="sound-toggle" type="button" class="sound-btn" aria-pressed="true" title="切換砲擊與撞擊合成音效">🔊 音效開啟</button>
+      </div>
+      <div id="chapter-list" class="chapter-list" role="tablist" aria-label="故事分鏡">
+        <button type="button" class="chapter-pill active" data-chapter="0">🎬 Reel 五發連射展演</button>
+        <button type="button" class="chapter-pill" data-chapter="1">① 5.20 km/s 近處墜落</button>
+        <button type="button" class="chapter-pill" data-chapter="2">② 7.05 km/s 跨洲墜落</button>
+        <button type="button" class="chapter-pill highlight-pill" data-chapter="3">③ 7.50 km/s 完美圓軌道 (v = v_c)</button>
+        <button type="button" class="chapter-pill" data-chapter="4">④ 8.18 km/s 橢圓軌道</button>
+        <button type="button" class="chapter-pill" data-chapter="5">⑤ 10.80 km/s 重力逃逸 (v ≥ v_e)</button>
+        <button type="button" class="chapter-pill" data-chapter="6">⑥ 仰角 +22° 必撞地表定理</button>
+        <button type="button" class="chapter-pill" data-chapter="7">⑦ 大氣阻力軌道衰減</button>
+      </div>
+    </section>
+
+    <div class="lab-layout">
+      <section class="stage-col" aria-label="牛頓大砲太空劇場與物理圖表">
+
+        <!-- 畫布上方即時數據與解說面板（不遮擋地球與軌道） -->
+        <div class="scoreboard-banner" aria-live="polite">
+          <div class="hud-metrics">
+            <div class="hud-cell">
+              <span class="hud-label">發射初速 v₀</span>
+              <strong id="hud-speed" class="accent-text">7.50<small>km/s</small></strong>
+            </div>
+            <div class="hud-cell">
+              <span class="hud-label">瞬時速率 v</span>
+              <strong id="hud-inst-speed">7.50<small>km/s</small></strong>
+            </div>
+            <div class="hud-cell">
+              <span class="hud-label">離地高度 h</span>
+              <strong id="hud-alt">700<small>km</small></strong>
+            </div>
+            <div class="hud-cell">
+              <span class="hud-label">軌道離心率 e</span>
+              <strong id="hud-ecc">0.000</strong>
+            </div>
+            <div class="hud-cell">
+              <span class="hud-label">飛行時間 t</span>
+              <strong id="hud-time">00:00</strong>
+            </div>
+          </div>
+
+          <div class="hud-narrative">
+            <div class="hud-narrative-top">
+              <span id="hud-eyebrow" class="hud-eyebrow">山頂高度 700 km · v_c = 7.50 km/s · v_e = 10.61 km/s</span>
+              <div class="hud-badges">
+                <span id="hud-regime-badge" class="hud-fair-badge orbit">第一宇宙速度 v = v_c</span>
+                <span id="hud-focus-badge" class="hud-badge">地心 = 圓心</span>
+              </div>
+            </div>
+            <h2 id="hud-title" class="hud-title">第 3 發 (7.50 km/s)：永遠在下墜，卻永遠不會落地！</h2>
+            <p id="hud-subtitle" class="hud-subtitle">砲彈受重力向心拉拽的曲率半徑恰等於軌道半徑 r₀ = 7,071 km，繞行地球一圈需 99.5 分鐘回到山頂大砲後方。</p>
+          </div>
+        </div>
+
+        <!-- 視角切換與播放控制列 -->
+        <div class="stage-toolbar">
+          <div class="view-buttons" role="group" aria-label="觀察視角">
+            <button type="button" data-cam="reel" class="active">🌏 Reel 標準全球視角</button>
+            <button type="button" data-cam="mountain">🏔️ 山頂大砲近景</button>
+            <button type="button" data-cam="deep">🌌 廣角深空 (看橢圓遠點)</button>
+            <button type="button" data-cam="follow">🎯 追隨砲彈視角</button>
+          </div>
+
+          <div class="playback-controls" role="group" aria-label="播放與速度控制">
+            <button id="fire-btn" type="button" class="fire-action-btn">🔥 開砲發射</button>
+            <button id="play-pause-btn" type="button" class="play-toggle-btn">⏸ 暫停</button>
+            <button id="clear-shots-btn" type="button" class="replay-btn">🧹 清除軌跡</button>
+            <div class="speed-buttons" role="group" aria-label="播放倍速">
+              <button type="button" data-speed="0.25">×0.25 慢動作</button>
+              <button type="button" data-speed="1" class="active">×1.0 Reel 節奏</button>
+              <button type="button" data-speed="2.5">×2.5 快轉</button>
+            </div>
+          </div>
+
+          <div class="mode-row">
+            <div class="mode-buttons" role="group" aria-label="發射模式">
+              <button type="button" data-mode="sequence" class="active">Reel 5 發連射保留</button>
+              <button type="button" data-mode="single">單發精細實驗</button>
+              <button type="button" data-mode="salvo">5 發同時齊射</button>
+            </div>
+            <div class="vector-checks">
+              <label class="inline-check"><input id="show-vectors" type="checkbox" checked><span>顯示速度 $\vec{v}$ 與重力 $\vec{a}_g$ 箭頭</span></label>
+              <label class="inline-check"><input id="show-flat-earth" type="checkbox"><span>對照「地表平拋拋物線」虛線</span></label>
+              <label class="inline-check"><input id="show-foci" type="checkbox" checked><span>標示克卜勒橢圓焦點與遠近點</span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 主畫布：牛頓大砲與地球軌道劇場 -->
+        <div id="stage" class="stage">
+          <canvas id="cannon-canvas" tabindex="0" aria-label="牛頓大砲互動模擬畫布：北極高山頂端架設大砲，可直接拖曳砲口箭頭調整發射初速與仰角，或滾輪縮放視野"></canvas>
+        </div>
+
+        <!-- 畫布下方五發圖例列 -->
+        <div class="stage-footer">
+          <div class="stage-legend">
+            <span><i class="key shot1-key"></i>① 5.20 km/s 近處墜落</span>
+            <span><i class="key shot2-key"></i>② 7.05 km/s 跨洲墜落</span>
+            <span><i class="key shot3-key"></i>③ 7.50 km/s 圓軌道 ($v=v_c$)</span>
+            <span><i class="key shot4-key"></i>④ 8.18 km/s 橢圓軌道</span>
+            <span><i class="key shot5-key"></i>⑤ 10.80 km/s 重力逃逸 ($v\ge v_e$)</span>
+          </div>
+          <p id="stage-note" class="stage-note">提示：可直接在畫布山頂大砲處「按住拖曳」調整初速向量發射 · 滾輪縮放 · 拖曳空白處平移視野</p>
+        </div>
+
+        <!-- 兩個 2D 物理深度分析面板 -->
+        <div class="two-panels">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>「前進 8 km、地球下彎 5 m」曲率與自由落體放大鏡</h2>
+                <span class="panel-tag">比較切線水平基準、地球表面彎曲落差與砲彈下墜軌跡</span>
+              </div>
+              <span id="curvature-tag" class="badge-tag">下墜率 ÷ 地球彎曲率 = 1.00</span>
+            </div>
+            <canvas id="curvature-chart" class="chart-canvas" width="640" height="260" aria-label="地球表面曲率與自由落體比較圖：顯示水平每前進8公里地表下彎約5公尺"></canvas>
+            <p class="panel-note">
+              <i class="dot mint"></i>目前砲彈軌跡　
+              <i class="dot earth-arc"></i>地球球面彎曲 $\Delta y \approx \frac{x^2}{2R_\oplus}$　
+              <i class="dot flat-parabola"></i>均勻重力平拋近似
+            </p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>初速 $v_0$ vs 比機械能 $(\varepsilon = K/m + U/m)$ 與軌道相圖</h2>
+                <span class="panel-tag">點擊或拖曳圖表可直接切換發射初速 $v_0$ · 即時檢視動能與位能轉換</span>
+              </div>
+              <span id="energy-tag" class="badge-tag accent-badge">總比能 ε = −28.18 MJ/kg (束縛態)</span>
+            </div>
+            <canvas id="energy-chart" class="chart-canvas" width="640" height="260" aria-label="初速對軌道能量與遠近點距離相圖：點擊可直接改變發射初速"></canvas>
+            <p class="panel-note">
+              <i class="dot ke"></i>比動能 $K/m = \frac{1}{2}v^2$　
+              <i class="dot pe"></i>比位能 $U/m = -\frac{GM}{r}$　
+              <i class="dot te"></i>總力學能 $\varepsilon = -\frac{GM}{2a}$
+            </p>
+          </section>
+        </div>
+      </section>
+
+      <!-- 右側互動控制欄 -->
+      <aside class="controls" aria-label="牛頓大砲發射參數與物理數據控制">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Reel 經典五發與進階情境</h2>
+            <span class="panel-tag">點擊立即開砲實測</span>
+          </div>
+          <div class="presets" id="preset-buttons">
+            <button type="button" data-preset="shot1">
+              <strong>① 5.20 km/s 近處墜地</strong>
+              <small>0.69 v_c · 飛 3,450 km 墜毀</small>
+            </button>
+            <button type="button" data-preset="shot2">
+              <strong>② 7.05 km/s 跨洲弧線</strong>
+              <small>0.94 v_c · 飛 8,300 km 墜毀</small>
+            </button>
+            <button type="button" data-preset="shot3" class="active">
+              <strong>③ 7.50 km/s 完美圓軌道</strong>
+              <small>1.00 v_c · 第一宇宙速度</small>
+            </button>
+            <button type="button" data-preset="shot4">
+              <strong>④ 8.18 km/s 橢圓環繞</strong>
+              <small>1.09 v_c · 遠地點 3,780 km</small>
+            </button>
+            <button type="button" data-preset="shot5">
+              <strong>⑤ 10.80 km/s 雙曲線逃逸</strong>
+              <small>1.44 v_c · 突破第二宇宙速度</small>
+            </button>
+            <button type="button" data-preset="graze">
+              <strong>🎯 7.31 km/s 對蹠點擦地臨界</strong>
+              <small>剛好在南極 180° 擦過地表</small>
+            </button>
+            <button type="button" data-preset="tilted">
+              <strong>📐 仰角 +22° 必撞地表定理</strong>
+              <small>非水平發射近地點必低於起點</small>
+            </button>
+            <button type="button" data-preset="surface">
+              <strong>🌍 地表 0 km 真實第一宇宙速度</strong>
+              <small>h = 0 km · v_c = 7.91 km/s</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>調整大砲初速、仰角與高山高度</h2>
+            <button id="reset-btn" type="button" class="mini-button">重設</button>
+          </div>
+
+          <!-- 發射初速 -->
+          <div class="control">
+            <div class="control-head">
+              <label for="speed-slider">發射初速 $v_0$ (Launch Speed)</label>
+              <output id="speed-out">7.50 km/s (1.00 v_c)</output>
+            </div>
+            <div class="slider-row">
+              <input id="speed-slider" type="range" min="1.00" max="13.00" step="0.05" value="7.50">
+              <div class="num-stepper">
+                <input id="speed-num" class="num-input" type="number" min="1.00" max="13.00" step="0.05" value="7.50" aria-label="直接輸入發射初速 (km/s)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="speed-slider" data-step-dir="1" title="增加 0.05 km/s" aria-label="發射初速增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="speed-slider" data-step-dir="-1" title="減少 0.05 km/s" aria-label="發射初速減少">▼</button>
+                </div>
+              </div>
+            </div>
+            <div class="range-marks">
+              <span>1.0 km/s</span>
+              <span id="mark-vc">v_c ≈ 7.50</span>
+              <span id="mark-ve">v_e ≈ 10.61</span>
+              <span>13.0 km/s</span>
+            </div>
+            <div class="angle-step-btns">
+              <button type="button" data-set-v="vc">設為圓軌道 $v_c$</button>
+              <button type="button" data-set-v="graze">設為擦地臨界 $v_{\text{graze}}$</button>
+              <button type="button" data-set-v="ve">設為逃逸速度 $v_e$</button>
+            </div>
+          </div>
+
+          <!-- 發射仰角 -->
+          <div class="control">
+            <div class="control-head">
+              <label for="angle-slider">大砲發射仰角 $\alpha$ (Launch Angle)</label>
+              <output id="angle-out">0° (水平切線)</output>
+            </div>
+            <div class="slider-row">
+              <input id="angle-slider" type="range" min="-30" max="60" step="1" value="0">
+              <div class="num-stepper">
+                <input id="angle-num" class="num-input" type="number" min="-30" max="60" step="1" value="0" aria-label="直接輸入發射仰角 (度)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="angle-slider" data-step-dir="1" title="增加 1°" aria-label="發射仰角增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="angle-slider" data-step-dir="-1" title="減少 1°" aria-label="發射仰角減少">▼</button>
+                </div>
+              </div>
+            </div>
+            <div class="range-marks">
+              <span>−30° 俯射</span>
+              <span>0° 水平切線</span>
+              <span>+30° 仰射</span>
+              <span>+60° 高仰角</span>
+            </div>
+          </div>
+
+          <!-- 牛頓高山高度 -->
+          <div class="control">
+            <div class="control-head">
+              <label for="alt-slider">牛頓高山高度 $h$ (Mountain Altitude)</label>
+              <output id="alt-out">700 km (r₀ = 7,071 km)</output>
+            </div>
+            <div class="slider-row">
+              <input id="alt-slider" type="range" min="0" max="3000" step="50" value="700">
+              <div class="num-stepper">
+                <input id="alt-num" class="num-input" type="number" min="0" max="3000" step="50" value="700" aria-label="直接輸入高山高度 (km)">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="alt-slider" data-step-dir="1" title="增加 50 km" aria-label="高山高度增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="alt-slider" data-step-dir="-1" title="減少 50 km" aria-label="高山高度減少">▼</button>
+                </div>
+              </div>
+            </div>
+            <div class="range-marks">
+              <span>0 km 地表</span>
+              <span>400 km (ISS)</span>
+              <span>700 km (Reel)</span>
+              <span>3000 km</span>
+            </div>
+          </div>
+
+          <!-- 高空大氣阻力係數 -->
+          <div class="control">
+            <div class="control-head">
+              <label for="drag-slider">高空大氣阻力 $C_d$ (Atmospheric Drag)</label>
+              <output id="drag-out">0.00 (無阻力理想真空)</output>
+            </div>
+            <div class="slider-row">
+              <input id="drag-slider" type="range" min="0.00" max="1.50" step="0.05" value="0.00">
+              <div class="num-stepper">
+                <input id="drag-num" class="num-input" type="number" min="0.00" max="1.50" step="0.05" value="0.00" aria-label="直接輸入大氣阻力係數">
+                <div class="tri-btns">
+                  <button type="button" class="tri-btn up" data-step-target="drag-slider" data-step-dir="1" title="增加 0.05" aria-label="大氣阻力增加">▲</button>
+                  <button type="button" class="tri-btn down" data-step-target="drag-slider" data-step-dir="-1" title="減少 0.05" aria-label="大氣阻力減少">▼</button>
+                </div>
+              </div>
+            </div>
+            <p class="hint">牛頓假設高山超越大氣層（$C_d = 0$）以消除空氣阻力；調高 $C_d$ 可觀察低軌衛星螺旋墜入大氣層。</p>
+          </div>
+        </section>
+
+        <section class="panel readout-panel">
+          <div class="panel-head">
+            <h2>克卜勒軌道根數與守恆律自檢</h2>
+            <span id="integrator-tag" class="panel-tag">保辛 Velocity Verlet</span>
+          </div>
+          <dl class="readouts">
+            <div>
+              <dt>軌道形態判定</dt>
+              <dd id="r-orbit-kind" class="highlight-val">圓形軌道 (Circle)</dd>
+            </div>
+            <div>
+              <dt>地心在克卜勒橢圓的位置</dt>
+              <dd id="r-focus-role" class="highlight-val">圓心 (e = 0)</dd>
+            </div>
+            <div>
+              <dt>起點圓軌道速度 $v_c$ ／ 逃逸速度 $v_e$</dt>
+              <dd id="r-critical-speeds">7.50 km/s ／ 10.61 km/s</dd>
+            </div>
+            <div>
+              <dt>近地點高度 $h_p$ ／ 遠地點高度 $h_a$</dt>
+              <dd id="r-apsides">700 km ／ 700 km</dd>
+            </div>
+            <div>
+              <dt>半長軸 $a$ ／ 軌道週期 $T$</dt>
+              <dd id="r-semi-period">7,071 km ／ 99.0 min</dd>
+            </div>
+            <div>
+              <dt>地面射程弧長 ／ 地心夾角 $\Delta\theta$</dt>
+              <dd id="r-ground-range">環繞全球 40,030 km (360°)</dd>
+            </div>
+            <div>
+              <dt>瞬時切線 $a_t$ ／ 法向向心加速度 $a_n$</dt>
+              <dd id="r-accel-decomp">0.00 m/s² ／ 7.97 m/s²</dd>
+            </div>
+            <div>
+              <dt>比角動量 $h = |\vec{r}\times\vec{v}|$</dt>
+              <dd id="r-ang-mom">53,062 km²/s</dd>
+            </div>
+            <div>
+              <dt>數值能量守恆誤差 $|\Delta\varepsilon / \varepsilon_0|$</dt>
+              <dd id="r-energy-drift">&lt; 10⁻⁶ (嚴格守恆)</dd>
+            </div>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 物理原理詳解區 -->
+    <section id="principle" class="principles" aria-labelledby="principle-title">
+      <div class="principle-intro">
+        <p class="eyebrow">UNIFICATION OF TERRESTRIAL &amp; CELESTIAL MECHANICS (1687)</p>
+        <h2 id="principle-title">為什麼牛頓大砲是物理史上最偉大的思想實驗？<br>從「蘋果落地」到「月球繞地」的終極統一</h2>
+        <p>
+          在牛頓之前，亞里斯多德學派認為「地面上的石頭只會直線落向地心」，而「天上的星辰則進行神聖不滅的圓周運動」，兩者遵循截然不同的自然律。
+          牛頓在《自然哲學的數學原理》第三卷繪製了這座高山大砲，證明<strong>人造衛星與月球根本沒有抗拒重力——它們跟地面的砲彈一樣每一秒都在自由下墜</strong>，只是水平速度夠快，讓地球表面向下彎曲的速率剛好追上它下墜的速率！
+        </p>
+        <div class="links">
+          <a href="../orbit/index.html">→ ORBIT 自由拖曳軌道實驗室</a>
+          <a href="../orbit_transfer/index.html">→ 霍曼軌道轉移與重力逃逸</a>
+          <a href="../orbital_decay/index.html">→ 近地衛星大氣阻力軌道衰減</a>
+        </div>
+      </div>
+
+      <div class="principle-details">
+        <div class="equation">
+          <span>牛頓萬有引力、活力公式（Vis-Viva Equation）與宇宙速度推導</span>
+          <p class="formula">
+            $$\vec{F} = -\frac{GM_\oplus m}{r^2}\hat{r} \implies v^2 = GM_\oplus\left(\frac{2}{r} - \frac{1}{a}\right), \quad v_c = \sqrt{\frac{GM_\oplus}{r_0}}, \quad v_e = \sqrt{2}\,v_c = \sqrt{\frac{2GM_\oplus}{r_0}}$$
+          </p>
+          <p>
+            在地表附近（$r_0 \approx R_\oplus = 6,371\text{ km},\, g \approx 9.82\text{ m/s}^2$），第一宇宙速度 $v_c = \sqrt{gR_\oplus} \approx 7.91\text{ km/s}$。
+            這意味著砲彈每飛行 $1\text{ 秒}$（水平前進約 $7.91\text{ km}$），重力使它下墜 $h = \frac{1}{2}gt^2 \approx 4.91\text{ m}$；而地球球面在 $7.91\text{ km}$ 切線距離外的彎曲落差 $\Delta y \approx \frac{x^2}{2R_\oplus} = \frac{(7909)^2}{2\times 6.371\times 10^6} \approx 4.91\text{ m}$ <strong>分毫不差相等</strong>！
+          </p>
+        </div>
+
+        <div class="guide">
+          <p>
+            <i class="swatch red"></i>
+            <span>
+              <strong>1. 常見迷思破解：次軌道砲彈（$v_0 &lt; v_c$）走的是「拋物線」嗎？</strong><br>
+              高中課本推導的「平拋拋物線 $y = -\frac{gx^2}{2v_0^2}$」其實是假設地球平坦、重力場大小與方向處處平行不變的近似。在真實平方反比中心力場 $\vec{F} \propto -1/r^2$ 下，第 ①、② 發未入軌的砲彈走的其實是<strong>以「地心為遠焦點（Far Focus）」的克卜勒橢圓軌道的一部分</strong>，只是因為近地點 $r_p = a(1-e) &lt; R_\oplus$ 被地表攔截而撞擊地面！
+            </span>
+          </p>
+          <p>
+            <i class="swatch green"></i>
+            <span>
+              <strong>2. 為什麼單靠一次非水平仰射（$\alpha \neq 0^\circ$）在無大氣地表永遠無法進入安全圓軌道？</strong><br>
+              克卜勒第一定律保證無阻力封閉軌道必為封閉橢圓，且<strong>必定在繞行一圈後重新通過發射起點 $\vec{r}_0$</strong>。若在地面（$h \approx 0$）以仰角 $\alpha &gt; 0^\circ$ 發射，砲彈雖先往上爬升，但橢圓對稱性決定它的近地點必定低於發射點（$r_p = r_0 \frac{\cos^2\alpha}{1 + e\cos\nu_0} &lt; r_0$），因此返航途中<strong>必然穿入地表墜毀</strong>！這也是真實火箭必須在高空進行第二階段「水平加速點火（Circularization Burn）」的原因。
+            </span>
+          </p>
+          <p>
+            <i class="swatch blue"></i>
+            <span>
+              <strong>3. 從圓軌道、橢圓到雙曲線逃逸：地心焦點的身分切換</strong><br>
+              當水平初速 $v_0 &lt; v_c$ 時，發射點是橢圓的<strong>遠地點（Apogee）</strong>，地心位於遠焦點；當 $v_0 = v_c$ 時，兩焦點重合於地心（離心率 $e=0$）；當 $v_c &lt; v_0 &lt; v_e$（第 ④ 發）時，發射點反轉成為<strong>近地點（Perigee）</strong>，地心切換為<strong>近焦點（Near Focus）</strong>，砲彈在地球另一端（6 點鐘方向）甩出高遠的遠地點；一旦 $v_0 \ge \sqrt{2}\,v_c$（第 ⑤ 發），總力學能 $\varepsilon = \frac{1}{2}v_0^2 - \frac{GM_\oplus}{r_0} \ge 0$，橢圓開口破裂為拋物線／雙曲線，徹底擺脫地球引力束縛！
+            </span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <span>Physics Lab · Newton's Cannonball &amp; Orbital Mechanics (Principia Mathematica, 1687)</span>
+      <span>保辛 Velocity Verlet 數值積分 · 第一性原理天體力學互動實驗室</span>
+    </footer>
+  </main>
+</body>
+</html>
