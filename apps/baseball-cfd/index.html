@@ -1,136 +1,767 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="用二維格子玻爾茲曼 CFD 比較棒球光滑截面與凸起縫線的氣流、壓力和尾流。可調整球速、旋轉、縫線高度與方向。">
-  <meta name="theme-color" content="#f5f3eb">
-  <title>棒球氣流實驗室 | Physics Lab</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="physics.js" defer></script>
-  <script src="app.js" defer></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>棒球氣流實驗室｜3D 縫線與球路</title>
+<meta name="description" content="以瀏覽器 JavaScript 計算棒球縫線、邊界層與受力；旋轉 3D 風洞和球路，對照旋轉與縫線造成的進壘偏移。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23f2ece0'/%3E%3Cpath d='M7 3q12 13 0 26M25 3q-12 13 0 26' stroke='%23c8102e' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<style>
+  /* layout: controls | 3-D wind tunnel | results; dark-first, light variant */
+  :root{--bg:#0f1013;--panel:#17181c;--panel2:#1e1f24;--ink:#ececee;--muted:#9a9aa2;--line:#2a2b31;--accent:#e0313f;--stage:#0b0c0f;--hudbg:#121317e6;--hudfg:#e8e8ea;--hudline:#2c2d33;--tbbg:#1b1c21e6;--tbfg:#e6e6e6;--tbline:#3a3b42;--cbmid:#c7c7c7;color-scheme:dark}
+  @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#eef0f3;--panel:#fff;--panel2:#f5f6f8;--ink:#1b1c20;--muted:#62646c;--line:#dcdfe5;--stage:#ffffff;--hudbg:#ffffffe8;--hudfg:#1b1c20;--hudline:#d6d9df;--tbbg:#ffffffe8;--tbfg:#222326;--tbline:#cfd3da;--cbmid:#5a5a5e;color-scheme:light}}
+  :root[data-theme="light"]{--bg:#eef0f3;--panel:#fff;--panel2:#f5f6f8;--ink:#1b1c20;--muted:#62646c;--line:#dcdfe5;--stage:#ffffff;--hudbg:#ffffffe8;--hudfg:#1b1c20;--hudline:#d6d9df;--tbbg:#ffffffe8;--tbfg:#222326;--tbline:#cfd3da;--cbmid:#5a5a5e;color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","Noto Sans TC","PingFang TC",system-ui,sans-serif;font-size:14px}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-block:14px 4px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  header h1{margin:0;font-size:22px;letter-spacing:.03em}
+  header span{color:var(--muted);font-size:13px}
+  .app{display:grid;grid-template-columns:300px minmax(0,1fr) 340px;gap:12px;padding-block:10px 18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .app>div{min-width:0}
+  @media (max-width:1250px){.app{grid-template-columns:290px minmax(0,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px}}
+  @media (max-width:760px){.app{grid-template-columns:1fr}#stage{height:70vh;min-height:420px}.legend{display:none}.hud{font-size:11.5px;min-width:0}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+  .card h3{margin:0 0 8px;font-size:14px}
+  .ctl{margin:9px 0}
+  .ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+  .ctl label b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+  .ctl input[type=range]{width:100%}
+  .seg{display:flex;gap:4px;flex-wrap:wrap}
+  .seg button,.btn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;padding:5px 9px;font:inherit;font-size:12.5px;cursor:pointer}
+  .seg button.on,.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .presets button{text-align:left;font-size:12.5px;padding:6px 8px}
+  #stage{position:relative;background:var(--stage);height:calc(100vh - 110px);min-height:480px;border-radius:12px;overflow:hidden}
+  #stage canvas{display:block}
+  .tool{position:absolute;left:10px;top:10px;display:flex;gap:5px;flex-wrap:wrap;z-index:3;max-width:calc(100% - 290px)}
+  .tool button,.tool select{border:1px solid var(--tbline);background:var(--tbbg);color:var(--tbfg);border-radius:8px;padding:5px 8px;font:inherit;font-size:12.5px;cursor:pointer}
+  .tool button.on{background:#e0313f;border-color:#e0313f;color:#fff}
+  .tool .sep{width:100%;height:0}
+  .hud{position:absolute;right:10px;top:10px;z-index:3;background:var(--hudbg);color:var(--hudfg);border:1px solid var(--hudline);border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.6;min-width:240px;max-width:300px;font-variant-numeric:tabular-nums}
+  .hud .o{color:#ff9f0a}
+  .hud .v{display:inline-block;background:#e0313f;color:#fff;border-radius:6px;padding:0 6px;font-size:11.5px;margin-bottom:3px}
+  .legend{position:absolute;left:10px;bottom:10px;z-index:3;background:var(--hudbg);color:var(--hudfg);border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.6;border:1px solid var(--hudline);max-width:calc(100% - 290px)}
+  .legend i{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .cbar{position:absolute;right:10px;bottom:10px;z-index:3;background:var(--hudbg);color:var(--hudfg);border-radius:10px;padding:8px 10px;width:260px;font-size:11.5px;border:1px solid var(--hudline)}
+  .cbar .g{height:9px;border-radius:3px;background:linear-gradient(90deg,#1a52ff,var(--cbmid),#ff3333)}
+  .cbar .t{display:flex;justify-content:space-between;margin-top:2px}
+  #busy{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:4;background:var(--hudbg);color:var(--hudfg);border:1px solid var(--hudline);border-radius:8px;padding:4px 10px;font-size:12.5px;display:none}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+  td,th{padding:3px 2px;border-bottom:1px solid var(--line)}
+  th{font-weight:600;color:var(--muted);font-size:12px;text-align:right}
+  th:first-child{text-align:left}
+  td:first-child{color:var(--muted)}
+  td:not(:first-child){text-align:right}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  canvas.plot{width:100%;display:block;border-radius:8px;background:var(--stage);border:1px solid var(--line)}
+  .note{color:var(--muted);font-size:12px;line-height:1.55;margin:6px 0 0}
+  .big{font-size:13px;line-height:1.7}
+  .big b{font-variant-numeric:tabular-nums}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px}
+  button:disabled{opacity:.5;cursor:wait}
+  button:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  #windCanvas{position:absolute;inset:0}
+  #openTrajectory{width:100%;margin:0 0 10px;padding:9px}
+  .traj-dialog{width:min(1200px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);overflow:auto}
+  .traj-dialog::backdrop{background:#080d19a8;backdrop-filter:blur(4px)}
+  .traj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .traj-head h2{font-size:18px;margin:0}
+  .traj-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .traj-toolbar .seg{flex:1;min-width:0}
+  .traj-toolbar label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+  .traj-toolbar select{font:inherit;max-width:100%;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink)}
+  .traj-body{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px}
+  .traj-body>*{min-width:0}
+  .traj-scene{position:relative;height:min(62vh,560px);min-height:320px;border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none;background:var(--stage)}
+  .traj-scene canvas{display:block;max-width:100%;touch-action:none}
+  .traj-info h3{font-size:13px;margin:0 0 8px}
+  #trajLegend{display:grid;gap:9px;margin-bottom:22px}
+  #trajLegend label{display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.5}
+  #trajLegend input{margin:3px 0 0;accent-color:var(--accent);flex:0 0 auto}
+  #trajLegend span{min-width:0;flex:1}
+  #trajScaleNote{margin-top:12px;color:var(--ink)}
+  .right{min-width:0}
+  @media(max-width:1000px){.app{grid-template-columns:minmax(0,1fr)}.right{grid-column:auto;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr))}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.controls>.card{margin:0}}
+  @media(max-width:700px){.traj-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:12px}.traj-body{grid-template-columns:minmax(0,1fr)}.traj-scene{height:48vh;min-height:280px}.traj-toolbar{align-items:stretch}.traj-toolbar .seg{flex-basis:100%}#trajLegend{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}.traj-head h2{font-size:16px}.traj-info table{font-size:12px}}
+  @media(max-width:600px){.controls{grid-template-columns:minmax(0,1fr)}#stage{height:auto;min-height:0;display:flex;flex-direction:column}.tool{position:relative;left:auto;top:auto;max-width:none;padding:8px;order:1}.tool select{min-width:0;max-width:100%}.tool button{white-space:nowrap}.hud{position:relative;inset:auto;min-width:0;max-width:none;margin:0 8px 8px;order:2}#windCanvas{position:relative;inset:auto;height:380px;order:3}.cbar{position:relative;inset:auto;width:auto;margin:8px;order:4}.legend{display:none}#busy{top:auto;bottom:105px;max-width:calc(100% - 16px)}.traj-head{align-items:flex-start}#trajLegend{grid-template-columns:minmax(0,1fr)}}
+</style>
+<script src="lib/three.min.js"></script>
+<script src="flow_tables.js?v=11"></script>
+<script src="physics.js?v=11"></script>
+<script src="worker.js?v=11"></script>
+<script src="ball.js?v=11"></script>
+<script src="trajectory.js?v=11"></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="back-link" href="../index.html">← <span>Physics Lab</span></a>
-    <span class="topbar-note">風洞實驗 / FLUID DYNAMICS</span>
-    <a class="method-link" href="#method">模型與原理 ↗</a>
-  </header>
-
-  <main>
-    <header class="hero">
-      <div>
-        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> THE SCIENCE BEHIND THE SEAMS</p>
-        <h1>一條縫線，<span>如何改變氣流？</span></h1>
-        <p class="hero-description">把棒球放進數值風洞。比較光滑表面與凸起縫線，<br class="desktop-break">觀察旋轉、壓力與球後方的尾流。</p>
-      </div>
-      <div class="hero-ball" aria-hidden="true">
-        <svg viewBox="0 0 200 160"><defs><radialGradient id="ball-shade" cx="35%" cy="28%"><stop stop-color="#fffefa"/><stop offset="1" stop-color="#dbd8cb"/></radialGradient></defs><path class="air-line" d="M0 41H44M0 78H33M0 115H47M148 41C175 30 180 50 200 41M158 78C174 56 179 102 200 78M148 115C175 128 184 98 200 115"/><circle cx="96" cy="78" r="58" fill="url(#ball-shade)"/><path class="ball-seam" d="M66 29C107 54 104 102 66 128M126 29C87 54 89 102 126 128"/><path class="ball-stitches" d="M69 34L63 43M79 44L73 52M87 58L79 63M91 74L83 76M90 90L82 87M84 106L77 100M73 119L67 111M122 34L129 43M112 45L119 52M105 59L113 64M101 75L109 76M102 91L110 88M108 106L115 101M119 119L125 111"/></svg>
-        <span>縫線 × 旋轉 × 尾流</span>
-      </div>
-    </header>
-
-    <div class="model-banner"><span class="model-tag">2D CFD</span><p>實際數值演算 · 二維低 Re 截面模型 · 球速對應教學用模型 Re · 縫線放大 6 倍</p><a href="../pitch-spin/index.html">看真實球路 → SPIN 3D</a></div>
-
-    <div class="lab-layout">
-      <aside class="controls panel" aria-label="風洞控制">
-        <div class="panel-heading"><h2>設定風洞</h2><button id="reset" class="text-button" type="button">重設</button></div>
-        <div class="control-block">
-          <label for="speed">球速 <output id="speed-output" for="speed">130 <small>km/h</small></output></label>
-          <input id="speed" type="range" min="80" max="160" step="5" value="130">
-          <div class="range-labels"><span>80 km/h</span><span>160 km/h</span></div>
-          <p id="re-hint" class="control-hint">模型 Re = 135：越快，黏性越不重要，尾流越不穩定。</p>
-        </div>
-        <div class="control-block">
-          <label for="spin">旋轉速率 <output id="spin-output" for="spin">1800 <small>rpm</small></output></label>
-          <input id="spin" type="range" min="-3000" max="3000" step="100" value="1800">
-          <div class="range-labels"><span>↻ 後旋 −3000</span><span>↺ 上旋 +3000</span></div>
-          <p id="spin-direction" class="control-hint">↺ 逆時針（上旋）：球頂向左轉，升力向下</p>
-        </div>
-        <div class="control-divider"><span>縫線幾何</span><span class="seam-dot" aria-hidden="true"></span></div>
-        <div class="control-block">
-          <label for="seam-height">參考凸起高度 <output id="seam-height-output" for="seam-height">0.8 <small>mm</small></output></label>
-          <input id="seam-height" type="range" min="0" max="1.5" step="0.1" value="0.8">
-          <div class="range-labels"><span>0 · 光滑表面</span><span>1.5 mm</span></div>
-          <p class="control-hint">求解幾何使用上述高度 × 6；0 mm 時兩側完全相同。</p>
-        </div>
-        <div class="control-block">
-          <label for="seam-angle">縫線方位 <output id="seam-angle-output" for="seam-angle">35 <small>°</small></output></label>
-          <input id="seam-angle" type="range" min="0" max="180" step="5" value="35">
-          <div class="range-labels"><span>0° · 下游側</span><span>180° · 上游側</span></div>
-          <p class="control-hint">從右方起，逆時針量角；縫線方位固定。</p>
-        </div>
-        <fieldset class="seam-selection"><legend>截面上的縫線凸起數</legend><label><input type="radio" name="seam-count" value="1"><span>1 處</span></label><label><input type="radio" name="seam-count" value="2"><span>2 處</span></label><label><input type="radio" name="seam-count" value="4" checked><span>4 處</span></label></fieldset>
-        <p class="control-hint seam-count-hint">理想化截面凸起數，並非二縫線／四縫線握法。1 處最容易看出單側縫線讓尾流偏移。</p>
-        <div class="control-divider"><span>快速探索</span></div>
-        <div class="presets">
-          <button type="button" data-preset="still"><span>○</span>無旋轉</button>
-          <button type="button" data-preset="cw"><span>↻</span>後旋</button>
-          <button type="button" data-preset="ccw"><span>↺</span>上旋</button>
-          <button type="button" data-preset="seams"><span>⌁</span>單側縫線</button>
-        </div>
-        <details class="advanced"><summary>球速和雷諾數的關係</summary><p class="control-hint">Re = UD / ν。真實棒球約 10⁵，二維即時模擬算不到，所以把 80–160 km/h 依比例對應到模型 Re 60–180：球速越快，模型 Re 越高。旋轉比 S = ωR / V 依真實球速與轉速計算。</p></details>
-      </aside>
-
-      <section class="results" aria-label="氣流結果">
-        <div class="experiment-toolbar">
-          <div class="field-tabs" role="group" aria-label="流場顯示方式">
-            <button type="button" data-field="smoke" class="active" aria-pressed="true">煙線</button>
-            <button type="button" data-field="speed" aria-pressed="false">流速</button>
-            <button type="button" data-field="pressure" aria-pressed="false">壓力</button>
-            <button type="button" data-field="vorticity" aria-pressed="false">渦度</button>
-          </div>
-          <div class="run-controls"><button id="toggle-run" class="run-button" type="button" disabled>暫停</button><button id="step" class="quiet-button" type="button" disabled>前進 ½ 球徑</button></div>
-        </div>
-
-        <div class="flow-comparison">
-          <article class="flow-card">
-            <div class="flow-heading"><div><span class="case-label">A / BASELINE</span><h2>光滑表面</h2></div><span class="surface-tag">無縫線</span></div>
-            <canvas id="smooth-canvas" width="576" height="288" aria-label="光滑棒球截面的數值氣流；色彩表示目前選擇的物理量"></canvas>
-            <div class="flow-footer"><span><i class="flow-direction" aria-hidden="true">→</i> 氣流由左向右</span><span class="spin-label">↺ 1800 rpm</span></div>
-          </article>
-          <article class="flow-card seamed-card">
-            <div class="flow-heading"><div><span class="case-label">B / RAISED SEAMS</span><h2>有縫線表面</h2></div><span class="surface-tag seam-tag">凸起參與求解</span></div>
-            <canvas id="seamed-canvas" width="576" height="288" aria-label="包含凸起縫線障礙物的數值氣流，與左側使用相同風速與旋轉"></canvas>
-            <div class="flow-footer"><span><i class="seam-dot" aria-hidden="true"></i> 縫線凸起的位置參與計算</span><span id="seam-detail">4 處 · 放大 6×</span></div>
-          </article>
-        </div>
-        <div class="visual-legend">
-          <div class="color-legend"><span id="legend-min">0</span><div id="color-scale" class="color-scale speed-scale"></div><span id="legend-max">2.0</span><strong id="legend-label">流速 / 來流速度 U</strong></div>
-          <div class="legend-toggles"><label class="checkbox-label smoke-only">煙線顏色 <select id="smoke-color" aria-label="煙線顏色"><option value="speed" selected>依流速</option><option value="rainbow">每條不同色</option><option value="white">白色</option></select></label><label class="checkbox-label non-smoke"><input id="average-field" type="checkbox">時間平均</label><label class="checkbox-label"><input id="force-arrows" type="checkbox" checked>力的箭頭</label><label class="checkbox-label non-smoke"><input id="streamlines" type="checkbox" checked>數值流線</label></div>
-        </div>
-        <div class="solver-state" role="status"><span id="status-dot" class="live-dot" aria-hidden="true"></span><span id="status-text">正在初始化數值風洞…</span><span id="steps-label">0 步</span></div>
-        <noscript><p class="error-box">請啟用 JavaScript，才能執行氣流數值模擬。</p></noscript>
-
-        <div class="metrics">
-          <article class="metric panel"><p>雷諾數 Re</p><strong id="model-re">135 <small>模型</small></strong><span id="real-re">真球約 1.76 × 10⁵（D = 73 mm）</span></article>
-          <article class="metric panel"><p>表面旋轉比 <span>S = ωR / V</span></p><strong id="spin-ratio">0.191</strong><span>正值上旋（逆時針），負值後旋</span></article>
-          <article class="metric panel difference-metric force-metric"><p>時間平均的力 <span id="avg-span">（累積中）</span></p>
-            <table class="force-table"><thead><tr><th></th><th>升力 C<sub>L</sub> <small>＋向上</small></th><th>阻力 C<sub>D</sub></th></tr></thead>
-            <tbody><tr><td>光滑</td><td id="cl-smooth">—</td><td id="cd-smooth">—</td></tr><tr class="seam-row"><td>縫線</td><td id="cl-seamed">—</td><td id="cd-seamed">—</td></tr></tbody></table></article>
-        </div>
-
-        <section class="panel pressure-panel">
-          <div class="chart-heading"><div><p class="eyebrow">READ THE SURFACE</p><h2>球周圍的壓力，改變在哪裡？</h2></div><div class="chart-legend"><span class="smooth-key">光滑</span><span class="seamed-key">縫線</span><span class="instant-key">細線＝瞬時</span></div></div>
-          <canvas id="pressure-chart" width="960" height="240" aria-label="沿截面外側取樣的壓力係數 Cp 與角度關係；灰綠色為光滑、紅色為有縫線"></canvas>
-          <p class="chart-caption">Cp = (p − p∞) / (½ρU²)，p∞ 取球前方約 2.6 個球徑處的實測來流壓力。0° 在球的右方（下游），90° 在上方，180° 是正前方的停滯點（Cp ≈ 1）。粗線為時間平均（經過 4 個球徑後開始累積），細線為此刻的瞬時值。</p>
-        </section>
-
-        <div class="observation"><span class="observation-icon" aria-hidden="true">⌁</span><div><h3 id="observation-title">先讓氣流穿過球，再觀察尾流</h3><p id="observation-text">流場從理想繞流開始演算。切換條件會重新初始化；兩側始終使用相同網格、風速與旋轉，只改變表面的凸起。</p></div></div>
-        <div class="export-row"><span id="grid-label">320 × 161 格點 / 每側 · D2Q9 TRT</span><button id="export-csv" class="text-button" type="button" disabled>匯出目前流場 CSV ↓</button></div>
-      </section>
+<header>
+  <a href="../index.html" style="color:var(--muted);text-decoration:none">← Physics Lab</a>
+  <h1>棒球縫線流場實驗室</h1>
+  <span>瀏覽器內以 JavaScript 計算 · 背景執行緒＋顯卡 · 不需 Python</span>
+</header>
+<div class="app">
+  <!-- ======================= controls ======================= -->
+  <div class="controls">
+    <div class="card">
+      <h3>球路預設（右投）</h3>
+      <div class="presets seg" id="presets"></div>
     </div>
+    <div class="card">
+      <h3>出手</h3>
+      <div class="ctl"><label><span>球速</span><b id="vSpeed"></b></label><input id="speed" type="range" min="50" max="105" step="0.5"></div>
+      <div class="ctl"><label><span>轉速</span><b id="vSpin"></b></label><input id="spin" type="range" min="0" max="3300" step="10"></div>
+      <div class="ctl"><label><span>有效轉速比例（其餘為陀螺旋轉）</span><b id="vEff"></b></label><input id="eff" type="range" min="0" max="100" step="1"></div>
+      <div class="ctl"><label><span>馬格努斯方向（捕手視角時鐘）</span><b id="vClock"></b></label><input id="clock" type="range" min="0" max="12" step="0.25"></div>
+      <div class="ctl"><label><span>握法</span></label>
+        <div class="seg" id="grip"><button data-v="z">四縫線</button><button data-v="x">二縫線</button></div></div>
+      <div class="ctl"><label><span>出手時縫線相位</span><b id="vRoll"></b></label><input id="roll" type="range" min="0" max="355" step="5"></div>
+    </div>
+    <div class="card">
+      <h3>環境</h3>
+      <div class="ctl"><label><span>氣溫</span><b id="vTemp"></b></label><input id="temp" type="range" min="0" max="40" step="1"></div>
+      <div class="ctl"><label><span>相對濕度</span><b id="vRH"></b></label><input id="rh" type="range" min="0" max="100" step="5"></div>
+      <div class="ctl"><label><span>海拔</span><b id="vAlt"></b></label><input id="alt" type="range" min="0" max="2500" step="50"></div>
+    </div>
+    <div class="card">
+      <details><summary>進階：縫線與轉捩判準</summary>
+        <div class="ctl"><label><span>縫線高度 k</span><b id="vK"></b></label><input id="kh" type="range" min="0.5" max="1.4" step="0.05"></div>
+        <div class="ctl"><label><span>臨界粗糙度雷諾數 Re_k,crit</span><b id="vRk"></b></label><input id="rk" type="range" min="300" max="1200" step="25"></div>
+        <p class="note">Re_k = u(k)·k/ν；二維突起物觸發轉捩的經典值約 600（文獻範圍 400–1000）。</p>
+      </details>
+    </div>
+  </div>
 
-    <section id="method" class="method-section">
-      <div class="method-intro"><p class="eyebrow">FROM SIMULATION TO UNDERSTANDING</p><h2>看見縫線的作用，<br>也理解模型的尺度。</h2><p>這裡的色彩與流線都來自數值求解。小小的幾何凸起，會改變它附近的速度與壓力，差異逐漸傳到下游。</p></div>
-      <div class="method-cards">
-        <article><span class="method-number">01</span><h3>流場怎麼算？</h3><p>D2Q9 格子玻爾茲曼法（雙鬆弛時間 TRT），以九個離散速度分布進行碰撞與傳播，近似求解低馬赫數的黏性流動。球面和凸起採反彈邊界；表面切向速度用來近似旋轉。球受的力由每條邊界連結的動量交換加總而得。</p></article>
-        <article><span class="method-number">02</span><h3>縫線真的參與計算嗎？</h3><p>有。右側的紅色凸起是流體無法穿透的障礙格點，與球體共同改變邊界。高度放大 6 倍，讓粗網格看得見縫線。方位固定，並未隨旋轉移動。</p></article>
-        <article><span class="method-number">03</span><h3>和真實棒球差在哪裡？</h3><p>二維圓形截面在流體力學上代表長圓柱。模型 Re 為 60–180，真球約為 10⁵ 量級，球速只是依比例對應到模型 Re。此模型沒有解析三維球面、高 Re 轉捩和移動縫線，力的方向可定性對照馬格努斯效應與縫線偏移尾流（SSW），數值不能用來預測真實球路。</p></article>
+  <!-- ======================= 3-D ======================= -->
+  <div>
+    <div id="stage">
+      <div id="windCanvas" aria-label="棒球與周圍流場"></div>
+      <div class="tool">
+        <select id="varSel" title="對照組">
+          <option value="full" selected>完整模型（旋轉＋縫線）</option>
+          <option value="v_smooth">對照：光滑球（無縫線）</option>
+          <option value="v_noSpin">對照：無旋轉（有縫線）</option></select>
+        <button data-view="side" class="on">側視</button>
+        <button data-view="oblique">斜視</button>
+        <button data-view="detail">縫線近看</button>
+        <button data-view="behind">從後方</button>
+        <button data-view="catcher">捕手視角</button>
+        <button id="tgPlay" class="on">旋轉中</button>
+        <span class="sep"></span>
+        <button id="tgStream" class="on">流線</button>
+        <button id="tgPulse" class="on">流動光點</button>
+        <button id="tgInst">瞬時流線</button>
+        <button id="tgSmoke" class="on">紊流煙霧</button>
+        <button id="tgBL">邊界層狀態</button>
+        <button id="tgFar">遠處流線</button>
+        <button id="tgDof">景深：中</button>
+        <button id="tgTheme">黑底</button>
+        <select id="dotSel" title="光點密度"><option value="1">光點 少</option><option value="2">光點 中</option><option value="4" selected>光點 多</option><option value="8">光點 很多</option></select>
+        <select id="smkSel" title="煙霧粒子數（GPU）"><option value="128">煙霧 1.6 萬</option><option value="256" selected>煙霧 6.5 萬</option><option value="512">煙霧 26 萬</option></select>
+        <select id="slowSel" title="慢動作倍率">
+          <option value="1">正常速度（1×）</option><option value="10">放慢 10 倍</option><option value="50">放慢 50 倍</option>
+          <option value="200">放慢 200 倍</option><option value="400">放慢 400 倍</option>
+          <option value="800" selected>放慢 800 倍</option><option value="1600">放慢 1600 倍</option><option value="3200">放慢 3200 倍</option></select>
       </div>
-    </section>
-    <div class="reading"><span>延伸閱讀</span><a href="../pitch-spin/index.html">SPIN 投球旋轉 3D 實驗室 ↗</a><a href="https://colab.research.google.com/github/ArpowChao/arpowchao.github.io/blob/main/notebooks/baseball_aerodynamics.ipynb" target="_blank" rel="noopener">Colab：高解析度 2D 風洞 ↗</a><a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-on-a-baseball/" target="_blank" rel="noopener noreferrer">NASA · 棒球阻力 ↗</a><a href="https://journals.sagepub.com/doi/10.1177/1754337120961609" target="_blank" rel="noopener noreferrer">Smith &amp; Smith · SSW 實驗 ↗</a><a href="https://link.springer.com/article/10.1007/s00348-023-03751-3" target="_blank" rel="noopener noreferrer">縫線與流動分離研究 ↗</a><a href="https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-47-flow-simulation-complex" target="_blank" rel="noopener noreferrer">D2Q9 方法 ↗</a></div>
-    <footer class="page-footer"><span>PHYSICS LAB / BASEBALL AERODYNAMICS</span><a href="../index.html">探索更多物理實驗 →</a></footer>
-  </main>
+      <div class="hud" id="hud"></div>
+      <div id="busy">背景計算中…</div>
+      <div class="legend">
+        <div><i style="background:#ff3b30"></i>縫線：觸發轉捩　<i style="background:#ff2dc2"></i>逆壓區強制分離　<i style="background:#ffd60a"></i>迎風未觸發　<i style="background:#7c7c84"></i>分離區後</div>
+        <div><i style="background:linear-gradient(90deg,#ffd60a,#ff3b30)"></i>分離線（黃 層流 82° → 紅 縫線觸發 110°）　<i style="background:#34c759"></i>馬格努斯　<i style="background:#ff9f0a"></i>縫線力　<i style="background:#bf5af2"></i>轉軸</div>
+        <div><b>球面邊界層</b>（模型計算）：<i style="background:#5ad9ff"></i>層流　<i style="background:#ff8a1a"></i>縫線觸發紊流　<i style="background:#1a2a6c"></i>已分離</div>
+        <div><b>煙霧</b>（GPU）從分離線釋放：<i style="background:#ff8c26"></i>來自紊流側　<i style="background:#73d9ff"></i>來自層流側</div>
+        <div style="color:#9a9aa2">煙霧與瞬時流線的紊流擾動為示意（合成擾動，強度約 0.3V、St≈0.2），非紊流模擬；一般流線為時間平均流場</div>
+      </div>
+      <div class="cbar"><div class="g"></div><div class="t"><span id="cb0"></span><span id="cb1"></span><span id="cb2"></span></div>
+        <div>流線顏色 = 當地速度 / 來流：藍 慢（尾流）· 灰 來流 · 紅 快</div></div>
+    </div>
+  </div>
+
+  <!-- ======================= results ======================= -->
+  <div class="right">
+    <div class="card">
+      <h3>有／無比較：誰造成多少偏移</h3>
+      <button class="btn" id="openTrajectory" disabled>開啟 3D 軌跡（可旋轉）</button>
+      <canvas class="plot" id="plotCmp" height="300"></canvas>
+      <table id="cmpTab" style="margin-top:8px"></table>
+      <div class="big" id="cmpTxt" style="margin-top:8px"></div>
+      <p class="note">同一個出手位置、速度、方向。旋轉造成＝（有旋轉、無縫線）−（無旋轉）；縫線造成＝（完整模型）−（有旋轉、無縫線）。單位：英吋（括號內公分），捕手視角，+x＝捕手右方。</p>
+    </div>
+    <div class="card">
+      <h3>結果（完整模型，整段飛行）</h3>
+      <table id="res"></table>
+    </div>
+    <div class="card">
+      <h3>邊界層厚度 vs 縫線高度</h3>
+      <canvas class="plot" id="plotBL" height="210"></canvas>
+      <p class="note" id="blNote"></p>
+    </div>
+  </div>
+</div>
+
+<dialog id="trajectoryDialog" class="traj-dialog" aria-labelledby="trajTitle">
+  <div class="traj-head"><h2 id="trajTitle">3D 球路比較：出手 → 本壘</h2><button class="btn" id="closeTrajectory" type="button">關閉</button></div>
+  <div class="traj-toolbar">
+    <div class="seg" aria-label="預設視角">
+      <button data-traj-view="oblique" class="on" aria-pressed="true">斜視／重設</button><button data-traj-view="pitcher" aria-pressed="false">投手視角</button>
+      <button data-traj-view="catcher" aria-pressed="false">捕手視角</button><button data-traj-view="side" aria-pressed="false">側視</button>
+      <button data-traj-view="top" aria-pressed="false">俯視</button><button data-traj-view="plate" aria-pressed="false">進壘近看</button>
+    </div>
+    <label for="trajScale"><span>軌跡差異</span><select id="trajScale"><option value="1">原比例</option><option value="3">放大 ×3</option><option value="5">放大 ×5</option><option value="10">放大 ×10</option></select></label>
+  </div>
+  <div class="traj-body">
+    <div class="traj-scene"></div>
+    <div class="traj-info"><h3>顯示球路</h3><div id="trajLegend"></div><h3>進壘位置（in，原始計算值）</h3><table id="trajTable"></table><p class="note" id="trajStatus" aria-live="polite"></p></div>
+  </div>
+  <p class="note" id="trajScaleNote"></p>
+  <p class="note">左鍵／單指拖曳：旋轉 · 滾輪／雙指縮放：縮放 · Ctrl＋拖曳／右鍵：平移</p>
+</dialog>
+
+<script>
+(function(){
+if(!window.THREE||!window.BA||!window.BATrajectory||!window.BABallVisual){document.body.insertAdjacentHTML('afterbegin','<p style="padding:16px;color:#e0313f">無法載入本機繪圖或計算核心，請確認網頁旁的 JavaScript 檔案完整。</p>');return;}
+const {vec}=BA, U=BA.units;
+let light=true;
+document.documentElement.dataset.theme='light';
+const toT=a=>new THREE.Vector3(a[0],a[2],-a[1]);         // PITCHf/x -> three.js (y-up)
+const toTa=a=>[a[0],a[2],-a[1]];
+const toM=a=>[a[0],-a[2],a[1]];                            // three.js -> PITCHf/x
+const $=id=>document.getElementById(id);
+const standard=options=>{const material=new THREE.MeshStandardMaterial(options);material.color.convertSRGBToLinear();material.emissive.convertSRGBToLinear();return material;};
+
+// ------------------------------------------------------------- presets --
+const PRESETS={
+  "四縫線速球":{speed_mph:95,spin_rpm:2350,break_clock:11.5,gyro_deg:70,ball_axis:'z',roll_deg:0},
+  "二縫線伸卡":{speed_mph:93,spin_rpm:2150,break_clock:10,gyro_deg:65,ball_axis:'x',roll_deg:20},
+  "橫掃滑球":{speed_mph:83,spin_rpm:2600,break_clock:3.5,gyro_deg:55,ball_axis:'z',roll_deg:0},
+  "陀螺滑球":{speed_mph:87,spin_rpm:2450,break_clock:4,gyro_deg:15,ball_axis:'z',roll_deg:0},
+  "曲球":{speed_mph:79,spin_rpm:2600,break_clock:5.5,gyro_deg:45,ball_axis:'z',roll_deg:0,release_height_ft:6.0,aim_height_ft:1.8},
+  "變速球":{speed_mph:85,spin_rpm:1750,break_clock:9.5,gyro_deg:55,ball_axis:'x',roll_deg:20},
+  "指叉球":{speed_mph:86,spin_rpm:1300,break_clock:8.5,gyro_deg:50,ball_axis:'x',roll_deg:40},
+  "蝴蝶球":{speed_mph:70,spin_rpm:50,break_clock:12,gyro_deg:90,ball_axis:'x',roll_deg:25},
+};
+const st={speed:93,spin:2150,eff:91,clock:10,grip:'x',roll:20,temp:20,rh:50,alt:0,kh:0.9,rk:600,extra:{}};
+
+// --------------------------------------------------------------- three --
+const stage=$('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1;
+$('windCanvas').appendChild(renderer.domElement);
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0xffffff);
+const camera=new THREE.PerspectiveCamera(38,1,0.05,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0x303844,0.55));
+scene.add(new THREE.AmbientLight(0xffffff,0.12));
+const sun=new THREE.DirectionalLight(0xffffff,0.7);sun.position.set(-3,4,6);camera.add(sun);scene.add(camera);
+const target=new THREE.Vector3(1.6,0,0);
+let drag=null;
+renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId);});
+renderer.domElement.addEventListener('pointerup',()=>drag=null);
+renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;const dx=(e.clientX-drag.x)*0.008,dy=(e.clientY-drag.y)*0.008;drag={x:e.clientX,y:e.clientY};
+  const qu=new THREE.Quaternion().setFromUnitVectors(camera.up,new THREE.Vector3(0,1,0));
+  const off=camera.position.clone().sub(target).applyQuaternion(qu),sph=new THREE.Spherical().setFromVector3(off);
+  sph.theta-=dx;sph.phi=Math.min(Math.PI-0.05,Math.max(0.05,sph.phi-dy));
+  camera.position.copy(target).add(new THREE.Vector3().setFromSpherical(sph).applyQuaternion(qu.invert()));camera.lookAt(target);});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();const off=camera.position.clone().sub(target);off.multiplyScalar(e.deltaY>0?1.08:0.93);
+  off.setLength(Math.min(18,Math.max(2.5,off.length())));camera.position.copy(target).add(off);camera.lookAt(target);},{passive:false});
+
+// ball
+function leather(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#efe9de';g.fillRect(0,0,256,256);
+  for(let i=0;i<3000;i++){const v=222+Math.random()*28|0;g.fillStyle=`rgba(${v},${v-4},${v-14},.35)`;g.fillRect(Math.random()*256,Math.random()*256,1.5,1.5);}const texture=new THREE.CanvasTexture(c);texture.encoding=THREE.sRGBEncoding;return texture;}
+const ballG=new THREE.Group(); scene.add(ballG);
+ballG.add(new THREE.Mesh(new THREE.SphereGeometry(1,96,64),standard({map:leather(),roughness:.85})));
+let seamLine=null, seamStatusGeom=null, seamPtsT=[];
+function buildSeam(){
+  if(seamLine){ballG.remove(seamLine.tube,seamLine.st,seamLine.dots,seamLine.stitch);seamLine.dispose();}
+  seamLine=BABallVisual.build(THREE,model);seamPtsT=seamLine.samples;seamStatusGeom=seamLine.statusGeometry;
+  seamLine.st.visible=seamLine.dots.visible=blShell.visible;
+  ballG.add(seamLine.tube,seamLine.st,seamLine.dots,seamLine.stitch);
+}
+const STC=[[.49,.49,.52],[1,.84,.04],[1,.23,.19],[1,.18,.76]];
+
+// separation ring, arrows, axis
+const ringGeom=new THREE.BufferGeometry();
+ringGeom.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(37*3),3));
+ringGeom.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(37*3),3));
+scene.add(new THREE.Line(ringGeom,new THREE.LineBasicMaterial({vertexColors:true})));
+scene.add(new THREE.Points(ringGeom,new THREE.PointsMaterial({size:.06,vertexColors:true})));
+const arrow=c=>{const m=standard({color:c,emissive:c,emissiveIntensity:.35,roughness:.5});
+  const g=new THREE.Group(),shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,1,16),m),head=new THREE.Mesh(new THREE.ConeGeometry(.095,.26,20),m);
+  g.add(shaft,head);g.userData={shaft,head};scene.add(g);return g;};
+const arM=arrow(0x34c759),arS=arrow(0xff9f0a),arV=arrow(0x0a84ff);
+const axisL=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,3.4,12),standard({color:0xbf5af2,emissive:0xbf5af2,emissiveIntensity:.35}));scene.add(axisL);
+function setArrow(a,d,len,origin){if(len<.03||!isFinite(len)){a.visible=false;return;}a.visible=true;const L=1+len,{shaft,head}=a.userData;
+  shaft.scale.set(1,L-.26,1);shaft.position.set(0,(L-.26)/2,0);head.position.set(0,L-.13,0);
+  a.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());a.position.copy(origin||new THREE.Vector3());}
+
+// ---- depth-of-field fade shared by lines and points ------------------------
+const DOF_GLSL=`float dofA(float d,float dof,float lo,float hi){return d<0.0?mix(1.0,lo,smoothstep(0.1,0.5+0.8*dof,-d)):mix(1.0,hi,smoothstep(0.25*dof,dof*2.2,d));}`;
+const streamMat=new THREE.ShaderMaterial({
+  uniforms:{uFocus:{value:9},uDof:{value:1.4},uOp:{value:.95}},
+  vertexShader:`attribute vec3 color;varying vec3 vC;varying float vD;void main(){vC=color;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:DOF_GLSL+`uniform float uFocus,uDof,uOp;varying vec3 vC;varying float vD;void main(){gl_FragColor=vec4(vC,dofA(vD-uFocus,uDof,0.25,0.04)*uOp);}`,
+  transparent:true,depthWrite:false});
+let streamObj=null;
+const pulseMat=new THREE.ShaderMaterial({
+  uniforms:{uFocus:{value:9},uDof:{value:1.4},uSize:{value:3.2},uCol:{value:new THREE.Color(0x222326)}},
+  vertexShader:`varying float vD;uniform float uSize;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_PointSize=uSize*8.0/vD;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:DOF_GLSL+`uniform float uFocus,uDof;uniform vec3 uCol;varying float vD;void main(){vec2 c=gl_PointCoord-0.5;if(dot(c,c)>0.25)discard;gl_FragColor=vec4(uCol,0.85*dofA(vD-uFocus,uDof,0.2,0.0));}`,
+  transparent:true,depthWrite:false});
+const pulseGeom=new THREE.BufferGeometry(); const pulses=new THREE.Points(pulseGeom,pulseMat); pulses.frustumCulled=false; scene.add(pulses);
+let pulseState=[], lines=null;
+
+// ---- boundary-layer state painted on the surface (model output) ----------
+const blData=new Float32Array(36*4), blTex=new THREE.DataTexture(blData,36,1,THREE.RGBAFormat,THREE.FloatType);
+blTex.needsUpdate=true;
+const blMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+  uniforms:{uTab:{value:blTex},uV:{value:new THREE.Vector3(1,0,0)},uE1:{value:new THREE.Vector3(0,1,0)},uE2:{value:new THREE.Vector3(0,0,1)},uTime:{value:0}},
+  vertexShader:`varying vec3 vN;void main(){vN=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader:`uniform sampler2D uTab;uniform vec3 uV,uE1,uE2;uniform float uTime;varying vec3 vN;
+  void main(){vec3 n=normalize(vN);float th=acos(clamp(dot(n,uV),-1.0,1.0));float ph=atan(dot(n,uE2),dot(n,uE1));
+    vec4 t=texture2D(uTab,vec2((ph+3.14159265)/6.2831853,0.5));float trip=t.r,sep=t.g;
+    if(th>sep){gl_FragColor=vec4(0.10,0.16,0.42,0.22);return;}
+    if(th>trip){float a=sin(26.0*th-uTime*7.0+5.0*sin(11.0*ph+uTime*2.3));float b=sin(17.0*ph+9.0*th-uTime*5.0);float nz=0.5+0.5*a*b;
+      gl_FragColor=vec4(mix(vec3(1.0,0.45,0.05),vec3(1.0,0.86,0.25),nz),0.16+0.24*nz*nz);return;}
+    float st=0.5+0.5*sin(60.0*ph);gl_FragColor=vec4(0.35,0.85,1.0,0.07+0.08*st);}`});
+const blShell=new THREE.Mesh(new THREE.SphereGeometry(1.012,128,96),blMat);blShell.visible=false;scene.add(blShell);
+
+// =============================================================================
+// GPU smoke.  Particle state lives in float textures (x,y,z, age|origin) and is
+// advanced every frame by a fragment shader that evaluates the SAME 3-D field
+// as physics.js (Field3D: exact potential flow + momentum-constrained wake),
+// plus the illustrative synthetic turbulence.  Units: lengths in R, speed in
+// V, time in R/V, three.js axes.  _gpuFieldCheck() compares it with the CPU.
+// =============================================================================
+const FIELD_GLSL=`
+const float PI=3.14159265359;
+uniform sampler2D uSep;                      // 36x1: r = theta_sep, g = fMax
+uniform vec3 uU,uVh,uE1,uE2,uSide;
+uniform float uAlpha,uB0,uSm,uCD;
+float sm1(float x){x=clamp(x,0.0,1.0);return x*x*(3.0-2.0*x);}
+vec2 sepTex(float j){return texture2D(uSep,vec2((mod(j,36.0)+0.5)/36.0,0.5)).rg;}
+float sepAt(float phi){float x=(phi+PI)/(2.0*PI)*36.0-0.5;float j0=floor(x);return mix(sepTex(j0).r,sepTex(j0+1.0).r,x-j0);}
+float farOf(float ss){return 0.95*uB0*pow(1.0+max(ss-uSm,0.0)/2.0,1.0/3.0);}
+vec3 fieldVel(vec3 p,out float Wg){
+  float r=length(p);float rs=max(r,1.0);vec3 rh=p/max(r,1e-6);float ud=dot(rh,uU);
+  float k=0.5/(rs*rs*rs);vec3 upot=uU+(uU-3.0*ud*rh)*k;
+  float s=dot(p,uU);vec3 lat=p-uU*s;float phi=atan(dot(lat,uE2),dot(lat,uE1));
+  float th=sepAt(phi);float sS=-cos(th),rhoS=sin(th),slope0=cos(th)/max(sin(th),1e-3);
+  float L=1.6;float x=max(s-sS,0.0);float edge;
+  if(x<L){float t=x/L;float h00=2.0*t*t*t-3.0*t*t+1.0,h10=t*t*t-2.0*t*t+t,h01=-2.0*t*t*t+3.0*t*t;edge=h00*rhoS+h10*L*slope0+h01*farOf(sS+L);}
+  else edge=farOf(s);
+  float xb=max(s-uSm,0.0);vec3 centre=uSide*(-tan(uAlpha)*xb);
+  float zeta=length(lat-centre)/max(edge,1e-6);
+  float sig2=0.25*edge*edge;float arg=1.0-uCD/(2.0*max(sig2,1e-9));
+  float A=arg>0.0?1.0-sqrt(clamp(arg,0.0,1.0)):1.0;A=min(A,0.95);A=A+(1.3-A)*exp(-(xb/1.4)*(xb/1.4));
+  float G=exp(-2.0*zeta*zeta);float mag=1.0-A*G;vec3 uw=(uU+uSide*(-tan(uAlpha)))*mag;
+  float gate=sm1((s-sS+0.05)/0.7);float W=sm1((1.9-zeta)/0.5)*gate;
+  uw*=1.0-exp(-(rs-1.0)/0.06);
+  Wg=W*gate;
+  return upot*(1.0-W)+uw*W;
+}`;
+const SIM_FS=FIELD_GLSL+`
+uniform sampler2D uPos;uniform vec2 uRes;
+uniform float uT,uDt,uNSub,uFrame,uReset,uFast;
+uniform vec3 uK[18];uniform vec3 uA[18];uniform vec2 uAP[18];
+float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+vec4 spawn(vec2 uv,float salt,float fast){
+  float r1=hash(uv*17.1+salt),r2=hash(uv*29.7+salt*1.3),r3=hash(uv*41.3+salt*2.1),r4=hash(uv*7.9+salt*3.7);
+  float j=floor(r1*36.0);float phi=-PI+2.0*PI*(j+0.5)/36.0+(r2-0.5)*0.17;float th=sepAt(phi);
+  vec3 n=cos(th)*uVh+sin(th)*(cos(phi)*uE1+sin(phi)*uE2);vec3 p=n*(1.02+0.10*r3*r3);
+  float turb=sepTex(j).g>0.5?1.0:0.0;float age=fast>0.5?r4*2.0:0.0;
+  return vec4(p,age+turb*5000.0);
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;vec4 P=texture2D(uPos,uv);float salt=fract(uFrame*0.6180339)*97.0+fract(uT*0.137)*13.0;
+  if(uReset>0.5){vec4 s=spawn(uv,salt,0.0);float turb=s.w>2500.0?1.0:0.0;s.w=turb*5000.0-hash(uv*3.3+salt)*3.0;gl_FragColor=s;return;}
+  float turb=P.w>2500.0?1.0:0.0;float age=P.w-turb*5000.0;
+  if(age<0.0){age+=uDt;if(age>=0.0){gl_FragColor=spawn(uv,salt,0.0);return;}gl_FragColor=vec4(P.xyz,age+turb*5000.0);return;}
+  vec3 p=P.xyz;float h=uDt/uNSub;
+  float fS=0.1;float rotA=uT*fS*0.6*2.0*PI;vec3 sd=uE1*cos(rotA)+uE2*sin(rotA);
+  for(int k=0;k<6;k++){
+    if(float(k)>=uNSub)break;
+    float Wg;vec3 um=fieldVel(p,Wg);
+    vec3 x=p-uU*uT;vec3 up=vec3(0.0);
+    for(int m=0;m<18;m++){up+=uA[m]*uAP[m].x*sin(dot(uK[m],x)+uAP[m].y);}
+    float env=Wg*(1.0-exp(-age/0.6))*(turb>0.5?1.0:0.8);
+    float s=dot(p,uU);
+    vec3 shed=sd*0.12*env*sin(2.0*PI*fS*uT-2.0*PI*s/4.0);
+    vec3 v=um+up*0.30*env+shed;
+    p+=v*h;age+=h;float r=length(p);if(r<1.01)p*=1.01/r;
+    s=dot(p,uU);
+    if(s>6.5||r>4.5||age>27.0){gl_FragColor=spawn(uv,salt+float(k)*7.0,uFast);return;}
+  }
+  gl_FragColor=vec4(p,age+turb*5000.0);
+}`;
+const sepData=new Float32Array(36*4), sepTex=new THREE.DataTexture(sepData,36,1,THREE.RGBAFormat,THREE.FloatType);
+sepTex.minFilter=sepTex.magFilter=THREE.NearestFilter; sepTex.needsUpdate=true;
+// turbulence modes (three.js axes, units of R); the worker gets the same set
+const modesT=[];(function(){let s=20251025;const rnd=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};
+  for(let i=0;i<18;i++){const lam=0.35*Math.pow(2.2/0.35,i/17),k=2*Math.PI/lam;
+    const kv=vec.unit([rnd()-.5,rnd()-.5,rnd()-.5]);const a=vec.unit(vec.cross(kv,vec.unit([rnd()-.5,rnd()-.5,rnd()-.5])));
+    modesT.push({k:vec.mul(kv,k),a,amp:Math.pow(lam,1/3),ph:rnd()*6.283});}
+  const n=Math.sqrt(modesT.reduce((q,m)=>q+m.amp*m.amp/2,0));modesT.forEach(m=>m.amp/=n);})();
+const modesM=modesT.map(m=>({k:toM(m.k),a:toM(m.a),amp:m.amp,ph:m.ph}));
+const fieldUniforms={uSep:{value:sepTex},uU:{value:new THREE.Vector3(-1,0,0)},uVh:{value:new THREE.Vector3(1,0,0)},uE1:{value:new THREE.Vector3(0,1,0)},
+  uE2:{value:new THREE.Vector3(0,0,1)},uSide:{value:new THREE.Vector3(0,1,0)},uAlpha:{value:0},uB0:{value:1},uSm:{value:0},uCD:{value:0.35}};
+const gpu={ok:false,N:256,rtA:null,rtB:null,simMat:null,simScene:new THREE.Scene(),simCam:new THREE.Camera(),pts:null,renderMat:null,reset:1,frame:0,t:0};
+(function(){const gl=renderer.getContext();gpu.ok=renderer.capabilities.isWebGL2&&!!gl.getExtension('EXT_color_buffer_float');})();
+gpu.simMat=new THREE.ShaderMaterial({uniforms:Object.assign({uPos:{value:null},uRes:{value:new THREE.Vector2(256,256)},uT:{value:0},uDt:{value:0},uNSub:{value:1},uFrame:{value:0},uReset:{value:1},uFast:{value:0},
+    uK:{value:modesT.map(m=>new THREE.Vector3(...m.k))},uA:{value:modesT.map(m=>new THREE.Vector3(...m.a))},uAP:{value:modesT.map(m=>new THREE.Vector2(m.amp,m.ph))}},fieldUniforms),
+  vertexShader:`void main(){gl_Position=vec4(position.xy,0.0,1.0);}`,fragmentShader:SIM_FS,depthTest:false,depthWrite:false});
+gpu.simScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),gpu.simMat));
+gpu.renderMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.NormalBlending,
+  uniforms:{uPos:{value:null},uU:fieldUniforms.uU,uSize:{value:46},uAk:{value:.22},uFocus:{value:9},uDof:{value:1.4},uLight:{value:1}},
+  vertexShader:`attribute vec2 ref;uniform sampler2D uPos;uniform vec3 uU;uniform float uSize;varying vec2 vI;varying float vD;
+    void main(){vec4 P=texture2D(uPos,ref);float turb=P.w>2500.0?1.0:0.0;float age=P.w-turb*5000.0;float s=dot(P.xyz,uU);
+      vI=vec2(turb,age<0.0?0.0:min(1.0,age/0.3)*max(0.0,1.0-s/6.5));vec4 mv=modelViewMatrix*vec4(P.xyz,1.0);vD=-mv.z;
+      gl_PointSize=age<0.0?0.0:uSize/vD;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:DOF_GLSL+`uniform float uFocus,uDof,uLight,uAk;varying vec2 vI;varying float vD;void main(){vec2 c=gl_PointCoord-0.5;float r=dot(c,c);if(r>0.25)discard;
+    float a=dofA(vD-uFocus,uDof,0.3,0.06)*vI.y*exp(-14.0*r)*uAk;
+    if(uLight>0.5){vec3 col=vI.x>0.5?vec3(0.95,0.42,0.02):vec3(0.05,0.42,0.92);gl_FragColor=vec4(col,a);}
+    else{vec3 col=vI.x>0.5?vec3(1.0,0.55,0.15):vec3(0.45,0.85,1.0);gl_FragColor=vec4(col*a*1.3,1.0);}}`});
+function gpuInit(N){
+  gpu.N=N; if(gpu.rtA){gpu.rtA.dispose();gpu.rtB.dispose();} if(gpu.pts){scene.remove(gpu.pts);gpu.pts.geometry.dispose();}
+  if(!gpu.ok) return;
+  const opt={type:THREE.FloatType,format:THREE.RGBAFormat,minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:false,stencilBuffer:false};
+  gpu.rtA=new THREE.WebGLRenderTarget(N,N,opt); gpu.rtB=new THREE.WebGLRenderTarget(N,N,opt);
+  gpu.simMat.uniforms.uRes.value.set(N,N);
+  const ref=new Float32Array(N*N*2);for(let i=0;i<N*N;i++){ref[2*i]=(i%N+0.5)/N;ref[2*i+1]=(Math.floor(i/N)+0.5)/N;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*N*3),3));g.setAttribute('ref',new THREE.BufferAttribute(ref,2));
+  gpu.pts=new THREE.Points(g,gpu.renderMat);gpu.pts.frustumCulled=false;gpu.pts.visible=showSmoke;scene.add(gpu.pts);
+  const k={128:[72,.85],256:[52,.55],512:[34,.32]}[N]; gpu.renderMat.uniforms.uSize.value=k[0]; gpu.renderMat.uniforms.uAk.value=k[1];
+  gpu.reset=1;
+}
+function gpuStep(dtn){
+  if(!gpu.ok||!gpu.pts||!showSmoke) return;
+  const u=gpu.simMat.uniforms; gpu.t+=dtn; gpu.frame++;
+  u.uPos.value=gpu.rtA.texture; u.uT.value=gpu.t; u.uDt.value=dtn; u.uNSub.value=Math.min(6,Math.max(1,Math.ceil(dtn/0.15)));
+  u.uFast.value=u.uNSub.value>1?1:0; u.uFrame.value=gpu.frame; u.uReset.value=gpu.reset;
+  renderer.setRenderTarget(gpu.rtB); renderer.render(gpu.simScene,gpu.simCam); renderer.setRenderTarget(null);
+  const t=gpu.rtA;gpu.rtA=gpu.rtB;gpu.rtB=t; gpu.renderMat.uniforms.uPos.value=gpu.rtA.texture; gpu.reset=0;
+}
+function setFieldUniforms(ph){
+  const f=ph.field;
+  fieldUniforms.uU.value.copy(toT(f.u)); fieldUniforms.uVh.value.copy(toT(f.vhat)); fieldUniforms.uE1.value.copy(toT(f.e1));
+  fieldUniforms.uE2.value.copy(toT(f.e2)); fieldUniforms.uSide.value.copy(toT(f.sideDir));
+  fieldUniforms.uAlpha.value=f.alpha; fieldUniforms.uB0.value=f.b0; fieldUniforms.uSm.value=f.sSepMean; fieldUniforms.uCD.value=f.CD;
+  for(let j=0;j<36;j++){sepData[4*j]=ph.fr.thSep[j];sepData[4*j+1]=ph.fr.fMax[j];}
+  sepTex.needsUpdate=true;
+}
+// numerical check: GPU field vs the CPU Field3D (run from the console)
+window._gpuFieldCheck=function(){
+  const ph=curData(); if(!ph||!gpu.ok) return 'not ready';
+  const pts=[[1.3,0.2,0.1],[0.5,1.2,-0.3],[2.5,0.4,0.2],[3.5,-0.6,0.5],[-1.5,0.3,0.9],[1.0,-0.9,0.8],[4.5,0.2,-0.2],[0.3,0.2,1.15]];
+  const tex=new THREE.DataTexture(new Float32Array(8*4),8,1,THREE.RGBAFormat,THREE.FloatType);
+  const X=toT(ph.field.u);
+  pts.forEach((p,i)=>{const q=new THREE.Vector3(...p);const v=X.clone().multiplyScalar(q.x).add(toT(ph.field.e1).multiplyScalar(q.y)).add(toT(ph.field.e2).multiplyScalar(q.z));tex.image.data.set([v.x,v.y,v.z,0],4*i);});
+  tex.needsUpdate=true;
+  const m=new THREE.ShaderMaterial({uniforms:Object.assign({uIn:{value:tex}},fieldUniforms),vertexShader:`void main(){gl_Position=vec4(position.xy,0.0,1.0);}`,
+    fragmentShader:FIELD_GLSL+`uniform sampler2D uIn;void main(){vec3 p=texture2D(uIn,vec2((gl_FragCoord.x)/8.0,0.5)).xyz;float W;gl_FragColor=vec4(fieldVel(p,W),W);}`});
+  const sc=new THREE.Scene();sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),m));
+  const rt=new THREE.WebGLRenderTarget(8,1,{type:THREE.FloatType,format:THREE.RGBAFormat,minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter});
+  renderer.setRenderTarget(rt);renderer.render(sc,gpu.simCam);const out=new Float32Array(32);renderer.readRenderTargetPixels(rt,0,0,8,1,out);renderer.setRenderTarget(null);
+  // CPU reference: rebuild Field3D from the same phase data
+  // use exactly the separation table the GPU is using right now
+  const fr=Object.assign({},ph.fr,{V:1,thSep:Array.from({length:36},(_,j)=>sepData[4*j])});const F=new BA.Field3D(fr,1);
+  const res=[];let worst=0;
+  pts.forEach((p,i)=>{const v=X.clone().multiplyScalar(p[0]).add(toT(ph.field.e1).multiplyScalar(p[1])).add(toT(ph.field.e2).multiplyScalar(p[2]));
+    const cpu=toTa(F.velocity(toM([v.x,v.y,v.z])));const g=[out[4*i],out[4*i+1],out[4*i+2]];
+    const e=Math.hypot(g[0]-cpu[0],g[1]-cpu[1],g[2]-cpu[2]);worst=Math.max(worst,e);res.push({gpu:g.map(x=>+x.toFixed(4)),cpu:cpu.map(x=>+x.toFixed(4)),err:+e.toExponential(2)});});
+  return {worst_abs_err_over_V:+worst.toExponential(2),res};
+};
+
+// ---- instantaneous streamlines (computed by the worker) ---------------------
+let instMode=false, instObj=null, instTimer=0, instPending=false;
+const instMat=new THREE.ShaderMaterial({uniforms:{uFocus:{value:9},uDof:{value:1.4}},
+  vertexShader:`attribute vec3 color;varying vec3 vC;varying float vD;void main(){vC=color;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:DOF_GLSL+`uniform float uFocus,uDof;varying vec3 vC;varying float vD;void main(){gl_FragColor=vec4(vC,dofA(vD-uFocus,uDof,0.3,0.06));}`,
+  transparent:true,depthWrite:false});
+
+function divmap(r){const g=light?.36:.78;
+  if(r<1){const t=Math.max(0,Math.min(1,(r-.55)/.45));return light?[.05+(g-.05)*t,.25+(g-.25)*t,.95+(g-.95)*t]:[.10+.68*t,.32+.46*t,1-.22*t];}
+  const t=Math.min(1,(r-1)/.5);return light?[g+(.92-g)*t,g+(.08-g)*t,g+(.06-g)*t]:[.78+.22*t,.78-.58*t,.78-.62*t];}
+function linesGeometry(L){ // L: [{pts:Float32Array (R units, model axes), sp}]
+  let n=0;for(const l of L)n+=l.sp.length-1;
+  const P=new Float32Array(n*6),C=new Float32Array(n*6);let o=0;
+  for(const l of L){const p=l.pts,s=l.sp;for(let k=0;k<s.length-1;k++){
+    P.set([p[3*k],p[3*k+2],-p[3*k+1],p[3*k+3],p[3*k+5],-p[3*k+4]],o);C.set([...divmap(s[k]),...divmap(s[k+1])],o);o+=6;}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('color',new THREE.BufferAttribute(C,3));return g;
+}
+
+// ------------------------------------------------------------- compute --
+let model=null, rs=null, summary=null, cmp=null, phases=[], variants={}, curPhase=0, phaseF=0, playing=true, showPulse=true, showSmoke=true, farLines=false;
+let variant='full', jobId=0, simT=0, rings=null;
+const NPH=12; let slow=1/800;
+// ---- worker (other CPU cores); falls back to the main thread on file:// ---
+let worker=null,lastCompute=null,workerUrl=null;
+try{if(window.__BA_WORKER_SOURCE__)workerUrl=URL.createObjectURL(new Blob([window.__BA_WORKER_SOURCE__],{type:'text/javascript'}));
+worker=new Worker(workerUrl||'worker.js?v=11');worker.onmessage=e=>{if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null;}onMsg(e.data);};worker.onerror=e=>{
+  e.preventDefault();worker?.terminate();worker=null;if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null;}if(lastCompute)post(lastCompute);
+};}catch(e){worker=null;}
+function post(msg){if(msg.type==='compute')lastCompute=msg;if(worker){worker.postMessage(msg);}else{setTimeout(()=>BAWorker.handle(msg,d=>setTimeout(()=>onMsg(d),0)),0);}}
+const trajectoryDialog=$('trajectoryDialog');let trajectoryView=null;
+$('openTrajectory').onclick=()=>{if(!cmp)return;if(!trajectoryView){trajectoryView=new BATrajectory.Viewer(trajectoryDialog);trajectoryDialog.viewer=trajectoryView;}trajectoryView.setData(cmp);trajectoryView.open();};
+$('closeTrajectory').onclick=()=>trajectoryDialog.close();
+
+function spec(){
+  const g=Math.asin(Math.min(1,st.eff/100))*180/Math.PI;
+  return Object.assign({speed_mph:st.speed,spin_rpm:st.spin,break_clock:st.clock,gyro_deg:g,ball_axis:st.grip,roll_deg:st.roll},st.extra);
+}
+function recompute(){
+  jobId++; phases=[]; variants={}; rings=null;cmp=null;$('openTrajectory').disabled=true;trajectoryView?.setPending();
+  model=new BA.Model({air:BA.airFromConditions(st.temp,st.rh/100,st.alt),ball:BA.makeBall({seam_height:st.kh*1e-3}),Re_k_crit:st.rk});
+  buildSeam();
+  $('busy').style.display='block'; $('busy').textContent='背景計算中…';
+  post({type:'compute',id:jobId,startPhase:curPhase,params:{spec:spec(),temp:st.temp,rh:st.rh,alt:st.alt,kh:st.kh,rk:st.rk,farLines,modes:modesM}});
+}
+function onMsg(d){
+  if(d.id!==jobId) return;
+  if(d.type==='summary'){summary=d.summary; rs=d.release; fillResults(); drawBL(); placeStatic();}
+  else if(d.type==='compare'){cmp=d.cmp;drawCompare();$('openTrajectory').disabled=false;if(trajectoryView)trajectoryView.setData(cmp);}
+  else if(d.type==='rings'){rings=d.rings;}
+  else if(d.type==='phase'){phases[d.data.i]=d.data; const n=phases.filter(Boolean).length;
+    $('busy').textContent=`背景計算中… 縫線相位 ${n}/${NPH}`; if(n===NPH) $('busy').style.display='none';
+    if(variant==='full'&&(d.data.i===curPhase||!streamObj)) showPhase(d.data.i,true);}
+  else if(d.type==='variant'){variants[d.data.i]=d.data; if(variant===d.data.i) showData(d.data,true);}
+  else if(d.type==='inst'){instPending=false; if(!d.none&&instMode) setInst(d.lines);}
+}
+function curData(){return variant==='full'?phases[curPhase]:variants[variant];}
+function placeStatic(){
+  const vh=toT(rs.vhat), w=toT(vec.unit(rs.w));
+  axisL.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),w);
+  setArrow(arV,vh,1.0);
+  $('cb0').textContent='≤'+(0.55*rs.V).toFixed(0)+' m/s'; $('cb1').textContent='V = '+rs.V.toFixed(1); $('cb2').textContent=(1.5*rs.V).toFixed(0)+' m/s';
+  setView(view);
+}
+function showPhase(i,force){
+  if(variant!=='full') return;
+  if(i===curPhase&&!force) return; curPhase=i;
+  if(phases[i]) showData(phases[i],false);
+}
+// separation-dependent visuals: seam status, separation ring, surface
+// boundary-layer state, seam-force arrow, GPU smoke separation table
+function applySep(fr){
+  const prof=fr.status, col=seamStatusGeom.attributes.color.array, n=seamPtsT.length;
+  for(let k=0;k<=n;k++){const s=STC[prof[k%n]||0];col.set(s,3*k);}
+  seamStatusGeom.attributes.color.needsUpdate=true;
+  const rp=ringGeom.attributes.position.array, rc=ringGeom.attributes.color.array;
+  for(let j=0;j<37;j++){const jj=j%36,th=fr.thSep[jj],a=model.phi[jj];
+    const p=vec.add(vec.mul(fr.vhat,Math.cos(th)),vec.mul(vec.add(vec.mul(fr.e1,Math.cos(a)),vec.mul(fr.e2,Math.sin(a))),Math.sin(th)));
+    const t=toT(p).multiplyScalar(1.012);rp.set([t.x,t.y,t.z],3*j);const tf=fr.fMax[jj];rc.set([1,.84-.61*tf,.04+.15*tf],3*j);}
+  ringGeom.attributes.position.needsUpdate=true; ringGeom.attributes.color.needsUpdate=true;
+  for(let j=0;j<36;j++){const tt=fr.thTrip[j];blData[4*j]=(tt!==null&&isFinite(tt)&&fr.fMax[j]>0.25)?tt:9;blData[4*j+1]=fr.thSep[j];
+    sepData[4*j]=fr.thSep[j];sepData[4*j+1]=fr.fMax[j];}
+  blTex.needsUpdate=true; sepTex.needsUpdate=true;
+  setArrow(arS,toT(vec.mul(fr.e1,Math.sign(fr.C_ssw)||1)),Math.abs(fr.C_ssw)*7);
+}
+// continuous separation line: interpolate the 72-phase table at the ball's
+// current (continuous) seam phase
+function sepAtPhase(pf){
+  const NR=rings.length, x=(pf/NPH*NR)%NR, i0=Math.floor(x), i1=(i0+1)%NR, w=x-i0, a=rings[i0], b=rings[i1], nr=w<0.5?a:b;
+  const f0=summary.f0, e1=f0.e1, vh=rs.vhat;
+  return {thSep:a.thSep.map((t,j)=>t*(1-w)+b.thSep[j]*w), fMax:a.fMax.map((t,j)=>t*(1-w)+b.fMax[j]*w),
+    thTrip:nr.thTrip, status:nr.status, C_ssw:a.C_ssw*(1-w)+b.C_ssw*w, vhat:vh, e1, e2:vec.cross(vh,e1)};
+}
+function showData(ph,isVariant){
+  const fr=ph.fr;
+  const prof=fr.status, col=seamStatusGeom.attributes.color.array, n=seamPtsT.length;
+  for(let k=0;k<=n;k++){const s=STC[prof[k%n]||0];col.set(s,3*k);}
+  seamStatusGeom.attributes.color.needsUpdate=true;
+  seamLine.tube.visible=seamLine.stitch.visible=(variant!=='v_smooth');
+  seamLine.st.visible=seamLine.dots.visible=variant!=='v_smooth'&&blShell.visible;
+  const rp=ringGeom.attributes.position.array, rc=ringGeom.attributes.color.array;
+  for(let j=0;j<37;j++){const jj=j%36,th=fr.thSep[jj],a=model.phi[jj];
+    const p=vec.add(vec.mul(fr.vhat,Math.cos(th)),vec.mul(vec.add(vec.mul(fr.e1,Math.cos(a)),vec.mul(fr.e2,Math.sin(a))),Math.sin(th)));
+    const t=toT(p).multiplyScalar(1.012);rp.set([t.x,t.y,t.z],3*j);const tf=fr.fMax[jj];rc.set([1,.84-.61*tf,.04+.15*tf],3*j);}
+  ringGeom.attributes.position.needsUpdate=true; ringGeom.attributes.color.needsUpdate=true;
+  setArrow(arM,toT(fr.mhat.some(x=>x)?fr.mhat:[0,0,1]),fr.CL*7); setArrow(arS,toT(vec.mul(fr.e1,Math.sign(fr.C_ssw)||1)),Math.abs(fr.C_ssw)*7);
+  for(let j=0;j<36;j++){const tt=fr.thTrip[j];blData[4*j]=(tt!==null&&isFinite(tt)&&fr.fMax[j]>0.25)?tt:9;blData[4*j+1]=fr.thSep[j];}
+  blTex.needsUpdate=true; blMat.uniforms.uV.value.copy(toT(fr.vhat));blMat.uniforms.uE1.value.copy(toT(fr.e1));blMat.uniforms.uE2.value.copy(toT(fr.e2));
+  setFieldUniforms(ph);
+  if(streamObj){scene.remove(streamObj);streamObj.geometry.dispose();}
+  streamObj=new THREE.LineSegments(linesGeometry(ph.streams),streamMat);streamObj.frustumCulled=false;streamObj.visible=showStream;scene.add(streamObj);
+  lines=ph.streams.map(L=>{const pts=[];for(let k=0;k<L.sp.length;k++)pts.push(new THREE.Vector3(L.pts[3*k],L.pts[3*k+2],-L.pts[3*k+1]));
+    let len=0;for(let k=1;k<pts.length;k++)len+=pts[k].distanceTo(pts[k-1]);return{pts,sp:L.sp,seg:len/(pts.length-1)};});
+  seedPulses();
+  if(isVariant){const q=ph.rot;ballG.quaternion.set(q[0],q[2],-q[1],q[3]);}
+  drawHud(ph);
+}
+function drawHud(ph){
+  const fr=ph.fr, f=ph.field;
+  const vlab={full:'完整模型',v_smooth:'對照：光滑球（無縫線）',v_noSpin:'對照：無旋轉（有縫線）'}[variant];
+  const tms=ph.i>=0?ph.i/NPH*60e3/Math.max(rs.spec.spin_rpm,1):0;
+  $('hud').innerHTML=`<span class="v">${vlab}</span><br><b>${rs.spec.speed_mph} mph · ${variant==='v_noSpin'?0:rs.spec.spin_rpm} rpm</b><br>`+
+    `Re = ${fr.Re.toExponential(2)} · S = ${fr.S.toFixed(3)}<br>`+
+    (variant==='full'?`縫線相位 ${(360*ph.i/NPH).toFixed(0)}°（t = ${tms.toFixed(1)} ms）<br>`+
+      (slow>=1?`<b>正常速度</b>：每格轉 ${(rs.spec.spin_rpm/60/60*360).toFixed(0)}°（車輪效應），氣流每格走 ${(rs.V/60/model.ball.R).toFixed(0)} R<br>`
+        :`放慢 ${Math.round(1/slow)} 倍：實際每秒 ${(rs.spec.spin_rpm/60).toFixed(1)} 圈<br>`):'')+
+    `被縫線觸發的子午線 ${fr.fMax.filter(x=>x>.5).length}/36<br>`+
+    `C_D = ${(fr.CD+fr.dCD).toFixed(3)} · C_L = ${fr.CL.toFixed(3)}<br>`+
+    `<span class="o">縫線力 C_SSW = ${fr.C_ssw>=0?'+':''}${fr.C_ssw.toFixed(4)}</span><br>尾流偏轉 ${(f.alpha*180/Math.PI).toFixed(1)}°`;
+}
+let pulsePerLine=4;
+function seedPulses(){
+  if(!lines) return;
+  pulseState=[];lines.forEach((l,li)=>{const n=l.pts.length-1;for(let k=0;k<pulsePerLine;k++)pulseState.push({li,t:(k+Math.random()*0.6)/pulsePerLine*n});});
+  pulseGeom.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pulseState.length*3),3));
+}
+function stepPulses(dt){
+  if(!lines||!rs) return; const pos=pulseGeom.attributes.position.array;
+  pulseState.forEach((q,k)=>{const l=lines[q.li],n=l.pts.length,i=Math.min(n-2,Math.floor(q.t)),f=q.t-i;
+    q.t+=l.sp[i]*dt*(rs.V/model.ball.R*slow)/Math.max(l.seg,1e-3); q.t%=(n-1);
+    const a=l.pts[i],b=l.pts[i+1]; pos[3*k]=a.x+(b.x-a.x)*f; pos[3*k+1]=a.y+(b.y-a.y)*f; pos[3*k+2]=a.z+(b.z-a.z)*f;});
+  pulseGeom.attributes.position.needsUpdate=true;
+}
+function setInst(L){ if(instObj){scene.remove(instObj);instObj.geometry.dispose();} instObj=new THREE.LineSegments(linesGeometry(L),instMat);instObj.frustumCulled=false;scene.add(instObj); }
+
+// ---------------------------------------------------------------- views --
+let view='side', dof=1.4, showStream=true;
+function setView(v){
+  view=v; document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  if(!rs||!summary) return;
+  const f0=summary.f0;
+  const X=toT(vec.mul(rs.vhat,-1)), side=toT(f0.mhat.some(x=>x)?f0.mhat:f0.e1);
+  const N=new THREE.Vector3().crossVectors(X,side).normalize();
+  target.copy(X).multiplyScalar(1.6); camera.up.set(0,1,0);
+  if(v==='side'){camera.up.copy(side);camera.position.copy(target).addScaledVector(N,11).addScaledVector(side,0.6);}
+  else if(v==='oblique'){camera.up.copy(side);camera.position.copy(target).addScaledVector(N,7).addScaledVector(side,4).addScaledVector(X,-2.5);}
+  else if(v==='detail'){target.set(0,0,0);camera.up.copy(side);camera.position.copy(target).addScaledVector(N,4.2).addScaledVector(side,2.4).addScaledVector(X,-1.5);}
+  else if(v==='behind'){target.set(0,0,0);camera.position.copy(X).multiplyScalar(8);}
+  else if(v==='catcher'){target.set(0,0,0);camera.position.copy(X).multiplyScalar(-8);}
+  camera.lookAt(target);
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+$('tgPlay').onclick=e=>{playing=!playing;e.target.classList.toggle('on',playing);e.target.textContent=playing?'旋轉中':'已暫停';};
+$('tgPulse').onclick=e=>{showPulse=!showPulse;pulses.visible=showPulse;e.target.classList.toggle('on',showPulse);};
+$('tgDof').onclick=e=>{const L=[[0.7,'淺'],[1.4,'中'],[3.0,'深'],[99,'關']];let i=L.findIndex(x=>x[0]===dof);i=(i+1)%L.length;dof=L[i][0];e.target.textContent='景深：'+L[i][1];};
+$('tgBL').onclick=e=>{blShell.visible=!blShell.visible;e.target.classList.toggle('on',blShell.visible);if(seamLine)seamLine.st.visible=seamLine.dots.visible=blShell.visible&&variant!=='v_smooth';};
+$('tgSmoke').onclick=e=>{showSmoke=!showSmoke;if(gpu.pts)gpu.pts.visible=showSmoke;e.target.classList.toggle('on',showSmoke);};
+$('tgStream').onclick=e=>{showStream=!showStream;if(streamObj)streamObj.visible=showStream;e.target.classList.toggle('on',showStream);};
+$('tgInst').onclick=e=>{instMode=!instMode;e.target.classList.toggle('on',instMode);if(!instMode&&instObj){scene.remove(instObj);instObj=null;}};
+$('tgTheme').onclick=e=>{light=!light;document.documentElement.dataset.theme=light?'light':'dark';
+  e.target.textContent=light?'黑底':'白底';scene.background.set(light?0xffffff:0x0b0c0f);
+  pulseMat.uniforms.uCol.value.set(light?0x222326:0xffffff);gpu.renderMat.uniforms.uLight.value=light?1:0;
+  gpu.renderMat.blending=light?THREE.NormalBlending:THREE.AdditiveBlending;gpu.renderMat.needsUpdate=true;
+  const d=curData();if(d)showData(d,variant!=='full');trajectoryView?.setTheme(light);drawCompare();drawBL();};
+$('dotSel').onchange=e=>{pulsePerLine=+e.target.value;seedPulses();};
+$('smkSel').onchange=e=>{gpuInit(+e.target.value);};
+$('slowSel').onchange=e=>{slow=1/(+e.target.value);const d=curData();if(d)drawHud(d);};
+$('tgFar').onclick=e=>{farLines=!farLines;e.target.classList.toggle('on',farLines);recompute();};
+$('varSel').onchange=e=>{variant=e.target.value;gpu.reset=1;
+  if(variant==='full'){ if(phases[curPhase]) showData(phases[curPhase],false); }
+  else if(variants[variant]) showData(variants[variant],true);
+  else { $('busy').style.display='block'; $('busy').textContent='計算對照流場…'; post({type:'variant',id:jobId,which:variant.slice(2)}); }
+  if(variant!=='full'&&variants[variant]) $('busy').style.display='none';};
+
+// --------------------------------------------------------------- panels --
+function fillResults(){
+  const s=summary, f=s.f0, a=model.air;
+  const rows=[['飛行時間',s.flight_time.toFixed(3)+' s'],['進壘球速',s.plate_speed_mph.toFixed(1)+' mph（減速 '+s.speed_loss_pct.toFixed(1)+'%）'],
+    ['誘導垂直位移 IVB',s.ivb.toFixed(1)+' in（'+(s.ivb*2.54).toFixed(0)+' cm）'],['水平位移 HB',s.hb.toFixed(1)+' in（+ 捕手右方）'],
+    ['總下墜',s.drop.toFixed(1)+' in'],['飛行中旋轉圈數',s.revolutions.toFixed(1)],
+    ['Re / 轉速參數 S',f.Re.toExponential(2)+' / '+f.S.toFixed(3)],['C_D / C_L（出手）',(f.CD+f.dCD).toFixed(3)+' / '+f.CL.toFixed(3)],
+    ['空氣密度 ρ',a.rho.toFixed(4)+' kg/m³'],['動黏度 ν',a.nu.toExponential(3)+' m²/s']];
+  $('res').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+}
+function canvasCtx(c){const d=devicePixelRatio||1,W=c.clientWidth,H=+(c.dataset.logicalHeight||(c.dataset.logicalHeight=c.getAttribute('height')));c.width=W*d;c.height=H*d;c.style.height=H+'px';const g=c.getContext('2d');g.scale(d,d);g.fillStyle=light?'#ffffff':'#0b0c0f';g.fillRect(0,0,W,H);return[g,W,H];}
+const PAL=()=>light?{fg:'#1b1c20',muted:'#6b6e76',grid:'#e3e6eb'}:{fg:'#ffffff',muted:'#8a8a92',grid:'#2c2d33'};
+const CMP=[['full','完整模型（旋轉＋縫線）','#e0313f'],['noSeam','有旋轉、無縫線效應','#0a84ff'],['noSpin','無旋轉','#8e8e93'],['seamOnly','無旋轉、有縫線（不轉的球）','#ff9f0a']];
+function drawCompare(){
+  if(!cmp) return;
+  const [g,W,H]=canvasCtx($('plotCmp')); const P=PAL();
+  const all=[];CMP.forEach(([k])=>cmp[k].traj.forEach(p=>all.push(p)));
+  const xs=all.map(p=>p[0]/U.IN), zs=all.map(p=>p[2]/U.IN);
+  const x0=Math.min(...xs,-10),x1=Math.max(...xs,10),z0=Math.min(...zs,15),z1=Math.max(...zs,45);
+  const span=Math.max(x1-x0,z1-z0)*1.12, sc=Math.min(W,H)/span, cx=(x0+x1)/2, cz=(z0+z1)/2;
+  const X=x=>W/2+(x-cx)*sc, Z=z=>H/2-(z-cz)*sc;
+  g.strokeStyle=P.grid;g.lineWidth=1;g.strokeRect(X(-8.5),Z(42),17*sc,24*sc);
+  g.fillStyle=P.muted;g.font='11px sans-serif';g.fillText('好球帶',X(-8.5)+3,Z(42)+13);
+  CMP.forEach(([k,,c])=>{const t=cmp[k].traj;g.strokeStyle=c;g.lineWidth=k==='full'?2.5:1.6;g.setLineDash(k==='noSpin'?[5,4]:[]);g.beginPath();
+    t.forEach((p,i)=>{const a=X(p[0]/U.IN),b=Z(p[2]/U.IN);i?g.lineTo(a,b):g.moveTo(a,b);});g.stroke();g.setLineDash([]);
+    const e=cmp[k].plate;g.fillStyle=c;g.beginPath();g.arc(X(e[0]/U.IN),Z(e[2]/U.IN),k==='full'?6:4.5,0,7);g.fill();});
+  // offset arrows at the plate: spin (noSpin -> noSeam) and seams (noSeam -> full)
+  const pa=k=>[X(cmp[k].plate[0]/U.IN),Z(cmp[k].plate[2]/U.IN)];
+  const arr=(a,b,c,lab)=>{g.strokeStyle=c;g.fillStyle=c;g.lineWidth=2;g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();
+    const an=Math.atan2(b[1]-a[1],b[0]-a[0]);g.beginPath();g.moveTo(...b);g.lineTo(b[0]-8*Math.cos(an-.4),b[1]-8*Math.sin(an-.4));g.lineTo(b[0]-8*Math.cos(an+.4),b[1]-8*Math.sin(an+.4));g.fill();
+    g.font='12px sans-serif';g.fillText(lab,(a[0]+b[0])/2+6,(a[1]+b[1])/2-4);};
+  g.fillStyle=P.muted;g.font='12px sans-serif';g.fillText('捕手視角，進壘位置（in）',8,16);
+  // table
+  const IN=U.IN, f=v=>(v>=0?'+':'')+v.toFixed(1), cm=v=>(v*2.54).toFixed(0);
+  const pl=k=>cmp[k].plate, d=(a,b,i)=>(pl(a)[i]-pl(b)[i])/IN;
+  $('cmpTab').innerHTML='<tr><th>軌跡</th><th>x</th><th>z</th></tr>'+CMP.map(([k,lab,c])=>
+    `<tr><td><span class="sw" style="background:${c}"></span>${lab}</td><td>${(pl(k)[0]/IN).toFixed(1)}</td><td>${(pl(k)[2]/IN).toFixed(1)}</td></tr>`).join('');
+  const sx=d('noSeam','noSpin',0),sz=d('noSeam','noSpin',2),mx=d('full','noSeam',0),mz=d('full','noSeam',2),kx=d('seamOnly','noSpin',0),kz=d('seamOnly','noSpin',2);
+  const tot=Math.hypot(sx,sz),seam=Math.hypot(mx,mz);
+  $('cmpTxt').innerHTML=
+    `<div><span class="sw" style="background:#0a84ff"></span><b>旋轉造成</b>：水平 <b>${f(sx)}</b> in（${cm(sx)} cm），垂直 <b>${f(sz)}</b> in（${cm(sz)} cm）</div>`+
+    `<div><span class="sw" style="background:#e0313f"></span><b>縫線造成</b>（邊界層→分離→尾流）：水平 <b>${f(mx)}</b> in，垂直 <b>${f(mz)}</b> in，約為旋轉效應的 <b>${(100*seam/Math.max(tot,1e-6)).toFixed(0)}%</b></div>`+
+    `<div><span class="sw" style="background:#ff9f0a"></span><b>不轉的球只靠縫線</b>：水平 <b>${f(kx)}</b> in，垂直 <b>${f(kz)}</b> in</div>`;
+}
+function drawBL(){
+  if(!rs) return;
+  const [g,W,H]=canvasCtx($('plotBL')); const V=rs.V,nu=model.air.nu,R=model.ball.R,k=model.ball.seam_height;
+  const x=t=>36+(W-46)*t/100, y=v=>H-24-(H-36)*v/1.3;
+  g.font='11px sans-serif';g.fillStyle=PAL().muted;g.strokeStyle=PAL().grid;
+  for(let t=0;t<=100;t+=20){g.beginPath();g.moveTo(x(t),y(0));g.lineTo(x(t),y(1.3));g.stroke();g.fillText(t+'°',x(t)-8,H-8);}
+  for(let v=0;v<=1.25;v+=.25)g.fillText(v.toFixed(2),4,y(v)+4);
+  g.strokeStyle='#e0313f';g.lineWidth=2.5;g.beginPath();g.moveTo(x(0),y(k*1e3));g.lineTo(x(100),y(k*1e3));g.stroke();
+  g.fillStyle='#e0313f';g.fillText('縫線高度 k = '+(k*1e3).toFixed(2)+' mm',x(55),y(k*1e3)-6);
+  g.strokeStyle=PAL().fg;g.lineWidth=2;g.beginPath();
+  for(let t=1;t<=100;t++){const d=BA.delta99(t*Math.PI/180,V,nu,R)*1e3;t>1?g.lineTo(x(t),y(d)):g.moveTo(x(t),y(d));}g.stroke();
+  g.fillStyle=PAL().fg;g.fillText('δ99 層流邊界層 [mm]',x(8),y(0.42));
+  const d45=BA.delta99(Math.PI/4,V,nu,R), rk45=BA.ReK(Math.PI/4,V,nu,R,k);
+  let thMin=0;for(let t=1;t<80;t+=.5){if(BA.ReK(t*Math.PI/180,V,nu,R,k)>model.Re_k_crit){thMin=t;break;}}
+  $('blNote').textContent=`θ=45° 處：δ99 = ${(d45*1e3).toFixed(3)} mm，k/δ99 = ${(k/d45).toFixed(1)}，Re_k = ${rk45.toFixed(0)}。縫線只要橫跨氣流、位於 θ > ${thMin.toFixed(1)}°（且在 82° 層流分離前）就會觸發轉捩。`;
+}
+
+// -------------------------------------------------------------- controls --
+const lbl={speed:v=>v+' mph（'+(v*1.609).toFixed(0)+' km/h）',spin:v=>v+' rpm',eff:v=>v+' %',clock:v=>{const h=Math.floor(v)||12,m=Math.round((v%1)*60);return h+':'+String(m).padStart(2,'0');},
+  roll:v=>v+'°',temp:v=>v+' °C',rh:v=>v+' %',alt:v=>v+' m',kh:v=>v.toFixed(2)+' mm',rk:v=>v.toFixed(0)};
+const ids={speed:'speed',spin:'spin',eff:'eff',clock:'clock',roll:'roll',temp:'temp',rh:'rh',alt:'alt',kh:'kh',rk:'rk'};
+const vid={speed:'vSpeed',spin:'vSpin',eff:'vEff',clock:'vClock',roll:'vRoll',temp:'vTemp',rh:'vRH',alt:'vAlt',kh:'vK',rk:'vRk'};
+let timer=null; function schedule(){clearTimeout(timer);timer=setTimeout(recompute,250);}
+function syncInputs(){for(const k in ids){$(ids[k]).value=st[k];$(vid[k]).textContent=lbl[k](st[k]);}
+  document.querySelectorAll('#grip button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.grip));}
+for(const k in ids){$(ids[k]).oninput=()=>{st[k]=+$(ids[k]).value;st.extra={};$(vid[k]).textContent=lbl[k](st[k]);document.querySelectorAll('#presets button').forEach(b=>b.classList.remove('on'));schedule();};}
+document.querySelectorAll('#grip button').forEach(b=>b.onclick=()=>{st.grip=b.dataset.v;syncInputs();schedule();});
+Object.entries(PRESETS).forEach(([name,p],i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>{
+  st.speed=p.speed_mph;st.spin=p.spin_rpm;st.clock=p.break_clock;st.eff=Math.round(Math.sin(p.gyro_deg*Math.PI/180)*100);st.grip=p.ball_axis;st.roll=p.roll_deg;
+  st.extra={};if(p.release_height_ft)st.extra.release_height_ft=p.release_height_ft;if(p.aim_height_ft)st.extra.aim_height_ft=p.aim_height_ft;
+  document.querySelectorAll('#presets button').forEach(x=>x.classList.toggle('on',x===b));syncInputs();recompute();};$('presets').appendChild(b);if(i===1)b.classList.add('on');});
+
+// ------------------------------------------------------------------ loop --
+function resize(){const host=$('windCanvas'),w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',()=>{resize();drawCompare();drawBL();});resize();
+new ResizeObserver(resize).observe($('windCanvas'));
+gpuInit(256);
+if(!gpu.ok){$('smkSel').disabled=true;$('tgSmoke').textContent='紊流煙霧（此瀏覽器不支援）';}
+let last=performance.now();
+function loop(now){
+  const tStart=performance.now();
+  const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
+  if(trajectoryDialog.open){requestAnimationFrame(loop);return;}
+  if(rs&&variant==='full'){
+    if(playing){phaseF=(phaseF+dt*(rs.spec.spin_rpm/60)*slow*NPH)%NPH;const i=Math.floor(phaseF);if(i!==curPhase)showPhase(i);}
+    const q=BA.orientationForSpinAxis(rs.w,rs.spec.ball_axis,rs.spec.roll_deg+360*phaseF/NPH);ballG.quaternion.set(q[0],q[2],-q[1],q[3]);
+    if(rings&&summary) applySep(sepAtPhase(phaseF));
+  }
+  const fwd=new THREE.Vector3();camera.getWorldDirection(fwd);
+  const dF=new THREE.Vector3().sub(camera.position).dot(fwd);
+  for(const m of [streamMat,pulseMat,instMat,gpu.renderMat]){m.uniforms.uFocus.value=dF;m.uniforms.uDof.value=dof;}
+  if(showPulse) stepPulses(dt);
+  if(rs){const dtn=dt*slow*rs.V/model.ball.R; simT+=dt*slow; if(curData()) gpuStep(dtn);}
+  blMat.uniforms.uTime.value=now/1000;
+  if(instMode&&rs){instTimer+=dt;if(instTimer>0.12&&!instPending){instTimer=0;instPending=true;
+    post({type:'inst',id:jobId,i:variant==='full'?curPhase:variant,t:simT});}}
+  streamMat.uniforms.uOp.value=instMode?0.18:(showSmoke?0.55:0.95);
+  renderer.render(scene,camera);
+  // per-frame CPU cost (diagnostics; independent of display throttling)
+  window._loopMs=(window._loopMs||0)*0.95+(performance.now()-tStart)*0.05;
+  requestAnimationFrame(loop);
+}
+syncInputs(); recompute(); requestAnimationFrame(loop);
+})();
+</script>
 </body>
 </html>

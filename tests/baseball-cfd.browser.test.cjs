@@ -1,192 +1,105 @@
-/* Run against a static HTTP server, e.g. BASEBALL_CFD_TEST_URL=http://127.0.0.1:4177/apps/baseball-cfd/index.html.
- * Requires Playwright and Chromium; PLAYWRIGHT_CHROMIUM_EXECUTABLE may select an installed browser.
- */
-'use strict';
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const { chromium } = require('playwright');
+// Run against a static HTTP server with BASEBALL_CFD_TEST_URL; requires Playwright.
+// Dev dependency: playwright; production HTML needs no Node or Python.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const output=path.resolve(process.env.BASEBALL_CFD_TEST_ARTIFACT_DIR||'scratch/baseball-cfd');
+const base=process.env.BASEBALL_CFD_TEST_URL||'http://127.0.0.1:4177/apps/baseball-cfd/index.html';
+fs.mkdirSync(output,{recursive:true});
+const pause=()=>new Promise(resolve=>setTimeout(resolve,120));
 
-const url = process.env.BASEBALL_CFD_TEST_URL || 'http://127.0.0.1:4177/apps/baseball-cfd/index.html';
-const artifactDir = path.resolve(process.env.BASEBALL_CFD_TEST_ARTIFACT_DIR || 'scratch');
-fs.mkdirSync(artifactDir, { recursive: true });
-
-(async () => {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
-  const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
+async function audit(page,label) {
+  const failures=await page.evaluate(()=>{
+    const errors=[],visible=el=>el.getClientRects().length>0;
+    if(document.documentElement.scrollWidth>innerWidth+1)errors.push('page horizontal overflow');
+    for(const el of document.querySelectorAll('.app,.controls,.right,.tool,.ctl label,.traj-head,.traj-toolbar,.traj-toolbar .seg,.traj-toolbar label,.traj-body,#trajLegend,#trajLegend label')){
+      if(!visible(el))continue;const style=getComputedStyle(el);
+      if(['grid','flex','inline-grid','inline-flex'].includes(style.display)&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))errors.push('anonymous grid/flex text: '+el.className);
+      if(el.scrollWidth>el.clientWidth+2)errors.push('component overflow: '+el.className);
+    }
+    for(const el of document.querySelectorAll('#trajLegend span,.traj-info .note,#trajScaleNote,.traj-head h2')){
+      if(!visible(el))continue;const style=getComputedStyle(el);
+      if(el.getBoundingClientRect().width<120)errors.push('unreadably narrow: '+el.id+' '+el.tagName);
+      if(style.writingMode!=='horizontal-tb'||style.wordBreak==='break-all')errors.push('bad typography');
+      if(el.scrollWidth>el.clientWidth+2)errors.push('prose overflow: '+el.id);
+    }
+    return errors;
+  });
+  assert.deepEqual(failures,[],label+': '+failures.join(', '));
+}
+async function ready(page) {
+  await page.waitForFunction(()=>!document.querySelector('#openTrajectory').disabled&&document.querySelector('#cmpTxt').textContent.length>0,null,{timeout:90000});
+}
+async function state(page) {return page.evaluate(()=>{const v=document.querySelector('#trajectoryDialog').viewer;return {camera:v.camera.position.toArray(),target:v.target.toArray(),distance:v.camera.position.distanceTo(v.target),scale:v.factor,plate:v.comparison.full.plate.slice()};});}
+async function main() {
+  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{})});
+  const report={};
   try {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 1050 }, acceptDownloads: true });
-    // Font availability must not determine whether a numerical test can finish.
-    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, (route) => route.fulfill({ status: 200, body: '', contentType: 'text/css' }));
-    await context.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
-    await context.addInitScript(() => {
-      // Observe real worker messages, avoiding timing guesses about UI readiness.
-      window.__cfdTest = { snapshot: null, errors: [] };
-      const OriginalWorker = window.Worker;
-      window.Worker = class extends OriginalWorker {
-        constructor(...args) {
-          super(...args);
-          this.addEventListener('message', ({ data }) => {
-            if (data.type === 'snapshot') window.__cfdTest.snapshot = data;
-            if (data.type === 'error') window.__cfdTest.errors.push(data.message);
-          });
-        }
-      };
+    const context=await browser.newContext({viewport:{width:1440,height:1000},deviceScaleFactor:2});
+    const errors=[],requests=[];
+    context.on('request',r=>requests.push({url:r.url(),method:r.method()}));
+    const page=await context.newPage();
+    page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+    await page.goto(base,{waitUntil:'networkidle'});await ready(page);
+    assert.equal(await page.evaluate(()=>BA_TABLES.source),'javascript-rk4-shooting-and-thwaites');
+    assert.ok(Math.abs(await page.evaluate(()=>BA_TABLES.fs.fpp0[25])-.4696)<1e-6);
+    assert.ok(page.workers().length>0,'real Web Worker was not started');
+    await page.screenshot({path:path.join(output,'desktop.png'),fullPage:true});
+    await page.locator('#openTrajectory').click();await pause();
+    assert.equal(await page.locator('#trajLegend input').count(),4);
+    assert.equal(await page.locator('[data-traj-view]').count(),6);
+    const redPixels=await page.evaluate(()=>{
+      const v=document.querySelector('#trajectoryDialog').viewer;v.renderer.render(v.scene,v.camera);
+      const c=document.createElement('canvas');c.width=v.canvas.width;c.height=v.canvas.height;
+      const g=c.getContext('2d');g.drawImage(v.canvas,0,0);const pixels=g.getImageData(0,0,c.width,c.height).data;
+      let count=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i]>150&&pixels[i]>pixels[i+1]*1.6&&pixels[i]>pixels[i+2]*1.4)count++;return count;
     });
-    const page = await context.newPage();
-    const pageErrors = [], consoleErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-    async function waitReady(predicate, expected) {
-      await page.waitForFunction(({ predicate, expected }) => {
-        const s = window.__cfdTest.snapshot;
-        return s && !document.getElementById('toggle-run').disabled &&
-          s.smooth.diagnostics.stable && s.seamed.diagnostics.stable &&
-          (predicate === 'steps' ? s.smooth.steps >= expected :
-           predicate === 'paused' ? !s.running :
-           predicate === 'config' ? Object.entries(expected).every(([k, v]) => s.config[k] === v) && s.smooth.steps === 0 : true);
-      }, { predicate, expected }, { timeout: 60000 });
+    assert.ok(redPixels>1000,'the trajectory itself is missing (only endpoint markers were rendered)');
+    const box=await page.locator('.traj-scene canvas').boundingBox();
+    const before=await state(page),cx=box.x+box.width*.5,cy=box.y+box.height*.55;
+    await page.mouse.move(cx,cy);await page.mouse.down();await page.mouse.move(cx+70,cy+35,{steps:8});await page.mouse.up();await pause();
+    let after=await state(page);assert.notDeepEqual(after.camera,before.camera);assert.ok(Math.abs(after.distance-before.distance)<1e-6);
+    await page.mouse.wheel(0,150);await pause();const zoomed=await state(page);assert.ok(zoomed.distance>after.distance);
+    await page.keyboard.down('Control');await page.mouse.down();await page.mouse.move(cx+110,cy+50,{steps:5});await page.mouse.up();await page.keyboard.up('Control');await pause();
+    assert.notDeepEqual((await state(page)).target,zoomed.target);
+    for(const key of ['pitcher','catcher','side','top','plate','oblique']){await page.locator(`[data-traj-view="${key}"]`).click();assert.equal(await page.locator(`[data-traj-view="${key}"]`).getAttribute('aria-pressed'),'true');}
+    const table=await page.locator('#trajTable').innerText();
+    await page.locator('#trajScale').selectOption('5');await pause();assert.equal(await page.locator('#trajTable').innerText(),table);
+    assert.deepEqual((await state(page)).plate,before.plate);
+    assert.ok(await page.evaluate(()=>{const v=document.querySelector('#trajectoryDialog').viewer;return Math.abs(v.paths.full.at(-1)[1]-v.comparison.full.plate[1])<1e-12;}));
+    const check=page.locator('#trajLegend input[data-case="full"]');await check.uncheck();
+    assert.equal(await page.evaluate(()=>document.querySelector('#trajectoryDialog').viewer.objects.full[0].visible),false);await check.check();
+    await page.locator('[data-traj-view="plate"]').click();await pause();await page.locator('#trajectoryDialog').screenshot({path:path.join(output,'plate-comparison.png')});
+    await page.locator('#trajScale').selectOption('1');await page.locator('[data-traj-view="oblique"]').click();
+    await page.keyboard.press('Escape');assert.equal(await page.locator('#trajectoryDialog').evaluate(d=>d.open),false);
+    const oldPlate=(await state(page)).plate;
+    await page.locator('#presets button').filter({hasText:'曲球'}).click();await ready(page);await page.locator('#openTrajectory').click();await pause();
+    assert.notDeepEqual((await state(page)).plate,oldPlate,'new JS calculation did not update trajectory');
+    const source=await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison));
+    for(const width of [320,390,768,1024,1440]) {
+      await page.setViewportSize({width,height:1000});await pause();await audit(page,'modal '+width);
+      assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison)),source);
+      if(width===320||width===1440)await page.locator('#trajectoryDialog').screenshot({path:path.join(output,`trajectory-${width}.png`)});
+      await page.locator('#closeTrajectory').click();await pause();await audit(page,'page '+width);
+      assert.equal(await page.locator('#plotCmp').evaluate(c=>c.style.height),'300px','DPR resize multiplied the 2D canvas height');
+      if(width===320)await page.locator('#stage').screenshot({path:path.join(output,'wind-tunnel-320.png')});
+      await page.locator('#openTrajectory').click();await pause();
     }
-    async function steps() { return page.evaluate(() => window.__cfdTest.snapshot.smooth.steps); }
-    async function setRange(id, value) {
-      await page.locator(`#${id}`).evaluate((input, value) => { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); }, String(value));
-    }
-    async function pause() {
-      await page.locator('#toggle-run').click();
-      await waitReady('paused');
-      assert.equal(await page.locator('#toggle-run').textContent(), '繼續');
-      assert.equal(await page.locator('#step').isEnabled(), true);
-    }
-    async function noOverflow(width) {
-      const dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, body: document.body.scrollWidth, html: document.documentElement.scrollWidth }));
-      assert.ok(dimensions.body <= width && dimensions.html <= width, `page should fit ${width}px viewport: ${JSON.stringify(dimensions)}`);
-      for (const selector of ['.controls', '.experiment-toolbar', '.flow-comparison', '.pressure-panel', '.export-row']) {
-        const box = await page.locator(selector).boundingBox();
-        assert.ok(box && box.x >= 0 && box.x + box.width <= width + 1, `${selector} should stay inside ${width}px viewport`);
-      }
-    }
-    const canvasImage = () => page.locator('#smooth-canvas').evaluate((canvas) => canvas.toDataURL());
+    await page.setViewportSize({width:390,height:900});await pause();
+    const touchBox=await page.locator('.traj-scene canvas').boundingBox(),tx=touchBox.x+touchBox.width/2,ty=touchBox.y+touchBox.height/2;
+    const cdp=await context.newCDPSession(page);await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true});
+    const oldDistance=(await state(page)).distance;
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:tx-25,y:ty,id:1},{x:tx+25,y:ty,id:2}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:tx-50,y:ty,id:1},{x:tx+50,y:ty,id:2}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await pause();assert.ok((await state(page)).distance<oldDistance,'touch pinch did not zoom');
+    assert.ok(requests.every(r=>r.method==='GET'),'server-side calculation request detected');
+    assert.ok(!requests.some(r=>/\/tables\.js|\.py(?:\?|$)|\/api\//.test(r.url)),'legacy Python output/API was requested');
+    assert.deepEqual(errors,[]);
+    report.browser={worker:true,orbit:true,zoom:true,pan:true,pinch:true,presets:6,cases:4,liveJSRecalculation:true,viewports:[320,390,768,1024,1440],noPythonRequests:true};
+    await context.close();
 
-    await waitReady('steps', 510);
-    await pause();
-    const pausedSteps = await steps();
-    await page.waitForTimeout(250);
-    assert.equal(await steps(), pausedSteps, 'pause must freeze real numerical steps');
-    assert.match(await page.locator('#status-text').textContent(), /已暫停/);
-    await noOverflow(1440);
-    await page.screenshot({ path: path.join(artifactDir, 'baseball-cfd-desktop.png'), fullPage: true });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await noOverflow(390);
-    await page.screenshot({ path: path.join(artifactDir, 'baseball-cfd-mobile.png'), fullPage: true });
-    await page.setViewportSize({ width: 320, height: 800 });
-    await noOverflow(320);
-    await page.setViewportSize({ width: 1440, height: 1050 });
-    console.log(`default flow screenshots saved at ${pausedSteps} synchronized steps`);
-
-    await page.locator('#step').click();
-    await page.waitForFunction((expected) => window.__cfdTest.snapshot.smooth.steps === expected, pausedSteps + 120);
-    assert.equal(await steps(), pausedSteps + 120, 'single-step must advance exactly half a diameter (120 steps)');
-    await page.waitForTimeout(150);
-    assert.equal(await steps(), pausedSteps + 120, 'single-step must leave the solver paused');
-    assert.equal(await page.evaluate(() => window.__cfdTest.snapshot.seamed.steps), pausedSteps + 120, 'both cases advance together');
-
-    await setRange('speed', 150);
-    await setRange('spin', -2000);
-    await setRange('seam-height', 1.1);
-    await setRange('seam-angle', 75);
-    await waitReady('config', { speedKmh: 150, spinRpm: -2000, seamHeightMm: 1.1, seamAngleDeg: 75, modelRe: 165 });
-    assert.equal(await page.locator('#toggle-run').textContent(), '繼續', 'changing parameters must preserve paused state');
-    assert.equal(await page.locator('#steps-label').textContent(), '0 步', 'changed conditions start a new snapshot');
-    assert.match(await page.locator('#speed-output').textContent(), /150/);
-    assert.match(await page.locator('#spin-output').textContent(), /2000/);
-    assert.match(await page.locator('#spin-direction').textContent(), /順時針/);
-    assert.match(await page.locator('#seam-height-output').textContent(), /1\.1/);
-    assert.match(await page.locator('#model-re').textContent(), /^165/, 'ball speed sets the model Re');
-    assert.match(await page.locator('#re-hint').textContent(), /165/);
-    assert.match(await page.locator('#spin-ratio').textContent(), /^−/);
-
-    await page.locator('[name="seam-count"][value="2"]').check();
-    await waitReady('config', { seamCount: 2 });
-    assert.match(await page.locator('#seam-detail').textContent(), /^2 處/);
-    assert.equal(await page.evaluate(() => window.__cfdTest.snapshot.seamed.geometry.seamCenters.length), 2, 'seam count must reach numerical geometry');
-
-    await setRange('seam-height', 0);
-    await waitReady('config', { seamHeightMm: 0 });
-    await page.locator('#step').click();
-    await page.waitForFunction(() => window.__cfdTest.snapshot.smooth.steps === 120);
-    assert.ok(await page.evaluate(() => JSON.stringify(window.__cfdTest.snapshot.smooth.forces) === JSON.stringify(window.__cfdTest.snapshot.seamed.forces)), 'zero-height control must produce identical forces');
-    assert.match(await page.locator('#observation-title').textContent(), /相同流場/);
-
-    assert.equal(await page.locator('[data-field="smoke"]').getAttribute('aria-pressed'), 'true', 'smoke tunnel view is the default');
-    await page.locator('[data-field="speed"]').click();
-    await page.waitForTimeout(40);
-    const speedImage = await canvasImage();
-    for (const [field, legend] of [['pressure', '壓力係數 Cp'], ['vorticity', '渦度 × D / U'], ['smoke', '煙線顏色＝流速（來流速度在中間的綠色）'], ['speed', '流速 / 來流速度 U']]) {
-      await page.locator(`[data-field="${field}"]`).click();
-      assert.equal(await page.locator('#legend-label').textContent(), legend);
-      assert.equal(await page.locator(`[data-field="${field}"]`).getAttribute('aria-pressed'), 'true');
-      assert.equal(await page.locator('[data-field][aria-pressed="true"]').count(), 1);
-      await page.waitForTimeout(40);
-      if (field !== 'speed') assert.notEqual(await canvasImage(), speedImage, `${field} must render a different actual field`);
-      assert.equal(await steps(), 120, 'display modes must preserve the numerical snapshot');
-    }
-    const linesImage = await canvasImage();
-    await page.locator('#streamlines').uncheck();
-    await page.waitForTimeout(40);
-    assert.notEqual(await canvasImage(), linesImage, 'streamline control must alter rendering');
-    await page.locator('#streamlines').check();
-
-    for (const [preset, config] of [
-      ['still', { spinRpm: 0 }], ['ccw', { spinRpm: 1800 }],
-      ['cw', { spinRpm: -1800 }], ['seams', { spinRpm: 0, seamAngleDeg: 95, seamHeightMm: 1.5, seamCount: 1 }]
-    ]) {
-      await page.locator(`[data-preset="${preset}"]`).click();
-      await waitReady('config', config);
-      assert.equal(await page.locator(`[data-preset="${preset}"]`).getAttribute('aria-pressed'), 'true');
-      assert.equal(await page.locator('#toggle-run').textContent(), '繼續', 'presets must preserve paused state');
-    }
-
-    // Export includes both complete grids, genuine current metadata, and finite fluid fields.
-    await page.locator('#step').click();
-    await page.waitForFunction(() => window.__cfdTest.snapshot.smooth.steps === 120);
-    const grid = await page.evaluate(() => ({ nx: window.__cfdTest.snapshot.smooth.nx, ny: window.__cfdTest.snapshot.smooth.ny }));
-    const downloadPromise = page.waitForEvent('download');
-    await page.locator('#export-csv').click();
-    const download = await downloadPromise;
-    assert.equal(download.suggestedFilename(), 'baseball-cfd-Re165-120steps.csv');
-    const csvPath = path.join(artifactDir, 'baseball-cfd-export.csv');
-    await download.saveAs(csvPath);
-    const lines = fs.readFileSync(csvPath, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/);
-    assert.match(lines[0], /2D low-Re cylinder model/);
-    assert.match(lines[1], /speed_kmh=150,spin_rpm=0,model_Re=165/);
-    assert.match(lines[1], /seam_reference_mm=1\.5/);
-    assert.match(lines[1], /seam_count=1,steps=120$/);
-    assert.equal(lines[4], 'case,x_grid,y_grid,solid,ux_lattice,uy_lattice,rho_lattice,Cp,Cp_mean,vorticity_lattice');
-    const rows = lines.slice(5);
-    assert.equal(rows.length, 2 * grid.nx * grid.ny, 'CSV must include every cell of both grids');
-    assert.equal(rows[0].split(',').slice(0, 3).join(','), 'smooth,0,0');
-    assert.equal(rows[grid.nx * grid.ny].split(',').slice(0, 3).join(','), 'seamed,0,0');
-    assert.equal(rows.at(-1).split(',').slice(0, 3).join(','), `seamed,${grid.nx - 1},${grid.ny - 1}`);
-    assert.ok(rows.every((row) => {
-      const cells = row.split(',');
-      return cells.length === 10 && cells.slice(1).every((cell) => Number.isFinite(Number(cell)));
-    }), 'CSV numerical fields must all be finite');
-
-    await page.locator('#reset').click();
-    await waitReady('steps', 24);
-    const resetConfig = await page.evaluate(() => window.__cfdTest.snapshot.config);
-    for (const [key, expected] of Object.entries({ speedKmh: 130, spinRpm: 1800, seamHeightMm: .8, seamAngleDeg: 35, seamCount: 4, modelRe: 135 })) assert.equal(resetConfig[key], expected, `reset restores ${key}`);
-    assert.equal(await page.locator('#toggle-run').textContent(), '暫停', 'reset must resume the solver');
-    assert.equal(await page.locator('#step').isDisabled(), true);
-    assert.equal(await page.locator('[name="seam-count"][value="4"]').isChecked(), true);
-    assert.equal(await page.locator('[data-preset].active').count(), 0, 'reset clears preset selection');
-    assert.deepEqual(await page.evaluate(() => window.__cfdTest.errors), [], 'worker should report no solver errors');
-    assert.deepEqual(pageErrors, [], 'browser should report no uncaught errors');
-    assert.deepEqual(consoleErrors, [], 'browser should report no console errors');
-    console.log(`baseball CFD browser tests passed; CSV ${rows.length} rows; responsive widths 1440, 390, 320`);
-  } finally {
-    await browser.close();
-  }
-})().catch((error) => { console.error(error); process.exitCode = 1; });
+    fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+  } finally {await browser.close();}
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});

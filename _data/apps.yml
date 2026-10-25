@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年10月26日"
+    entry: "改版「棒球氣流實驗室」：3D 縫線棒球與可旋轉球路，對照旋轉及縫線造成的進壘偏移；邊界層、受力與軌跡全部以瀏覽器 JavaScript／Web Worker 計算，支援手機操作。"
   - date: "2026年10月25日"
     entry: "新增「CANNON 牛頓大砲與軌道誕生實驗室」：完整重現 1687《自然哲學的數學原理》高山大砲思想實驗與 Reel 五發連射（低速墜地、跨洲弧線、第一宇宙速度圓軌道、橢圓軌道、第二宇宙速度逃逸），結合保辛 Velocity Verlet 數值積分、地球曲率 8 km 落差 5 m 幾何放大鏡與能量相圖。"
   - date: "2026年10月21日"
@@ -95,10 +97,10 @@ projects:
     tags: ["Physics", "Orbit", "Gravity", "Kepler", "Simulation"]
   - title: "棒球氣流實驗室"
     image: "/assets/img/apps/baseball-cfd.svg"
-    description: "像煙霧風洞一樣看見棒球後方的卡門渦街。以二維格子波茲曼法 (LBM) 並排比較光滑球與有縫線球，調整球速、後旋／上旋與縫線位置，直接讀出升力與阻力，觀察馬格努斯效應與縫線讓尾流偏移。"
+    description: "以 3D 真實縫線棒球探索邊界層、分離與尾流；調整球速、轉軸、握法與縫線高度，在瀏覽器用 JavaScript 計算受力和四組球路。可旋轉視角、放大縫線，對照旋轉與縫線造成的進壘偏移。"
     url: "/apps/baseball-cfd/index.html"
     category: "力學"
-    tags: ["Physics", "CFD", "Baseball", "LBM", "Simulation"]
+    tags: ["Physics", "Baseball", "3D", "Fluid Dynamics", "Simulation"]
   - title: "帶電球的近距離電力"
     image: "/assets/img/apps/charged_spheres_thumbnail.svg"
     description: "兩個固定均勻帶電實心球靠近時，合力仍精確等於球心庫倫公式。調整間距與電荷，對照解析公式和數值分割加總，驗證兩球不重疊時的近距離與遠距離結果。"
