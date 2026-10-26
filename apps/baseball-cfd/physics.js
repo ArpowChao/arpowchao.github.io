@@ -207,6 +207,9 @@
       this.ball = opts.ball || makeBall();
       this.Re_k_crit = opts.Re_k_crit || C.Re_k_crit;
       this.useSeam = opts.useSeam !== false;
+      this.liftLaw = opts.liftLaw || 'piecewise';
+      this.cdReference = opts.cdReference;
+      this.aeroReference = opts.aeroReference;
       this.nPhi = 36;
       this.seam = sampleSeam(1200, this.ball.p);
       this.phi = []; for (let j = 0; j < this.nPhi; j++) this.phi.push(-PI + 2 * PI * j / this.nPhi + PI / this.nPhi);
@@ -287,9 +290,21 @@
       if (wpm < 1e-6) [e1, e2] = flowBasis(vhat); else { e1 = mul(wPerp, 1 / wpm); e2 = cross(vhat, e1); }
       const S = wpm * ball.R / V, eff = wm > 1e-9 ? wpm / wm : 0;
       const mc = cross(w, vhat), mhat = norm(mc) > 1e-12 ? unit(mc) : [0, 0, 0];
-      const CD = cdBaseball(Re, S), CL = clNathan(S);
+      const CD = Number.isFinite(this.cdReference) ? this.cdReference : cdBaseball(Re, S);
+      // Nathan 2020 Eq. 10 (prescription b); the gyro-spin ambiguity is stated
+      // in that paper. The legacy law remains for reference regression checks.
+      const CL = this.liftLaw === 'nathan2020b' ? .336 * (1 - Math.exp(-6.041 * S)) : clNathan(S);
       let F = add(mul(vhat, -CD * q), mul(mhat, CL * q));
       const out = { V, Re, S, eff, CD, CL, vhat, e1, e2, mhat, C_ssw: 0, C_m: 0, CD_mech: 0, dCD: 0 };
+      if(this.aeroReference){
+        // Empirical TOTAL transverse force. This cannot be uniquely split into
+        // Magnus and SSW from public 2-D spin data. Do not add seam forces to it.
+        const ref=this.aeroReference,side=unit(sub(ref.side,mul(vhat,dot(ref.side,vhat))));
+        out.CD=ref.CD;out.CL=ref.CL;out.mhat=side;out.empiricalTotal=true;
+        if(wantProfile&&rot){const sp=this.separationProfile(V,rot,vhat,e1);out.thSep=sp.thSep;out.fMax=sp.fMax;out.thTrip=sp.thTrip;out.profile=sp;}
+        out.force=add(mul(vhat,-ref.CD*q),mul(side,ref.CL*q));
+        return out;
+      }
       if (this.useSeam && rot) {
         const sp = this.separationProfile(V, rot, vhat, e1);
         const res = stripForces(sp.thSep, this.phi);
@@ -343,6 +358,17 @@
     return null;
   }
   function spinVector(spec, vhat) {
+    if (Number.isFinite(spec.spin_axis_deg)) {
+      // Nathan 2024, Eq. 4: preserve the observed x-z projection, then solve
+      // the missing polar angle using the explicitly estimated efficiency.
+      const phi=spec.spin_axis_deg*PI/180,A=vhat[0]*Math.cos(phi)+vhat[2]*Math.sin(phi),B=vhat[1];
+      const D2=A*A+B*B,eff=Math.sin(spec.gyro_deg*PI/180);
+      const k=(spec.handedness==='L'?-1:1)*Math.min(Math.sqrt(D2),Math.sqrt(Math.max(0,1-eff*eff)));
+      const h=Math.sqrt(Math.max(0,D2-k*k));
+      let s=(A*k-B*h)/D2,c=(B*k+A*h)/D2;
+      if(s<0){s=(A*k+B*h)/D2;c=(B*k-A*h)/D2;}
+      return mul(unit([s*Math.cos(phi),c,s*Math.sin(phi)]),spec.spin_rpm*RPM);
+    }
     const ang = (spec.break_clock % 12) * 2 * PI / 12;
     let mh = add(mul([0, 0, 1], Math.cos(ang)), mul([1, 0, 0], Math.sin(ang)));
     mh = unit(sub(mh, mul(vhat, dot(mh, vhat))));
@@ -356,16 +382,45 @@
     spec = Object.assign({}, DEFAULT_SPEC, spec);
     const pos0 = [spec.release_side_ft * FT, (60.5 - spec.extension_ft) * FT, spec.release_height_ft * FT];
     const tgt = [spec.aim_side_ft * FT, PLATE_FRONT_Y, spec.aim_height_ft * FT];
-    const d = unit(sub(tgt, pos0)), V = spec.speed_mph * MPH, w = spinVector(spec, d);
+    let d = unit(sub(tgt, pos0));
+    if (Number.isFinite(spec.launch_elevation_deg) && Number.isFinite(spec.launch_azimuth_deg)) {
+      const e = spec.launch_elevation_deg * PI / 180, a = spec.launch_azimuth_deg * PI / 180;
+      d = [Math.cos(e) * Math.sin(a), -Math.cos(e) * Math.cos(a), Math.sin(e)];
+    }
+    const V = spec.speed_mph * MPH, w = spinVector(spec, d);
     return { spec, pos0, vel0: mul(d, V), vhat: d, V, w, rot0: orientationForSpinAxis(w, spec.ball_axis, spec.roll_deg) };
   }
-  function pitchSummary(model, specIn, dt = 5e-4) {
+  // Shoot the full physical model at a plate target by correcting the initial
+  // direction. Never translate the computed path or aim the comparison cases
+  // separately: all cases must share this one release state.
+  function aimPitch(model, specIn, target = { x_ft: 0, z_ft: 2.5 }, {wind=[0,0,0]}={}) {
+    const spec = Object.assign({}, DEFAULT_SPEC, specIn);
+    delete spec.launch_elevation_deg; delete spec.launch_azimuth_deg;
+    const goal = [target.x_ft * FT, PLATE_FRONT_Y, target.z_ft * FT];
+    let error = Infinity, iterations = 0;
+    for (; iterations < 8; iterations++) {
+      const rs = releaseState(spec);
+      const tr = integrate(model, rs.pos0, rs.vel0, rs.w, rs.rot0, { dt: 5e-4, stopY: PLATE_FRONT_Y,wind });
+      const hit = atPlaneY(tr, PLATE_FRONT_Y)[1];
+      const dx = goal[0] - hit[0], dz = goal[2] - hit[2];
+      error = Math.hypot(dx, dz);
+      if (error < 0.002) break;
+      // The straight-line intercept has a near-unit plate-position Jacobian.
+      // A damped correction also remains stable for slow breaking pitches.
+      if (iterations < 7) {
+        spec.aim_side_ft += 0.95 * dx / FT;
+        spec.aim_height_ft += 0.95 * dz / FT;
+      }
+    }
+    return { spec, error_m: error, iterations: Math.min(iterations + 1, 8), converged: error < 0.002 };
+  }
+  function pitchSummary(model, specIn, dt = 5e-4, { wind = [0,0,0] } = {}) {
     const rs = releaseState(specIn);
-    const tr = integrate(model, rs.pos0, rs.vel0, rs.w, rs.rot0, { dt, stopY: PLATE_FRONT_Y });
-    const ref0 = new Model({ air: model.air, ball: model.ball, Re_k_crit: model.Re_k_crit, useSeam: false });
-    const ref = integrate(ref0, rs.pos0, rs.vel0, [0, 0, 0], null, { dt, stopY: PLATE_FRONT_Y });
+    const tr = integrate(model, rs.pos0, rs.vel0, rs.w, rs.rot0, { dt, stopY: PLATE_FRONT_Y, wind });
+    const ref0 = new Model({ air: model.air, ball: model.ball, Re_k_crit: model.Re_k_crit, useSeam: false, liftLaw:model.liftLaw,cdReference:model.cdReference });
+    const ref = integrate(ref0, rs.pos0, rs.vel0, [0, 0, 0], null, { dt, stopY: PLATE_FRONT_Y, wind });
     const [tf, pf, vf] = atPlaneY(tr, PLATE_FRONT_Y), [, pr] = atPlaneY(ref, PLATE_FRONT_Y);
-    const f0 = model.forces(rs.vel0, rs.w, rs.rot0);
+    const f0 = model.forces(sub(rs.vel0,wind), rs.w, rs.rot0);
     return {
       traj: tr, ref, release: rs, f0,
       flight_time: tf, plate_speed_mph: norm(vf) / MPH, release_speed_mph: rs.V / MPH,
@@ -468,7 +523,7 @@
   const BA = { Q, vec: { add, sub, mul, dot, cross, norm, unit }, airFromConditions, makeBall, sampleSeam, seamCurve,
     orientationForSpinAxis, advanceOrientation, flowBasis, velocityAt, ReK, delta99, thetaM, lamAt,
     cdBaseball, clNathan, stripForces, basePressure, Model, integrate, atPlaneY, spinVector, releaseState,
-    pitchSummary, Field3D, resample, units: { FT, IN, MPH, RPM }, PLATE_FRONT_Y, CONST: C };
+    aimPitch, pitchSummary, Field3D, resample, units: { FT, IN, MPH, RPM }, PLATE_FRONT_Y, CONST: C };
   root.BA = BA;
   if (typeof module !== 'undefined') module.exports = BA;
 })(typeof window !== 'undefined' ? window : globalThis);

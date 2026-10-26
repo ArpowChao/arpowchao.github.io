@@ -1,6 +1,6 @@
 changelog:
   - date: "2026年10月26日"
-    entry: "改版「棒球氣流實驗室」：3D 縫線棒球與可旋轉球路，對照旋轉及縫線造成的進壘偏移；邊界層、受力與軌跡全部以瀏覽器 JavaScript／Web Worker 計算，支援手機操作。"
+    entry: "改版「棒球氣流實驗室」：以 2025 MLB Statcast 八顆實際投球個案設定出手位置、方向與球速，預設 101.1 mph 四縫線速球；3D 比較官方軌跡與模型誤差，分開呈現總氣動力推演與縫線機制假設。氣溫、濕度、測站氣壓及風速均進入純 JavaScript 計算。"
   - date: "2026年10月25日"
     entry: "新增「CANNON 牛頓大砲與軌道誕生實驗室」：完整重現 1687《自然哲學的數學原理》高山大砲思想實驗與 Reel 五發連射（低速墜地、跨洲弧線、第一宇宙速度圓軌道、橢圓軌道、第二宇宙速度逃逸），結合保辛 Velocity Verlet 數值積分、地球曲率 8 km 落差 5 m 幾何放大鏡與能量相圖。"
   - date: "2026年10月21日"
@@ -97,7 +97,7 @@ projects:
     tags: ["Physics", "Orbit", "Gravity", "Kepler", "Simulation"]
   - title: "棒球氣流實驗室"
     image: "/assets/img/apps/baseball-cfd.svg"
-    description: "以 3D 真實縫線棒球探索邊界層、分離與尾流；調整球速、轉軸、握法與縫線高度，在瀏覽器用 JavaScript 計算受力和四組球路。可旋轉視角、放大縫線，對照旋轉與縫線造成的進壘偏移。"
+    description: "以 MLB Statcast 真實投球個案設定球速、出手位置與方向，旋轉 3D 球路並與官方軌跡比較誤差。可調氣溫、濕度、氣壓與風；總氣動力推演及縫線機制模型分開標示，全部以瀏覽器 JavaScript 計算。"
     url: "/apps/baseball-cfd/index.html"
     category: "力學"
     tags: ["Physics", "Baseball", "3D", "Fluid Dynamics", "Simulation"]

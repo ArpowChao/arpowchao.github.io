@@ -13,7 +13,7 @@
 (function (root) {
   'use strict';
   const inWorker = typeof importScripts === 'function' && typeof window === 'undefined';
-  if (inWorker && !root.BA) importScripts('flow_tables.js?v=11', 'physics.js?v=11');
+  if (inWorker && !root.BA) importScripts('flow_tables.js?v=14', 'physics.js?v=14');
   const BA = root.BA;
   const NPH = 12;
   let job = null;
@@ -29,7 +29,7 @@
   function computePhase(j, i) {
     const { model, rs, farLines } = j;
     const rot = BA.orientationForSpinAxis(rs.w, rs.spec.ball_axis, rs.spec.roll_deg + 360 * i / NPH);
-    const fr = model.forces(rs.vel0, rs.w, rot, true);
+    const fr = model.forces(rs.velAir || rs.vel0, rs.w, rot, true);
     const F = new BA.Field3D(fr, model.ball.R);
     const radii = farLines ? [.12, .22, .33, .45, .58, .72, .88, 1.05, 1.25, 1.5, 1.85, 2.3]
                            : [.1, .17, .25, .33, .42, .52, .63, .75, .88, 1.02, 1.18, 1.36];
@@ -51,10 +51,13 @@
 
   function start(msg, post) {
     const p = msg.params;
-    const model = new BA.Model({ air: BA.airFromConditions(p.temp, p.rh / 100, p.alt),
-                                 ball: BA.makeBall({ seam_height: p.kh * 1e-3 }), Re_k_crit: p.rk });
-    const rs = BA.releaseState(p.spec);
-    const s = BA.pitchSummary(model, p.spec);
+    const model = new BA.Model({ air: BA.airFromConditions(p.temp, p.rh / 100, p.alt, p.pressure),
+      ball: BA.makeBall({ seam_height: p.kh * 1e-3 }), Re_k_crit: p.rk,liftLaw:p.liftLaw,cdReference:p.cdReference,aeroReference:p.aeroReference });
+    const aim = p.autoAim ? BA.aimPitch(model, p.spec, p.target,{wind:p.wind||[0,0,0]}) : null;
+    const pitchSpec = aim ? aim.spec : p.spec;
+    const rs = BA.releaseState(pitchSpec);
+    const wind=p.wind||[0,0,0];rs.velAir=BA.vec.sub(rs.vel0,wind);
+    const s = BA.pitchSummary(model, pitchSpec,5e-4,{wind});
     job = { id: msg.id, model, rs, farLines: p.farLines, modes: p.modes, fields: [], order: [] };
     const sub = a => a.filter((_, k) => k % 3 === 0 || k === a.length - 1);
     post({ type: 'summary', id: msg.id,
@@ -62,7 +65,8 @@
                  ivb: s.ivb, hb: s.hb, drop: s.drop, revolutions: s.revolutions,
                  f0: { Re: s.f0.Re, S: s.f0.S, CD: s.f0.CD, dCD: s.f0.dCD, CL: s.f0.CL, mhat: s.f0.mhat, e1: s.f0.e1, vhat: s.f0.vhat },
                  traj: sub(s.traj.pos), ref: sub(s.ref.pos) },
-      release: { vhat: rs.vhat, w: rs.w, V: rs.V, vel0: rs.vel0, spec: rs.spec } });
+      release: { vhat: BA.vec.unit(rs.velAir), w: rs.w, V: BA.vec.norm(rs.velAir), pitchV:rs.V,vel0: rs.vel0, pos0: rs.pos0, spec: rs.spec },
+      aim: aim && { error_m: aim.error_m, iterations: aim.iterations, converged: aim.converged } });
     // ---- with / without comparison --------------------------------------
     // full model            : spin + seams (the trajectory above)
     // spin, no seam effects : Magnus only            -> isolates the seam effect
@@ -70,9 +74,9 @@
     // no spin, seams        : fixed orientation      -> seam force on a ball that
     //                         does not turn (knuckleball-like)
     const PFY = BA.PLATE_FRONT_Y;
-    const noSeamModel = new BA.Model({ air: model.air, ball: model.ball, Re_k_crit: model.Re_k_crit, useSeam: false });
-    const trNoSeam = BA.integrate(noSeamModel, rs.pos0, rs.vel0, rs.w, rs.rot0, { dt: 5e-4, stopY: PFY });
-    const trSeamOnly = BA.integrate(model, rs.pos0, rs.vel0, [0, 0, 0], rs.rot0, { dt: 5e-4, stopY: PFY });
+    const noSeamModel = new BA.Model({ air: model.air, ball: model.ball, Re_k_crit: model.Re_k_crit, useSeam: false,liftLaw:model.liftLaw,cdReference:model.cdReference });
+    const trNoSeam = BA.integrate(noSeamModel, rs.pos0, rs.vel0, rs.w, rs.rot0, { dt: 5e-4, stopY: PFY,wind });
+    const trSeamOnly = BA.integrate(model, rs.pos0, rs.vel0, [0, 0, 0], rs.rot0, { dt: 5e-4, stopY: PFY,wind });
     const result = tr => { const hit=BA.atPlaneY(tr, PFY); return {plate:hit[1],time:hit[0],traj:sub(tr.pos)}; };
     post({ type: 'compare', id: msg.id, cmp: {
       full: result(s.traj), noSeam: result(trNoSeam),
@@ -83,7 +87,7 @@
     const NR = 72, rings = [];
     for (let r = 0; r < NR; r++) {
       const rot = BA.orientationForSpinAxis(rs.w, rs.spec.ball_axis, rs.spec.roll_deg + 360 * r / NR);
-      const fr = model.forces(rs.vel0, rs.w, rot, true);
+      const fr = model.forces(rs.velAir, rs.w, rot, true);
       rings.push({ thSep: fr.thSep, fMax: fr.fMax, thTrip: fr.thTrip, C_ssw: fr.C_ssw,
                    status: fr.profile.status.filter((_, k) => k % 4 === 0) });
     }
@@ -150,12 +154,12 @@
     const { model, rs } = job, C = BA.CONST;
     let fr;
     if (msg.which === 'smooth') {
-      fr = model.forces(rs.vel0, rs.w, rs.rot0, true);
+      fr = model.forces(rs.velAir || rs.vel0, rs.w, rs.rot0, true);
       fr = Object.assign({}, fr, { thSep: fr.thSep.map(() => C.theta_sep_lam), fMax: fr.fMax.map(() => 0),
         thTrip: fr.thTrip.map(() => NaN), C_ssw: 0, C_m: 0, dCD: 0.47 - fr.CD,
         profile: Object.assign({}, fr.profile, { status: fr.profile.status.map(() => 0) }) });
     } else {
-      fr = model.forces(rs.vel0, [0, 0, 0], rs.rot0, true);
+      fr = model.forces(rs.velAir || rs.vel0, [0, 0, 0], rs.rot0, true);
     }
     const F = new BA.Field3D(fr, model.ball.R);
     const seeds = F.seedsUpstream([.1, .17, .25, .33, .42, .52, .63, .75, .88, 1.02, 1.18, 1.36], 16, -3.0).map(p => ({ p, k: 0 }))

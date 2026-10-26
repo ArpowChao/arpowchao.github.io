@@ -12,6 +12,7 @@
   @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#eef0f3;--panel:#fff;--panel2:#f5f6f8;--ink:#1b1c20;--muted:#62646c;--line:#dcdfe5;--stage:#ffffff;--hudbg:#ffffffe8;--hudfg:#1b1c20;--hudline:#d6d9df;--tbbg:#ffffffe8;--tbfg:#222326;--tbline:#cfd3da;--cbmid:#5a5a5e;color-scheme:light}}
   :root[data-theme="light"]{--bg:#eef0f3;--panel:#fff;--panel2:#f5f6f8;--ink:#1b1c20;--muted:#62646c;--line:#dcdfe5;--stage:#ffffff;--hudbg:#ffffffe8;--hudfg:#1b1c20;--hudline:#d6d9df;--tbbg:#ffffffe8;--tbfg:#222326;--tbline:#cfd3da;--cbmid:#5a5a5e;color-scheme:light}
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","Noto Sans TC","PingFang TC",system-ui,sans-serif;font-size:14px}
   header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-block:14px 4px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   header h1{margin:0;font-size:22px;letter-spacing:.03em}
@@ -55,6 +56,7 @@
   .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
   canvas.plot{width:100%;display:block;border-radius:8px;background:var(--stage);border:1px solid var(--line)}
   .note{color:var(--muted);font-size:12px;line-height:1.55;margin:6px 0 0}
+  .note a{color:var(--accent);overflow-wrap:anywhere}
   .big{font-size:13px;line-height:1.7}
   .big b{font-variant-numeric:tabular-nums}
   details summary{cursor:pointer;color:var(--muted);font-size:13px}
@@ -86,11 +88,13 @@
   @media(max-width:600px){.controls{grid-template-columns:minmax(0,1fr)}#stage{height:auto;min-height:0;display:flex;flex-direction:column}.tool{position:relative;left:auto;top:auto;max-width:none;padding:8px;order:1}.tool select{min-width:0;max-width:100%}.tool button{white-space:nowrap}.hud{position:relative;inset:auto;min-width:0;max-width:none;margin:0 8px 8px;order:2}#windCanvas{position:relative;inset:auto;height:380px;order:3}.cbar{position:relative;inset:auto;width:auto;margin:8px;order:4}.legend{display:none}#busy{top:auto;bottom:105px;max-width:calc(100% - 16px)}.traj-head{align-items:flex-start}#trajLegend{grid-template-columns:minmax(0,1fr)}}
 </style>
 <script src="lib/three.min.js"></script>
-<script src="flow_tables.js?v=11"></script>
-<script src="physics.js?v=11"></script>
-<script src="worker.js?v=11"></script>
-<script src="ball.js?v=11"></script>
-<script src="trajectory.js?v=11"></script>
+<script src="flow_tables.js?v=14"></script>
+<script src="physics.js?v=14"></script>
+<script src="mlb_data.js?v=14"></script>
+<script src="mlb.js?v=14"></script>
+<script src="worker.js?v=14"></script>
+<script src="ball.js?v=14"></script>
+<script src="trajectory.js?v=14"></script>
 </head>
 <body>
 <header>
@@ -102,24 +106,52 @@
   <!-- ======================= controls ======================= -->
   <div class="controls">
     <div class="card">
-      <h3>球路預設（右投）</h3>
+      <h3>MLB 實際投球個案（2025／右投）</h3>
       <div class="presets seg" id="presets"></div>
+      <div class="ctl"><label for="modelMode"><span>計算模式</span></label><select id="modelMode"><option value="observed">MLB 總氣動力推演</option><option value="mechanism">旋轉／縫線機制模型（含假設）</option></select></div>
+      <p class="note" id="modelModeNote"></p>
+      <p class="note" id="mlbSource"></p>
+      <p class="note">每個按鈕是一顆官方追蹤個案，並非聯盟平均；預設沿用實際出手方向，不會自動搬進好球帶。</p>
     </div>
     <div class="card">
       <h3>出手</h3>
-      <div class="ctl"><label><span>球速</span><b id="vSpeed"></b></label><input id="speed" type="range" min="50" max="105" step="0.5"></div>
-      <div class="ctl"><label><span>轉速</span><b id="vSpin"></b></label><input id="spin" type="range" min="0" max="3300" step="10"></div>
-      <div class="ctl"><label><span>有效轉速比例（其餘為陀螺旋轉）</span><b id="vEff"></b></label><input id="eff" type="range" min="0" max="100" step="1"></div>
-      <div class="ctl"><label><span>馬格努斯方向（捕手視角時鐘）</span><b id="vClock"></b></label><input id="clock" type="range" min="0" max="12" step="0.25"></div>
-      <div class="ctl"><label><span>握法</span></label>
+      <div class="ctl"><label><span>出手球速</span><b id="vSpeed"></b></label><input id="speed" type="range" min="50" max="105" step="0.1"></div>
+      <div class="ctl"><label><span>總轉速</span><b id="vSpin"></b></label><input id="spin" type="range" min="0" max="3300" step="1"></div>
+      <div class="ctl"><label><span>等效主動旋轉比（推估，非實測）</span><b id="vEff"></b></label><input id="eff" type="range" min="0" max="100" step="0.1"></div>
+      <div class="ctl"><label><span>旋轉軸投影（捕手時鐘換算）</span><b id="vClock"></b></label><input id="clock" type="range" min="0" max="12" step="0.01"></div>
+      <div class="ctl"><label><span>縫線朝向假設（非該球實測握法）</span></label>
         <div class="seg" id="grip"><button data-v="z">四縫線</button><button data-v="x">二縫線</button></div></div>
-      <div class="ctl"><label><span>出手時縫線相位</span><b id="vRoll"></b></label><input id="roll" type="range" min="0" max="355" step="5"></div>
+      <div class="ctl"><label><span>縫線相位假設（資料未提供）</span><b id="vRoll"></b></label><input id="roll" type="range" min="0" max="355" step="5"></div>
+    </div>
+    <div class="card">
+      <h3>瞄準進壘位置</h3>
+      <label><input id="autoAim" type="checkbox"> 教學瞄準：改變實際出手方向以投向目標</label>
+      <div class="ctl"><label><span>目標左右（捕手右方為正）</span><b id="vTargetX"></b></label><input id="targetX" type="range" min="-20" max="20" step="0.5"></div>
+      <div class="ctl"><label><span id="targetZoneHint">目標高度</span><b id="vTargetZ"></b></label><input id="targetZ" type="range" min="10" max="50" step="0.5"></div>
+      <button class="btn" id="aimCenter" type="button">瞄準好球帶中央</button>
+      <p class="note" id="aimStatus" aria-live="polite">計算出手角度中…</p>
+      <p class="note" id="plateStatus"></p>
+      <p class="note">教學瞄準只修正模型初速，MLB 參考維持原始出手。機制模式的四組對照共用同一方向。</p>
+      <details><summary>出手位置與手動角度</summary>
+        <div class="ctl"><label><span>出手高度（不重複加投手丘）</span><b id="vReleaseHeight"></b></label><input id="releaseHeight" type="range" min="3" max="7" step="0.01"></div>
+        <div class="ctl"><label><span>出手左右（捕手右方為正）</span><b id="vReleaseSide"></b></label><input id="releaseSide" type="range" min="-4" max="4" step="0.01"></div>
+        <div class="ctl"><label><span>向本壘延伸距離</span><b id="vExtension"></b></label><input id="extension" type="range" min="3" max="8" step="0.01"></div>
+        <div class="ctl"><label><span>出手仰角（向上為正）</span><b id="vElevation"></b></label><input id="elevation" type="range" min="-12" max="12" step="0.05" disabled></div>
+        <div class="ctl"><label><span>出手偏角（捕手右方為正）</span><b id="vAzimuth"></b></label><input id="azimuth" type="range" min="-12" max="12" step="0.05" disabled></div>
+        <p class="note">取消自動瞄準後，可直接調整角度；不會把畫出的球路搬進好球帶。</p>
+      </details>
     </div>
     <div class="card">
       <h3>環境</h3>
+      <p class="note">以下為可設定的推演環境，不冒充比賽當日氣象。改變環境時保留出手方向；若開啟教學瞄準，角度會另行補償。</p>
       <div class="ctl"><label><span>氣溫</span><b id="vTemp"></b></label><input id="temp" type="range" min="0" max="40" step="1"></div>
       <div class="ctl"><label><span>相對濕度</span><b id="vRH"></b></label><input id="rh" type="range" min="0" max="100" step="5"></div>
       <div class="ctl"><label><span>海拔</span><b id="vAlt"></b></label><input id="alt" type="range" min="0" max="2500" step="50"></div>
+      <div class="ctl"><label for="pressureMode"><span>氣壓來源</span></label><select id="pressureMode"><option value="altitude">由海拔估計標準大氣</option><option value="station">自行輸入測站氣壓</option></select></div>
+      <div class="ctl"><label><span>測站氣壓（非海平面校正氣壓）</span><b id="vPressure"></b></label><input id="pressure" type="range" min="700" max="1050" step="0.1" disabled></div>
+      <div class="ctl"><label><span>橫風（往捕手右方為正）</span><b id="vWindX"></b></label><input id="windX" type="range" min="-15" max="15" step="0.5"></div>
+      <div class="ctl"><label><span>縱向風（往投手丘為正＝逆風）</span><b id="vWindY"></b></label><input id="windY" type="range" min="-15" max="15" step="0.5"></div>
+      <p class="note" id="airStatus"></p>
     </div>
     <div class="card">
       <details><summary>進階：縫線與轉捩判準</summary>
@@ -165,7 +197,7 @@
       <div id="busy">背景計算中…</div>
       <div class="legend">
         <div><i style="background:#ff3b30"></i>縫線：觸發轉捩　<i style="background:#ff2dc2"></i>逆壓區強制分離　<i style="background:#ffd60a"></i>迎風未觸發　<i style="background:#7c7c84"></i>分離區後</div>
-        <div><i style="background:linear-gradient(90deg,#ffd60a,#ff3b30)"></i>分離線（黃 層流 82° → 紅 縫線觸發 110°）　<i style="background:#34c759"></i>馬格努斯　<i style="background:#ff9f0a"></i>縫線力　<i style="background:#bf5af2"></i>轉軸</div>
+        <div><i style="background:linear-gradient(90deg,#ffd60a,#ff3b30)"></i>假設分離線　<i style="background:#34c759"></i><span id="lateralForceLabel">總橫向力（追蹤推估）</span>　<i style="background:#ff9f0a"></i>機制模式縫線力　<i style="background:#bf5af2"></i>轉軸</div>
         <div><b>球面邊界層</b>（模型計算）：<i style="background:#5ad9ff"></i>層流　<i style="background:#ff8a1a"></i>縫線觸發紊流　<i style="background:#1a2a6c"></i>已分離</div>
         <div><b>煙霧</b>（GPU）從分離線釋放：<i style="background:#ff8c26"></i>來自紊流側　<i style="background:#73d9ff"></i>來自層流側</div>
         <div style="color:#9a9aa2">煙霧與瞬時流線的紊流擾動為示意（合成擾動，強度約 0.3V、St≈0.2），非紊流模擬；一般流線為時間平均流場</div>
@@ -178,12 +210,13 @@
   <!-- ======================= results ======================= -->
   <div class="right">
     <div class="card">
-      <h3>有／無比較：誰造成多少偏移</h3>
+      <h3>模型對照與 MLB 追蹤參考</h3>
+      <p class="note" id="mlbResidual"></p>
       <button class="btn" id="openTrajectory" disabled>開啟 3D 軌跡（可旋轉）</button>
       <canvas class="plot" id="plotCmp" height="300"></canvas>
       <table id="cmpTab" style="margin-top:8px"></table>
       <div class="big" id="cmpTxt" style="margin-top:8px"></div>
-      <p class="note">同一個出手位置、速度、方向。旋轉造成＝（有旋轉、無縫線）−（無旋轉）；縫線造成＝（完整模型）−（有旋轉、無縫線）。單位：英吋（括號內公分），捕手視角，+x＝捕手右方。</p>
+      <p class="note">四組模型共用同一出手位置與初速。旋轉／縫線數字是模型內的假設拆分，不是 Statcast 實測拆分；參考線為官方追蹤的常加速度擬合。+x＝捕手右方，z＝離地高度。</p>
     </div>
     <div class="card">
       <h3>結果（完整模型，整段飛行）</h3>
@@ -193,6 +226,15 @@
       <h3>邊界層厚度 vs 縫線高度</h3>
       <canvas class="plot" id="plotBL" height="210"></canvas>
       <p class="note" id="blNote"></p>
+    </div>
+    <div class="card">
+      <h3>資料、文獻與可驗證範圍</h3>
+      <p class="note">預設「MLB 總氣動力推演」直接用該球運動推估總橫向力，不把它拆成未觀測的 Magnus／縫線分量。「機制模式」才使用升力公式與假設縫線增量。兩種模式都直接顯示與官方進壘點的差距。</p>
+      <p class="note">實測：球速、出手 x/y/z、延伸距離、總轉速、旋轉軸 x-z 投影、好球帶上下緣。換算：出手仰角／偏角，由 50 ft 追蹤速度與加速度回推。推估：等效主動旋轉比及有效阻力係數。假設：完整三維轉軸的缺失分量、縫線相位與高度、當地氣象。</p>
+      <p class="note">有效 CD 由該球追蹤運動、以 20°C／50% RH／1013.25 hPa 基準反推，推演時保持固定；遠離此球速度範圍的結果沒有校準保證。變更環境不重新反推，避免把環境效果抵消。係數與驗證來自同一顆球，屬個案一致性比較，不是獨立驗證。</p>
+      <p class="note">縫線模型採降階分離判準；其力值仍有未校準假設。未觀測的縫線位置與三維轉軸，無法靠公開 CSV 唯一還原。流線與煙霧是模型顯示，不是該顆球實測流場。</p>
+      <p class="note"><a href="https://baseballsavant.mlb.com/csv-docs">MLB 欄位與座標定義</a> · <a href="https://baseball.physics.illinois.edu/LiftDrag-1.pdf">Hall &amp; Nathan 2009：追蹤資料反推氣動力</a> · <a href="https://baseball.physics.illinois.edu/trackman/SpinAxisAddendum.pdf">Nathan 2020：升力式 (10)</a> · <a href="https://baseball.physics.illinois.edu/HawkeyeAveSpinComponents.pdf">Nathan 2024：三維轉軸缺失</a></p>
+      <p class="note"><a href="https://digitalcommons.usu.edu/all_datasets/191/">Garrett &amp; Smith：縫線分離實驗</a> · <a href="https://www.eol.ucar.edu/data-software/conventions-and-standards/water-vapor-pressure-formulations">NCAR：Buck 水蒸氣壓</a> · <a href="https://www.grc.nasa.gov/www/k-12/airplane/viscosity">NASA：Sutherland 黏滯係數</a></p>
     </div>
   </div>
 </div>
@@ -217,7 +259,7 @@
 
 <script>
 (function(){
-if(!window.THREE||!window.BA||!window.BATrajectory||!window.BABallVisual){document.body.insertAdjacentHTML('afterbegin','<p style="padding:16px;color:#e0313f">無法載入本機繪圖或計算核心，請確認網頁旁的 JavaScript 檔案完整。</p>');return;}
+if(!window.THREE||!window.BA||!window.BATrajectory||!window.BABallVisual||!window.BAMLB){document.body.insertAdjacentHTML('afterbegin','<p style="padding:16px;color:#e0313f">無法載入本機繪圖或計算核心，請確認網頁旁的 JavaScript 檔案完整。</p>');return;}
 const {vec}=BA, U=BA.units;
 let light=true;
 document.documentElement.dataset.theme='light';
@@ -228,17 +270,19 @@ const $=id=>document.getElementById(id);
 const standard=options=>{const material=new THREE.MeshStandardMaterial(options);material.color.convertSRGBToLinear();material.emissive.convertSRGBToLinear();return material;};
 
 // ------------------------------------------------------------- presets --
-const PRESETS={
-  "四縫線速球":{speed_mph:95,spin_rpm:2350,break_clock:11.5,gyro_deg:70,ball_axis:'z',roll_deg:0},
-  "二縫線伸卡":{speed_mph:93,spin_rpm:2150,break_clock:10,gyro_deg:65,ball_axis:'x',roll_deg:20},
-  "橫掃滑球":{speed_mph:83,spin_rpm:2600,break_clock:3.5,gyro_deg:55,ball_axis:'z',roll_deg:0},
-  "陀螺滑球":{speed_mph:87,spin_rpm:2450,break_clock:4,gyro_deg:15,ball_axis:'z',roll_deg:0},
-  "曲球":{speed_mph:79,spin_rpm:2600,break_clock:5.5,gyro_deg:45,ball_axis:'z',roll_deg:0,release_height_ft:6.0,aim_height_ft:1.8},
-  "變速球":{speed_mph:85,spin_rpm:1750,break_clock:9.5,gyro_deg:55,ball_axis:'x',roll_deg:20},
-  "指叉球":{speed_mph:86,spin_rpm:1300,break_clock:8.5,gyro_deg:50,ball_axis:'x',roll_deg:40},
-  "蝴蝶球":{speed_mph:70,spin_rpm:50,break_clock:12,gyro_deg:90,ball_axis:'x',roll_deg:25},
-};
-const st={speed:93,spin:2150,eff:91,clock:10,grip:'x',roll:20,temp:20,rh:50,alt:0,kh:0.9,rk:600,extra:{}};
+const PRESETS=Object.fromEntries(BAMLB.presets.map(p=>[p.pitch.label,p.spec]));
+const st={speed:100,spin:2350,eff:94,clock:11.5,grip:'z',roll:0,temp:20,rh:50,alt:0,kh:0.9,rk:600,
+  autoAim:false,targetX:0,targetZ:30,releaseHeight:5.8,releaseSide:-1.8,extension:6,elevation:-2,azimuth:2,
+  pressure:1013.25,pressureMode:'altitude',windX:0,windY:0,mlbID:'FF',modelMode:'observed',extra:{}};
+function applyMLB(p){
+  const s=p.spec;Object.assign(st,{mlbID:p.id,speed:s.speed_mph,spin:s.spin_rpm,clock:s.break_clock,eff:p.efficiency_estimate*100,
+    grip:s.ball_axis,roll:0,releaseHeight:s.release_height_ft,releaseSide:s.release_side_ft,extension:s.extension_ft,
+    elevation:s.launch_elevation_deg,azimuth:s.launch_azimuth_deg,autoAim:false,extra:{},targetX:p.pitch.raw.plate_x*12,targetZ:p.pitch.raw.plate_z*12});
+  const r=p.pitch.raw;
+  $('mlbSource').innerHTML=`${r.player_name} · ${r.game_date} · ${r.release_speed} mph<br>game ${r.game_pk}／打席 ${r.at_bat_number}／第 ${r.pitch_number} 球 · <a href="${p.game_url}">官方比賽資料</a><br>旋轉軸投影 ${r.spin_axis}°；當日該投手此球種 n=${p.pitch.sample_count}。`;
+  $('targetZoneHint').textContent=`目標高度（該打者好球帶 ${(p.zone.bottom/U.IN).toFixed(1)}–${(p.zone.top/U.IN).toFixed(1)} in）`;
+}
+applyMLB(BAMLB.get(st.mlbID));
 
 // --------------------------------------------------------------- three --
 const stage=$('stage');
@@ -496,7 +540,7 @@ const NPH=12; let slow=1/800;
 // ---- worker (other CPU cores); falls back to the main thread on file:// ---
 let worker=null,lastCompute=null,workerUrl=null;
 try{if(window.__BA_WORKER_SOURCE__)workerUrl=URL.createObjectURL(new Blob([window.__BA_WORKER_SOURCE__],{type:'text/javascript'}));
-worker=new Worker(workerUrl||'worker.js?v=11');worker.onmessage=e=>{if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null;}onMsg(e.data);};worker.onerror=e=>{
+worker=new Worker(workerUrl||'worker.js?v=14');worker.onmessage=e=>{if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null;}onMsg(e.data);};worker.onerror=e=>{
   e.preventDefault();worker?.terminate();worker=null;if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null;}if(lastCompute)post(lastCompute);
 };}catch(e){worker=null;}
 function post(msg){if(msg.type==='compute')lastCompute=msg;if(worker){worker.postMessage(msg);}else{setTimeout(()=>BAWorker.handle(msg,d=>setTimeout(()=>onMsg(d),0)),0);}}
@@ -506,19 +550,36 @@ $('closeTrajectory').onclick=()=>trajectoryDialog.close();
 
 function spec(){
   const g=Math.asin(Math.min(1,st.eff/100))*180/Math.PI;
-  return Object.assign({speed_mph:st.speed,spin_rpm:st.spin,break_clock:st.clock,gyro_deg:g,ball_axis:st.grip,roll_deg:st.roll},st.extra);
+  const s=Object.assign({speed_mph:st.speed,spin_rpm:st.spin,break_clock:st.clock,gyro_deg:g,ball_axis:st.grip,roll_deg:st.roll},st.extra,
+    {release_height_ft:st.releaseHeight,release_side_ft:st.releaseSide,extension_ft:st.extension,
+      spin_axis_deg:((180+(12-st.clock)*30)%360+360)%360,handedness:'R'});
+  if(!st.autoAim){s.launch_elevation_deg=st.elevation;s.launch_azimuth_deg=st.azimuth;}
+  return s;
 }
 function recompute(){
   jobId++; phases=[]; variants={}; rings=null;cmp=null;$('openTrajectory').disabled=true;trajectoryView?.setPending();
-  model=new BA.Model({air:BA.airFromConditions(st.temp,st.rh/100,st.alt),ball:BA.makeBall({seam_height:st.kh*1e-3}),Re_k_crit:st.rk});
+  const source=BAMLB.get(st.mlbID),pressure=st.pressureMode==='station'?st.pressure*100:null;
+  const aeroReference=st.modelMode==='observed'?source.aeroReference:null;
+  model=new BA.Model({air:BA.airFromConditions(st.temp,st.rh/100,st.alt,pressure),ball:BA.makeBall({seam_height:st.kh*1e-3}),Re_k_crit:st.rk,liftLaw:'nathan2020b',cdReference:source.CD_equivalent,aeroReference});
+  $('airStatus').textContent=`p ${(model.air.p/100).toFixed(1)} hPa · ρ ${model.air.rho.toFixed(4)} kg/m³ · μ ${model.air.mu.toExponential(3)} Pa·s。相對風速＝球速向量−風速向量。`;
   buildSeam();
   $('busy').style.display='block'; $('busy').textContent='背景計算中…';
-  post({type:'compute',id:jobId,startPhase:curPhase,params:{spec:spec(),temp:st.temp,rh:st.rh,alt:st.alt,kh:st.kh,rk:st.rk,farLines,modes:modesM}});
+  $('aimStatus').textContent=st.autoAim?'計算出手角度中…':'使用手動出手角度…';
+  $('plateStatus').textContent='';
+  post({type:'compute',id:jobId,startPhase:curPhase,params:{spec:spec(),autoAim:st.autoAim,target:{x_ft:st.targetX/12,z_ft:st.targetZ/12},temp:st.temp,rh:st.rh,alt:st.alt,pressure,wind:[st.windX,st.windY,0],liftLaw:'nathan2020b',cdReference:source.CD_equivalent,aeroReference,kh:st.kh,rk:st.rk,farLines,modes:modesM}});
 }
 function onMsg(d){
   if(d.id!==jobId) return;
-  if(d.type==='summary'){summary=d.summary; rs=d.release; fillResults(); drawBL(); placeStatic();}
-  else if(d.type==='compare'){cmp=d.cmp;drawCompare();$('openTrajectory').disabled=false;if(trajectoryView)trajectoryView.setData(cmp);}
+  if(d.type==='summary'){summary=d.summary; rs=d.release;
+    const d0=vec.unit(rs.vel0);st.elevation=Math.asin(d0[2])*180/Math.PI;st.azimuth=Math.atan2(d0[0],-d0[1])*180/Math.PI;syncAimInputs();
+    $('aimStatus').textContent=`${st.autoAim?'自動瞄準':'手動出手'}：仰角 ${st.elevation.toFixed(2)}°，偏角 ${st.azimuth.toFixed(2)}°`+
+      (d.aim?`；落點誤差 ${(d.aim.error_m*1000).toFixed(1)} mm${d.aim.converged?'':'（尚未收斂）'}`:'');
+    fillResults(); drawBL(); placeStatic();}
+  else if(d.type==='compare'){const source=BAMLB.get(st.mlbID);cmp=Object.assign(d.cmp,{observed:source.reference,zone:source.zone,mode:st.modelMode});drawCompare();$('openTrajectory').disabled=false;if(trajectoryView)trajectoryView.setData(cmp);
+    const x=cmp.full.plate[0]/U.IN,z=cmp.full.plate[2]/U.IN;
+    $('plateStatus').textContent=`模型落點：x ${x.toFixed(1)} in，高度 ${z.toFixed(1)} in · ${Math.abs(x)<=8.5&&z>=source.zone.bottom/U.IN&&z<=source.zone.top/U.IN?'在該打者好球帶內':'在該打者好球帶外'}`;
+    const error=Math.hypot(cmp.full.plate[0]-source.observed_plate[0],cmp.full.plate[2]-source.observed_plate[2]);
+    $('mlbResidual').textContent=`與此球官方進壘點相差 ${(error/U.IN).toFixed(2)} in（${(error*100).toFixed(1)} cm）。參考線固定；環境與模型變更不移動它。`+(st.autoAim?'教學瞄準已改變出手方向，這個差值不能當成原始個案驗證。':'係數由同球資料估算，非獨立驗證。');}
   else if(d.type==='rings'){rings=d.rings;}
   else if(d.type==='phase'){phases[d.data.i]=d.data; const n=phases.filter(Boolean).length;
     $('busy').textContent=`背景計算中… 縫線相位 ${n}/${NPH}`; if(n===NPH) $('busy').style.display='none';
@@ -589,16 +650,16 @@ function showData(ph,isVariant){
 }
 function drawHud(ph){
   const fr=ph.fr, f=ph.field;
-  const vlab={full:'完整模型',v_smooth:'對照：光滑球（無縫線）',v_noSpin:'對照：無旋轉（有縫線）'}[variant];
+  const vlab=st.modelMode==='observed'?'MLB 總氣動力推演':{full:'機制模型（含假設）',v_smooth:'對照：光滑球（無縫線）',v_noSpin:'對照：無旋轉（有縫線）'}[variant];
   const tms=ph.i>=0?ph.i/NPH*60e3/Math.max(rs.spec.spin_rpm,1):0;
   $('hud').innerHTML=`<span class="v">${vlab}</span><br><b>${rs.spec.speed_mph} mph · ${variant==='v_noSpin'?0:rs.spec.spin_rpm} rpm</b><br>`+
     `Re = ${fr.Re.toExponential(2)} · S = ${fr.S.toFixed(3)}<br>`+
     (variant==='full'?`縫線相位 ${(360*ph.i/NPH).toFixed(0)}°（t = ${tms.toFixed(1)} ms）<br>`+
       (slow>=1?`<b>正常速度</b>：每格轉 ${(rs.spec.spin_rpm/60/60*360).toFixed(0)}°（車輪效應），氣流每格走 ${(rs.V/60/model.ball.R).toFixed(0)} R<br>`
         :`放慢 ${Math.round(1/slow)} 倍：實際每秒 ${(rs.spec.spin_rpm/60).toFixed(1)} 圈<br>`):'')+
-    `被縫線觸發的子午線 ${fr.fMax.filter(x=>x>.5).length}/36<br>`+
+    `假設縫線觸發的子午線 ${fr.fMax.filter(x=>x>.5).length}/36<br>`+
     `C_D = ${(fr.CD+fr.dCD).toFixed(3)} · C_L = ${fr.CL.toFixed(3)}<br>`+
-    `<span class="o">縫線力 C_SSW = ${fr.C_ssw>=0?'+':''}${fr.C_ssw.toFixed(4)}</span><br>尾流偏轉 ${(f.alpha*180/Math.PI).toFixed(1)}°`;
+    (st.modelMode==='observed'?'<span class="o">總橫向力未分離 Magnus／SSW</span>':`<span class="o">假設縫線力 C_SSW = ${fr.C_ssw>=0?'+':''}${fr.C_ssw.toFixed(4)}</span>`)+`<br>示意尾流偏轉 ${(f.alpha*180/Math.PI).toFixed(1)}°`;
 }
 let pulsePerLine=4;
 function seedPulses(){
@@ -658,7 +719,7 @@ $('varSel').onchange=e=>{variant=e.target.value;gpu.reset=1;
 function fillResults(){
   const s=summary, f=s.f0, a=model.air;
   const rows=[['飛行時間',s.flight_time.toFixed(3)+' s'],['進壘球速',s.plate_speed_mph.toFixed(1)+' mph（減速 '+s.speed_loss_pct.toFixed(1)+'%）'],
-    ['誘導垂直位移 IVB',s.ivb.toFixed(1)+' in（'+(s.ivb*2.54).toFixed(0)+' cm）'],['水平位移 HB',s.hb.toFixed(1)+' in（+ 捕手右方）'],
+    [st.modelMode==='observed'?'橫向氣動力：垂直位移':'模型垂直位移',s.ivb.toFixed(1)+' in（'+(s.ivb*2.54).toFixed(0)+' cm）'],['相對重力＋阻力：水平位移',s.hb.toFixed(1)+' in（+ 捕手右方）'],
     ['總下墜',s.drop.toFixed(1)+' in'],['飛行中旋轉圈數',s.revolutions.toFixed(1)],
     ['Re / 轉速參數 S',f.Re.toExponential(2)+' / '+f.S.toFixed(3)],['C_D / C_L（出手）',(f.CD+f.dCD).toFixed(3)+' / '+f.CL.toFixed(3)],
     ['空氣密度 ρ',a.rho.toFixed(4)+' kg/m³'],['動黏度 ν',a.nu.toExponential(3)+' m²/s']];
@@ -666,18 +727,20 @@ function fillResults(){
 }
 function canvasCtx(c){const d=devicePixelRatio||1,W=c.clientWidth,H=+(c.dataset.logicalHeight||(c.dataset.logicalHeight=c.getAttribute('height')));c.width=W*d;c.height=H*d;c.style.height=H+'px';const g=c.getContext('2d');g.scale(d,d);g.fillStyle=light?'#ffffff':'#0b0c0f';g.fillRect(0,0,W,H);return[g,W,H];}
 const PAL=()=>light?{fg:'#1b1c20',muted:'#6b6e76',grid:'#e3e6eb'}:{fg:'#ffffff',muted:'#8a8a92',grid:'#2c2d33'};
-const CMP=[['full','完整模型（旋轉＋縫線）','#e0313f'],['noSeam','有旋轉、無縫線效應','#0a84ff'],['noSpin','無旋轉','#8e8e93'],['seamOnly','無旋轉、有縫線（不轉的球）','#ff9f0a']];
+const CMP=[['full','模型（旋轉＋假設縫線）','#e0313f'],['noSeam','模型：旋轉、無縫線增量','#0a84ff'],['noSpin','模型：無旋轉','#8e8e93'],['seamOnly','模型：無旋轉、有縫線','#ff9f0a'],['observed','MLB 追蹤擬合（固定參考）','#6c5ce7']];
 function drawCompare(){
   if(!cmp) return;
+  const cases=st.modelMode==='observed'?CMP.filter(([key])=>key==='full'||key==='observed'):CMP;
   const [g,W,H]=canvasCtx($('plotCmp')); const P=PAL();
-  const all=[];CMP.forEach(([k])=>cmp[k].traj.forEach(p=>all.push(p)));
+  const all=[];cases.forEach(([k])=>cmp[k].traj.forEach(p=>all.push(p)));
   const xs=all.map(p=>p[0]/U.IN), zs=all.map(p=>p[2]/U.IN);
   const x0=Math.min(...xs,-10),x1=Math.max(...xs,10),z0=Math.min(...zs,15),z1=Math.max(...zs,45);
   const span=Math.max(x1-x0,z1-z0)*1.12, sc=Math.min(W,H)/span, cx=(x0+x1)/2, cz=(z0+z1)/2;
   const X=x=>W/2+(x-cx)*sc, Z=z=>H/2-(z-cz)*sc;
-  g.strokeStyle=P.grid;g.lineWidth=1;g.strokeRect(X(-8.5),Z(42),17*sc,24*sc);
-  g.fillStyle=P.muted;g.font='11px sans-serif';g.fillText('好球帶',X(-8.5)+3,Z(42)+13);
-  CMP.forEach(([k,,c])=>{const t=cmp[k].traj;g.strokeStyle=c;g.lineWidth=k==='full'?2.5:1.6;g.setLineDash(k==='noSpin'?[5,4]:[]);g.beginPath();
+  const zone=cmp.zone||{bottom:18*U.IN,top:42*U.IN};
+  g.strokeStyle=P.grid;g.lineWidth=1;g.strokeRect(X(-8.5),Z(zone.top/U.IN),17*sc,(zone.top-zone.bottom)/U.IN*sc);
+  g.fillStyle=P.muted;g.font='11px sans-serif';g.fillText('該打者好球帶',X(-8.5)+3,Z(zone.top/U.IN)+13);
+  cases.forEach(([k,,c])=>{const t=cmp[k].traj;g.strokeStyle=c;g.lineWidth=k==='full'?2.5:1.6;g.setLineDash(k==='noSpin'?[5,4]:[]);g.beginPath();
     t.forEach((p,i)=>{const a=X(p[0]/U.IN),b=Z(p[2]/U.IN);i?g.lineTo(a,b):g.moveTo(a,b);});g.stroke();g.setLineDash([]);
     const e=cmp[k].plate;g.fillStyle=c;g.beginPath();g.arc(X(e[0]/U.IN),Z(e[2]/U.IN),k==='full'?6:4.5,0,7);g.fill();});
   // offset arrows at the plate: spin (noSpin -> noSeam) and seams (noSeam -> full)
@@ -689,13 +752,16 @@ function drawCompare(){
   // table
   const IN=U.IN, f=v=>(v>=0?'+':'')+v.toFixed(1), cm=v=>(v*2.54).toFixed(0);
   const pl=k=>cmp[k].plate, d=(a,b,i)=>(pl(a)[i]-pl(b)[i])/IN;
-  $('cmpTab').innerHTML='<tr><th>軌跡</th><th>x</th><th>z</th></tr>'+CMP.map(([k,lab,c])=>
-    `<tr><td><span class="sw" style="background:${c}"></span>${lab}</td><td>${(pl(k)[0]/IN).toFixed(1)}</td><td>${(pl(k)[2]/IN).toFixed(1)}</td></tr>`).join('');
+  $('cmpTab').innerHTML='<tr><th>軌跡</th><th>x</th><th>z</th></tr>'+cases.map(([k,lab,c])=>
+    `<tr><td><span class="sw" style="background:${c}"></span>${k==='full'&&st.modelMode==='observed'?'MLB 總氣動力推演':lab}</td><td>${(pl(k)[0]/IN).toFixed(1)}</td><td>${(pl(k)[2]/IN).toFixed(1)}</td></tr>`).join('');
+  if(st.modelMode==='observed'){
+    const p=BAMLB.get(st.mlbID);$('cmpTxt').textContent=`有效 CD = ${p.aeroReference.CD.toFixed(3)}，總橫向係數 = ${p.aeroReference.CL.toFixed(3)}（名義環境反推）。未將總橫向力冒充分解為 Magnus 或縫線力；旋轉／縫線實驗請切換機制模式。`;return;
+  }
   const sx=d('noSeam','noSpin',0),sz=d('noSeam','noSpin',2),mx=d('full','noSeam',0),mz=d('full','noSeam',2),kx=d('seamOnly','noSpin',0),kz=d('seamOnly','noSpin',2);
   const tot=Math.hypot(sx,sz),seam=Math.hypot(mx,mz);
   $('cmpTxt').innerHTML=
-    `<div><span class="sw" style="background:#0a84ff"></span><b>旋轉造成</b>：水平 <b>${f(sx)}</b> in（${cm(sx)} cm），垂直 <b>${f(sz)}</b> in（${cm(sz)} cm）</div>`+
-    `<div><span class="sw" style="background:#e0313f"></span><b>縫線造成</b>（邊界層→分離→尾流）：水平 <b>${f(mx)}</b> in，垂直 <b>${f(mz)}</b> in，約為旋轉效應的 <b>${(100*seam/Math.max(tot,1e-6)).toFixed(0)}%</b></div>`+
+    `<div><span class="sw" style="background:#0a84ff"></span><b>模型旋轉增量</b>：水平 <b>${f(sx)}</b> in（${cm(sx)} cm），垂直 <b>${f(sz)}</b> in（${cm(sz)} cm）</div>`+
+    `<div><span class="sw" style="background:#e0313f"></span><b>假設縫線增量</b>（未由該球縫線量測驗證）：水平 <b>${f(mx)}</b> in，垂直 <b>${f(mz)}</b> in</div>`+
     `<div><span class="sw" style="background:#ff9f0a"></span><b>不轉的球只靠縫線</b>：水平 <b>${f(kx)}</b> in，垂直 <b>${f(kz)}</b> in</div>`;
 }
 function drawBL(){
@@ -716,19 +782,41 @@ function drawBL(){
 }
 
 // -------------------------------------------------------------- controls --
-const lbl={speed:v=>v+' mph（'+(v*1.609).toFixed(0)+' km/h）',spin:v=>v+' rpm',eff:v=>v+' %',clock:v=>{const h=Math.floor(v)||12,m=Math.round((v%1)*60);return h+':'+String(m).padStart(2,'0');},
-  roll:v=>v+'°',temp:v=>v+' °C',rh:v=>v+' %',alt:v=>v+' m',kh:v=>v.toFixed(2)+' mm',rk:v=>v.toFixed(0)};
-const ids={speed:'speed',spin:'spin',eff:'eff',clock:'clock',roll:'roll',temp:'temp',rh:'rh',alt:'alt',kh:'kh',rk:'rk'};
-const vid={speed:'vSpeed',spin:'vSpin',eff:'vEff',clock:'vClock',roll:'vRoll',temp:'vTemp',rh:'vRH',alt:'vAlt',kh:'vK',rk:'vRk'};
-let timer=null; function schedule(){clearTimeout(timer);timer=setTimeout(recompute,250);}
+const lbl={speed:v=>v.toFixed(1)+' mph（'+(v*1.609344).toFixed(0)+' km/h）',spin:v=>v+' rpm',eff:v=>v.toFixed(1)+' %',clock:v=>{const minutes=Math.round(v*60)%720,h=Math.floor(minutes/60)||12;return h+':'+String(minutes%60).padStart(2,'0');},
+  roll:v=>v+'°',temp:v=>v+' °C',rh:v=>v+' %',alt:v=>v+' m',kh:v=>v.toFixed(2)+' mm',rk:v=>v.toFixed(0),pressure:v=>v.toFixed(1)+' hPa',windX:v=>v.toFixed(1)+' m/s',windY:v=>v.toFixed(1)+' m/s'};
+const ids={speed:'speed',spin:'spin',eff:'eff',clock:'clock',roll:'roll',temp:'temp',rh:'rh',alt:'alt',kh:'kh',rk:'rk',pressure:'pressure',windX:'windX',windY:'windY'};
+const vid={speed:'vSpeed',spin:'vSpin',eff:'vEff',clock:'vClock',roll:'vRoll',temp:'vTemp',rh:'vRH',alt:'vAlt',kh:'vK',rk:'vRk',pressure:'vPressure',windX:'vWindX',windY:'vWindY'};
+let timer=null; function schedule(){jobId++;$('openTrajectory').disabled=true;clearTimeout(timer);timer=setTimeout(recompute,250);}
 function syncInputs(){for(const k in ids){$(ids[k]).value=st[k];$(vid[k]).textContent=lbl[k](st[k]);}
-  document.querySelectorAll('#grip button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.grip));}
+  $('pressureMode').value=st.pressureMode;$('pressure').disabled=st.pressureMode!=='station';$('alt').disabled=st.pressureMode==='station';
+  const empirical=st.modelMode==='observed';$('modelMode').value=st.modelMode;
+  $('varSel').options[0].textContent=empirical?'總氣動力（追蹤推估）':'機制模型（旋轉＋假設縫線）';
+  for(const id of ['spin','eff','clock','roll','kh','rk','varSel'])$(id).disabled=empirical;
+  document.querySelectorAll('#grip button').forEach(b=>{b.disabled=empirical;b.classList.toggle('on',b.dataset.v===st.grip);});
+  $('lateralForceLabel').textContent=empirical?'總橫向力（追蹤推估）':'馬格努斯（機制模型）';
+  $('modelModeNote').textContent=empirical?'依該球追蹤運動估計總阻力與橫向力，保留實際出手；可改變環境。沒有足夠資料逐項拆分旋轉與縫線。風洞表面與分離線仍為機制示意。':'此模式使用文獻升力公式與假設縫線幾何，不能宣稱還原該球的實際縫線力；紫線保留官方軌跡供比較。';}
+$('modelMode').onchange=()=>{st.modelMode=$('modelMode').value;variant='full';$('varSel').value='full';syncInputs();schedule();};
+$('pressureMode').onchange=()=>{st.pressureMode=$('pressureMode').value;syncInputs();schedule();};
 for(const k in ids){$(ids[k]).oninput=()=>{st[k]=+$(ids[k]).value;st.extra={};$(vid[k]).textContent=lbl[k](st[k]);document.querySelectorAll('#presets button').forEach(b=>b.classList.remove('on'));schedule();};}
+const aimLabels={targetX:'vTargetX',targetZ:'vTargetZ',releaseHeight:'vReleaseHeight',releaseSide:'vReleaseSide',extension:'vExtension',elevation:'vElevation',azimuth:'vAzimuth'};
+function syncAimInputs(){
+  for(const [key,label] of Object.entries(aimLabels)){
+    $(key).value=st[key];
+    $(label).textContent=key.startsWith('target')?st[key].toFixed(1)+' in':
+      (key==='elevation'||key==='azimuth')?st[key].toFixed(2)+'°':st[key].toFixed(2)+' ft（'+(st[key]*30.48).toFixed(0)+' cm）';
+  }
+  $('autoAim').checked=st.autoAim;
+  $('targetX').disabled=$('targetZ').disabled=!st.autoAim;
+  $('elevation').disabled=$('azimuth').disabled=st.autoAim;
+}
+for(const key of Object.keys(aimLabels))$(key).oninput=()=>{st[key]=+$(key).value;syncAimInputs();schedule();};
+$('autoAim').onchange=()=>{st.autoAim=$('autoAim').checked;syncAimInputs();schedule();};
+$('aimCenter').onclick=()=>{const z=BAMLB.get(st.mlbID).zone;st.autoAim=true;st.targetX=0;st.targetZ=(z.bottom+z.top)/2/U.IN;syncAimInputs();schedule();};
+syncAimInputs();
 document.querySelectorAll('#grip button').forEach(b=>b.onclick=()=>{st.grip=b.dataset.v;syncInputs();schedule();});
 Object.entries(PRESETS).forEach(([name,p],i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>{
-  st.speed=p.speed_mph;st.spin=p.spin_rpm;st.clock=p.break_clock;st.eff=Math.round(Math.sin(p.gyro_deg*Math.PI/180)*100);st.grip=p.ball_axis;st.roll=p.roll_deg;
-  st.extra={};if(p.release_height_ft)st.extra.release_height_ft=p.release_height_ft;if(p.aim_height_ft)st.extra.aim_height_ft=p.aim_height_ft;
-  document.querySelectorAll('#presets button').forEach(x=>x.classList.toggle('on',x===b));syncInputs();recompute();};$('presets').appendChild(b);if(i===1)b.classList.add('on');});
+  applyMLB(BAMLB.presets.find(x=>x.pitch.label===name));
+  document.querySelectorAll('#presets button').forEach(x=>x.classList.toggle('on',x===b));syncInputs();syncAimInputs();recompute();};$('presets').appendChild(b);if(i===0)b.classList.add('on');});
 
 // ------------------------------------------------------------------ loop --
 function resize(){const host=$('windCanvas'),w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}

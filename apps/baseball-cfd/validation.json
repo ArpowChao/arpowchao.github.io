@@ -1,0 +1,92 @@
+{
+  "scope": "2025-06-01 MLB 例行賽的八顆右投個案，不代表聯盟平均或典型值",
+  "notIndependentValidation": true,
+  "pitches": [
+    {
+      "id": "FF",
+      "game": 777679,
+      "atBat": 66,
+      "pitch": 1,
+      "velocity_mph": 101.1,
+      "reconstruction_mm": 0.925098521409704,
+      "empirical_error_in": 0.768331903670034,
+      "mechanism_error_in": 2.981696139746485
+    },
+    {
+      "id": "SI",
+      "game": 777679,
+      "atBat": 67,
+      "pitch": 3,
+      "velocity_mph": 101.2,
+      "reconstruction_mm": 1.0544968591569426,
+      "empirical_error_in": 0.8283467216053105,
+      "mechanism_error_in": 6.490188562920067
+    },
+    {
+      "id": "ST",
+      "game": 777687,
+      "atBat": 29,
+      "pitch": 1,
+      "velocity_mph": 80,
+      "reconstruction_mm": 0.24771833482235436,
+      "empirical_error_in": 1.0034536210025609,
+      "mechanism_error_in": 2.567702328188699
+    },
+    {
+      "id": "SL",
+      "game": 777680,
+      "atBat": 35,
+      "pitch": 2,
+      "velocity_mph": 84.8,
+      "reconstruction_mm": 0.7272777755333577,
+      "empirical_error_in": 0.8980367327798542,
+      "mechanism_error_in": 4.477095818058739
+    },
+    {
+      "id": "CU",
+      "game": 777684,
+      "atBat": 44,
+      "pitch": 4,
+      "velocity_mph": 81.7,
+      "reconstruction_mm": 0.7098660024419021,
+      "empirical_error_in": 1.6033559774409538,
+      "mechanism_error_in": 4.051476994650085
+    },
+    {
+      "id": "CH",
+      "game": 777680,
+      "atBat": 21,
+      "pitch": 3,
+      "velocity_mph": 84.1,
+      "reconstruction_mm": 0.8424340191926278,
+      "empirical_error_in": 0.6912439514304193,
+      "mechanism_error_in": 3.9547351876115044
+    },
+    {
+      "id": "FS",
+      "game": 777690,
+      "atBat": 51,
+      "pitch": 1,
+      "velocity_mph": 90.7,
+      "reconstruction_mm": 1.7229741794405886,
+      "empirical_error_in": 0.6914316333791795,
+      "mechanism_error_in": 7.1875233732192445
+    },
+    {
+      "id": "FC",
+      "game": 777687,
+      "atBat": 30,
+      "pitch": 1,
+      "velocity_mph": 85,
+      "reconstruction_mm": 0.5327518437838457,
+      "empirical_error_in": 0.4348870482025307,
+      "mechanism_error_in": 5.120031540953298
+    }
+  ],
+  "environment": {
+    "density": true,
+    "viscosity": true,
+    "stationPressureOverride": true,
+    "wind": true
+  }
+}

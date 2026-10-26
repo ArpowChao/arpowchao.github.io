@@ -2,8 +2,8 @@
  * this module only clips/interpolates and renders those JavaScript results. */
 (function(root) {
   'use strict';
-  const CASES=[['full','完整模型（旋轉＋縫線）','#e0313f'],['noSeam','有旋轉、無縫線效應','#0a84ff'],
-    ['noSpin','無旋轉','#8e8e93'],['seamOnly','無旋轉、有縫線（不轉的球）','#ff9f0a']];
+  const CASES=[['full','模型（旋轉＋假設縫線）','#e0313f'],['noSeam','模型：旋轉、無縫線增量','#0a84ff'],
+    ['noSpin','模型：無旋轉','#8e8e93'],['seamOnly','模型：無旋轉、有縫線','#ff9f0a'],['observed','MLB 追蹤擬合（固定參考）','#6c5ce7']];
   function flightPoints(entry) {
     return entry.traj.filter(p=>p[1]>entry.plate[1]).map(p=>p.slice()).concat([entry.plate.slice()]);
   }
@@ -47,7 +47,7 @@
       const legend=dialog.querySelector('#trajLegend');
       for(const [key,label,color] of CASES) {
         const row=document.createElement('label'),check=document.createElement('input'),text=document.createElement('span');
-        check.type='checkbox';check.checked=true;check.dataset.case=key;text.textContent=label;row.style.color=color;row.append(check,text);legend.append(row);
+        check.type='checkbox';check.checked=true;check.dataset.case=key;row.dataset.caseRow=key;text.textContent=label;row.style.color=color;row.append(check,text);legend.append(row);
         check.addEventListener('change',()=>{this.visibility[key]=check.checked;this.setVisible(key,check.checked);this.draw();});
         this.visibility[key]=true;
       }
@@ -77,9 +77,15 @@
     setPending() {this.dialog.querySelector('#trajStatus').textContent='參數已變更，正在重新計算；目前仍顯示上一組球路。';}
     setData(comparison) {
       const first=!this.comparison;this.comparison=comparison;this.rebuild();
-      const names=['完整模型','無縫線效應','無旋轉','僅縫線'];
-      this.dialog.querySelector('#trajTable').innerHTML='<thead><tr><th>軌跡</th><th>x</th><th>z</th></tr></thead><tbody>'+CASES.map(([key,,color],i)=>
-        `<tr><td style="color:${color}">${names[i]}</td><td>${(comparison[key].plate[0]/.0254).toFixed(1)}</td><td>${(comparison[key].plate[2]/.0254).toFixed(1)}</td></tr>`).join('')+'</tbody>';
+      const z=comparison.zone||{bottom:18*.0254,top:42*.0254};
+      const corners=[[-8.5*.0254,z.bottom],[8.5*.0254,z.bottom],[8.5*.0254,z.top],[-8.5*.0254,z.top],[-8.5*.0254,z.bottom]];
+      this.zone.geometry.dispose();this.zone.geometry=new this.T.BufferGeometry().setFromPoints(corners.map(([x,h])=>this.toT([x,17/12*.3048,h])));
+      this.labels[0].position.copy(this.toT([.27,17/12*.3048,z.top+.1]));
+      const empirical=comparison.mode==='observed',enabled=key=>!empirical||key==='full'||key==='observed';
+      const names={full:empirical?'MLB 氣動推演':'模型＋假設縫線',noSeam:'無縫線增量',noSpin:'無旋轉',seamOnly:'僅縫線',observed:'MLB 參考'};
+      for(const row of this.dialog.querySelectorAll('[data-case-row]')){row.hidden=!enabled(row.dataset.caseRow);if(row.dataset.caseRow==='full')row.querySelector('span').textContent=names.full;}
+      this.dialog.querySelector('#trajTable').innerHTML='<thead><tr><th>軌跡</th><th>x</th><th>z</th></tr></thead><tbody>'+CASES.filter(([key])=>enabled(key)).map(([key,,color])=>
+        comparison[key]?`<tr><td style="color:${color}">${names[key]}</td><td>${(comparison[key].plate[0]/.0254).toFixed(1)}</td><td>${(comparison[key].plate[2]/.0254).toFixed(1)}</td></tr>`:'').join('')+'</tbody>';
       this.dialog.querySelector('#trajStatus').textContent=`完整模型飛行時間：${comparison.full.time.toFixed(3)} s。座標單位為公尺；好球帶尺寸與 2D 圖一致。`;
       if(first)this.setCamera('oblique');else this.draw();
     }
@@ -120,6 +126,8 @@
       if(!this.comparison)return;
       this.clearData();this.paths={};this.objects={};const reference=flightPoints(this.comparison.noSpin);
       for(const [key,,color] of CASES) {
+        if(!this.comparison[key])continue;
+        if(this.comparison.mode==='observed'&&key!=='full'&&key!=='observed')continue;
         const points=displayPoints(flightPoints(this.comparison[key]),reference,this.factor);this.paths[key]=points;
         const line=this.makeLine(points,key,color);
         const marker=new this.T.Sprite(new this.T.SpriteMaterial({map:this.dotTexture,color,depthTest:false}));

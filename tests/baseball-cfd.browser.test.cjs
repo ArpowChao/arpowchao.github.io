@@ -42,12 +42,20 @@ async function main() {
     const page=await context.newPage();
     page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
     await page.goto(base,{waitUntil:'networkidle'});await ready(page);
+    await page.locator('#openTrajectory').click();await page.locator('#closeTrajectory').click();
+    assert.equal(await page.locator('#speed').inputValue(),'101.1','default pitch must use the sourced MLB fastball');
+    assert.equal(await page.locator('#presets button.on').innerText(),'四縫線速球');
+    assert.equal(await page.locator('#autoAim').isChecked(),false,'MLB release direction must not be replaced by auto-aim');
+    const assertTarget=async(x,z)=>assert.ok(await page.evaluate(({x,z})=>{
+      const p=document.querySelector('#trajectoryDialog').viewer.comparison.full.plate;return Math.hypot(p[0]-x*.0254,p[2]-z*.0254)<.002;
+    },{x,z}),'integrated full trajectory missed target');
+    assert.ok(await page.evaluate(()=>{const c=document.querySelector('#trajectoryDialog').viewer.comparison,p=BAMLB.get('FF');return c.full.traj[0].every((v,i)=>Math.abs(v-p.reference.traj[0][i])<1e-12)&&JSON.stringify(c.observed)===JSON.stringify(p.reference);}));
     assert.equal(await page.evaluate(()=>BA_TABLES.source),'javascript-rk4-shooting-and-thwaites');
     assert.ok(Math.abs(await page.evaluate(()=>BA_TABLES.fs.fpp0[25])-.4696)<1e-6);
     assert.ok(page.workers().length>0,'real Web Worker was not started');
     await page.screenshot({path:path.join(output,'desktop.png'),fullPage:true});
     await page.locator('#openTrajectory').click();await pause();
-    assert.equal(await page.locator('#trajLegend input').count(),4);
+    assert.equal(await page.locator('#trajLegend input').count(),5);
     assert.equal(await page.locator('[data-traj-view]').count(),6);
     const redPixels=await page.evaluate(()=>{
       const v=document.querySelector('#trajectoryDialog').viewer;v.renderer.render(v.scene,v.camera);
@@ -73,9 +81,39 @@ async function main() {
     await page.locator('[data-traj-view="plate"]').click();await pause();await page.locator('#trajectoryDialog').screenshot({path:path.join(output,'plate-comparison.png')});
     await page.locator('#trajScale').selectOption('1');await page.locator('[data-traj-view="oblique"]').click();
     await page.keyboard.press('Escape');assert.equal(await page.locator('#trajectoryDialog').evaluate(d=>d.open),false);
-    const oldPlate=(await state(page)).plate;
+    const oldTime=await page.evaluate(()=>document.querySelector('#trajectoryDialog').viewer.comparison.full.time);
     await page.locator('#presets button').filter({hasText:'曲球'}).click();await ready(page);await page.locator('#openTrajectory').click();await pause();
-    assert.notDeepEqual((await state(page)).plate,oldPlate,'new JS calculation did not update trajectory');
+    assert.notEqual(await page.evaluate(()=>document.querySelector('#trajectoryDialog').viewer.comparison.full.time),oldTime,'new JS calculation did not update trajectory');
+    await page.locator('#closeTrajectory').click();
+    const update=async action=>{await action();await page.waitForFunction(()=>document.querySelector('#openTrajectory').disabled);await ready(page);};
+    const reference=await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison.observed));
+    const angles=await page.evaluate(()=>['elevation','azimuth'].map(id=>+document.getElementById(id).value));
+    const oldPlate=(await state(page)).plate;
+    await update(()=>page.locator('#temp').evaluate(input=>{input.value='35';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+    assert.notDeepEqual((await state(page)).plate,oldPlate,'temperature did not affect the integrated trajectory');
+    assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison.observed)),reference);
+    const laterAngles=await page.evaluate(()=>['elevation','azimuth'].map(id=>+document.getElementById(id).value));
+    assert.ok(laterAngles.every((v,i)=>Math.abs(v-angles[i])<1e-10),'environment change secretly re-aimed the pitch');
+    await update(()=>page.locator('#temp').evaluate(input=>{input.value='20';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+    await update(()=>page.locator('#windX').evaluate(input=>{input.value='5';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+    assert.notDeepEqual((await state(page)).plate,oldPlate,'wind did not affect the integrated trajectory');
+    assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison.observed)),reference);
+    await update(()=>page.locator('#windX').evaluate(input=>{input.value='0';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+    assert.ok(await page.locator('#spin').isDisabled(),'aggregate force mode must not invent a measured spin decomposition');
+    await update(()=>page.locator('#modelMode').selectOption('mechanism'));
+    assert.equal(await page.locator('#spin').isDisabled(),false);
+    assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison.observed)),reference);
+    await update(()=>page.locator('#aimCenter').click());
+    const center=await page.evaluate(()=>{const z=BAMLB.get('CU').zone;return (z.bottom+z.top)/2/.0254;});
+    await assertTarget(0,center);
+    await update(()=>page.locator('#targetX').evaluate(input=>{input.value='4';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+    await assertTarget(4,center);
+    const aimed=await page.evaluate(()=>document.querySelector('#trajectoryDialog').viewer.comparison.full.plate.slice());
+    await update(()=>page.locator('#autoAim').uncheck());
+    assert.ok(await page.evaluate(aimed=>{const p=document.querySelector('#trajectoryDialog').viewer.comparison.full.plate;return Math.hypot(p[0]-aimed[0],p[2]-aimed[2])<1e-8;},aimed),'manual toggle changed the pitch direction');
+    assert.ok(await page.evaluate(()=>{const c=document.querySelector('#trajectoryDialog').viewer.comparison;return ['noSeam','noSpin','seamOnly'].every(k=>c[k].traj[0].every((v,i)=>v===c.full.traj[0][i]));}),'comparison release positions differ');
+    await update(()=>page.locator('#aimCenter').click());await assertTarget(0,center);
+    await page.locator('#openTrajectory').click();
     const source=await page.evaluate(()=>JSON.stringify(document.querySelector('#trajectoryDialog').viewer.comparison));
     for(const width of [320,390,768,1024,1440]) {
       await page.setViewportSize({width,height:1000});await pause();await audit(page,'modal '+width);
@@ -96,7 +134,7 @@ async function main() {
     assert.ok(requests.every(r=>r.method==='GET'),'server-side calculation request detected');
     assert.ok(!requests.some(r=>/\/tables\.js|\.py(?:\?|$)|\/api\//.test(r.url)),'legacy Python output/API was requested');
     assert.deepEqual(errors,[]);
-    report.browser={worker:true,orbit:true,zoom:true,pan:true,pinch:true,presets:6,cases:4,liveJSRecalculation:true,viewports:[320,390,768,1024,1440],noPythonRequests:true};
+    report.browser={worker:true,orbit:true,zoom:true,pan:true,pinch:true,cameraPresets:6,mlbCases:8,twoExplicitModelModes:true,liveJSRecalculation:true,optionalAutoAim:true,manualDirectionContinuity:true,environmentPreservesRelease:true,referenceImmutable:true,defaultSpeedMPH:101.1,viewports:[320,390,768,1024,1440],noPythonRequests:true};
     await context.close();
 
     fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
