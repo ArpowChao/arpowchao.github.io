@@ -52,7 +52,7 @@
       let input;
       if (f.type === 'choice') {
         input = document.createElement('select');
-        input.add(new Option('請選擇', ''));
+        input.add(new Option('—', ''));
         f.options.forEach(o => input.add(new Option(o, o)));
         let v = saved[f.key] || '';
         if (!v && f.fromMach) v = machLabel(Lab.params().mach);
@@ -70,14 +70,14 @@
       if (f.fill) {
         const row = document.createElement('span'); row.className = 'fill-row';
         const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'fill-btn';
-        btn.textContent = f.fill === 'ruler' ? '填入量測值' : '填入播放結果';
+        btn.textContent = '帶入';
         btn.addEventListener('click', () => {
           let v = null;
           if (f.fill === 'ruler') v = Lab.ruler();
           if (f.fill === 'duckA') v = Lab.ducks()[0].interval;
           if (f.fill === 'duckB') v = Lab.ducks()[1].interval;
-          if (v === null || v === undefined) { setStatus(f.fill === 'ruler' ? '先用「量測兩點距離」拉出一段距離。' : '先放上 A、B 小鴨並按「播放我的排列」，等收到兩圈。', 'warn'); return; }
-          input.value = v; remember(t.id); setStatus('已填入 ' + v + '。', 'ok');
+          if (v === null || v === undefined) { setStatus(f.fill === 'ruler' ? '請先量距離' : '請先播放，等收到兩圈', 'warn'); return; }
+          input.value = v; remember(t.id); setStatus('已帶入 ' + v, 'ok');
         });
         row.append(input, btn); wrap.append(row);
       } else wrap.append(input);
@@ -195,20 +195,20 @@
     return { confirmed: true, reply };
   }
   $('submit').addEventListener('click', async () => {
-    if (!gasUrl()) { setStatus('老師還沒設定收集網址，請用「下載」按鈕交作業。', 'warn'); return; }
-    if (!$('cls').value.trim() || !$('seat').value.trim()) { setStatus('請先填班級和座號。', 'warn'); ($('seat').value ? $('cls') : $('seat')).focus(); return; }
+    if (!gasUrl()) { setStatus('尚未設定收集網址，請用下載', 'warn'); return; }
+    if (!$('cls').value.trim() || !$('seat').value.trim()) { setStatus('請填班級、座號', 'warn'); ($('seat').value ? $('cls') : $('seat')).focus(); return; }
     const t = tasks[Lab.taskIndex], data = payload();
     const filled = Object.values(data.fields).filter(Boolean).length;
-    if (!filled && !data.answer) { setStatus('這一題還沒有作答。', 'warn'); return; }
-    if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + ' 片），仍要送出嗎？')) return;
+    if (!filled && !data.answer) { setStatus('還沒作答', 'warn'); return; }
+    if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + '），仍要送出？')) return;
     $('submit').disabled = true; setStatus('傳送中…');
     try {
       const r = await send(data);
       const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
-      setStatus(r.confirmed ? '✓ 已送出第 ' + data.taskNo + ' 題（' + time + '）' + (r.reply.feedback ? '　' + r.reply.feedback : '') : '已送出第 ' + data.taskNo + ' 題（' + time + '），請看老師螢幕確認。', 'ok');
-      Lab.status('已把第 ' + data.taskNo + ' 題送給老師。');
+      setStatus('✓ 已送出（' + time + '）', 'ok');
+      Lab.status('已送出第 ' + data.taskNo + ' 題');
     } catch (err) {
-      setStatus('沒有送出：' + (err.message || '網路錯誤') + '。請再按一次，或改用下載。', 'warn');
+      setStatus('沒送出，請再按一次', 'warn');
     } finally { $('submit').disabled = false; }
   });
 

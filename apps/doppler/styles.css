@@ -34,3 +34,29 @@
 .gas-setup{margin:6px 0 18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fff}.gas-setup h3{margin:0 0 6px;font-size:14px}.gas-setup p{margin:0 0 8px}.gas-setup code{font-size:11px;background:#eef5f6;padding:1px 4px;border-radius:4px}
 .gas-row{display:flex;gap:8px;flex-wrap:wrap}.gas-row input{flex:1 1 320px}
 @media(max-width:620px){.who{grid-template-columns:repeat(2,minmax(0,1fr))}.task-fields{grid-template-columns:minmax(0,1fr)}}
+/* ===== 易讀：放大字級（放最後，覆蓋各螢幕寬度的設定） ===== */
+body{font-size:17px}
+.topbar{font-size:15px}.eyebrow{font-size:15px;letter-spacing:.03em}.intro,.hero .intro{font-size:17px}
+button{font-size:15px;padding:10px 14px}
+input[type=text],input[type=number],select,textarea{font-size:16px}
+.scene-tag,.scene-head>span{font-size:15px}.scene-head strong{font-size:20px}.scene-foot{font-size:14px}
+.scene-tools .check,.manual-toolbar .check{font-size:16px}.scene-tools>span{font-size:14px}
+.time-heading{font-size:16px}.time-heading output{font-size:17px}.time-marks{font-size:13px}
+.panel h2{font-size:19px}.panel summary{font-size:17px}
+.copy,.small-note,.manual-playback .small-note{font-size:15px;line-height:1.7}
+.presets button span{font-size:17px}.presets small{font-size:13px}
+.check{font-size:16px}.tool-row button{font-size:15px}
+.observer-picker,.piece-picker,.advanced-fields>label,.position-form>label{font-size:15px}
+.observer-picker select,.piece-picker select{font-size:15px}.position-form button{font-size:15px}
+.arrival-card{font-size:15px}.arrival-card h3{font-size:16px}.arrival-times{font-size:14px}
+.status{font-size:15px}
+.manual-toolbar>span{font-size:15px}.manual-toolbar>button{font-size:15px}
+.piece-tray h2{font-size:16px}.piece-tray>p{font-size:13px}.tray-piece>span{font-size:13px}
+.preview-actions output{font-size:15px}.duck-readings>div,.duck-readings strong{font-size:16px}.duck-readings span:last-child{font-size:15px}
+.worksheet h2{font-size:28px}.worksheet label,.worksheet select{font-size:16px}.question{font-size:18px;line-height:1.8}
+.who label,.task-field{font-size:15px}.task-field>span:first-child{font-size:16px}.fill-btn{font-size:14px}
+#answer-label{font-size:16px}.submit-row #submit{font-size:18px}.submit-status{font-size:16px}.export-row button{font-size:15px}
+.evidence h2{font-size:20px}.evidence-heading button{font-size:14px}.record figcaption{font-size:15px}.record a{font-size:14px}
+.model-note{font-size:15px}.gas-setup h3{font-size:17px}.gas-setup code{font-size:13px}
+footer{font-size:13px}
+@media(max-width:1050px){.worksheet{grid-template-columns:minmax(0,1fr);gap:20px}}

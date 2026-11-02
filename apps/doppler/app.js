@@ -33,14 +33,14 @@
     try { localStorage.setItem('doppler-worksheet-v2', JSON.stringify({ answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
       manualCenters: pieces.map(p => ({ n: p.n, x: p.x, y: p.y, placed: p.placed })) })); }
     catch (_) { storageOK = false; }
-    if (!storageOK) $('save-note').textContent = '此瀏覽器無法保存回答；請在離開前下載圖片。';
+    if (!storageOK) $('save-note').textContent = '無法保存，請先下載';
   }
   function setPlaying(next) {
     playing = Boolean(next && (!manual || preview)); lastFrame = null;
     if (!playing) quack.stop();
     $('play').textContent = playing ? 'Ⅱ 暫停' : '▶ 播放';
     $('play').setAttribute('aria-pressed', String(playing));
-    $('preview-play').textContent = manual && playing ? 'Ⅱ 暫停' : preview ? preview.elapsed >= preview.end ? '▶ 重新播放' : '▶ 繼續播放' : '▶ 播放我的排列';
+    $('preview-play').textContent = manual && playing ? 'Ⅱ 暫停' : preview ? preview.elapsed >= preview.end ? '▶ 重播' : '▶ 繼續' : '▶ 播放';
     $('preview-play').setAttribute('aria-pressed', String(manual && playing));
   }
   function clearPreview() { if (manual) setPlaying(false); preview = null; flashDirty = false; }
@@ -53,7 +53,7 @@
       const r = previewReading(i);
       if (r.count > preview.hits[i]) {
         if ($('quack-sound').checked) for (let n = preview.hits[i]; n < r.count; n++) {
-          if (!quack.play(i)) $('sound-status').textContent = '聲音尚未啟用，請按「試聽呱聲」。';
+          if (!quack.play(i)) $('sound-status').textContent = '請按「試聽」開啟聲音';
         }
         preview.flashAt[i] = now; flashDirty = true;
       }
@@ -64,7 +64,7 @@
     if (playing) { setPlaying(false); refresh(); return; }
     if (!manual || pointer || !$('observers').checked || !pieces.some(p => p.placed && p.radius > 0)) return;
     if ($('quack-sound').checked && !await quack.unlock()) {
-      $('sound-status').textContent = '瀏覽器尚未允許聲音，請按「試聽呱聲」重試。';
+      $('sound-status').textContent = '請按「試聽」開啟聲音';
     }
     if (!manual || pointer || !$('observers').checked) return;
     if (!preview || preview.elapsed >= preview.end) {
@@ -73,17 +73,17 @@
     }
     setMeasure(false); setPlaying(true); detectHits(performance.now()); refresh();
   });
-  $('preview-reset').addEventListener('click', () => { clearPreview(); refresh(); status('已回到你排好的圓圈，兩隻小鴨的位置保留。'); });
+  $('preview-reset').addEventListener('click', () => { clearPreview(); refresh(); status('已回到排列'); });
   $('quack-sound').addEventListener('change', async () => {
-    if (!$('quack-sound').checked) { quack.stop(); $('sound-status').textContent = '呱聲已關閉，閃光和計次保留。'; }
-    else $('sound-status').textContent = await quack.unlock() ? '呱聲已啟用。' : '請按「試聽呱聲」啟用聲音。';
+    if (!$('quack-sound').checked) { quack.stop(); $('sound-status').textContent = '呱聲已關閉'; }
+    else $('sound-status').textContent = await quack.unlock() ? '呱聲已開啟' : '請按「試聽」開啟聲音';
   });
   $('test-quack').addEventListener('click', async () => {
     const ready = await quack.unlock();
     if (ready && quack.play(0)) {
       $('quack-sound').checked = true;
-      $('sound-status').textContent = '已試播呱聲。若仍無聲，請確認此分頁與裝置音量。';
-    } else $('sound-status').textContent = '瀏覽器未能啟用聲音，請重新載入後再試聽。';
+      $('sound-status').textContent = '沒聲音？請調高音量';
+    } else $('sound-status').textContent = '無法播放聲音';
   });
   function configText() {
     const setting = params.mach === 0 ? '波源靜止' : '波源向' + (params.mach > 0 ? '右' : '左') + ' · ' + fmt(Math.abs(params.mach)) + ' 波速';
@@ -156,9 +156,9 @@
     $('piece-tray').hidden = !manual;
     $('manual-scene-tools').hidden = !manual;
     $('observer-picker').hidden = manual;
-    $('preset-heading').textContent = manual ? '這次要組合哪種情況？' : '自動模擬的波源速度';
+    $('preset-heading').textContent = manual ? '波源速度' : '自動模擬速度';
     setMeasure(false); refresh();
-    status(manual ? '回到你自己的排列。拖曳每一片圓圈，或用方向鍵微調。' : '現在顯示自動模擬。取消進階區的勾選，即可回到自己的作品。');
+    status(manual ? '拖曳圓圈排列' : '自動模擬中');
   }
   function projection(width, height) {
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
@@ -196,8 +196,8 @@
     // The position marker is on the back, so its exact point remains visible.
     c.fillStyle = '#ffffff'; c.beginPath(); c.arc(0, 0, 3, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#153f4d'; c.beginPath(); c.arc(0, 0, 1.5, 0, Math.PI * 2); c.fill();
-    c.restore(); text(c, tag, point.x, point.y + 26, '#153f4d', 'center', 11);
-    if (flash) text(c, '呱！', point.x, point.y - 37, '#946400', 'center', 15);
+    c.restore(); text(c, tag, point.x, point.y + 28, '#153f4d', 'center', 14);
+    if (flash) text(c, '呱！', point.x, point.y - 38, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
     const camera = savedCamera || projection(width, height);
@@ -215,7 +215,7 @@
       gridLines(cell, '#90b1bd', 1.2);
       c.strokeStyle = '#658e9b'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, camera.cy); c.lineTo(width, camera.cy); c.moveTo(camera.cx, 0); c.lineTo(camera.cx, height); c.stroke();
       const labelStep = cell * Math.max(1, Math.ceil(30 / (cell * camera.scale)));
-      for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 10); }
+      for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
     }
     const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(params, time);
     c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
@@ -235,22 +235,22 @@
         c.moveTo(p.x - 10, p.y); c.lineTo(p.x + 10, p.y); c.moveTo(p.x, p.y - 10); c.lineTo(p.x, p.y + 10); c.stroke();
         c.strokeStyle = color; c.lineWidth = 1.6; c.stroke();
         c.fillStyle = color; c.beginPath(); c.arc(p.x, p.y, 2, 0, Math.PI * 2); c.fill();
-        c.fillStyle = '#ffffffee'; c.beginPath(); c.arc(p.x + 15, p.y - 15, 8, 0, Math.PI * 2); c.fill();
-        text(c, String(w.n + 1), p.x + 15, p.y - 15, color, 'center', 11);
+        c.fillStyle = '#ffffffee'; c.beginPath(); c.arc(p.x + 16, p.y - 16, 10, 0, Math.PI * 2); c.fill();
+        text(c, String(w.n + 1), p.x + 16, p.y - 16, color, 'center', 14);
       }
       if ($('labels').checked && radius > 2) {
         const angle = params.mach >= 0 ? -2.05 : -.95;
         const label = '發波 t=' + fmt(w.emitted, 1).replace('.0', '') + 's';
         const tx = p.x + Math.cos(angle) * radius, ty = p.y + Math.sin(angle) * radius;
-        c.fillStyle = '#f7fbfcee'; c.fillRect(tx - 42, ty - 9, 84, 18);
-        text(c, label, tx, ty, '#08677f', 'center', 11);
+        c.fillStyle = '#f7fbfcee'; c.fillRect(tx - 50, ty - 11, 100, 22);
+        text(c, label, tx, ty, '#08677f', 'center', 14);
       }
     });
     if (!manual && params.mach !== 0) arrow(c, { x: source.x, y: source.y - 30 }, { x: source.x + Math.sign(params.mach) * 42, y: source.y - 30 }, '#977008');
     if (!manual || pieces.at(-1).placed) {
       duck(c, source, '#e9b93a', params.mach < 0 ? -1 : 1, '波源', false);
       if (manual && selectedPiece === pieces.length - 1) { c.strokeStyle = '#a47700'; c.lineWidth = 2; c.beginPath(); c.arc(source.x, source.y, 22, 0, Math.PI * 2); c.stroke(); }
-      if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 10);
+      if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 13);
     }
     if ($('observers').checked) observers.forEach((o, i) => {
       const received = manual ? previewReading(i) : P.received(params, o, time);
@@ -260,15 +260,15 @@
     if (manual && pieces[selectedPiece]?.placed) {
       const selected = pieces[selectedPiece], p = xy(selected, camera);
       const label = '(' + fmt(selected.x) + ', ' + fmt(selected.y) + ')';
-      const x = Math.max(5, Math.min(width - 100, p.x + 14)), y = Math.max(12, Math.min(height - 15, p.y + 21));
-      c.fillStyle = '#fff9e8'; c.fillRect(x - 3, y - 10, 97, 20); text(c, label, x, y, '#765400', 'left', 11);
+      const x = Math.max(5, Math.min(width - 120, p.x + 14)), y = Math.max(12, Math.min(height - 15, p.y + 21));
+      c.fillStyle = '#fff9e8'; c.fillRect(x - 3, y - 12, 118, 24); text(c, label, x, y, '#765400', 'left', 14);
     }
     if (ruler) {
       const a = xy(ruler.a, camera), b = xy(ruler.b, camera);
       c.save(); c.strokeStyle = '#a47700'; c.lineWidth = 2; c.setLineDash([5, 3]); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); c.restore();
       for (const p of [a, b]) { c.fillStyle = '#a47700'; c.beginPath(); c.arc(p.x, p.y, 3, 0, Math.PI * 2); c.fill(); }
       const label = fmt(P.distance(ruler.a, ruler.b)) + ' m', x = Math.max(40, Math.min(width - 40, (a.x + b.x) / 2)), y = Math.max(16, Math.min(height - 16, (a.y + b.y) / 2 - 14));
-      c.fillStyle = '#fff5d4'; c.fillRect(x - 37, y - 10, 74, 20); text(c, label, x, y, '#765400', 'center', 12);
+      c.fillStyle = '#fff5d4'; c.fillRect(x - 45, y - 12, 90, 24); text(c, label, x, y, '#765400', 'center', 15);
     }
     c.restore(); return { camera, cell };
   }
@@ -279,7 +279,7 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#f7fbfc'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const result = drawScene(ctx, rect.width, rect.height); view = result.camera;
-    $('grid-caption').textContent = $('grid').checked ? '1 大格 = 1λ = ' + fmt(result.cell, 2).replace(/\.00$/, '') + ' m；每大格 4 小格' : '方格已隱藏';
+    $('grid-caption').textContent = $('grid').checked ? '1 大格 = 1λ = ' + fmt(result.cell, 2).replace(/\.00$/, '') + ' m' : '';
     canvas.dataset.wavelength = result.cell; canvas.dataset.smallCell = result.cell / 4;
     canvas.dataset.placedCount = pieces.filter(p => p.placed).length;
     canvas.dataset.placedCircleCount = pieces.filter(p => p.radius > 0 && p.placed).length;
@@ -293,23 +293,23 @@
     for (let i = 0; i < 2; i++) {
       const id = i ? 'b' : 'a', r = previewReading(i);
       $('duck-' + id + '-count').textContent = '收到 ' + r.count + ' 次';
-      $('duck-' + id + '-interval').textContent = r.interval === null ? '尚未收到兩圈' : '最近間隔 ' + fmt(r.interval, 3) + ' s';
+      $('duck-' + id + '-interval').textContent = r.interval === null ? '間隔 —' : '間隔 ' + fmt(r.interval, 2) + ' s';
       $('duck-' + id + '-reading').dataset.flash = String(Boolean(preview && performance.now() - preview.flashAt[i] < 260));
     }
     $('scene-setting').textContent = manual ? '題目：' + (params.mach === 0 ? '靜止波源' : fmt(Math.abs(params.mach)) + ' 波速向' + (params.mach > 0 ? '右' : '左')) : configText();
-    $('parameter-note').textContent = (manual ? '題目：' : '') + '每秒打水 ' + fmt(params.f, 1) + ' 下；波速 ' + fmt(params.c, 1) + ' m/s；波源移速 ' + fmt(Math.abs(params.mach * params.c)) + ' m/s。' + (manual ? '選速度不會自動排列。' : '');
+    $('parameter-note').textContent = '波源移速 ' + fmt(Math.abs(params.mach * params.c)) + ' m/s' + (manual ? '（不會自動排列）' : '');
     $('mach-value').textContent = fmt(Math.abs(params.mach));
-    $('measurement').textContent = ruler ? '兩點距離：' + fmt(P.distance(ruler.a, ruler.b)) + ' m（直線距離）' : '拖出一段距離，比較前、後方的波間距。';
+    $('measurement').textContent = ruler ? '距離 ' + fmt(P.distance(ruler.a, ruler.b)) + ' m' : '按「量距離」後在水面拖曳';
     $('clear-measure').disabled = !ruler;
     $('back').disabled = time <= 0; $('step').disabled = time >= 10;
-    $('manual-toolbar').firstElementChild.textContent = '5 秒的透明片：' + (pieces.length - 1) + ' 個圓圈＋可拖曳的波源小鴨';
+    $('manual-toolbar').firstElementChild.textContent = (pieces.length - 1) + ' 個圓圈＋波源小鴨';
     $('arrival-readings').replaceChildren();
     if (manual) { refreshPieces(); return; }
-    if (!$('observers').checked) { const p = document.createElement('p'); p.className = 'copy'; p.textContent = '先勾選「放置 A、B 兩隻小鴨」。'; $('arrival-readings').append(p); return; }
+    if (!$('observers').checked) { const p = document.createElement('p'); p.className = 'copy'; p.textContent = '先勾選「A、B 小鴨」'; $('arrival-readings').append(p); return; }
     observers.forEach((o, i) => {
       const r = P.received(params, o, time), card = document.createElement('div'); card.className = 'arrival-card';
       const h = document.createElement('h3'); h.textContent = (i ? 'B' : 'A') + ' 小鴨 · (' + fmt(o.x, 1) + ', ' + fmt(o.y, 1) + ') m'; card.append(h);
-      for (const label of ['目前抵達 ' + r.count + ' 次', '最近兩圈間隔：' + (r.interval === null ? '尚未收到兩圈' : fmt(r.interval, 3) + ' s'), '此間隔對應頻率：' + (r.frequency === null ? '—' : fmt(r.frequency, 3) + ' 次/s')]) { const p = document.createElement('p'); p.textContent = label; card.append(p); }
+      for (const label of ['抵達 ' + r.count + ' 次', '間隔 ' + (r.interval === null ? '—' : fmt(r.interval, 2) + ' s'), '頻率 ' + (r.frequency === null ? '—' : fmt(r.frequency, 2) + ' 次/s')]) { const p = document.createElement('p'); p.textContent = label; card.append(p); }
       const p = document.createElement('p'); p.className = 'arrival-times'; p.textContent = r.events.length ? '抵達時刻：' + r.events.map(a => fmt(a.time, 2) + 's').join('、') : '還沒有波抵達。'; card.append(p);
       $('arrival-readings').append(card);
     });
@@ -319,11 +319,11 @@
   function changeMach(value) {
     setPlaying(false); clearPreview(); params.mach = value; $('mach').value = Math.abs(value); $('reverse').checked = value < 0;
     document.querySelectorAll('[data-mach]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.mach) === value)));
-    refresh(); persist(); status(manual ? '已改變題目速度，你排列的圓心位置保留。' : '已切換速度，保留目前 ' + fmt(time) + ' 秒的觀察時刻。');
+    refresh(); persist(); status('速度：' + (value === 0 ? '靜止' : fmt(Math.abs(value)) + ' 波速'));
   }
   document.querySelectorAll('[data-mach]').forEach(button => button.addEventListener('click', () => changeMach(Number(button.dataset.mach))));
   $('play').addEventListener('click', () => { if (time >= 10 && !playing) time = 0; setPlaying(!playing); refresh(); });
-  $('reset').addEventListener('click', () => { setTime(0); status('回到 0 秒：第一圈剛從原點發出。'); });
+  $('reset').addEventListener('click', () => { setTime(0); status('回到 0 秒'); });
   $('time').addEventListener('input', () => setTime(Number($('time').value)));
   $('step').addEventListener('click', () => setTime((Math.floor(time * params.f + 1e-8) + 1) / params.f));
   $('back').addEventListener('click', () => setTime((Math.ceil(time * params.f - 1e-8) - 1) / params.f));
@@ -331,7 +331,7 @@
   $('observers').addEventListener('change', () => { clearPreview(); refresh(); });
   function setMeasure(next) {
     measureMode = next; $('measure').setAttribute('aria-pressed', String(next)); canvas.style.cursor = next ? 'crosshair' : 'grab';
-    $('gesture-hint').textContent = next ? '按住、拖曳、放開，量測兩點距離' : manual ? ($('snap-grid').checked ? '拖入水面，圓心自動對齊小格' : '從圓片盤拖入水面，自由排列') : '拖曳 A、B 小鴨可改變位置';
+    $('gesture-hint').textContent = next ? '在水面拖曳量距離' : manual ? '拖入水面排列' : '拖曳 A、B 小鴨';
   }
   $('measure').addEventListener('click', () => { setPlaying(false); setMeasure(!measureMode); refresh(); });
   $('clear-measure').addEventListener('click', () => { ruler = null; refresh(); });
@@ -340,18 +340,18 @@
     rebuildPieces(); undo.length = 0;
     ruler = null; setMeasure(false); changeMach(0);
   }
-  $('restore').addEventListener('click', () => { basic(); status('已恢復波速 1 m/s、每秒打水 1 下、波源靜止。'); });
+  $('restore').addEventListener('click', () => { basic(); status('已恢復預設'); });
   ['wave-speed', 'frequency'].forEach((id, i) => $(id).addEventListener('change', () => {
     const input = $(id), value = Number(input.value), key = i ? 'f' : 'c';
-    if (!input.value || !Number.isFinite(value) || value < .5 || value > 2 || !input.checkValidity()) { input.value = params[key]; status('請輸入 0.5～2 範圍內符合步距的數值。'); return; }
+    if (!input.value || !Number.isFinite(value) || value < .5 || value > 2 || !input.checkValidity()) { input.value = params[key]; status('請輸入 0.5～2'); return; }
     setPlaying(false); params[key] = value; rebuildPieces(); undo.length = 0; refresh(); persist();
-    status(manual ? '已更新圓片半徑，保留你排好的圓心。' : '已重建圓圈；目前時刻與小鴨位置保留。');
+    status('已更新');
   }));
   ['mach', 'reverse'].forEach(id => $(id).addEventListener('input', () => changeMach(Number($('mach').value) * ($('reverse').checked ? -1 : 1))));
   $('automatic').addEventListener('change', () => setManual(!$('automatic').checked));
   $('piece-select').addEventListener('change', () => { selectedPiece = Number($('piece-select').value); setMeasure(false); refresh(); });
-  $('scatter').addEventListener('click', () => { const before = snapshot(), source = pieces.at(-1); rebuildPieces([source]); ruler = null; remember(before); refresh(); status('圓圈已收回圓片盤，小鴨保留在水面上。'); });
-  $('undo-piece').addEventListener('click', () => { if (!undo.length) return; clearPreview(); pieces = undo.pop(); refresh(); persist(); status('已復原上一步排列。'); });
+  $('scatter').addEventListener('click', () => { const before = snapshot(), source = pieces.at(-1); rebuildPieces([source]); ruler = null; remember(before); refresh(); status('已全部收回'); });
+  $('undo-piece').addEventListener('click', () => { if (!undo.length) return; clearPreview(); pieces = undo.pop(); refresh(); persist(); status('已復原'); });
   function constrainPiece(p, camera, snap = false) {
     const pad = .35, maxX = Math.max(0, camera.halfWidth - p.radius - pad);
     const maxY = Math.max(0, camera.halfHeight - p.radius - pad);
@@ -367,12 +367,12 @@
     const p = pieces[selectedPiece], candidate = { ...p, x, y };
     constrainPiece(candidate, view);
     if (Math.abs(candidate.x - x) > 1e-8 || Math.abs(candidate.y - y) > 1e-8) {
-      $('position-note').textContent = '這個座標會讓圓圈超出水面，請選靠近中央的位置。'; return;
+      $('position-note').textContent = '超出水面，請靠近中央'; return;
     }
     const before = snapshot(); Object.assign(p, { x, y, placed: true });
     clearPreview();
     $('piece-x').value = x; $('piece-y').value = y;
-    $('position-note').textContent = '已放到 (' + fmt(x) + ', ' + fmt(y) + ') m，其他圓圈保留。';
+    $('position-note').textContent = '已放到 (' + fmt(x) + ', ' + fmt(y) + ')';
     remember(before); refresh();
   }
   $('position-form').addEventListener('submit', e => { e.preventDefault(); if ($('position-form').reportValidity()) setPosition($('piece-x').valueAsNumber, $('piece-y').valueAsNumber); });
@@ -412,7 +412,7 @@
       } else if (piece) {
         selectedPiece = piece.n; const w = world(p.x, p.y);
         pointer = { id: e.pointerId, mode: 'piece', i: piece.n, camera: { ...view }, dx: piece.x - w.x, dy: piece.y - w.y, before: snapshot() };
-      } else { status(manual ? '抓住圓心或圓周就能移動；重疊時從選單挑選圓片。' : '請拖曳 A、B 小鴨；或選「量測兩點距離」再拖曳。'); return; }
+      } else { status(manual ? '抓圓心或圓周拖曳' : '拖曳 A、B 小鴨'); return; }
     }
     canvas.setPointerCapture(e.pointerId); refresh();
   });
@@ -439,7 +439,7 @@
       if (e.type === 'pointercancel' || action.fromTray && !action.inside) pieces = action.before;
       else remember(action.before);
     }
-    status(manual ? '已放好圓片。可以繼續排列、量測，或儲存這張圖。' : '畫面已暫停，可以繼續觀察或儲存截圖。'); refresh();
+    status(manual ? '已放好' : '已暫停'); refresh();
   }
   canvas.addEventListener('pointerup', finish); canvas.addEventListener('pointercancel', finish);
   canvas.addEventListener('lostpointercapture', () => { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; refresh(); });
@@ -469,7 +469,7 @@
     setManual(true); time = 5;
     $('labels').checked = false; $('observers').checked = setup.observers; $('centers').checked = true; $('grid').checked = true;
     changeMach(setup.mach); refresh();
-    status('已套用第 ' + (task + 1) + ' 題條件，你排好的圓心與回答保留。');
+    status('已套用第 ' + (task + 1) + ' 題設定');
   });
   function wrap(c, value, maxWidth) {
     const lines = [];
@@ -528,25 +528,25 @@
     const img = document.createElement('img'); img.src = url; img.alt = '第 ' + (task + 1) + ' 題，' + configText() + '，' + fmt(manual ? 5 : time) + ' 秒的實驗紀錄'; img.width = width; img.height = image.height;
     const caption = document.createElement('figcaption'), label = document.createElement('span'), link = document.createElement('a');
     label.textContent = '第 ' + (task + 1) + ' 題 · ' + configText() + ' · ' + fmt(manual ? 5 : time) + ' s';
-    link.href = url; link.download = filename; link.textContent = '再次下載這張圖片';
+    link.href = url; link.download = filename; link.textContent = '再下載';
     caption.append(label, link); figure.append(img, caption); $('records').prepend(figure); records.push(figure);
     if (records.length > 6) records.shift().remove();
     $('records-empty').hidden = true; $('clear-records').hidden = false;
-    status(manual ? '已下載你親手排列的水波圖。' : '圖片已產生並下載，畫面停在 ' + fmt(time) + ' 秒。');
+    status('已下載');
   }
   $('capture').addEventListener('click', () => evidence(true)); $('capture-only').addEventListener('click', () => evidence(false));
-  $('clear-records').addEventListener('click', () => { records.length = 0; $('records').replaceChildren(); $('records-empty').hidden = false; $('clear-records').hidden = true; status('已清除本次圖片預覽，下載的圖片與文字回答仍保留。'); });
+  $('clear-records').addEventListener('click', () => { records.length = 0; $('records').replaceChildren(); $('records-empty').hidden = false; $('clear-records').hidden = true; status('已清除紀錄'); });
   function tick(now) {
     if (playing && manual && preview) {
       if (lastFrame !== null) preview.elapsed = Math.min(preview.end, preview.elapsed + Math.min(.1, (now - lastFrame) / 1000) * Number($('play-rate').value));
       detectHits(now); draw();
       if (now - lastReadout > 80 || preview.elapsed >= preview.end) { readouts(); lastReadout = now; }
-      if (preview.elapsed >= preview.end) { setPlaying(false); status('已播放完放好的波前。可以重新播放，或回到原排列調整小鴨的位置。'); }
+      if (preview.elapsed >= preview.end) { setPlaying(false); status('播放完畢'); }
     } else if (playing) {
       if (lastFrame !== null) time = Math.min(10, time + Math.min(.1, (now - lastFrame) / 1000) * Number($('play-rate').value));
       draw();
       if (now - lastReadout > 100 || time >= 10) { readouts(); lastReadout = now; }
-      if (time >= 10) { setPlaying(false); status('已到 10 秒。可以拖曳時間滑桿回看，或儲存這一刻。'); }
+      if (time >= 10) { setPlaying(false); status('已到 10 秒'); }
     } else if (flashDirty) {
       draw(); readouts(); flashDirty = Boolean(preview && preview.flashAt.some(t => now - t < 260));
     }
