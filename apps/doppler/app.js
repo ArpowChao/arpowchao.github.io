@@ -4,12 +4,7 @@
   const canvas = $('pond'), ctx = canvas.getContext('2d');
   const params = { c: 1, f: 1, mach: 0 };
   const observers = [{ x: 5, y: 0 }, { x: -5, y: 0 }];
-  const tasks = [
-    '波源在原地每秒打水 1 下。請用不同半徑的圓片，自己排列出 5 秒時的水波圖，也放好當下波源位置。從最外圈到最內圈，依序寫出發波時間。哪一圈最早？為什麼？',
-    '請自己拖動圓片，分別組合出波源以 ¼、½、¾ 波速向右移動時，5 秒的水波圖。每種速度各存一張圖。前方與後方的波間距如何改變？用方格或兩點量測支持你的說法。',
-    '先自己排列靜止波源的 5 秒水波圖，再放上一隻不動的小鴨。從波間距推理：每秒被波打到幾次？波持續抵達後，10 秒內共幾次？完成後可用進階自動比對檢查。',
-    '請自己排列波源以 ½ 波速向右移動的 5 秒水波圖，並放上 A、B 小鴨。前方與後方誰較常被波打到？用你排出的圓心位置和波間距說明，再試試 ¼、¾ 波速。'
-  ];
+  const tasks = window.DopplerTasks;
   let time = 5, playing = false, lastFrame = null, lastReadout = 0;
   let ruler = null, measureMode = false, pointer = null, view = null;
   let manual = true, pieces = [], selectedPiece = 0, savedCenters = null;
@@ -17,12 +12,12 @@
   const quack = new window.DopplerQuack();
   const undo = [];
   const legacyParking = [{ x: -2, y: 1.5 }, { x: 1.5, y: 1 }, { x: -1.5, y: -1.5 }, { x: 2, y: -1 }, { x: 0, y: 2 }, { x: 3, y: -2 }];
-  let task = 0, answers = ['', '', '', ''], savedStudent = '', storageOK = true;
+  let task = 0, answers = tasks.map(() => ''), savedStudent = '', storageOK = true;
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
   const status = message => { $('status').textContent = message; };
   try {
-    const saved = JSON.parse(localStorage.getItem('doppler-worksheet-v1') || 'null');
+    const saved = JSON.parse(localStorage.getItem('doppler-worksheet-v2') || 'null');
     if (saved && Array.isArray(saved.answers)) answers = tasks.map((_, i) => typeof saved.answers[i] === 'string' ? saved.answers[i].slice(0, 2400) : '');
     if (saved && typeof saved.student === 'string') savedStudent = saved.student.slice(0, 80);
     if (saved && typeof saved.snapToGrid === 'boolean') $('snap-grid').checked = saved.snapToGrid;
@@ -35,7 +30,7 @@
   } catch (_) { storageOK = false; }
   $('student').value = savedStudent;
   function persist() {
-    try { localStorage.setItem('doppler-worksheet-v1', JSON.stringify({ answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
+    try { localStorage.setItem('doppler-worksheet-v2', JSON.stringify({ answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
       manualCenters: pieces.map(p => ({ n: p.n, x: p.x, y: p.y, placed: p.placed })) })); }
     catch (_) { storageOK = false; }
     if (!storageOK) $('save-note').textContent = '此瀏覽器無法保存回答；請在離開前下載圖片。';
@@ -459,15 +454,21 @@
     o.y = Math.max(-20, Math.min(20, o.y + (e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0)));
     if (manual) { o.placed = true; constrainPiece(o, view, !e.shiftKey && $('snap-grid').checked); remember(before); } refresh();
   });
-  function loadQuestion() { $('question').textContent = tasks[task]; $('answer').value = answers[task]; }
+  function loadQuestion() {
+    const t = tasks[task];
+    $('question').textContent = t.q; $('answer').value = answers[task];
+    $('load-task').hidden = !t.setup;
+    document.dispatchEvent(new CustomEvent('doppler:task', { detail: { index: task, task: t } }));
+  }
   $('task').addEventListener('change', () => { task = Number($('task').value); loadQuestion(); });
   $('answer').addEventListener('input', () => { answers[task] = $('answer').value; persist(); });
   $('student').addEventListener('input', persist);
   $('load-task').addEventListener('click', () => {
+    const setup = tasks[task].setup; if (!setup) return;
     basic(); observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 };
     setManual(true); time = 5;
-    $('labels').checked = false; $('observers').checked = task >= 2; $('centers').checked = true; $('grid').checked = true;
-    changeMach([0, .25, 0, .5][task]); refresh();
+    $('labels').checked = false; $('observers').checked = setup.observers; $('centers').checked = true; $('grid').checked = true;
+    changeMach(setup.mach); refresh();
     status('已套用第 ' + (task + 1) + ' 題條件，你排好的圓心與回答保留。');
   });
   function wrap(c, value, maxWidth) {
@@ -480,12 +481,16 @@
     return lines;
   }
   function download(url, name) { const link = document.createElement('a'); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove(); }
-  function evidence(withAnswer) {
+  function studentLabel() {
+    const v = id => ($(id)?.value || '').trim();
+    return [v('cls') && v('cls') + ' 班', v('seat') && v('seat') + ' 號', v('group') && '第 ' + v('group') + ' 組', v('student')].filter(Boolean).join(' ');
+  }
+  function renderEvidence(withAnswer) {
     setPlaying(false); refresh(); persist();
     const image = document.createElement('canvas'), c = image.getContext('2d'), width = 1200, inset = 40;
     const pondHeight = Math.round(1120 * canvas.getBoundingClientRect().height / canvas.getBoundingClientRect().width);
     c.font = '21px "Microsoft JhengHei",sans-serif';
-    const question = wrap(c, tasks[task], 1120), answer = wrap(c, $('answer').value || '（尚未填寫回答）', 1120);
+    const question = wrap(c, tasks[task].q, 1120), answer = wrap(c, $('answer').value || '（尚未填寫回答）', 1120);
     const extra = withAnswer ? 190 + (question.length + answer.length) * 34 : 0;
     image.width = width; image.height = 204 + pondHeight + extra + (preview ? 32 : 0);
     c.fillStyle = '#ffffff'; c.fillRect(0, 0, image.width, image.height);
@@ -508,17 +513,21 @@
     if (preview) text(c, measurement, inset, y + 63, '#5d7b86', 'left', 16);
     if (withAnswer) {
       let cursor = y + 85 + (preview ? 32 : 0);
-      text(c, '練習 ' + (task + 1) + '  |  ' + ($('student').value || '未填姓名／座號'), inset, cursor, '#087c91', 'left', 21); cursor += 40;
+      text(c, '第 ' + (task + 1) + ' 題　' + tasks[task].title + '  |  ' + (studentLabel() || '未填班級／座號'), inset, cursor, '#087c91', 'left', 21); cursor += 40;
       question.forEach(line => { text(c, line, inset, cursor, '#153f4d', 'left', 21); cursor += 34; });
       cursor += 16; text(c, '我的回答', inset, cursor, '#087c91', 'left', 21); cursor += 36;
       answer.forEach(line => { text(c, line, inset, cursor, '#153f4d', 'left', 21); cursor += 34; });
     }
     const filename = 'doppler-' + (manual ? preview ? 'my-waves' : 'manual' : 'auto') + '-q' + (task + 1) + '-v' + fmt(params.mach) + '-t' + fmt(preview ? preview.elapsed : manual ? 5 : time) + (withAnswer ? '-answer' : '-pond') + '.png';
+    return { image, filename };
+  }
+  function evidence(withAnswer) {
+    const { image, filename } = renderEvidence(withAnswer), width = image.width;
     const url = image.toDataURL('image/png'); download(url, filename);
     const figure = document.createElement('figure'); figure.className = 'record';
     const img = document.createElement('img'); img.src = url; img.alt = '第 ' + (task + 1) + ' 題，' + configText() + '，' + fmt(manual ? 5 : time) + ' 秒的實驗紀錄'; img.width = width; img.height = image.height;
     const caption = document.createElement('figcaption'), label = document.createElement('span'), link = document.createElement('a');
-    label.textContent = '練習 ' + (task + 1) + ' · ' + configText() + ' · ' + fmt(manual ? 5 : time) + ' s';
+    label.textContent = '第 ' + (task + 1) + ' 題 · ' + configText() + ' · ' + fmt(manual ? 5 : time) + ' s';
     link.href = url; link.download = filename; link.textContent = '再次下載這張圖片';
     caption.append(label, link); figure.append(img, caption); $('records').prepend(figure); records.push(figure);
     if (records.length > 6) records.shift().remove();
@@ -543,10 +552,36 @@
     }
     lastFrame = now; requestAnimationFrame(tick);
   }
+  // 作答送出（submit.js）讀取目前狀態用的介面
+  function arrangement(mach = params.mach) {
+    const rings = pieces.filter(p => p.radius > 0), marker = pieces.at(-1), placed = rings.filter(p => p.placed);
+    if (placed.length < rings.length) return { label: '未完成', placed: placed.length, total: rings.length, err: null };
+    const seq = [...rings, marker].sort((a, b) => a.n - b.n), step = mach * params.c / params.f, tol = params.c / params.f / 8 + 1e-9;
+    let err = 0, still = true, reversed = true;
+    for (let i = 0; i + 1 < seq.length; i++) {
+      const dx = seq[i + 1].x - seq[i].x, dy = seq[i + 1].y - seq[i].y;
+      err = Math.max(err, Math.abs(dx - step), Math.abs(dy));
+      if (Math.abs(dx) > tol || Math.abs(dy) > tol) still = false;
+      if (Math.abs(dx + step) > tol || Math.abs(dy) > tol) reversed = false;
+    }
+    const label = err <= tol ? '正確' : step !== 0 && still ? '圓心沒有移動' : step !== 0 && reversed ? '方向相反' : '圓心間距不一致';
+    return { label, placed: placed.length, total: rings.length, err: Math.round(err * 1000) / 1000 };
+  }
+  window.DopplerLab = {
+    tasks, get taskIndex() { return task; }, studentLabel,
+    params: () => ({ ...params }), manual: () => manual,
+    ruler: () => ruler ? Math.round(P.distance(ruler.a, ruler.b) * 1000) / 1000 : null,
+    ducks: () => [0, 1].map(i => { const r = manual ? previewReading(i) : P.received(params, observers[i], time); return { count: r.count, interval: r.interval === null ? null : Math.round(r.interval * 1000) / 1000 }; }),
+    arrangement,
+    answer: () => $('answer').value,
+    snapshot: (withAnswer = true) => renderEvidence(withAnswer).image,
+    status
+  };
   new ResizeObserver(draw).observe(canvas);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { setPlaying(false); readouts(); } });
   rebuildPieces(savedCenters || []);
   $('wave-speed').value = params.c; $('frequency').value = params.f; $('mach').value = Math.abs(params.mach); $('reverse').checked = params.mach < 0;
   document.querySelectorAll('[data-mach]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.mach) === params.mach)));
+  $('task').replaceChildren(...tasks.map((t, i) => new Option((i + 1) + '　' + t.title, String(i))));
   loadQuestion(); setManual(true); persist(); refresh(); requestAnimationFrame(tick);
 })();
