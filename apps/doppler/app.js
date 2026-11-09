@@ -594,7 +594,17 @@
     toggles.forEach(([btn, box]) => $(btn).setAttribute('aria-pressed', String($(box).checked)));
     $('qb-measure').setAttribute('aria-pressed', String(measureMode));
     $('qb-3d').setAttribute('aria-pressed', String(Boolean(view3d?.visible)));
+    $('qb-auto').setAttribute('aria-pressed', String(!manual));
+    $('qb-auto').textContent = manual ? '▶ 示範' : '✕ 結束示範';
   }
+  // 示範：切到自動模擬，從 0 秒開始播放，看波源往前走、一圈一圈發出水波
+  $('qb-auto').addEventListener('click', () => {
+    if (manual) { setManual(false); time = 0; setPlaying(true); status('示範：波源每秒打水一次，邊走邊發波'); }
+    else { setManual(true); status('回到自己的排列'); }
+    syncQuick(); refresh();
+  });
+  $('automatic').addEventListener('change', syncQuick);
+  document.querySelectorAll('.quick-bar [data-mach]').forEach(b => b.addEventListener('click', () => { if (!manual) { time = 0; setPlaying(true); refresh(); } }));
   ['observers', 'labels'].forEach(id => $(id).addEventListener('change', syncQuick));
   $('measure').addEventListener('click', syncQuick);
   // ---------- 3D 水面 ----------
