@@ -60,3 +60,51 @@ input[type=text],input[type=number],select,textarea{font-size:16px}
 .model-note{font-size:15px}.gas-setup h3{font-size:17px}.gas-setup code{font-size:13px}
 footer{font-size:13px}
 @media(max-width:1050px){.worksheet{grid-template-columns:minmax(0,1fr);gap:20px}}
+/* ===== 快速工具列 ===== */
+.quick-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 22px 12px}
+.quick-bar button{min-height:44px;padding:8px 14px;font-size:16px;border-radius:10px}
+.quick-bar button[aria-pressed=true]{background:var(--teal,#087c91);border-color:var(--teal,#087c91);color:#fff}
+.qb-group{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.qb-group button{border:0;border-radius:0;min-width:52px;font-weight:600}.qb-group button+button{border-left:1px solid var(--line)}
+.qb-spacer{flex:1}
+.qb-strong{font-weight:700}
+#qb-3d{min-width:64px}
+/* ===== 3D 水面 ===== */
+.pond-area{position:relative}
+.view3d-canvas{display:none;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.pond-area.is-3d .view3d-canvas{display:block}
+.pond-area.is-3d #pond{visibility:hidden}
+.assembly-space:has(.pond-area.is-3d) .piece-tray{opacity:.4;pointer-events:none}
+.view3d-tools{position:absolute;top:10px;right:10px;z-index:3;display:flex;gap:6px}
+.view3d-tools button{min-height:40px;padding:6px 12px;font-size:15px;background:#ffffffee}
+/* ===== 全螢幕 ===== */
+html.lock-scroll,html.lock-scroll body{overflow:hidden}
+.experiment.is-full{position:fixed;inset:0;z-index:1000;border-radius:0;border:0;display:flex;flex-direction:column;background:var(--pond,#f4fafb)}
+.experiment.is-full>*{flex:0 0 auto}
+.experiment.is-full .scene-head{padding:10px 18px 4px}
+.experiment.is-full .quick-bar{padding:4px 18px 8px}
+.experiment.is-full .manual-playback{padding-top:6px;padding-bottom:6px}
+.experiment.is-full .manual-playback .small-note:empty{display:none}
+.experiment.is-full .assembly-space{flex:1 1 auto;min-height:0;grid-template-columns:120px minmax(0,1fr)}
+.experiment.is-full .assembly-space:has(#piece-tray[hidden]){grid-template-columns:minmax(0,1fr)}
+.experiment.is-full .piece-tray{border-right:1px solid var(--line);border-bottom:0;overflow:auto}
+.experiment.is-full .tray-pieces{grid-template-columns:minmax(0,1fr)}
+.experiment.is-full .pond-area{height:100%;min-height:0}
+.experiment.is-full .pond-area #pond{height:100% !important;min-height:0 !important;aspect-ratio:auto !important;width:100%}
+.experiment.is-full .scene-foot{padding:4px 18px 6px}
+.experiment.is-full .manual-toolbar{padding:8px 18px}
+@media (orientation:portrait){
+  .experiment.is-full .assembly-space{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .experiment.is-full .piece-tray{border-right:0;border-bottom:1px solid var(--line)}
+  .experiment.is-full .tray-pieces{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+
+.experiment.is-full .duck-readings>div{padding:4px 12px}
+.experiment.is-full .duck-readings>div span{display:inline;margin-left:10px}
+.experiment.is-full .scene-tools{padding-top:0;padding-bottom:4px}
+
+.experiment.is-full .scene-tools,.experiment.is-full #sound-status{display:none}
+.experiment.is-full .manual-playback{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:6px 18px}
+.experiment.is-full .duck-readings{display:flex;gap:10px;flex:1 1 auto}
+.experiment.is-full .duck-readings>div{display:flex;align-items:center;gap:10px;padding:6px 12px}
+.experiment.is-full .duck-readings>div span{margin:0}

@@ -4,6 +4,10 @@
   const canvas = $('pond'), ctx = canvas.getContext('2d');
   const params = { c: 1, f: 1, mach: 0 };
   const observers = [{ x: 5, y: 0 }, { x: -5, y: 0 }];
+  const LETTERS = 'ABCDEF', DUCK_FILL = ['#32a0ac', '#88bdc3', '#d1709a', '#7a8fd6', '#6db36d', '#d48a3c'];
+  const EXTRA_SPOTS = [[0, 4], [0, -4], [3.5, 3], [-3.5, -3], [3.5, -3], [-3.5, 3]];
+  const FLASH_MS = 520;
+  let view3d = null;
   const tasks = window.DopplerTasks;
   let time = 5, playing = false, lastFrame = null, lastReadout = 0;
   let ruler = null, measureMode = false, pointer = null, view = null;
@@ -53,7 +57,7 @@
       const r = previewReading(i);
       if (r.count > preview.hits[i]) {
         if ($('quack-sound').checked) for (let n = preview.hits[i]; n < r.count; n++) {
-          if (!quack.play(i)) $('sound-status').textContent = '請按「試聽」開啟聲音';
+          if (!quack.play(observers[i].x < 0 ? 1 : 0)) $('sound-status').textContent = '請按「試聽」開啟聲音';
         }
         preview.flashAt[i] = now; flashDirty = true;
       }
@@ -69,7 +73,7 @@
     if (!manual || pointer || !$('observers').checked) return;
     if (!preview || preview.elapsed >= preview.end) {
       const waves = snapshot(), arrivals = observers.flatMap(o => P.snapshotArrivals(params.c, waves, o));
-      preview = { waves, elapsed: 0, hits: [0, 0], flashAt: [-Infinity, -Infinity], end: Math.max(3, ...arrivals.map(a => a.time)) + .6 };
+      preview = { waves, elapsed: 0, hits: observers.map(() => 0), flashAt: observers.map(() => -Infinity), end: Math.max(3, ...arrivals.map(a => a.time)) + .6 };
     }
     setMeasure(false); setPlaying(true); detectHits(performance.now()); refresh();
   });
@@ -182,8 +186,14 @@
     c.lineTo(to.x - 7 * Math.cos(angle + .45), to.y - 7 * Math.sin(angle + .45)); c.fill();
   }
   function duck(c, point, color, direction, tag, flash) {
+    const glow = typeof flash === 'number' ? flash : flash ? 1 : 0;
     c.save(); c.translate(point.x, point.y);
-    if (flash) { c.fillStyle = '#ffe37899'; c.beginPath(); c.arc(0, 0, 30, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#d59e00'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 26, 0, Math.PI * 2); c.stroke(); }
+    if (glow > 0) {
+      const g = c.createRadialGradient(0, 0, 4, 0, 0, 46);
+      g.addColorStop(0, 'rgba(255,228,90,' + (.95 * glow) + ')'); g.addColorStop(1, 'rgba(255,228,90,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, 46, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(213,158,0,' + glow + ')'; c.lineWidth = 3.5; c.beginPath(); c.arc(0, 0, 24 + 10 * (1 - glow), 0, Math.PI * 2); c.stroke();
+    }
     c.scale(direction, 1); c.fillStyle = color; c.strokeStyle = '#153f4d'; c.lineWidth = .9;
     c.beginPath(); c.moveTo(-13, -4); c.lineTo(-21, 0); c.lineTo(-13, 4); c.closePath(); c.fill(); c.stroke();
     c.beginPath(); c.ellipse(-3, 0, 15, 10, 0, 0, Math.PI * 2); c.fill(); c.stroke();
@@ -197,7 +207,7 @@
     c.fillStyle = '#ffffff'; c.beginPath(); c.arc(0, 0, 3, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#153f4d'; c.beginPath(); c.arc(0, 0, 1.5, 0, Math.PI * 2); c.fill();
     c.restore(); text(c, tag, point.x, point.y + 28, '#153f4d', 'center', 14);
-    if (flash) text(c, '呱！', point.x, point.y - 38, '#946400', 'center', 18);
+    if (glow > .35) text(c, '呱！', point.x, point.y - 40, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
     const camera = savedCamera || projection(width, height);
@@ -253,9 +263,8 @@
       if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 13);
     }
     if ($('observers').checked) observers.forEach((o, i) => {
-      const received = manual ? previewReading(i) : P.received(params, o, time);
-      const hit = manual ? Boolean(preview && performance.now() - preview.flashAt[i] < 260) : received.last !== null && time - received.last < .18;
-      duck(c, xy(o, camera), i ? '#88bdc3' : '#32a0ac', i ? 1 : -1, i ? 'B 小鴨' : 'A 小鴨', hit);
+      const sx = manual ? pieces.at(-1).x : P.source(params, time).x;
+      duck(c, xy(o, camera), DUCK_FILL[i], o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i));
     });
     if (manual && pieces[selectedPiece]?.placed) {
       const selected = pieces[selectedPiece], p = xy(selected, camera);
@@ -271,6 +280,12 @@
       c.fillStyle = '#fff5d4'; c.fillRect(x - 45, y - 12, 90, 24); text(c, label, x, y, '#765400', 'center', 15);
     }
     c.restore(); return { camera, cell };
+  }
+  // 波峰剛到時的發光強度（0～1，逐漸淡出）
+  function glowOf(i) {
+    if (manual) { const t = preview ? performance.now() - (preview.flashAt[i] ?? -Infinity) : Infinity; return t < FLASH_MS ? 1 - t / FLASH_MS : 0; }
+    const r = P.received(params, observers[i], time); if (r.last === null) return 0;
+    const dt = (time - r.last) * 1000 / Math.max(.25, Number($('play-rate').value)); return dt < FLASH_MS ? 1 - dt / FLASH_MS : 0;
   }
   function draw() {
     const rect = canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
@@ -294,7 +309,7 @@
       const id = i ? 'b' : 'a', r = previewReading(i);
       $('duck-' + id + '-count').textContent = '收到 ' + r.count + ' 次';
       $('duck-' + id + '-interval').textContent = r.interval === null ? '間隔 —' : '間隔 ' + fmt(r.interval, 2) + ' s';
-      $('duck-' + id + '-reading').dataset.flash = String(Boolean(preview && performance.now() - preview.flashAt[i] < 260));
+      $('duck-' + id + '-reading').dataset.flash = String(glowOf(i) > .3);
     }
     $('scene-setting').textContent = manual ? '題目：' + (params.mach === 0 ? '靜止波源' : fmt(Math.abs(params.mach)) + ' 波速向' + (params.mach > 0 ? '右' : '左')) : configText();
     $('parameter-note').textContent = '波源移速 ' + fmt(Math.abs(params.mach * params.c)) + ' m/s' + (manual ? '（不會自動排列）' : '');
@@ -308,7 +323,7 @@
     if (!$('observers').checked) { const p = document.createElement('p'); p.className = 'copy'; p.textContent = '先勾選「A、B 小鴨」'; $('arrival-readings').append(p); return; }
     observers.forEach((o, i) => {
       const r = P.received(params, o, time), card = document.createElement('div'); card.className = 'arrival-card';
-      const h = document.createElement('h3'); h.textContent = (i ? 'B' : 'A') + ' 小鴨 · (' + fmt(o.x, 1) + ', ' + fmt(o.y, 1) + ') m'; card.append(h);
+      const h = document.createElement('h3'); h.textContent = LETTERS[i] + ' 小鴨 · (' + fmt(o.x, 1) + ', ' + fmt(o.y, 1) + ') m'; card.append(h);
       for (const label of ['抵達 ' + r.count + ' 次', '間隔 ' + (r.interval === null ? '—' : fmt(r.interval, 2) + ' s'), '頻率 ' + (r.frequency === null ? '—' : fmt(r.frequency, 2) + ' 次/s')]) { const p = document.createElement('p'); p.textContent = label; card.append(p); }
       const p = document.createElement('p'); p.className = 'arrival-times'; p.textContent = r.events.length ? '抵達時刻：' + r.events.map(a => fmt(a.time, 2) + 's').join('、') : '還沒有波抵達。'; card.append(p);
       $('arrival-readings').append(card);
@@ -465,7 +480,7 @@
   $('student').addEventListener('input', persist);
   $('load-task').addEventListener('click', () => {
     const setup = tasks[task].setup; if (!setup) return;
-    basic(); observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 };
+    basic(); observers.length = 2; observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 }; syncDucks();
     setManual(true); time = 5;
     $('labels').checked = false; $('observers').checked = setup.observers; $('centers').checked = true; $('grid').checked = true;
     changeMach(setup.mach); refresh();
@@ -506,7 +521,7 @@
     const notes = [];
     if ($('observers').checked) observers.forEach((o, i) => {
       const r = manual ? previewReading(i) : P.received(params, o, time);
-      notes.push((i ? 'B' : 'A') + '=(' + fmt(o.x) + ',' + fmt(o.y) + ')m' + (preview || !manual && $('arrival-panel').open ? ' · ' + r.count + '次 · Δt=' + (r.interval === null ? '—' : fmt(r.interval, 3) + 's') : ''));
+      notes.push(LETTERS[i] + '=(' + fmt(o.x) + ',' + fmt(o.y) + ')m' + (preview || !manual && $('arrival-panel').open ? ' · ' + r.count + '次 · Δt=' + (r.interval === null ? '—' : fmt(r.interval, 3) + 's') : ''));
     });
     const measurement = ($('grid').checked ? '1大格=1λ=' + fmt(exportedView.cell) + 'm；4小格/大格 · ' : '') + (ruler ? '量測 ' + fmt(P.distance(ruler.a, ruler.b)) + 'm' : '未放置量測線');
     text(c, (notes.length ? notes.join('    ') + '    ' : '') + (preview ? '' : measurement), inset, y + 31, '#5d7b86', 'left', 16);
@@ -548,10 +563,81 @@
       if (now - lastReadout > 100 || time >= 10) { readouts(); lastReadout = now; }
       if (time >= 10) { setPlaying(false); status('已到 10 秒'); }
     } else if (flashDirty) {
-      draw(); readouts(); flashDirty = Boolean(preview && preview.flashAt.some(t => now - t < 260));
+      draw(); readouts(); flashDirty = Boolean(preview && preview.flashAt.some(t => now - t < FLASH_MS));
     }
     lastFrame = now; requestAnimationFrame(tick);
   }
+  // ---------- 更多小鴨 ----------
+  function syncDucks() {
+    $('observer-select').replaceChildren(...observers.map((_, i) => new Option(LETTERS[i] + ' 小鴨', String(i))));
+    $('qb-remove-duck').disabled = observers.length <= 2;
+    $('qb-add-duck').disabled = observers.length >= LETTERS.length;
+    $('qb-add-duck').textContent = '＋ 小鴨（' + observers.length + '）';
+  }
+  function addDuck() {
+    if (observers.length >= LETTERS.length) return;
+    const cell = params.c / params.f, spot = EXTRA_SPOTS[(observers.length - 2) % EXTRA_SPOTS.length];
+    clearPreview(); observers.push({ x: spot[0] * cell, y: spot[1] * cell });
+    if (!$('observers').checked) $('observers').checked = true;
+    syncDucks(); refresh(); status('已加入 ' + LETTERS[observers.length - 1] + ' 小鴨，可拖到想觀察的位置');
+  }
+  function removeDuck() { if (observers.length <= 2) return; clearPreview(); observers.pop(); syncDucks(); refresh(); status('已移除一隻小鴨'); }
+  $('qb-add-duck').addEventListener('click', addDuck);
+  $('qb-remove-duck').addEventListener('click', removeDuck);
+  // ---------- 快速工具列（與下方設定同步） ----------
+  const toggles = [['qb-ducks', 'observers'], ['qb-labels', 'labels']];
+  toggles.forEach(([btn, box]) => $(btn).addEventListener('click', () => { $(box).checked = !$(box).checked; $(box).dispatchEvent(new Event('change')); syncQuick(); }));
+  $('qb-measure').addEventListener('click', () => { if (view3d?.visible) set3D(false); $('measure').click(); syncQuick(); });
+  function syncQuick() {
+    toggles.forEach(([btn, box]) => $(btn).setAttribute('aria-pressed', String($(box).checked)));
+    $('qb-measure').setAttribute('aria-pressed', String(measureMode));
+    $('qb-3d').setAttribute('aria-pressed', String(Boolean(view3d?.visible)));
+  }
+  ['observers', 'labels'].forEach(id => $(id).addEventListener('change', syncQuick));
+  $('measure').addEventListener('click', syncQuick);
+  // ---------- 3D 水面 ----------
+  function scene3d() {
+    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(params, time);
+    const src = manual ? (pieces.at(-1).placed ? pieces.at(-1) : null) : P.source(params, time);
+    const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
+      Math.ceil(Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(o => [Math.abs(o.x) + .5, Math.abs(o.y) + .5])));
+    return { extent, cell: params.c / params.f, mach: params.mach, rings: waves.map(w => ({ x: w.x, y: w.y, r: w.radius })),
+      source: src && { x: src.x, y: src.y }, showObservers: $('observers').checked,
+      observers: observers.map((o, i) => ({ x: o.x, y: o.y, label: LETTERS[i], glow: $('observers').checked ? glowOf(i) : 0 })) };
+  }
+  async function set3D(on) {
+    if (on && !view3d) {
+      $('qb-3d').disabled = true; status('3D 載入中…');
+      try { view3d = (await import('./view3d.js?v=3d-4')).create($('pond-area'), { scene: scene3d }); }
+      catch (err) { $('qb-3d').disabled = false; status('這台裝置無法顯示 3D'); return; }
+      $('qb-3d').disabled = false;
+    }
+    if (!view3d) return;
+    if (on) { setMeasure(false); view3d.show(); $('view3d-tools').hidden = false; status('3D：拖曳旋轉、雙指縮放；排列請回 2D'); }
+    else { view3d.hide(); $('view3d-tools').hidden = true; status(manual ? '拖曳圓圈排列' : '拖曳 A、B 小鴨'); refresh(); }
+    $('qb-3d').textContent = on ? '2D' : '3D';
+    syncQuick();
+  }
+  $('qb-3d').addEventListener('click', () => set3D(!view3d?.visible));
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => view3d?.setView(b.dataset.view)));
+  // ---------- 全螢幕 ----------
+  const stage = document.querySelector('.experiment');
+  let usedFullscreenApi = false;
+  function setFull(on) {
+    stage.classList.toggle('is-full', on); document.documentElement.classList.toggle('lock-scroll', on);
+    $('qb-full').textContent = on ? '✕ 離開全螢幕' : '⛶ 全螢幕';
+    if (on) {
+      const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+      if (req) { usedFullscreenApi = true; Promise.resolve(req.call(stage)).catch(() => { usedFullscreenApi = false; }); }
+    } else if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+    requestAnimationFrame(refresh);
+  }
+  $('qb-full').addEventListener('click', () => setFull(!stage.classList.contains('is-full')));
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+    if (!(document.fullscreenElement || document.webkitFullscreenElement) && usedFullscreenApi && stage.classList.contains('is-full')) { usedFullscreenApi = false; setFull(false); }
+  }));
   // 作答送出（submit.js）讀取目前狀態用的介面
   function arrangement(mach = params.mach) {
     const rings = pieces.filter(p => p.radius > 0), marker = pieces.at(-1), placed = rings.filter(p => p.placed);
@@ -575,6 +661,7 @@
     arrangement,
     answer: () => $('answer').value,
     snapshot: (withAnswer = true) => renderEvidence(withAnswer).image,
+    scene: scene3d,
     status
   };
   new ResizeObserver(draw).observe(canvas);
@@ -583,5 +670,6 @@
   $('wave-speed').value = params.c; $('frequency').value = params.f; $('mach').value = Math.abs(params.mach); $('reverse').checked = params.mach < 0;
   document.querySelectorAll('[data-mach]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.mach) === params.mach)));
   $('task').replaceChildren(...tasks.map((t, i) => new Option((i + 1) + '　' + t.title, String(i))));
+  syncDucks(); syncQuick();
   loadQuestion(); setManual(true); persist(); refresh(); requestAnimationFrame(tick);
 })();
