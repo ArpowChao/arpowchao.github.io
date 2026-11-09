@@ -119,7 +119,7 @@
         e.preventDefault(); clearPreview(); selectedPiece = p.n; setMeasure(false);
         if (!pieces[p.n].placed) {
           pointer = { id: e.pointerId, mode: 'piece', i: p.n, camera: { ...view }, dx: 0, dy: 0, before: snapshot(), fromTray: true, inside: false };
-          canvas.setPointerCapture(e.pointerId);
+          capture(e.pointerId);
         }
         refresh();
       });
@@ -407,6 +407,7 @@
     const edges = candidates.filter(h => h.p.radius > 0 && h.edge < 12);
     return (edges.find(h => h.p.n === selectedPiece) || edges.sort((a, b) => a.edge - b.edge)[0])?.p;
   }
+  function capture(id) { try { canvas.setPointerCapture(id); } catch (_) { } }
   function eventPoint(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   canvas.addEventListener('pointerdown', e => {
     if (e.button !== 0 || pointer) return;
@@ -420,7 +421,7 @@
         const before = snapshot(), selected = pieces[selectedPiece], w = world(p.x, p.y);
         selected.placed = true; selected.x = w.x; selected.y = w.y; constrainPiece(selected, view, $('snap-grid').checked);
         pointer = { id: e.pointerId, mode: 'piece', i: selected.n, camera: { ...view }, dx: selected.x - w.x, dy: selected.y - w.y, before };
-        canvas.setPointerCapture(e.pointerId); refresh(); return;
+        capture(e.pointerId); refresh(); return;
       }
       if (observerIndex >= 0 && (!piece || P.distance(piece, world(p.x, p.y)) * view.scale > 13)) {
         $('observer-select').value = observerIndex; pointer = { id: e.pointerId, mode: 'observer', i: observerIndex, camera: { ...view } };
@@ -429,9 +430,10 @@
         pointer = { id: e.pointerId, mode: 'piece', i: piece.n, camera: { ...view }, dx: piece.x - w.x, dy: piece.y - w.y, before: snapshot() };
       } else { status(manual ? '抓圓心或圓周拖曳' : '拖曳 A、B 小鴨'); return; }
     }
-    canvas.setPointerCapture(e.pointerId); refresh();
+    capture(e.pointerId); refresh();
   });
-  canvas.addEventListener('pointermove', e => {
+  // iPad Safari：手指從圓片托盤開始拖時，事件可能仍送到托盤按鈕，所以在 window 上統一接收
+  window.addEventListener('pointermove', e => {
     if (!pointer || pointer.id !== e.pointerId) return;
     const p = eventPoint(e), cam = pointer.camera || view;
     if (pointer.fromTray) {
@@ -456,7 +458,7 @@
     }
     status(manual ? '已放好' : '已暫停'); refresh();
   }
-  canvas.addEventListener('pointerup', finish); canvas.addEventListener('pointercancel', finish);
+  window.addEventListener('pointerup', finish); window.addEventListener('pointercancel', finish);
   canvas.addEventListener('lostpointercapture', () => { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; refresh(); });
   canvas.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; ruler = null; setMeasure(false); refresh(); return; }
