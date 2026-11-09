@@ -1,6 +1,6 @@
 // 3D 水面：把目前的水波（自己排的或自動模擬的）畫成立體波紋，小鴨浮在水面上，波峰經過時發光。
-import * as THREE from './vendor/three.module.min.js';
-import { OrbitControls } from './vendor/OrbitControls.js';
+import * as THREE from './lib3d/three.module.min.js';
+import { OrbitControls } from './lib3d/OrbitControls.js';
 
 const SEG = 160;                       // 水面網格細分
 const DUCK_COLORS = { source: 0xe9b93a, A: 0x32a0ac, B: 0x88bdc3, C: 0xd1709a, D: 0x7a8fd6, E: 0x6db36d, F: 0xd48a3c };

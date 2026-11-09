@@ -608,7 +608,7 @@
   async function set3D(on) {
     if (on && !view3d) {
       $('qb-3d').disabled = true; status('3D 載入中…');
-      try { view3d = (await import('./view3d.js?v=3d-4')).create($('pond-area'), { scene: scene3d }); }
+      try { view3d = (await import('./view3d.js?v=3d-5')).create($('pond-area'), { scene: scene3d }); }
       catch (err) { $('qb-3d').disabled = false; status('這台裝置無法顯示 3D'); return; }
       $('qb-3d').disabled = false;
     }
