@@ -51,13 +51,22 @@
   function previewReading(i) {
     return preview ? P.snapshotReceived(params.c, preview.waves, observers[i], preview.elapsed) : { count: 0, interval: null, last: null };
   }
+  const panOf = o => Math.max(-1, Math.min(1, o.x / 6));
+  // 示範（自動模擬）播放時，波峰到達哪隻小鴨就讓牠叫
+  let autoHits = null;
+  function autoQuack(reset) {
+    const counts = observers.map(o => P.received(params, o, time).count);
+    if (!reset && autoHits && autoHits.length === counts.length && $('observers').checked && $('quack-sound').checked)
+      counts.forEach((n, i) => { for (let k = autoHits[i]; k < n; k++) quack.play(i, panOf(observers[i])); });
+    autoHits = counts;
+  }
   function detectHits(now) {
     if (!preview || !$('observers').checked) return;
     observers.forEach((_, i) => {
       const r = previewReading(i);
       if (r.count > preview.hits[i]) {
         if ($('quack-sound').checked) for (let n = preview.hits[i]; n < r.count; n++) {
-          if (!quack.play(observers[i].x < 0 ? 1 : 0)) $('sound-status').textContent = '請按「試聽」開啟聲音';
+          if (!quack.play(i, panOf(observers[i]))) $('sound-status').textContent = '請按「試聽」開啟聲音';
         }
         preview.flashAt[i] = now; flashDirty = true;
       }
@@ -84,7 +93,8 @@
   });
   $('test-quack').addEventListener('click', async () => {
     const ready = await quack.unlock();
-    if (ready && quack.play(0)) {
+    if (ready && quack.play(0, panOf(observers[0]))) {
+      observers.slice(1).forEach((o, i) => quack.play(i + 1, panOf(o), (i + 1) * .55));
       $('quack-sound').checked = true;
       $('sound-status').textContent = '沒聲音？請調高音量';
     } else $('sound-status').textContent = '無法播放聲音';
@@ -337,7 +347,7 @@
     refresh(); persist(); status('速度：' + (value === 0 ? '靜止' : fmt(Math.abs(value)) + ' 波速'));
   }
   document.querySelectorAll('[data-mach]').forEach(button => button.addEventListener('click', () => changeMach(Number(button.dataset.mach))));
-  $('play').addEventListener('click', () => { if (time >= 10 && !playing) time = 0; setPlaying(!playing); refresh(); });
+  $('play').addEventListener('click', () => { quack.unlock(); if (time >= 10 && !playing) time = 0; autoHits = null; setPlaying(!playing); refresh(); });
   $('reset').addEventListener('click', () => { setTime(0); status('回到 0 秒'); });
   $('time').addEventListener('input', () => setTime(Number($('time').value)));
   $('step').addEventListener('click', () => setTime((Math.floor(time * params.f + 1e-8) + 1) / params.f));
@@ -561,7 +571,7 @@
       if (preview.elapsed >= preview.end) { setPlaying(false); status('播放完畢'); }
     } else if (playing) {
       if (lastFrame !== null) time = Math.min(10, time + Math.min(.1, (now - lastFrame) / 1000) * Number($('play-rate').value));
-      draw();
+      autoQuack(lastFrame === null); draw();
       if (now - lastReadout > 100 || time >= 10) { readouts(); lastReadout = now; }
       if (time >= 10) { setPlaying(false); status('已到 10 秒'); }
     } else if (flashDirty) {
@@ -599,7 +609,7 @@
   }
   // 示範：切到自動模擬，從 0 秒開始播放，看波源往前走、一圈一圈發出水波
   $('qb-auto').addEventListener('click', () => {
-    if (manual) { setManual(false); time = 0; setPlaying(true); status('示範：波源每秒打水一次，邊走邊發波'); }
+    if (manual) { quack.unlock(); setManual(false); time = 0; autoHits = null; setPlaying(true); status('示範：波源每秒打水一次，邊走邊發波'); }
     else { setManual(true); status('回到自己的排列'); }
     syncQuick(); refresh();
   });
