@@ -3,7 +3,6 @@
 // fields：送出給老師時一併收集的欄位。
 (function (root) {
   'use strict';
-  const SIM_URL = 'https://arpowchao.github.io/phy-senior/gsat_physics_review.html#lab-N15';
   const MOTION = ['靜止', '向右移動', '向左移動'];
   root.DopplerTasks = [
     {
@@ -46,11 +45,11 @@
     },
     {
       id: 'observer', title: '觀察者移動',
-      q: '開模擬動畫：波源靜止、觀察者 0.5v，記下兩側的視頻率。',
-      setup: null, image: false, link: { href: SIM_URL, label: '開啟模擬動畫 ↗' }, reasonLabel: '頻率為什麼變？',
+      q: '按「套用起始設定」再按「▶ 播放」：波源靜止，小鴨以 0.5 倍波速向左游。記下 A（迎著波）、B（順著波）每秒被打幾次。',
+      setup: { mach: 0, observers: true, swim: true }, image: true, reasonLabel: '頻率為什麼變？',
       fields: [
-        { key: 'fNear', label: '接近側 f′（Hz）', type: 'number' },
-        { key: 'fFar', label: '遠離側 f′（Hz）', type: 'number' },
+        { key: 'fNear', label: 'A 迎著波：每秒幾次', type: 'number', fill: 'freqA' },
+        { key: 'fFar', label: 'B 順著波：每秒幾次', type: 'number', fill: 'freqB' },
         { key: 'lambda', label: '波長會？', type: 'choice', options: ['變短', '不變', '變長'] }
       ]
     },

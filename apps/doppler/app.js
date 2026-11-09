@@ -10,6 +10,7 @@
   let view3d = null;
   const tasks = window.DopplerTasks;
   let time = 5, playing = false, lastFrame = null, lastReadout = 0;
+  let swim = 0; // 小鴨游動速度（倍波速，向左）；只在示範（自動模擬）時移動
   let ruler = null, measureMode = false, pointer = null, view = null;
   let manual = true, pieces = [], selectedPiece = 0, savedCenters = null;
   let preview = null, flashDirty = false;
@@ -51,7 +52,12 @@
   function previewReading(i) {
     return preview ? P.snapshotReceived(params.c, preview.waves, observers[i], preview.elapsed) : { count: 0, interval: null, last: null };
   }
-  const panOf = o => Math.max(-1, Math.min(1, o.x / 6));
+  // 觀察者目前位置：自己排列時不動；示範時依游動速度移動
+  function posAt(o) { return manual ? o : P.observerAt(o, time); }
+  function applySwim() { observers.forEach(o => { o.vx = -swim * params.c; o.vy = 0; }); }
+  function reading(i) { return manual ? previewReading(i) : P.received(params, observers[i], time); }
+  const panOf = o => Math.max(-1, Math.min(1, posAt(o).x / 6));
+  const obsExtent = o => [Math.abs(o.x) + .5, Math.abs(o.x + (o.vx || 0) * 10) + .5, Math.abs(o.y) + .5];
   // 示範（自動模擬）播放時，波峰到達哪隻小鴨就讓牠叫
   let autoHits = null;
   function autoQuack(reset) {
@@ -176,7 +182,7 @@
   }
   function projection(width, height) {
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
-      Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(o => [Math.abs(o.x) + .5, Math.abs(o.y) + .5]));
+      Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent));
     // Use the whole square board for the five waves, without extra side ranges
     // or a pixel-per-metre cap. The physical view stays fixed while arranging.
     const scale = Math.max(1, (Math.min(width, height) - (manual ? 0 : 54)) / (2 * extent));
@@ -274,7 +280,9 @@
     }
     if ($('observers').checked) observers.forEach((o, i) => {
       const sx = manual ? pieces.at(-1).x : P.source(params, time).x;
-      duck(c, xy(o, camera), DUCK_FILL[i], o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i));
+      const at = xy(posAt(o), camera), moving = !manual && o.vx;
+      duck(c, at, DUCK_FILL[i], moving ? Math.sign(o.vx) : o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i));
+      if (moving) arrow(c, { x: at.x, y: at.y - 26 }, { x: at.x + Math.sign(o.vx) * 34, y: at.y - 26 }, '#3d6b78');
     });
     if (manual && pieces[selectedPiece]?.placed) {
       const selected = pieces[selectedPiece], p = xy(selected, camera);
@@ -311,14 +319,15 @@
   }
   function readouts() {
     $('scene-time').textContent = manual ? preview ? '我的排列 · ＋' + fmt(preview.elapsed) + ' s' : '自己組合 · 5 s' : 't = ' + fmt(time) + ' s'; $('time-readout').textContent = fmt(time) + ' s'; $('time').value = time;
-    $('manual-playback').hidden = !manual || !$('observers').checked;
+    $('manual-playback').hidden = !$('observers').checked;
+    ['preview-play', 'preview-reset', 'preview-time'].forEach(id => { $(id).hidden = !manual; });
     $('preview-play').disabled = !pieces.some(p => p.placed && p.radius > 0);
     $('preview-reset').disabled = !preview;
     $('preview-time').value = '經過 ' + fmt(preview?.elapsed || 0) + ' s';
     for (let i = 0; i < 2; i++) {
-      const id = i ? 'b' : 'a', r = previewReading(i);
+      const id = i ? 'b' : 'a', r = reading(i);
       $('duck-' + id + '-count').textContent = '收到 ' + r.count + ' 次';
-      $('duck-' + id + '-interval').textContent = r.interval === null ? '間隔 —' : '間隔 ' + fmt(r.interval, 2) + ' s';
+      $('duck-' + id + '-interval').textContent = r.interval === null ? '間隔 —' : '間隔 ' + fmt(r.interval, 2) + ' s（每秒 ' + fmt(1 / r.interval, 2) + ' 次）';
       $('duck-' + id + '-reading').dataset.flash = String(glowOf(i) > .3);
     }
     $('scene-setting').textContent = manual ? '題目：' + (params.mach === 0 ? '靜止波源' : fmt(Math.abs(params.mach)) + ' 波速向' + (params.mach > 0 ? '右' : '左')) : configText();
@@ -333,7 +342,7 @@
     if (!$('observers').checked) { const p = document.createElement('p'); p.className = 'copy'; p.textContent = '先勾選「A、B 小鴨」'; $('arrival-readings').append(p); return; }
     observers.forEach((o, i) => {
       const r = P.received(params, o, time), card = document.createElement('div'); card.className = 'arrival-card';
-      const h = document.createElement('h3'); h.textContent = LETTERS[i] + ' 小鴨 · (' + fmt(o.x, 1) + ', ' + fmt(o.y, 1) + ') m'; card.append(h);
+      const q = posAt(o), h = document.createElement('h3'); h.textContent = LETTERS[i] + ' 小鴨 · (' + fmt(q.x, 1) + ', ' + fmt(q.y, 1) + ') m'; card.append(h);
       for (const label of ['抵達 ' + r.count + ' 次', '間隔 ' + (r.interval === null ? '—' : fmt(r.interval, 2) + ' s'), '頻率 ' + (r.frequency === null ? '—' : fmt(r.frequency, 2) + ' 次/s')]) { const p = document.createElement('p'); p.textContent = label; card.append(p); }
       const p = document.createElement('p'); p.className = 'arrival-times'; p.textContent = r.events.length ? '抵達時刻：' + r.events.map(a => fmt(a.time, 2) + 's').join('、') : '還沒有波抵達。'; card.append(p);
       $('arrival-readings').append(card);
@@ -425,7 +434,7 @@
     if (manual && preview && !measureMode) { clearPreview(); draw(); }
     if (measureMode) { pointer = { id: e.pointerId, mode: 'measure' }; const w = world(p.x, p.y); ruler = { a: w, b: { ...w } }; }
     else {
-      const observerIndex = $('observers').checked ? observers.findIndex(o => { const s = xy(o, view); return Math.hypot(s.x - p.x, s.y - p.y) < 24; }) : -1;
+      const observerIndex = $('observers').checked ? observers.findIndex(o => { const s = xy(posAt(o), view); return Math.hypot(s.x - p.x, s.y - p.y) < 24; }) : -1;
       const piece = manual ? hitPiece(p) : null;
       if (manual && !pieces[selectedPiece].placed && !piece && observerIndex < 0) {
         const before = snapshot(), selected = pieces[selectedPiece], w = world(p.x, p.y);
@@ -456,7 +465,7 @@
     else if (pointer.mode === 'piece') {
       const piece = pieces[pointer.i]; piece.x = w.x + pointer.dx; piece.y = w.y + pointer.dy; constrainPiece(piece, cam, $('snap-grid').checked);
     }
-    else observers[pointer.i] = w;
+    else { const o = observers[pointer.i], t = manual ? 0 : time; observers[pointer.i] = { ...o, x: w.x - (o.vx || 0) * t, y: w.y - (o.vy || 0) * t }; }
     refresh();
   });
   function finish(e) {
@@ -495,8 +504,10 @@
     basic(); observers.length = 2; observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 }; syncDucks();
     setManual(true); time = 5;
     $('labels').checked = false; $('observers').checked = setup.observers; $('centers').checked = true; $('grid').checked = true;
-    changeMach(setup.mach); refresh();
-    status('已套用第 ' + (task + 1) + ' 題設定');
+    swim = 0; applySwim(); changeMach(setup.mach);
+    if (setup.swim) { observers[0] = { x: 8, y: 0 }; observers[1] = { x: -3, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
+    syncQuick(); refresh();
+    status('已套用第 ' + (task + 1) + ' 題設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
   });
   function wrap(c, value, maxWidth) {
     const lines = [];
@@ -533,7 +544,7 @@
     const notes = [];
     if ($('observers').checked) observers.forEach((o, i) => {
       const r = manual ? previewReading(i) : P.received(params, o, time);
-      notes.push(LETTERS[i] + '=(' + fmt(o.x) + ',' + fmt(o.y) + ')m' + (preview || !manual && $('arrival-panel').open ? ' · ' + r.count + '次 · Δt=' + (r.interval === null ? '—' : fmt(r.interval, 3) + 's') : ''));
+      const q = posAt(o); notes.push(LETTERS[i] + '=(' + fmt(q.x) + ',' + fmt(q.y) + ')m' + (preview || !manual && $('arrival-panel').open ? ' · ' + r.count + '次 · Δt=' + (r.interval === null ? '—' : fmt(r.interval, 3) + 's') : ''));
     });
     const measurement = ($('grid').checked ? '1大格=1λ=' + fmt(exportedView.cell) + 'm；4小格/大格 · ' : '') + (ruler ? '量測 ' + fmt(P.distance(ruler.a, ruler.b)) + 'm' : '未放置量測線');
     text(c, (notes.length ? notes.join('    ') + '    ' : '') + (preview ? '' : measurement), inset, y + 31, '#5d7b86', 'left', 16);
@@ -589,7 +600,7 @@
   function addDuck() {
     if (observers.length >= LETTERS.length) return;
     const cell = params.c / params.f, spot = EXTRA_SPOTS[(observers.length - 2) % EXTRA_SPOTS.length];
-    clearPreview(); observers.push({ x: spot[0] * cell, y: spot[1] * cell });
+    clearPreview(); observers.push({ x: spot[0] * cell, y: spot[1] * cell }); applySwim();
     if (!$('observers').checked) $('observers').checked = true;
     syncDucks(); refresh(); status('已加入 ' + LETTERS[observers.length - 1] + ' 小鴨，可拖到想觀察的位置');
   }
@@ -606,14 +617,27 @@
     $('qb-3d').setAttribute('aria-pressed', String(Boolean(view3d?.visible)));
     $('qb-auto').setAttribute('aria-pressed', String(!manual));
     $('qb-auto').textContent = manual ? '▶ 示範' : '✕ 結束示範';
+    $('qb-swim').setAttribute('aria-pressed', String(!manual && swim > 0));
   }
   // 示範：切到自動模擬，從 0 秒開始播放，看波源往前走、一圈一圈發出水波
   $('qb-auto').addEventListener('click', () => {
     if (manual) { quack.unlock(); setManual(false); time = 0; autoHits = null; setPlaying(true); status('示範：波源每秒打水一次，邊走邊發波'); }
-    else { setManual(true); status('回到自己的排列'); }
+    else { swim = 0; applySwim(); setManual(true); status('回到自己的排列'); }
     syncQuick(); refresh();
   });
   $('automatic').addEventListener('change', syncQuick);
+  // 觀察者移動：波源靜止，所有小鴨以 0.5 倍波速向左游（A 迎著波、B 順著波）
+  function setSwim(on, restart = true) {
+    swim = on ? .5 : 0; applySwim();
+    if (on) {
+      quack.unlock(); if (manual) setManual(false);
+      if (!$('observers').checked) { $('observers').checked = true; $('observers').dispatchEvent(new Event('change')); }
+      if (restart) { time = 0; autoHits = null; setPlaying(true); }
+      status('小鴨以 0.5 倍波速向左游：A 迎著波、B 順著波');
+    } else status('小鴨停止游動');
+    syncQuick(); refresh();
+  }
+  $('qb-swim').addEventListener('click', () => setSwim(!(swim > 0 && !manual)));
   document.querySelectorAll('.quick-bar [data-mach]').forEach(b => b.addEventListener('click', () => { if (!manual) { time = 0; setPlaying(true); refresh(); } }));
   ['observers', 'labels'].forEach(id => $(id).addEventListener('change', syncQuick));
   $('measure').addEventListener('click', syncQuick);
@@ -622,10 +646,10 @@
     const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(params, time);
     const src = manual ? (pieces.at(-1).placed ? pieces.at(-1) : null) : P.source(params, time);
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
-      Math.ceil(Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(o => [Math.abs(o.x) + .5, Math.abs(o.y) + .5])));
+      Math.ceil(Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent)));
     return { extent, cell: params.c / params.f, mach: params.mach, rings: waves.map(w => ({ x: w.x, y: w.y, r: w.radius })),
       source: src && { x: src.x, y: src.y }, showObservers: $('observers').checked,
-      observers: observers.map((o, i) => ({ x: o.x, y: o.y, label: LETTERS[i], glow: $('observers').checked ? glowOf(i) : 0 })) };
+      observers: observers.map((o, i) => ({ ...posAt(o), label: LETTERS[i], glow: $('observers').checked ? glowOf(i) : 0 })) };
   }
   async function set3D(on) {
     if (on && !view3d) {
@@ -679,7 +703,7 @@
     tasks, get taskIndex() { return task; }, studentLabel,
     params: () => ({ ...params }), manual: () => manual,
     ruler: () => ruler ? Math.round(P.distance(ruler.a, ruler.b) * 1000) / 1000 : null,
-    ducks: () => [0, 1].map(i => { const r = manual ? previewReading(i) : P.received(params, observers[i], time); return { count: r.count, interval: r.interval === null ? null : Math.round(r.interval * 1000) / 1000 }; }),
+    ducks: () => [0, 1].map(i => { const r = reading(i); return { count: r.count, interval: r.interval === null ? null : Math.round(r.interval * 1000) / 1000, perSecond: r.interval ? Math.round(1000 / r.interval) / 1000 : null }; }),
     arrangement,
     answer: () => $('answer').value,
     snapshot: (withAnswer = true) => renderEvidence(withAnswer).image,

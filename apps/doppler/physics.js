@@ -19,10 +19,16 @@
     if (!Number.isFinite(t) || t < 0) throw new RangeError('Require nonnegative time.');
     return Array.from({ length: Math.floor(t * p.f + EPS) + 1 }, (_, n) => wave(p, n, t));
   }
-  // Observers are stationary during a run. Repositioning reconstructs the experiment.
+  // 觀察者可以等速移動：位置 = (x, y) + (vx, vy)·t；vx、vy 省略時為靜止。
+  function observerAt(o, t) { return { x: o.x + (o.vx || 0) * t, y: o.y + (o.vy || 0) * t }; }
   function arrival(p, n, observer) {
-    const w = wave(p, n, n / p.f);
-    return w.emitted + Math.hypot(observer.x - w.x, observer.y - w.y) / p.c;
+    const w = wave(p, n, n / p.f), vx = observer.vx || 0, vy = observer.vy || 0;
+    const at = observerAt(observer, w.emitted), dx = at.x - w.x, dy = at.y - w.y;
+    if (!vx && !vy) return w.emitted + Math.hypot(dx, dy) / p.c;
+    // |D + u·τ| = c·τ（τ ≥ 0）；觀察者速度 < 波速時恰有一個正根
+    const a = vx * vx + vy * vy - p.c * p.c, b = 2 * (dx * vx + dy * vy), d2 = dx * dx + dy * dy;
+    if (a >= 0) throw new RangeError('Require observer speed < wave speed.');
+    return w.emitted + (-b - Math.sqrt(b * b - 4 * a * d2)) / (2 * a);
   }
   function arrivals(p, observer, end = 10) {
     validate(p);
@@ -61,5 +67,5 @@
     const last = events.at(-1), previous = events.at(-2), interval = previous ? last.time - previous.time : null;
     return { events, count: events.length, last: last ? last.time : null, interval };
   }
-  return { source, wave, waves, arrival, arrivals, received, spacing, distance, snapshotWaves, snapshotArrivals, snapshotReceived };
+  return { source, wave, waves, observerAt, arrival, arrivals, received, spacing, distance, snapshotWaves, snapshotArrivals, snapshotReceived };
 });

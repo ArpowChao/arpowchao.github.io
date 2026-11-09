@@ -76,6 +76,8 @@
           if (f.fill === 'ruler') v = Lab.ruler();
           if (f.fill === 'duckA') v = Lab.ducks()[0].interval;
           if (f.fill === 'duckB') v = Lab.ducks()[1].interval;
+          if (f.fill === 'freqA') v = Lab.ducks()[0].perSecond;
+          if (f.fill === 'freqB') v = Lab.ducks()[1].perSecond;
           if (v === null || v === undefined) { setStatus(f.fill === 'ruler' ? '請先量距離' : '請先播放，等收到兩圈', 'warn'); return; }
           input.value = v; remember(t.id); setStatus('已帶入 ' + v, 'ok');
         });
