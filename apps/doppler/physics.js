@@ -16,8 +16,10 @@
   }
   function waves(p, t) {
     validate(p);
-    if (!Number.isFinite(t) || t < 0) throw new RangeError('Require nonnegative time.');
-    return Array.from({ length: Math.floor(t * p.f + EPS) + 1 }, (_, n) => wave(p, n, t));
+    if (!Number.isFinite(t) || t < (p.t0 || 0)) throw new RangeError('Require time after the source starts.');
+    // p.t0（可省略，預設 0）：波源從 t0 開始打水；t0 < 0 表示水面一開始就布滿波
+    const n0 = Math.ceil((p.t0 || 0) * p.f - EPS), n1 = Math.floor(t * p.f + EPS);
+    return Array.from({ length: Math.max(0, n1 - n0 + 1) }, (_, k) => wave(p, n0 + k, t));
   }
   // 觀察者可以等速移動：位置 = (x, y) + (vx, vy)·t；vx、vy 省略時為靜止。
   function observerAt(o, t) { return { x: o.x + (o.vx || 0) * t, y: o.y + (o.vy || 0) * t }; }

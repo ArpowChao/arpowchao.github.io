@@ -53,15 +53,22 @@
     return preview ? P.snapshotReceived(params.c, preview.waves, observers[i], preview.elapsed) : { count: 0, interval: null, last: null };
   }
   // 觀察者目前位置：自己排列時不動；示範時依游動速度移動
+  // 觀察者動時，波源早已在打水（t0 = -12 s），水面一開始就布滿波，小鴨游進這片波裡
+  function phys() { return swim > 0 && !manual ? { ...params, t0: -12 } : params; }
   function posAt(o) { return manual ? o : P.observerAt(o, time); }
   function applySwim() { observers.forEach(o => { o.vx = -swim * params.c; o.vy = 0; }); }
-  function reading(i) { return manual ? previewReading(i) : P.received(params, observers[i], time); }
+  function reading(i) {
+    if (manual) return previewReading(i);
+    const r = P.received(phys(), observers[i], time);
+    // 觀察者動：只算播放開始（0 秒）之後收到的次數
+    return swim > 0 ? { ...r, count: r.count - P.received(phys(), observers[i], 0).count } : r;
+  }
   const panOf = o => Math.max(-1, Math.min(1, posAt(o).x / 6));
   const obsExtent = o => [Math.abs(o.x) + .5, Math.abs(o.x + (o.vx || 0) * 10) + .5, Math.abs(o.y) + .5];
   // 示範（自動模擬）播放時，波峰到達哪隻小鴨就讓牠叫
   let autoHits = null;
   function autoQuack(reset) {
-    const counts = observers.map(o => P.received(params, o, time).count);
+    const counts = observers.map(o => P.received(phys(), o, time).count);
     if (!reset && autoHits && autoHits.length === counts.length && $('observers').checked && $('quack-sound').checked)
       counts.forEach((n, i) => { for (let k = autoHits[i]; k < n; k++) quack.play(i, panOf(observers[i])); });
     autoHits = counts;
@@ -243,7 +250,7 @@
       const labelStep = cell * Math.max(1, Math.ceil(30 / (cell * camera.scale)));
       for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
     }
-    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(params, time);
+    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(phys(), time);
     c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
     const source = xy(manual ? pieces.at(-1) : P.source(params, time), camera);
     if (!manual) { c.moveTo(camera.cx, camera.cy); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
@@ -302,7 +309,7 @@
   // 波峰剛到時的發光強度（0～1，逐漸淡出）
   function glowOf(i) {
     if (manual) { const t = preview ? performance.now() - (preview.flashAt[i] ?? -Infinity) : Infinity; return t < FLASH_MS ? 1 - t / FLASH_MS : 0; }
-    const r = P.received(params, observers[i], time); if (r.last === null) return 0;
+    const r = P.received(phys(), observers[i], time); if (r.last === null) return 0;
     const dt = (time - r.last) * 1000 / Math.max(.25, Number($('play-rate').value)); return dt < FLASH_MS ? 1 - dt / FLASH_MS : 0;
   }
   function draw() {
@@ -341,7 +348,7 @@
     if (manual) { refreshPieces(); return; }
     if (!$('observers').checked) { const p = document.createElement('p'); p.className = 'copy'; p.textContent = '先勾選「A、B 小鴨」'; $('arrival-readings').append(p); return; }
     observers.forEach((o, i) => {
-      const r = P.received(params, o, time), card = document.createElement('div'); card.className = 'arrival-card';
+      const r = P.received(phys(), o, time), card = document.createElement('div'); card.className = 'arrival-card';
       const q = posAt(o), h = document.createElement('h3'); h.textContent = LETTERS[i] + ' 小鴨 · (' + fmt(q.x, 1) + ', ' + fmt(q.y, 1) + ') m'; card.append(h);
       for (const label of ['抵達 ' + r.count + ' 次', '間隔 ' + (r.interval === null ? '—' : fmt(r.interval, 2) + ' s'), '頻率 ' + (r.frequency === null ? '—' : fmt(r.frequency, 2) + ' 次/s')]) { const p = document.createElement('p'); p.textContent = label; card.append(p); }
       const p = document.createElement('p'); p.className = 'arrival-times'; p.textContent = r.events.length ? '抵達時刻：' + r.events.map(a => fmt(a.time, 2) + 's').join('、') : '還沒有波抵達。'; card.append(p);
@@ -505,7 +512,7 @@
     setManual(true); time = 5;
     $('labels').checked = false; $('observers').checked = setup.observers; $('centers').checked = true; $('grid').checked = true;
     swim = 0; applySwim(); changeMach(setup.mach);
-    if (setup.swim) { observers[0] = { x: 8, y: 0 }; observers[1] = { x: -3, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
+    if (setup.swim) { observers[0] = { x: 6, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
     syncQuick(); refresh();
     status('已套用第 ' + (task + 1) + ' 題設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
   });
@@ -543,7 +550,7 @@
     const y = 140 + pondHeight;
     const notes = [];
     if ($('observers').checked) observers.forEach((o, i) => {
-      const r = manual ? previewReading(i) : P.received(params, o, time);
+      const r = manual ? previewReading(i) : P.received(phys(), o, time);
       const q = posAt(o); notes.push(LETTERS[i] + '=(' + fmt(q.x) + ',' + fmt(q.y) + ')m' + (preview || !manual && $('arrival-panel').open ? ' · ' + r.count + '次 · Δt=' + (r.interval === null ? '—' : fmt(r.interval, 3) + 's') : ''));
     });
     const measurement = ($('grid').checked ? '1大格=1λ=' + fmt(exportedView.cell) + 'm；4小格/大格 · ' : '') + (ruler ? '量測 ' + fmt(P.distance(ruler.a, ruler.b)) + 'm' : '未放置量測線');
@@ -643,7 +650,7 @@
   $('measure').addEventListener('click', syncQuick);
   // ---------- 3D 水面 ----------
   function scene3d() {
-    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(params, time);
+    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(phys(), time);
     const src = manual ? (pieces.at(-1).placed ? pieces.at(-1) : null) : P.source(params, time);
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
       Math.ceil(Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent)));
