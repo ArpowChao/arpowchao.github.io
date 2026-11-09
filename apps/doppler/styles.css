@@ -108,3 +108,14 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden}
 .experiment.is-full .duck-readings{display:flex;gap:10px;flex:1 1 auto}
 .experiment.is-full .duck-readings>div{display:flex;align-items:center;gap:10px;padding:6px 12px}
 .experiment.is-full .duck-readings>div span{margin:0}
+
+/* ---------- iPad / 觸控 ---------- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,.quick-bar button,select,label.check,summary,a{touch-action:manipulation;-webkit-tap-highlight-color:rgba(9,125,145,.15)}
+.experiment,.tray-piece,#pond,#pond-area canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.experiment input,.experiment select{-webkit-user-select:auto;user-select:auto}
+#pond-area canvas{touch-action:none}
+.observer-picker select,.piece-picker select{font-size:16px}
+@media (pointer:coarse){.quick-bar button{min-height:46px;padding-left:14px;padding-right:14px}.tray-piece{min-height:72px}input[type=checkbox]{width:22px;height:22px}}
+.experiment.is-full{height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overscroll-behavior:none}
+html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
