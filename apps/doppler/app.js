@@ -20,7 +20,7 @@
   let task = 0, answers = tasks.map(() => ''), savedStudent = '', storageOK = true;
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
-  const status = message => { $('status').textContent = message; };
+  const status = message => { $('status').textContent = message; const f = document.getElementById('fs-status'); if (f) f.textContent = message; };
   try {
     const saved = JSON.parse(localStorage.getItem('doppler-worksheet-v2') || 'null');
     if (saved && Array.isArray(saved.answers)) answers = tasks.map((_, i) => typeof saved.answers[i] === 'string' ? saved.answers[i].slice(0, 2400) : '');
@@ -187,13 +187,30 @@
     setMeasure(false); refresh();
     status(manual ? '拖曳圓圈排列' : '自動模擬中');
   }
-  function projection(width, height) {
+  // 全螢幕時，水面畫在浮動面板之外的區域
+  function safeInsets() {
+    const ins = { l: 0, r: 0, t: 0, b: 0 };
+    if (!document.querySelector('.experiment.is-full')) return ins;
+    const stage = document.querySelector('.experiment');
+    const cr = canvas.getBoundingClientRect(), portrait = cr.height > cr.width * 1.05;
+    for (const p of stage.querySelectorAll('.fs-panel')) {
+      if (p.hidden || p.classList.contains('folded') || !p.offsetParent) continue;
+      const r = p.getBoundingClientRect();
+      if (p.dataset.fs === 'time' || portrait) {
+        if (r.top - cr.top < cr.height / 2) ins.t = Math.max(ins.t, r.bottom - cr.top + 8); else ins.b = Math.max(ins.b, cr.bottom - r.top + 8);
+      } else if (r.left - cr.left < cr.width / 2) ins.l = Math.max(ins.l, r.right - cr.left + 8); else ins.r = Math.max(ins.r, cr.right - r.left + 8);
+    }
+    ins.l = Math.min(ins.l, cr.width * .4); ins.r = Math.min(ins.r, cr.width * .4); ins.t = Math.min(ins.t, cr.height * .4); ins.b = Math.min(ins.b, cr.height * .4);
+    return ins;
+  }
+  function projection(width, height, insets = null) {
+    const ins = insets || { l: 0, r: 0, t: 0, b: 0 }, w = width - ins.l - ins.r, h = height - ins.t - ins.b;
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
       Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent));
     // Use the whole square board for the five waves, without extra side ranges
     // or a pixel-per-metre cap. The physical view stays fixed while arranging.
-    const scale = Math.max(1, (Math.min(width, height) - (manual ? 0 : 54)) / (2 * extent));
-    return { scale, cx: width / 2, cy: height / 2, width, height,
+    const scale = Math.max(1, (Math.min(w, h) - (manual ? 0 : 54)) / (2 * extent));
+    return { scale, cx: ins.l + w / 2, cy: ins.t + h / 2, width, height,
       halfWidth: width / 2 / scale, halfHeight: height / 2 / scale };
   }
   function xy(point, camera) { return { x: camera.cx + point.x * camera.scale, y: camera.cy - point.y * camera.scale }; }
@@ -233,7 +250,7 @@
     if (glow > .35) text(c, '呱！', point.x, point.y - 40, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
-    const camera = savedCamera || projection(width, height);
+    const camera = savedCamera || projection(width, height, c === ctx ? safeInsets() : null);
     c.save(); c.beginPath(); c.rect(0, 0, width, height); c.clip();
     c.fillStyle = '#f7fbfc'; c.fillRect(0, 0, width, height);
     const cell = params.c / params.f, smallCell = cell / 4;
@@ -355,7 +372,7 @@
       $('arrival-readings').append(card);
     });
   }
-  function refresh() { draw(); readouts(); }
+  function refresh() { fsSync(); draw(); readouts(); }
   function setTime(next) { setPlaying(false); time = Math.max(0, Math.min(10, next)); refresh(); }
   function changeMach(value) {
     setPlaying(false); clearPreview(); params.mach = value; $('mach').value = Math.abs(value); $('reverse').checked = value < 0;
@@ -669,7 +686,7 @@
     if (on) { setMeasure(false); view3d.show(); $('view3d-tools').hidden = false; status('3D：拖曳旋轉、雙指縮放；排列請回 2D'); }
     else { view3d.hide(); $('view3d-tools').hidden = true; status(manual ? '拖曳圓圈排列' : '拖曳 A、B 小鴨'); refresh(); }
     $('qb-3d').textContent = on ? '2D' : '3D';
-    syncQuick();
+    syncQuick(); fsSync();
   }
   $('qb-3d').addEventListener('click', () => set3D(!view3d?.visible));
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => view3d?.setView(b.dataset.view)));
@@ -677,6 +694,7 @@
   const stage = document.querySelector('.experiment');
   let usedFullscreenApi = false;
   function setFull(on) {
+    fsMount(on);
     stage.classList.toggle('is-full', on); document.documentElement.classList.toggle('lock-scroll', on);
     $('qb-full').textContent = on ? '✕ 離開全螢幕' : '⛶ 全螢幕';
     if (on) {
@@ -688,6 +706,84 @@
     requestAnimationFrame(refresh);
   }
   $('qb-full').addEventListener('click', () => setFull(!stage.classList.contains('is-full')));
+  // ---------- 全螢幕：畫面鋪滿，操作收進可摺疊的浮動面板 ----------
+  let fsLayer = null; const fsMoved = [];
+  const FS_FOLD = 'doppler-fs-fold';
+  function fsBuild() {
+    fsLayer = document.createElement('div'); fsLayer.className = 'fs-layer';
+    fsLayer.innerHTML = `
+      <div class="fs-col fs-colL"><section class="fs-panel" data-fs="guide"><header><strong>怎麼操作</strong><span class="fs-sub" id="fs-mode"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
+        <div class="fs-body">
+          <label class="fs-task">題目<select id="fs-task"></select></label>
+          <p class="fs-q" id="fs-q"></p>
+          <button type="button" id="fs-load" class="fs-wide">套用這題的起始設定</button>
+          <ol class="fs-steps" id="fs-steps"></ol>
+          <p class="fs-status" id="fs-status" aria-live="polite"></p>
+          <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 去作答</button>
+        </div></section>
+      <section class="fs-panel" data-fs="tray"><header><strong>圓片</strong><span class="fs-sub">拖進水面</span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="tray"></div></section></div>
+      <div class="fs-col fs-colR"><section class="fs-panel" data-fs="ctrl"><header><strong>控制</strong><button type="button" class="fs-exit">✕ 結束全螢幕</button><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
+        <div class="fs-body">
+          <p class="fs-cap">波源速度</p><div data-slot="speed"></div>
+          <p class="fs-cap">怎麼看</p><div class="fs-grid" data-slot="mode"></div>
+          <p class="fs-cap">小鴨與工具</p><div class="fs-grid" data-slot="tools"></div>
+        </div></section>
+      <section class="fs-panel" data-fs="read"><header><strong>即時讀值</strong><span class="fs-sub" id="fs-time"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="read"></div></section></div>
+      <section class="fs-panel" data-fs="time"><div class="fs-body" data-slot="time"></div></section>`;
+    stage.append(fsLayer);
+    let folds = {}; try { folds = JSON.parse(localStorage.getItem(FS_FOLD) || '{}'); } catch (_) { }
+    fsLayer.querySelectorAll('.fs-panel').forEach(p => { if (folds[p.dataset.fs]) p.classList.add('folded'); });
+    fsLayer.querySelectorAll('.fs-fold').forEach(b => {
+      const p = b.closest('.fs-panel'); b.textContent = p.classList.contains('folded') ? '▸' : '▾';
+      b.addEventListener('click', () => {
+        p.classList.toggle('folded'); b.textContent = p.classList.contains('folded') ? '▸' : '▾';
+        try { const f = JSON.parse(localStorage.getItem(FS_FOLD) || '{}'); f[p.dataset.fs] = p.classList.contains('folded'); localStorage.setItem(FS_FOLD, JSON.stringify(f)); } catch (_) { }
+        draw();
+      });
+    });
+    fsLayer.querySelector('.fs-exit').addEventListener('click', () => setFull(false));
+    $('fs-load').addEventListener('click', () => $('load-task').click());
+    $('fs-answer').addEventListener('click', () => { setFull(false); setTimeout(() => $('worksheet').scrollIntoView({ behavior: 'smooth' }), 60); });
+    $('fs-task').addEventListener('change', () => { $('task').value = $('fs-task').value; $('task').dispatchEvent(new Event('change')); fsSync(); });
+  }
+  function fsMove(el, slot) {
+    if (!el) return;
+    const mark = document.createComment('fs'); el.before(mark); fsMoved.push([el, mark]);
+    fsLayer.querySelector('[data-slot="' + slot + '"]').append(el);
+  }
+  function fsMount(on) {
+    if (on && !fsLayer) fsBuild();
+    if (on && !fsMoved.length) {
+      fsMove(document.querySelector('.quick-bar .qb-group'), 'speed');
+      ['qb-auto', 'qb-swim', 'qb-3d', 'view3d-tools'].forEach(id => fsMove($(id), 'mode'));
+      ['qb-ducks', 'qb-add-duck', 'qb-remove-duck', 'qb-labels', 'qb-measure', 'manual-scene-tools'].forEach(id => fsMove($(id), 'tools'));
+      fsMove($('piece-tray'), 'tray'); fsMove($('manual-toolbar'), 'tray');
+      fsMove(document.querySelector('.scene-head'), 'read'); fsMove($('manual-playback'), 'read'); fsMove(document.querySelector('.scene-foot'), 'read');
+      fsMove($('timeline'), 'time');
+    } else if (!on) {
+      while (fsMoved.length) { const [el, mark] = fsMoved.pop(); mark.replaceWith(el); }
+    }
+    fsSync();
+  }
+  const FS_STEPS = {
+    manual: ['從「圓片」把圓圈一片一片拖進水面', '把每一圈的圓心放到它發波時波源的位置（水平線上的 1～5 刻度）', '打開「🦆 小鴨」，按「▶ 播放」，聽誰被打得比較頻繁'],
+    demo: ['看波源一邊往前走、一邊每秒發出一圈', '比較前方和後方相鄰兩圈的距離', '換「波源速度」再看一次；按「✕ 結束示範」回到自己排'],
+    swim: ['波源不動，小鴨以 0.5 倍波速向左游', 'A 迎著波游、B 順著波游：聽誰叫得比較密', '看「即時讀值」：每秒被打幾次？波長有沒有變？']
+  };
+  function fsSync() {
+    if (!fsLayer || !stage.classList.contains('is-full')) return;
+    const mode = manual ? 'manual' : swim > 0 ? 'swim' : 'demo', t = tasks[task];
+    $('fs-mode').textContent = { manual: '自己排', demo: '示範中', swim: '觀察者動' }[mode];
+    if ($('fs-task').options.length !== $('task').options.length) $('fs-task').replaceChildren(...[...$('task').options].map(o => new Option(o.textContent, o.value)));
+    $('fs-task').value = $('task').value;
+    $('fs-q').textContent = t ? t.q : '';
+    $('fs-load').hidden = !(t && t.setup);
+    const steps = FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
+    const ol = $('fs-steps'); if (ol.dataset.mode !== mode + view3d?.visible) { ol.dataset.mode = mode + view3d?.visible; ol.replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.textContent = s; return li; })); }
+    if (!$('fs-status').textContent) $('fs-status').textContent = $('status').textContent;
+    fsLayer.querySelector('[data-fs="tray"]').hidden = $('piece-tray').hidden;
+    fsLayer.querySelector('[data-fs="time"]').hidden = $('timeline').hidden;
+  }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
     if (!(document.fullscreenElement || document.webkitFullscreenElement) && usedFullscreenApi && stage.classList.contains('is-full')) { usedFullscreenApi = false; setFull(false); }
   }));
