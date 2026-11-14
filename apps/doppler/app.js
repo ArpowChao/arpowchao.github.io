@@ -54,8 +54,16 @@
   }
   // 觀察者目前位置：自己排列時不動；示範時依游動速度移動
   // 示範與觀察者動：波源早已在打水（t0 = -12 s），水面一開始就布滿波，
-  // 每隻小鴨從 0 秒起都已經在被波打，叫聲節奏可以直接互相比較
-  function phys() { return manual ? params : { ...params, t0: -12 }; }
+  // 每隻小鴨從 0 秒起都已經在被波打，叫聲節奏可以直接互相比較。
+  // 波源在 5 秒時剛好走到原點（0～10 秒走在 A、B 之間），不會跑過前方的小鴨。
+  function phys() {
+    if (manual) return params;
+    // 波源要早到讓「最前面的波前」在 0 秒時已越過整片水面（含前方小鴨）
+    const x0 = -params.mach * params.c * 5, reach = 16 + Math.abs(x0);
+    return { ...params, x0, t0: -Math.ceil(reach / (params.c * (1 - Math.abs(params.mach)))) };
+  }
+  // 圈大到把整片可見水面包住時看不到，不必畫
+  const shown = waves => waves.filter(w => w.radius < Math.hypot(w.x, w.y) + 45);
   function posAt(o) { return manual ? o : P.observerAt(o, time); }
   function applySwim() { observers.forEach(o => { o.vx = -swim * params.c; o.vy = 0; }); }
   // 只算 0 秒（開始播放）之後收到的波；間隔仍用最近兩次抵達計算
@@ -110,7 +118,7 @@
     if (ready && quack.play(0, panOf(observers[0]))) {
       observers.slice(1).forEach((o, i) => quack.play(i + 1, panOf(o), (i + 1) * .55));
       $('quack-sound').checked = true;
-      $('sound-status').textContent = '沒聲音？請調高音量';
+      $('sound-status').textContent = observers.map((_, i) => LETTERS[i] + '「' + quack.name(i) + '」').join('　') + '　（沒聲音？調高音量）';
     } else $('sound-status').textContent = '無法播放聲音';
   });
   function configText() {
@@ -207,7 +215,8 @@
   function projection(width, height, insets = null) {
     const ins = insets || { l: 0, r: 0, t: 0, b: 0 }, w = width - ins.l - ins.r, h = height - ins.t - ins.b;
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
-      Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent));
+      // 水面一開始就布滿波，視野固定：涵蓋小鴨與波源 0～10 秒走過的路段
+      Math.max(6.5, Math.abs(params.mach) * params.c * 5 + 1.5, ...observers.flatMap(obsExtent));
     // Use the whole square board for the five waves, without extra side ranges
     // or a pixel-per-metre cap. The physical view stays fixed while arranging.
     const scale = Math.max(1, (Math.min(w, h) - (manual ? 0 : 54)) / (2 * extent));
@@ -226,7 +235,7 @@
     c.lineTo(to.x - 7 * Math.cos(angle - .45), to.y - 7 * Math.sin(angle - .45));
     c.lineTo(to.x - 7 * Math.cos(angle + .45), to.y - 7 * Math.sin(angle + .45)); c.fill();
   }
-  function duck(c, point, color, direction, tag, flash) {
+  function duck(c, point, color, direction, tag, flash, sound = '呱') {
     const glow = typeof flash === 'number' ? flash : flash ? 1 : 0;
     c.save(); c.translate(point.x, point.y);
     if (glow > 0) {
@@ -248,7 +257,7 @@
     c.fillStyle = '#ffffff'; c.beginPath(); c.arc(0, 0, 3, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#153f4d'; c.beginPath(); c.arc(0, 0, 1.5, 0, Math.PI * 2); c.fill();
     c.restore(); text(c, tag, point.x, point.y + 28, '#153f4d', 'center', 14);
-    if (glow > .35) text(c, '呱！', point.x, point.y - 40, '#946400', 'center', 18);
+    if (glow > .35) text(c, sound + '！', point.x, point.y - 40, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
     const camera = savedCamera || projection(width, height, c === ctx ? safeInsets() : null);
@@ -268,10 +277,10 @@
       const labelStep = cell * Math.max(1, Math.ceil(30 / (cell * camera.scale)));
       for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
     }
-    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(phys(), time);
+    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
     c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
-    const source = xy(manual ? pieces.at(-1) : P.source(params, time), camera);
-    if (!manual) { const from = xy(P.source(params, phys().t0), camera); c.moveTo(from.x, from.y); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
+    const source = xy(manual ? pieces.at(-1) : P.source(phys(), time), camera);
+    if (!manual) { const from = xy(P.source(phys(), phys().t0), camera); c.moveTo(from.x, from.y); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
     waves.forEach(w => {
       const p = xy(w, camera), radius = w.radius * camera.scale;
       if (radius > .1) {
@@ -304,9 +313,9 @@
       if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 13);
     }
     if ($('observers').checked) observers.forEach((o, i) => {
-      const sx = manual ? pieces.at(-1).x : P.source(params, time).x;
+      const sx = manual ? pieces.at(-1).x : P.source(phys(), time).x;
       const at = xy(posAt(o), camera), moving = !manual && o.vx;
-      duck(c, at, DUCK_FILL[i], moving ? Math.sign(o.vx) : o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i));
+      duck(c, at, DUCK_FILL[i], moving ? Math.sign(o.vx) : o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i), quack.name(i));
       if (moving) arrow(c, { x: at.x, y: at.y - 26 }, { x: at.x + Math.sign(o.vx) * 34, y: at.y - 26 }, '#3d6b78');
     });
     if (manual && pieces[selectedPiece]?.placed) {
@@ -668,8 +677,8 @@
   $('measure').addEventListener('click', syncQuick);
   // ---------- 3D 水面 ----------
   function scene3d() {
-    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(phys(), time);
-    const src = manual ? (pieces.at(-1).placed ? pieces.at(-1) : null) : P.source(params, time);
+    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
+    const src = manual ? (pieces.at(-1).placed ? pieces.at(-1) : null) : P.source(phys(), time);
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
       Math.ceil(Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent)));
     return { extent, cell: params.c / params.f, mach: params.mach, rings: waves.map(w => ({ x: w.x, y: w.y, r: w.radius })),
@@ -708,7 +717,7 @@
   }
   $('qb-full').addEventListener('click', () => setFull(!stage.classList.contains('is-full')));
   // ---------- 全螢幕：畫面鋪滿，操作收進可摺疊的浮動面板 ----------
-  let fsLayer = null; const fsMoved = [];
+  let fsLayer = null, answering = false; const fsMoved = [];
   const FS_FOLD = 'doppler-fs-fold';
   function fsBuild() {
     fsLayer = document.createElement('div'); fsLayer.className = 'fs-layer';
@@ -720,8 +729,10 @@
           <button type="button" id="fs-load" class="fs-wide">套用這題的起始設定</button>
           <ol class="fs-steps" id="fs-steps"></ol>
           <p class="fs-status" id="fs-status" aria-live="polite"></p>
-          <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 去作答</button>
+          <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 作答</button>
         </div></section>
+      <section class="fs-panel" data-fs="answer" hidden><header><strong>作答</strong><span class="fs-sub" id="fs-anum"></span><button type="button" class="fs-back">← 回操作</button></header>
+        <div class="fs-body"><p class="fs-q" id="fs-aq"></p><div data-slot="answer"></div></div></section>
       <section class="fs-panel" data-fs="tray"><header><strong>圓片</strong><span class="fs-sub">拖進水面</span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="tray"></div></section></div>
       <div class="fs-col fs-colR"><section class="fs-panel" data-fs="ctrl"><header><strong>控制</strong><button type="button" class="fs-exit">✕ 結束全螢幕</button><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
         <div class="fs-body">
@@ -744,7 +755,9 @@
     });
     fsLayer.querySelector('.fs-exit').addEventListener('click', () => setFull(false));
     $('fs-load').addEventListener('click', () => $('load-task').click());
-    $('fs-answer').addEventListener('click', () => { setFull(false); setTimeout(() => $('worksheet').scrollIntoView({ behavior: 'smooth' }), 60); });
+    // 作答也在全螢幕裡：左欄換成作答卡，水面與右側讀值照常可用
+    $('fs-answer').addEventListener('click', () => setAnswering(true));
+    fsLayer.querySelector('.fs-back').addEventListener('click', () => setAnswering(false));
     $('fs-task').addEventListener('change', () => { $('task').value = $('fs-task').value; $('task').dispatchEvent(new Event('change')); fsSync(); });
   }
   function fsMove(el, slot) {
@@ -761,10 +774,17 @@
       fsMove($('piece-tray'), 'tray'); fsMove($('manual-toolbar'), 'tray');
       fsMove(document.querySelector('.scene-head'), 'read'); fsMove($('manual-playback'), 'read'); fsMove(document.querySelector('.scene-foot'), 'read');
       fsMove($('timeline'), 'time');
+      fsMove($('task-figure'), 'answer'); fsMove(document.querySelector('.answer-sheet'), 'answer');
     } else if (!on) {
+      answering = false; fsLayer?.classList.remove('answering');
       while (fsMoved.length) { const [el, mark] = fsMoved.pop(); mark.replaceWith(el); }
     }
     fsSync();
+  }
+  function setAnswering(on) {
+    answering = on; fsLayer.classList.toggle('answering', on); fsSync();
+    if (on) fsLayer.querySelector('[data-fs="answer"] .fs-body').scrollTop = 0;
+    requestAnimationFrame(draw);
   }
   const FS_STEPS = {
     manual: ['從「圓片」把圓圈一片一片拖進水面', '把每一圈的圓心放到它發波時波源的位置（水平線上的 1～5 刻度）', '打開「🦆 小鴨」，按「▶ 播放」，聽誰被打得比較頻繁'],
@@ -782,7 +802,11 @@
     const steps = FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
     const ol = $('fs-steps'); if (ol.dataset.mode !== mode + view3d?.visible) { ol.dataset.mode = mode + view3d?.visible; ol.replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.textContent = s; return li; })); }
     if (!$('fs-status').textContent) $('fs-status').textContent = $('status').textContent;
-    fsLayer.querySelector('[data-fs="tray"]').hidden = $('piece-tray').hidden;
+    fsLayer.querySelector('[data-fs="tray"]').hidden = answering || $('piece-tray').hidden;
+    fsLayer.querySelector('[data-fs="guide"]').hidden = answering;
+    fsLayer.querySelector('[data-fs="answer"]').hidden = !answering;
+    $('fs-anum').textContent = '第 ' + (task + 1) + ' 題';
+    $('fs-aq').textContent = t ? t.q : '';
     fsLayer.querySelector('[data-fs="time"]').hidden = $('timeline').hidden;
   }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {

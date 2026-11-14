@@ -171,3 +171,23 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
   .fs-grid>button{min-height:38px}
 }
 .fs-col>.fs-panel{align-self:stretch}
+
+/* 全螢幕作答：左欄換成作答卡，不離開全螢幕 */
+.experiment.is-full .fs-layer.answering{grid-template-columns:minmax(320px,400px) minmax(0,1fr) minmax(240px,300px)}
+.fs-panel[data-fs=answer]{grid-area:guide;align-self:stretch}
+.fs-panel .fs-back{margin-left:auto;min-height:36px;padding:4px 12px;font-size:14px;background:var(--teal);border-color:var(--teal);color:#fff}
+.fs-panel[data-fs=answer] .fs-q{white-space:pre-line}
+.fs-body .answer-sheet{padding:0;border:0;background:none;border-radius:0}
+.fs-body .answer-sheet label{display:block;margin:8px 0 4px}
+.fs-body .who{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px;margin-bottom:8px}
+.fs-body .who label{font-size:14px;margin:0}
+.fs-body .task-fields{grid-template-columns:minmax(0,1fr);gap:8px;padding:10px;margin:4px 0 8px}
+.fs-body textarea{font-size:16px;line-height:1.7}
+.fs-body .submit-row{margin-top:10px;gap:8px}.fs-body .submit-row #submit{width:100%;font-size:17px}
+.fs-body .export-row{margin-top:10px;gap:6px}.fs-body .export-row>*{flex:1 1 120px}.fs-body .export-row button{font-size:13px;min-height:38px}
+.fs-body .answer-sheet>.small-note{margin-top:8px}
+.fs-body .task-figure .abcd{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (orientation:portrait){
+  .fs-panel[data-fs=answer]{grid-area:auto;grid-column:1;grid-row:1/3;max-height:46vh}
+  .experiment.is-full .fs-layer.answering{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+}

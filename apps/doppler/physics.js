@@ -8,7 +8,8 @@
   function validate(p) {
     if (![p.c, p.f, p.mach].every(Number.isFinite) || p.c <= 0 || p.f <= 0 || Math.abs(p.mach) >= 1) throw new RangeError('Require c > 0, f > 0 and |v/c| < 1.');
   }
-  function source(p, t) { return { x: p.mach * p.c * t, y: 0 }; }
+  // p.x0（可省略，預設 0）：波源在 t = 0 時的位置
+  function source(p, t) { return { x: (p.x0 || 0) + p.mach * p.c * t, y: 0 }; }
   function wave(p, n, t) {
     validate(p);
     const emitted = n / p.f, center = source(p, emitted);
