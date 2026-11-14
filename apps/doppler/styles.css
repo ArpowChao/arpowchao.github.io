@@ -144,7 +144,7 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
 .fs-body .timeline .play-row{margin-top:8px}
 @media (orientation:portrait){
   .experiment.is-full .fs-layer{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;
-    grid-template-areas:"guide ctrl" "tray ctrl" ". ." "read read" "time time"}
+    grid-template-areas:"guide ctrl" "tray more" ". ." "read read" "time time"}
   .fs-col{display:contents}
   .experiment.is-full .fs-panel[data-fs=time]{grid-area:time}
   .fs-colR>.fs-panel[data-fs=read]{margin-top:0}
@@ -191,3 +191,12 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
   .fs-panel[data-fs=answer]{grid-area:auto;grid-column:1;grid-row:1/3;max-height:46vh}
   .experiment.is-full .fs-layer.answering{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
 }
+
+/* 一律全螢幕版面：「更多設定」收進右欄可摺疊面板 */
+.fs-panel[data-fs=more]{grid-area:more}
+.fs-body .controls{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.fs-body .controls .panel{padding:10px 12px;border-radius:10px}
+.fs-body .controls .panel h2{font-size:14px;margin:0 0 6px}
+.fs-body .controls .copy{margin:4px 0 8px}
+.fs-home{display:block;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}
+@media (orientation:portrait){.fs-col>.fs-panel:not([data-fs=answer]){align-self:start}.fs-panel[data-fs=more]{max-height:40vh}}

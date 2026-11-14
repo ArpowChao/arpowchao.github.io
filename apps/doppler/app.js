@@ -703,19 +703,22 @@
   // ---------- 全螢幕 ----------
   const stage = document.querySelector('.experiment');
   let usedFullscreenApi = false;
+  // 版面一律是「水面鋪滿＋浮動面板」；網址加 ?page 才用舊的長網頁版面（除錯用）
   function setFull(on) {
     fsMount(on);
     stage.classList.toggle('is-full', on); document.documentElement.classList.toggle('lock-scroll', on);
     $('qb-full').textContent = on ? '✕ 離開全螢幕' : '⛶ 全螢幕';
-    if (on) {
-      const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
-      if (req) { usedFullscreenApi = true; Promise.resolve(req.call(stage)).catch(() => { usedFullscreenApi = false; }); }
-    } else if (document.fullscreenElement || document.webkitFullscreenElement) {
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    }
     requestAnimationFrame(refresh);
   }
   $('qb-full').addEventListener('click', () => setFull(!stage.classList.contains('is-full')));
+  // 另外可以請瀏覽器隱藏網址列（真正的全螢幕）；不支援的裝置不顯示按鈕
+  const root = document.documentElement;
+  const canBrowserFull = !!(root.requestFullscreen || root.webkitRequestFullscreen);
+  const inBrowserFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  function toggleBrowserFull() {
+    if (inBrowserFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { usedFullscreenApi = true; Promise.resolve((root.requestFullscreen || root.webkitRequestFullscreen).call(root)).catch(() => { usedFullscreenApi = false; }); }
+  }
   // ---------- 全螢幕：畫面鋪滿，操作收進可摺疊的浮動面板 ----------
   let fsLayer = null, answering = false; const fsMoved = [];
   const FS_FOLD = 'doppler-fs-fold';
@@ -730,20 +733,23 @@
           <ol class="fs-steps" id="fs-steps"></ol>
           <p class="fs-status" id="fs-status" aria-live="polite"></p>
           <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 作答</button>
+          <a class="fs-home" href="../index.html">← Physics Lab</a>
         </div></section>
       <section class="fs-panel" data-fs="answer" hidden><header><strong>作答</strong><span class="fs-sub" id="fs-anum"></span><button type="button" class="fs-back">← 回操作</button></header>
         <div class="fs-body"><p class="fs-q" id="fs-aq"></p><div data-slot="answer"></div></div></section>
       <section class="fs-panel" data-fs="tray"><header><strong>圓片</strong><span class="fs-sub">拖進水面</span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="tray"></div></section></div>
-      <div class="fs-col fs-colR"><section class="fs-panel" data-fs="ctrl"><header><strong>控制</strong><button type="button" class="fs-exit">✕ 結束全螢幕</button><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
+      <div class="fs-col fs-colR"><section class="fs-panel" data-fs="ctrl"><header><strong>控制</strong><button type="button" class="fs-exit">⛶ 隱藏網址列</button><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
         <div class="fs-body">
           <p class="fs-cap">波源速度</p><div data-slot="speed"></div>
           <p class="fs-cap">怎麼看</p><div class="fs-grid" data-slot="mode"></div>
           <p class="fs-cap">小鴨與工具</p><div class="fs-grid" data-slot="tools"></div>
         </div></section>
+      <section class="fs-panel" data-fs="more"><header><strong>更多設定</strong><span class="fs-sub">波速、頻率、圓心、復原…</span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="more"></div></section>
       <section class="fs-panel" data-fs="read"><header><strong>即時讀值</strong><span class="fs-sub" id="fs-time"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="read"></div></section></div>
       <section class="fs-panel" data-fs="time"><div class="fs-body" data-slot="time"></div></section>`;
     stage.append(fsLayer);
     let folds = {}; try { folds = JSON.parse(localStorage.getItem(FS_FOLD) || '{}'); } catch (_) { }
+    if (folds.more === undefined) folds.more = true; // 更多設定預設收合
     fsLayer.querySelectorAll('.fs-panel').forEach(p => { if (folds[p.dataset.fs]) p.classList.add('folded'); });
     fsLayer.querySelectorAll('.fs-fold').forEach(b => {
       const p = b.closest('.fs-panel'); b.textContent = p.classList.contains('folded') ? '▸' : '▾';
@@ -753,7 +759,8 @@
         draw();
       });
     });
-    fsLayer.querySelector('.fs-exit').addEventListener('click', () => setFull(false));
+    const scr = fsLayer.querySelector('.fs-exit');
+    scr.hidden = !canBrowserFull; scr.addEventListener('click', toggleBrowserFull);
     $('fs-load').addEventListener('click', () => $('load-task').click());
     // 作答也在全螢幕裡：左欄換成作答卡，水面與右側讀值照常可用
     $('fs-answer').addEventListener('click', () => setAnswering(true));
@@ -774,6 +781,7 @@
       fsMove($('piece-tray'), 'tray'); fsMove($('manual-toolbar'), 'tray');
       fsMove(document.querySelector('.scene-head'), 'read'); fsMove($('manual-playback'), 'read'); fsMove(document.querySelector('.scene-foot'), 'read');
       fsMove($('timeline'), 'time');
+      fsMove(document.querySelector('.lab-layout > .controls'), 'more');
       fsMove($('task-figure'), 'answer'); fsMove(document.querySelector('.answer-sheet'), 'answer');
     } else if (!on) {
       answering = false; fsLayer?.classList.remove('answering');
@@ -810,7 +818,8 @@
     fsLayer.querySelector('[data-fs="time"]').hidden = $('timeline').hidden;
   }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
-    if (!(document.fullscreenElement || document.webkitFullscreenElement) && usedFullscreenApi && stage.classList.contains('is-full')) { usedFullscreenApi = false; setFull(false); }
+    const b = fsLayer?.querySelector('.fs-exit'); if (b) b.textContent = inBrowserFull() ? '✕ 顯示網址列' : '⛶ 隱藏網址列';
+    if (!inBrowserFull()) usedFullscreenApi = false; requestAnimationFrame(draw);
   }));
   // 作答送出（submit.js）讀取目前狀態用的介面
   function arrangement(mach = params.mach) {
@@ -845,5 +854,7 @@
   document.querySelectorAll('[data-mach]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.mach) === params.mach)));
   $('task').replaceChildren(...tasks.map((t, i) => new Option((i + 1) + '　' + t.title, String(i))));
   syncDucks(); syncQuick();
-  loadQuestion(); setManual(true); persist(); refresh(); requestAnimationFrame(tick);
+  loadQuestion(); setManual(true); persist();
+  if (!new URLSearchParams(location.search).has('page')) setFull(true);
+  refresh(); requestAnimationFrame(tick);
 })();
