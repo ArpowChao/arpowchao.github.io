@@ -53,16 +53,17 @@
     return preview ? P.snapshotReceived(params.c, preview.waves, observers[i], preview.elapsed) : { count: 0, interval: null, last: null };
   }
   // 觀察者目前位置：自己排列時不動；示範時依游動速度移動
-  // 觀察者動時，波源早已在打水（t0 = -12 s），水面一開始就布滿波，小鴨游進這片波裡
-  function phys() { return swim > 0 && !manual ? { ...params, t0: -12 } : params; }
+  // 示範與觀察者動：波源早已在打水（t0 = -12 s），水面一開始就布滿波，
+  // 每隻小鴨從 0 秒起都已經在被波打，叫聲節奏可以直接互相比較
+  function phys() { return manual ? params : { ...params, t0: -12 }; }
   function posAt(o) { return manual ? o : P.observerAt(o, time); }
   function applySwim() { observers.forEach(o => { o.vx = -swim * params.c; o.vy = 0; }); }
-  function reading(i) {
-    if (manual) return previewReading(i);
-    const r = P.received(phys(), observers[i], time);
-    // 觀察者動：只算播放開始（0 秒）之後收到的次數
-    return swim > 0 ? { ...r, count: r.count - P.received(phys(), observers[i], 0).count } : r;
+  // 只算 0 秒（開始播放）之後收到的波；間隔仍用最近兩次抵達計算
+  function live(o) {
+    const r = P.received(phys(), o, time), events = r.events.filter(a => a.time > 1e-9);
+    return { ...r, events, count: events.length };
   }
+  function reading(i) { return manual ? previewReading(i) : live(observers[i]); }
   const panOf = o => Math.max(-1, Math.min(1, posAt(o).x / 6));
   const obsExtent = o => [Math.abs(o.x) + .5, Math.abs(o.x + (o.vx || 0) * 10) + .5, Math.abs(o.y) + .5];
   // 示範（自動模擬）播放時，波峰到達哪隻小鴨就讓牠叫
@@ -270,7 +271,7 @@
     const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : P.waves(phys(), time);
     c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
     const source = xy(manual ? pieces.at(-1) : P.source(params, time), camera);
-    if (!manual) { c.moveTo(camera.cx, camera.cy); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
+    if (!manual) { const from = xy(P.source(params, phys().t0), camera); c.moveTo(from.x, from.y); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
     waves.forEach(w => {
       const p = xy(w, camera), radius = w.radius * camera.scale;
       if (radius > .1) {
@@ -365,7 +366,7 @@
     if (manual) { refreshPieces(); return; }
     if (!$('observers').checked) { const p = document.createElement('p'); p.className = 'copy'; p.textContent = '先勾選「A、B 小鴨」'; $('arrival-readings').append(p); return; }
     observers.forEach((o, i) => {
-      const r = P.received(phys(), o, time), card = document.createElement('div'); card.className = 'arrival-card';
+      const r = live(o), card = document.createElement('div'); card.className = 'arrival-card';
       const q = posAt(o), h = document.createElement('h3'); h.textContent = LETTERS[i] + ' 小鴨 · (' + fmt(q.x, 1) + ', ' + fmt(q.y, 1) + ') m'; card.append(h);
       for (const label of ['抵達 ' + r.count + ' 次', '間隔 ' + (r.interval === null ? '—' : fmt(r.interval, 2) + ' s'), '頻率 ' + (r.frequency === null ? '—' : fmt(r.frequency, 2) + ' 次/s')]) { const p = document.createElement('p'); p.textContent = label; card.append(p); }
       const p = document.createElement('p'); p.className = 'arrival-times'; p.textContent = r.events.length ? '抵達時刻：' + r.events.map(a => fmt(a.time, 2) + 's').join('、') : '還沒有波抵達。'; card.append(p);
@@ -558,7 +559,7 @@
     c.fillStyle = '#ffffff'; c.fillRect(0, 0, image.width, image.height);
     text(c, '都卜勒・水波實驗', inset, 39, '#153f4d', 'left', 30);
     text(c, (preview ? '從我的排列經過 ' + fmt(preview.elapsed) : 't = ' + fmt(manual ? 5 : time)) + ' s  |  ' + configText() + '  |  c=' + fmt(params.c) + ' m/s  |  f=' + fmt(params.f) + ' 次/s', inset, 81, '#5d7b86', 'left', 17);
-    text(c, manual ? preview ? '學生排列的波前向外擴散，圓心固定；次數從開始播放時算起。' : '學生手動組合：每個圓心由學生設定，圓片半徑固定。' : '每圈從當時發波的位置擴大；第一圈在 t=0 發出。', inset, 113, '#5d7b86', 'left', 17);
+    text(c, manual ? preview ? '學生排列的波前向外擴散，圓心固定；次數從開始播放時算起。' : '學生手動組合：每個圓心由學生設定，圓片半徑固定。' : '波源早已在打水，水面布滿波；每圈從當時發波的位置擴大，次數從 0 s 算起。', inset, 113, '#5d7b86', 'left', 17);
     // Preserve the full work surface when exporting to a different pixel size.
     const fullCamera = projection(canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height);
     const exportCamera = { ...fullCamera, scale: fullCamera.scale * 1120 / canvas.getBoundingClientRect().width,
@@ -567,7 +568,7 @@
     const y = 140 + pondHeight;
     const notes = [];
     if ($('observers').checked) observers.forEach((o, i) => {
-      const r = manual ? previewReading(i) : P.received(phys(), o, time);
+      const r = manual ? previewReading(i) : live(o);
       const q = posAt(o); notes.push(LETTERS[i] + '=(' + fmt(q.x) + ',' + fmt(q.y) + ')m' + (preview || !manual && $('arrival-panel').open ? ' · ' + r.count + '次 · Δt=' + (r.interval === null ? '—' : fmt(r.interval, 3) + 's') : ''));
     });
     const measurement = ($('grid').checked ? '1大格=1λ=' + fmt(exportedView.cell) + 'm；4小格/大格 · ' : '') + (ruler ? '量測 ' + fmt(P.distance(ruler.a, ruler.b)) + 'm' : '未放置量測線');
@@ -767,7 +768,7 @@
   }
   const FS_STEPS = {
     manual: ['從「圓片」把圓圈一片一片拖進水面', '把每一圈的圓心放到它發波時波源的位置（水平線上的 1～5 刻度）', '打開「🦆 小鴨」，按「▶ 播放」，聽誰被打得比較頻繁'],
-    demo: ['看波源一邊往前走、一邊每秒發出一圈', '比較前方和後方相鄰兩圈的距離', '換「波源速度」再看一次；按「✕ 結束示範」回到自己排'],
+    demo: ['水面早已布滿波：波源一邊往前走、一邊每秒發出一圈', '比較前方和後方相鄰兩圈的距離；聽每隻小鴨誰叫得比較密', '換「波源速度」再看一次；按「✕ 結束示範」回到自己排'],
     swim: ['波源不動，小鴨以 0.5 倍波速向左游', 'A 迎著波游、B 順著波游：聽誰叫得比較密', '看「即時讀值」：每秒被打幾次？波長有沒有變？']
   };
   function fsSync() {
