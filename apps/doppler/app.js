@@ -725,7 +725,7 @@
   function fsBuild() {
     fsLayer = document.createElement('div'); fsLayer.className = 'fs-layer';
     fsLayer.innerHTML = `
-      <div class="fs-col fs-colL"><section class="fs-panel" data-fs="guide"><header><strong>怎麼操作</strong><span class="fs-sub" id="fs-mode"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
+      <div class="fs-col fs-colL"><section class="fs-panel" data-fs="guide"><header><strong>怎麼操作</strong><button type="button" class="fs-id" data-id-open></button><span class="fs-sub" id="fs-mode"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
         <div class="fs-body">
           <label class="fs-task">題目<select id="fs-task"></select></label>
           <p class="fs-q" id="fs-q"></p>
@@ -735,7 +735,7 @@
           <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 作答</button>
           <a class="fs-home" href="../index.html">← Physics Lab</a>
         </div></section>
-      <section class="fs-panel" data-fs="answer" hidden><header><strong>作答</strong><span class="fs-sub" id="fs-anum"></span><button type="button" class="fs-back">← 回操作</button></header>
+      <section class="fs-panel" data-fs="answer" hidden><header><strong>作答</strong><span class="fs-sub" id="fs-anum"></span><button type="button" class="fs-id" data-id-open></button><button type="button" class="fs-back">← 回操作</button></header>
         <div class="fs-body"><p class="fs-q" id="fs-aq"></p><div data-slot="answer"></div></div></section>
       <section class="fs-panel" data-fs="tray"><header><strong>圓片</strong><span class="fs-sub">拖進水面</span><button type="button" class="fs-fold" aria-label="收合">▾</button></header><div class="fs-body" data-slot="tray"></div></section></div>
       <div class="fs-col fs-colR"><section class="fs-panel" data-fs="ctrl"><header><strong>控制</strong><button type="button" class="fs-exit">⛶ 隱藏網址列</button><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
@@ -764,6 +764,20 @@
     $('fs-load').addEventListener('click', () => $('load-task').click());
     // 作答也在全螢幕裡：左欄換成作答卡，水面與右側讀值照常可用
     $('fs-answer').addEventListener('click', () => setAnswering(true));
+    // 身分（班級／組別／座號）：一開始填一次，整節課沿用，送出作答時自動帶入
+    const dlg = document.createElement('div'); dlg.className = 'fs-iddlg'; dlg.hidden = true;
+    dlg.innerHTML = `<div class="fs-idbox" role="dialog" aria-label="填寫身分"><h3>先填好你的身分</h3><p class="fs-idnote">整節課都用這個，送出作答時會自動帶入。</p>
+      <div data-slot="who"></div><div class="fs-grp-label">組別（一組 3 人）</div>
+      <div class="fs-grp">${Array.from({ length: 11 }, (_, i) => `<button type="button" data-grp="${i + 1}">${i + 1}</button>`).join('')}</div>
+      <button type="button" class="fs-primary fs-wide" id="fs-id-done">開始</button></div>`;
+    fsLayer.append(dlg);
+    dlg.addEventListener('click', e => {
+      const g = e.target.closest('[data-grp]');
+      if (g) { $('group').value = g.dataset.grp; $('group').dispatchEvent(new Event('change', { bubbles: true })); idSync(); }
+    });
+    $('fs-id-done').addEventListener('click', () => { if (idReady()) { dlg.hidden = true; } else idSync(true); });
+    fsLayer.addEventListener('click', e => { if (e.target.closest('[data-id-open]')) openId(); });
+    ['cls', 'seat', 'student'].forEach(id => $(id).addEventListener('input', () => idSync()));
     fsLayer.querySelector('.fs-back').addEventListener('click', () => setAnswering(false));
     $('fs-task').addEventListener('change', () => { $('task').value = $('fs-task').value; $('task').dispatchEvent(new Event('change')); fsSync(); });
   }
@@ -782,6 +796,7 @@
       fsMove(document.querySelector('.scene-head'), 'read'); fsMove($('manual-playback'), 'read'); fsMove(document.querySelector('.scene-foot'), 'read');
       fsMove($('timeline'), 'time');
       fsMove(document.querySelector('.lab-layout > .controls'), 'more');
+      fsMove(document.querySelector('.answer-sheet > .who'), 'who');
       fsMove($('task-figure'), 'answer'); fsMove(document.querySelector('.answer-sheet'), 'answer');
     } else if (!on) {
       answering = false; fsLayer?.classList.remove('answering');
@@ -789,6 +804,17 @@
     }
     fsSync();
   }
+  const idReady = () => !!($('cls').value.trim() && $('seat').value.trim() && $('group').value);
+  function idSync(warn) {
+    if (!fsLayer) return;
+    const c = $('cls').value.trim(), s = $('seat').value.trim(), g = $('group').value;
+    const text = idReady() ? c + '班 ' + g + '組 ' + s + '號' : '✎ 先填組別座號';
+    fsLayer.querySelectorAll('.fs-id').forEach(b => { b.textContent = text; b.classList.toggle('need', !idReady()); });
+    fsLayer.querySelectorAll('[data-grp]').forEach(b => b.classList.toggle('on', b.dataset.grp === g));
+    const done = $('fs-id-done'); if (done) done.textContent = idReady() ? '開始' : warn ? '還沒填完：' + [!c && '班級', !g && '組別', !s && '座號'].filter(Boolean).join('、') : '開始';
+  }
+  function openId() { if (!fsLayer) return; fsLayer.querySelector('.fs-iddlg').hidden = false; idSync(); ($('seat').value ? $('cls') : $('seat')).blur(); }
+  window.DopplerIdentity = { open: openId, ready: idReady };
   function setAnswering(on) {
     answering = on; fsLayer.classList.toggle('answering', on); fsSync();
     if (on) fsLayer.querySelector('[data-fs="answer"] .fs-body').scrollTop = 0;
@@ -855,6 +881,10 @@
   $('task').replaceChildren(...tasks.map((t, i) => new Option((i + 1) + '　' + t.title, String(i))));
   syncDucks(); syncQuick();
   loadQuestion(); setManual(true); persist();
-  if (!new URLSearchParams(location.search).has('page')) setFull(true);
+  if (!new URLSearchParams(location.search).has('page')) {
+    setFull(true);
+    // submit.js 稍後才把上次填的身分放回欄位，等它跑完再檢查
+    setTimeout(() => { idSync(); if (!idReady()) openId(); }, 0);
+  }
   refresh(); requestAnimationFrame(tick);
 })();

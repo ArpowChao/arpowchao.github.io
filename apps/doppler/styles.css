@@ -200,3 +200,20 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
 .fs-body .controls .copy{margin:4px 0 8px}
 .fs-home{display:block;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}
 @media (orientation:portrait){.fs-col>.fs-panel:not([data-fs=answer]){align-self:start}.fs-panel[data-fs=more]{max-height:40vh}}
+
+/* 身分：左上角一直顯示，點開可改；第一次進來先填 */
+.fs-id{flex:0 0 auto;min-height:30px;padding:2px 10px;border-radius:999px;border:1px solid var(--teal);background:#e3f2f4;color:var(--teal);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-id.need{background:#fff4e0;border-color:#d08a1e;color:#9a5b00}
+.fs-iddlg{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#0b1e25a8;pointer-events:auto;padding:16px}
+.fs-iddlg[hidden]{display:none}
+.fs-idbox{width:min(520px,100%);max-height:100%;overflow:auto;background:#fff;border-radius:16px;padding:20px 22px;box-shadow:0 20px 50px #0005}
+.fs-idbox h3{margin:0 0 4px;font-size:22px}.fs-idnote{margin:0 0 12px;color:var(--muted);font-size:14px}
+.fs-idbox .who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+.fs-idbox .who label{display:grid;gap:4px;font-size:15px;color:var(--muted)}
+.fs-idbox .who input{min-height:46px;font-size:20px;padding:4px 10px}
+.fs-idbox .who label:has(#group){display:none}
+.fs-grp-label{margin:14px 0 6px;font-size:15px;color:var(--muted)}
+.fs-grp{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.fs-grp button{min-height:52px;font-size:22px;font-weight:700;border-radius:12px}
+.fs-grp button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.fs-idbox #fs-id-done{margin-top:16px;min-height:50px;font-size:19px}

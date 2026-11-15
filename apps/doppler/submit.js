@@ -200,7 +200,11 @@
   }
   $('submit').addEventListener('click', async () => {
     if (!gasUrl()) { setStatus('尚未設定收集網址，請用下載', 'warn'); return; }
-    if (!$('cls').value.trim() || !$('seat').value.trim()) { setStatus('請填班級、座號', 'warn'); ($('seat').value ? $('cls') : $('seat')).focus(); return; }
+    if (!$('cls').value.trim() || !$('seat').value.trim() || !$('group').value) {
+      setStatus('請先在左上角填好班級、組別、座號', 'warn');
+      if (window.DopplerIdentity) window.DopplerIdentity.open(); else ($('seat').value ? $('cls') : $('seat')).focus();
+      return;
+    }
     const t = tasks[Lab.taskIndex], data = payload();
     const filled = Object.values(data.fields).filter(Boolean).length;
     if (!filled && !data.answer) { setStatus('還沒作答', 'warn'); return; }
