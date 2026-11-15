@@ -24,7 +24,6 @@
     $(id)?.addEventListener('input', () => store.set(KEY_ID, Object.fromEntries(idFields.map(k => [k, $(k)?.value || '']))));
     $(id)?.addEventListener('change', () => store.set(KEY_ID, Object.fromEntries(idFields.map(k => [k, $(k)?.value || '']))));
   });
-  if (!$('cls').value) $('cls').value = '105';
 
   // ---------- 每題欄位 ----------
   const values = store.get(KEY_FIELDS, {});

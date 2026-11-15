@@ -777,7 +777,7 @@
     });
     $('fs-id-done').addEventListener('click', () => { if (idReady()) { dlg.hidden = true; } else idSync(true); });
     fsLayer.addEventListener('click', e => { if (e.target.closest('[data-id-open]')) openId(); });
-    ['cls', 'seat', 'student'].forEach(id => $(id).addEventListener('input', () => idSync()));
+    ['cls', 'seat', 'student'].forEach(id => ['input', 'change'].forEach(ev => $(id).addEventListener(ev, () => idSync())));
     fsLayer.querySelector('.fs-back').addEventListener('click', () => setAnswering(false));
     $('fs-task').addEventListener('change', () => { $('task').value = $('fs-task').value; $('task').dispatchEvent(new Event('change')); fsSync(); });
   }
@@ -808,12 +808,12 @@
   function idSync(warn) {
     if (!fsLayer) return;
     const c = $('cls').value.trim(), s = $('seat').value.trim(), g = $('group').value;
-    const text = idReady() ? c + '班 ' + g + '組 ' + s + '號' : '✎ 先填組別座號';
+    const text = idReady() ? c + '班 ' + g + '組 ' + s + '號' : '✎ 先填身分';
     fsLayer.querySelectorAll('.fs-id').forEach(b => { b.textContent = text; b.classList.toggle('need', !idReady()); });
     fsLayer.querySelectorAll('[data-grp]').forEach(b => b.classList.toggle('on', b.dataset.grp === g));
     const done = $('fs-id-done'); if (done) done.textContent = idReady() ? '開始' : warn ? '還沒填完：' + [!c && '班級', !g && '組別', !s && '座號'].filter(Boolean).join('、') : '開始';
   }
-  function openId() { if (!fsLayer) return; fsLayer.querySelector('.fs-iddlg').hidden = false; idSync(); ($('seat').value ? $('cls') : $('seat')).blur(); }
+  function openId() { if (!fsLayer) return; fsLayer.querySelector('.fs-iddlg').hidden = false; idSync(); }
   window.DopplerIdentity = { open: openId, ready: idReady };
   function setAnswering(on) {
     answering = on; fsLayer.classList.toggle('answering', on); fsSync();

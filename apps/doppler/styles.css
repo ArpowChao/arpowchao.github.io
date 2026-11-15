@@ -210,7 +210,7 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
 .fs-idbox h3{margin:0 0 4px;font-size:22px}.fs-idnote{margin:0 0 12px;color:var(--muted);font-size:14px}
 .fs-idbox .who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
 .fs-idbox .who label{display:grid;gap:4px;font-size:15px;color:var(--muted)}
-.fs-idbox .who input{min-height:46px;font-size:20px;padding:4px 10px}
+.fs-idbox .who input,.fs-idbox .who select{min-height:50px;font-size:22px;padding:4px 10px;border-radius:10px}
 .fs-idbox .who label:has(#group){display:none}
 .fs-grp-label{margin:14px 0 6px;font-size:15px;color:var(--muted)}
 .fs-grp{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
