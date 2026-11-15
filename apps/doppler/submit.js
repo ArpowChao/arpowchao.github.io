@@ -121,8 +121,10 @@
     const card = makeCard(t, data, shot);
     data.image = shrink(card, 1000, 0.8);          // 存進雲端資料夾的作答卡
     if (shot) {
-      data.thumb = shrink(shot, 300, 0.6);         // 投影頁縮圖
-      if (data.thumb.length > 45000) data.thumb = shrink(shot, 220, 0.45);
+      // 投影頁縮圖：盡量大張清楚，但要塞進試算表一格（< 45000 字）
+      for (const [w, q] of [[720, 0.62], [640, 0.55], [560, 0.5], [460, 0.5], [360, 0.5], [260, 0.45]]) {
+        data.thumb = shrink(shot, w, q); if (data.thumb.length <= 45000) break;
+      }
     }
     return data;
   }
