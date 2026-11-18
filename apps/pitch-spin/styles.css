@@ -265,3 +265,13 @@ body.fs-on{overflow:hidden}
 .fc-release .term{font-size:11.5px;color:var(--muted)}
 .fc-release .num{width:100%;max-width:66px;text-align:center;font-size:13px;color:#41505a;border-color:#cfd9dd;background:#fff}
 .fc-release select{width:auto;margin:0;padding:3px 4px;font-size:12px}
+
+.manual-aim{background:#fff7ef;border:1px solid #f3d7c2;border-radius:10px;padding:8px 10px 6px;margin:0 0 8px}
+.manual-aim .control{margin:0 0 6px}
+.manual-aim .mini-button{font-size:11.5px}
+.call-strike{color:#16733e;font-weight:700}.call-ball{color:#b5410f;font-weight:700}.call-ground{color:#8a1c1c;font-weight:700}
+.fc-angle{margin:6px 0 0;font-size:12px;color:#41505a}
+.fc-angle b{font-weight:700}
+.f-manual{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f-manual[hidden]{display:none}
+.f-manual .num{width:70px;font-size:13px}

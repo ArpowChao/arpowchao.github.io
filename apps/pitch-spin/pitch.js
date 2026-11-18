@@ -143,10 +143,40 @@
     return vel(yaw, pitch);
   }
 
+  // Release angles: elevation (up +) and azimuth (+ = toward the pitcher's right / 3B side), degrees.
+  function velocityFromAngles(speedKmh, elevDeg, azimDeg) {
+    const sp = speedKmh / 3.6, el = elevDeg * DEG, az = azimDeg * DEG;
+    return [-sp * Math.cos(el) * Math.sin(az), -sp * Math.cos(el) * Math.cos(az), sp * Math.sin(el)];
+  }
+  function releaseAngles(v) {
+    return { elevation: Math.atan2(v[2], Math.hypot(v[0], v[1])) / DEG, azimuth: Math.atan2(-v[0], -v[1]) / DEG };
+  }
+  // Cut a flight at the ground (ball touching the grass), if it lands before the plate.
+  function groundCut(fl) {
+    const P = fl.path;
+    for (let i = 1; i < P.length; i++) {
+      if (P[i].p[2] <= BALL.radius) {
+        const a = P[i - 1], b = P[i], u = (a.p[2] - BALL.radius) / (a.p[2] - b.p[2]);
+        const pt = { t: a.t + (b.t - a.t) * u, p: [0, 1, 2].map((k) => a.p[k] + (b.p[k] - a.p[k]) * u) };
+        return { path: P.slice(0, i).concat([pt]), t: pt.t, p: pt.p };
+      }
+    }
+    return null;
+  }
+  // 好球 / 壞球 / 落地 at the front of the plate (ball-edge rule)
+  function zoneCall(res) {
+    if (res.ground) return 'ground';
+    const p = res.plate, zx = 0.216 + BALL.radius;
+    return Math.abs(p[0]) <= zx && p[2] >= 0.46 - BALL.radius && p[2] <= 1.07 + BALL.radius ? 'strike' : 'ball';
+  }
+
   function simulate(raw) {
     const cfg = normalize(raw);
     const r = [cfg.release.x, cfg.release.y, cfg.release.z];
-    const v0 = aim(cfg, !(raw && raw.aimMode === 'nospin')), vhat = unit(v0);
+    let v0;
+    if (raw && raw.aimMode === 'manual') v0 = velocityFromAngles(cfg.speedKmh, Number(raw.elevationDeg) || 0, Number(raw.azimuthDeg) || 0);
+    else v0 = aim(cfg, !(raw && raw.aimMode === 'nospin'));
+    const vhat = unit(v0);
     const spin = spinVector(cfg, vhat);
     const real = fly(r, v0, spin.omega, cfg, true, PLATE_Y);
     const ghost = fly(r, v0, spin.omega, cfg, false, PLATE_Y);
@@ -159,14 +189,17 @@
     const S = BALL.radius * wp / s0, CL = liftCoefficient(S);
     const magnusN = 0.5 * cfg.rho * AREA * CL * s0 * s0;
     // Total vertical drop measured the same way (gravity included), as "vertical approach".
+    const gReal = groundCut(real), gGhost = groundCut(ghost);
     return {
-      config: cfg,
+      config: cfg, release: r, angles: releaseAngles(v0),
+      ground: gReal ? { t: gReal.t, p: gReal.p, toPlate: gReal.p[1] - PLATE_Y } : null,
+      ghostGround: gGhost ? { t: gGhost.t, p: gGhost.p, toPlate: gGhost.p[1] - PLATE_Y } : null,
       v0, omega: spin.omega, transverseAxis: spin.transverseAxis, spinRate: spin.rate,
       activeSpinRpm: cfg.rpm * cfg.efficiency,
       spinFactor: S, cl: CL, magnusN, magnusOverWeight: magnusN / (BALL.mass * G),
-      flightTime: real.t,
+      flightTime: gReal ? gReal.t : real.t,
       plate: real.p, ghostPlate: ghost.p,
-      path: real.path, ghostPath: ghost.path,
+      path: gReal ? gReal.path : real.path, ghostPath: gGhost ? gGhost.path : ghost.path,
       breakCm: { x: brk[0] * 100, z: brk[2] * 100 },
       releaseMovementCm: { x: (real.p[0] - ghost.p[0]) * 100, z: (real.p[2] - ghost.p[2]) * 100 },
       plateSpeedKmh: norm(real.v) * 3.6,
@@ -177,7 +210,7 @@
 
   return {
     BALL, AREA, G, PLATE_Y, STATCAST_Y, PRESETS,
-    liftCoefficient, normalize, movementDirection, spinVector, accel, fly, aim, simulate,
+    liftCoefficient, normalize, movementDirection, spinVector, accel, fly, aim, simulate, velocityFromAngles, releaseAngles, zoneCall,
     vec: { add, sub, mul, dot, cross, norm, unit }
   };
 });

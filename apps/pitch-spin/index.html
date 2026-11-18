@@ -7,13 +7,13 @@
   <meta name="description" content="3D 棒球旋轉實驗室：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸、有效轉速與效率，看球怎麼轉、怎麼飛，並在 3D 球場比較三顆球。">
   <title>SPIN 投球旋轉實驗室 | Physics Lab</title>
   <link rel="icon" href="../../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
   <script src="lib/three.min.js" defer></script>
-  <script src="pitch.js?v=3" defer></script>
-  <script src="pitchlab.js?v=4" defer></script>
-  <script src="app.js?v=4" defer></script>
+  <script src="pitch.js?v=5" defer></script>
+  <script src="pitchlab.js?v=5" defer></script>
+  <script src="app.js?v=5" defer></script>
   <script src="explainer.js?v=2" defer></script>
-  <script src="field.js?v=4" defer></script>
+  <script src="field.js?v=5" defer></script>
 </head>
 <body>
   <header class="topbar"><a href="../index.html" class="back-link">← Physics Lab</a><span>投球物理 / PITCH SPIN &amp; MOVEMENT</span><a href="#axis-gyro">轉軸與陀螺角 ↓</a></header>
@@ -65,7 +65,18 @@
         <div class="two-panels" id="win-path">
           <section class="panel">
             <div class="panel-head"><h2>捕手看到的進壘</h2><button id="replay" class="mini-button" type="button">▶ 再投一次</button></div>
-            <select id="aim-mode" class="aim-mode" aria-label="瞄準方式"><option value="nospin" selected>瞄準：同樣出手，看旋轉把球帶到哪（不轉的球進正中央）</option><option value="spin">瞄準：投手修正出手方向，讓這顆球投進正中央</option></select>
+            <select id="aim-mode" class="aim-mode" aria-label="瞄準方式"><option value="nospin" selected>瞄準：同樣出手，看旋轉把球帶到哪（不轉的球進正中央）</option><option value="spin">瞄準：投手修正出手方向，讓這顆球投進正中央</option><option value="manual">瞄準：手動設定出手仰角與偏角</option></select>
+            <div class="manual-aim" id="manual-aim" hidden>
+              <div class="control">
+                <div class="control-head"><span class="term-wrap" data-k="elev"></span><span class="num-wrap"><input id="elev-num" class="num" type="number" min="-10" max="15" step="0.05" inputmode="decimal" aria-label="出手仰角（度）"><span class="unit">°</span></span></div>
+                <input id="elev" type="range" min="-10" max="15" step="0.05" aria-label="出手仰角滑桿">
+              </div>
+              <div class="control">
+                <div class="control-head"><span class="term-wrap" data-k="azim"></span><span class="num-wrap"><input id="azim-num" class="num" type="number" min="-8" max="8" step="0.05" inputmode="decimal" aria-label="出手偏角（度）"><span class="unit">°</span></span></div>
+                <input id="azim" type="range" min="-8" max="8" step="0.05" aria-label="出手偏角滑桿">
+              </div>
+              <button type="button" class="mini-button" id="aim-auto">⟲ 填入「不轉的球進正中央」的角度</button>
+            </div>
             <canvas id="plate-canvas" class="plate-canvas" aria-label="從捕手後方看的球路：灰色虛線為完全不轉的球，橘色為實際球路"></canvas>
             <p class="panel-note"><i class="dot ghost"></i>不轉的球　<i class="dot real"></i>這顆球（放慢 4 倍播放）　＋＝好球帶中心</p>
           </section>
@@ -144,6 +155,8 @@
             <div><dt>進壘球速</dt><dd id="r-plate">—</dd></div>
             <div><dt>馬格努斯力</dt><dd id="r-force">—</dd></div>
             <div><dt>旋轉參數 S ／ 升力係數 C<sub>L</sub></dt><dd id="r-s">—</dd></div>
+            <div><dt id="r-angle-term"></dt><dd id="r-angle">—</dd></div>
+            <div><dt>進壘判定</dt><dd id="r-call">—</dd></div>
             <div><dt id="r-vec-term"></dt><dd id="r-vec">—</dd></div>
           </dl>
         </section>
@@ -212,7 +225,7 @@
       <div class="explain-head">
         <p class="eyebrow">VPython 3D 球場 · 三顆球同場比較</p>
         <h2 id="field-title">把 PitchLab 的數字，投成三條球路</h2>
-        <p>每顆球照 PitchLab 輸入球速、轉速、轉軸、陀螺角；程式自動換算旋轉軸，從同一個出手點投出。預設瞄準「如果不轉會進正中央」，所以進壘點離 ＋ 字多遠，就是旋轉造成的位移。</p>
+        <p>每顆球照 PitchLab 輸入球速、轉速、轉軸、陀螺角；程式自動換算旋轉軸。預設瞄準「如果不轉會進正中央」，所以進壘點離 ＋ 字多遠，就是旋轉造成的位移；也可以改成手動出手角度（三顆共用），看同一個角度下，快球和慢球會落在哪裡、會不會砸地。</p>
       </div>
       <div class="field-wrap" id="field-wrap">
         <div class="field-stage" id="field-stage">
@@ -235,7 +248,8 @@
           <label><input type="checkbox" id="f-markers">距離標記</label>
           <label><input type="checkbox" id="f-pause02">0.2 秒時暫停</label>
           <label>投手 <select id="f-hand"><option value="R">右投</option><option value="L">左投</option></select></label>
-          <label>瞄準 <select id="f-aim"><option value="nospin">不轉的話會進正中央</option><option value="spin">每顆都投進正中央</option></select></label>
+          <label>瞄準 <select id="f-aim"><option value="nospin">不轉的話會進正中央</option><option value="spin">每顆都投進正中央</option><option value="manual">手動出手角度（三顆共用）</option></select></label>
+          <span class="f-manual" id="f-manual" hidden><label>出手仰角 <input id="f-elev" class="num" type="number" min="-10" max="15" step="0.1" inputmode="decimal">°</label><label>偏角 <input id="f-azim" class="num" type="number" min="-8" max="8" step="0.1" inputmode="decimal">°</label></span>
         </div>
         <div class="f-cards" id="f-cards"></div>
         <div class="f-move panel" id="f-move-win">

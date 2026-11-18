@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
   const { sub, norm, unit } = P.vec;
 
-  const st = { hand: 'R', aim: 'nospin', slow: 10, playing: false, t: 0, paused02: false };
+  const st = { elev: 0, azim: 0, hand: 'R', aim: 'nospin', slow: 10, playing: false, t: 0, paused02: false };
   const COLORS = { A: [0.9, 0.28, 0.3], B: [0.18, 0.44, 0.86], C: [0.12, 0.62, 0.33] };
   const CSS = { A: '#e5484d', B: '#2f6fdb', C: '#1f9d55' };
   const balls = [{ id: 'A', on: true, src: 1 }, { id: 'B', on: true, src: 2 }, { id: 'C', on: true, src: 4 }].map((b) => ({ ...b, relH: 1.78, relS: 0.55, ext: 1.74 }));
@@ -15,13 +15,12 @@
 
   function simulate(b) {
     const eff = PL.effFromGyro(b.gyro);
-    const cfg = P.normalize({ hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff, release: PL.releaseOf(st.hand, b.relH, b.relS, b.ext), target: { x: 0, z: 0.76 } });
-    const r = [cfg.release.x, cfg.release.y, cfg.release.z];
-    const v0 = P.aim(cfg, st.aim === 'spin');
-    const spin = P.spinVector(cfg, unit(v0));
-    const real = P.fly(r, v0, spin.omega, cfg, true, P.PLATE_Y), ghost = P.fly(r, v0, spin.omega, cfg, false, P.PLATE_Y);
-    const wh = norm(spin.omega) > 0 ? unit(spin.omega) : unit(spin.transverseAxis);
-    return { eff, active: b.rpm * eff, rate: spin.rate, omegaHat: wh, axisXYZ: [-wh[1], wh[2], -wh[0]], real, ghost, time: real.t, plate: real.p, plateKmh: norm(real.v) * 3.6, vb: (real.p[2] - ghost.p[2]) * 100, hb: -(real.p[0] - ghost.p[0]) * 100 };
+    const res = P.simulate({ hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff, release: PL.releaseOf(st.hand, b.relH, b.relS, b.ext), target: { x: 0, z: 0.76 },
+      aimMode: st.aim, elevationDeg: st.elev, azimuthDeg: st.azim });
+    const wh = res.spinRate > 0 ? unit(res.omega) : unit(res.transverseAxis);
+    return { eff, active: b.rpm * eff, rate: res.spinRate, omegaHat: wh, axisXYZ: [-wh[1], wh[2], -wh[0]], real: { path: res.path }, ghost: { path: res.ghostPath },
+      time: res.flightTime, plate: res.plate, plateKmh: res.plateSpeedKmh, vb: res.releaseMovementCm.z, hb: -res.releaseMovementCm.x,
+      angles: res.angles, ground: res.ground, call: P.zoneCall(res) };
   }
 
   /* ---------- cards ---------- */
@@ -56,6 +55,7 @@
         <div>${T('relS', '左右')}<input type="number" class="num" data-k="relS" min="0" max="1.3" step="0.01" inputmode="decimal"></div>
         <div>${T('ext', '延伸')}<input type="number" class="num" data-k="ext" min="0.8" max="2.4" step="0.01" inputmode="decimal"></div>
       </div>
+      <p class="fc-angle" data-o="angle"></p>
       <p class="fc-actual" data-o="actual"></p>`;
     $('f-cards').appendChild(el);
     b.el = el;
@@ -99,6 +99,8 @@
     q('hb').innerHTML = `${r.hb.toFixed(1)}<small>cm</small>`;
     q('time').innerHTML = `${r.time.toFixed(2)}<small>s</small>`;
     q('pkph').innerHTML = `${r.plateKmh.toFixed(1)}<small>kph</small>`;
+    const sg = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
+    q('angle').innerHTML = `${T('elev', '出手仰角')} ${sg(r.angles.elevation)}°　${T('azim', '偏角')} ${sg(r.angles.azimuth)}°　→ <b class="call-${r.call}">${r.call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : r.call === 'strike' ? '好球' : '壞球'}</b>`;
     const act = q('actual');
     if (b.src !== 'custom') { const p = PL.VIDEO[b.src]; act.hidden = false; act.innerHTML = `PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm${st.hand === 'L' ? '（右投實測）' : ''}`; }
     else if (b.name) { act.hidden = false; act.textContent = `從上方 3D 球送來：${b.name}`; }
@@ -264,7 +266,7 @@
     let maxT = 1, ended = false;
     const hud = () => {
       const L = [`t = ${st.t.toFixed(3)} s${st.slow > 1 ? `（放慢 ${st.slow} 倍）` : ''}`];
-      for (const b of balls) if (b.on) { const r = b.res; L.push(`球 ${b.id}  ${st.t >= r.time ? `到本壘 ${r.time.toFixed(2)} s　進壘高 ${r.plate[2].toFixed(2)} m` : `距本壘 ${Math.max(0, at(r.real.path, st.t)[1] - P.PLATE_Y).toFixed(1)} m`}`); }
+      for (const b of balls) if (b.on) { const r = b.res; L.push(`球 ${b.id}  ${st.t >= r.time ? (r.ground ? `落地：離本壘 ${r.ground.toPlate.toFixed(1)} m` : `到本壘 ${r.time.toFixed(2)} s　進壘高 ${r.plate[2].toFixed(2)} m　${r.call === 'strike' ? '好球' : '壞球'}`) : `距本壘 ${Math.max(0, at(r.real.path, st.t)[1] - P.PLATE_Y).toFixed(1)} m`}`); }
       $('f-hud').textContent = L.join('\n');
     };
     const throwAll = () => {
@@ -304,7 +306,12 @@
     ['f-trail', 'f-axis', 'f-ghost'].forEach((id) => $(id).addEventListener('change', vis));
     $('f-markers').addEventListener('change', (e) => markers.forEach((m) => { m.visible = e.target.checked; }));
     $('f-hand').addEventListener('change', (e) => { st.hand = e.target.value; drawArm(); recompute(true); });
-    $('f-aim').addEventListener('change', (e) => { st.aim = e.target.value; recompute(true); });
+    $('f-aim').addEventListener('change', (e) => {
+      if (e.target.value === 'manual') { const a = balls[0].res.angles; st.elev = +a.elevation.toFixed(2); st.azim = +a.azimuth.toFixed(2); $('f-elev').value = st.elev; $('f-azim').value = st.azim; }
+      st.aim = e.target.value; $('f-manual').hidden = st.aim !== 'manual'; recompute(true);
+    });
+    for (const [k, id, lo, hi] of [['elev', 'f-elev', -10, 15], ['azim', 'f-azim', -8, 8]]) $(id).addEventListener('input', (e) => { const v = Number(e.target.value), ok = e.target.value !== '' && v >= lo && v <= hi; e.target.classList.toggle('bad', !ok); if (ok) { st[k] = v; recompute(false); } });
+    ['f-elev', 'f-azim'].forEach((id) => $(id).addEventListener('change', () => recompute(true)));
     const resize = () => { const [w, h] = size(); scene.width = w; scene.height = h; };
     window.addEventListener('resize', () => { resize(); drawMove(); });
     setView('catcher');

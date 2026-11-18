@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
 
   const PL = window.PitchLab;
-  const state = { relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'nospin', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const state = { elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'nospin', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -14,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
+  const cfg = () => ({ elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -334,12 +334,18 @@
       if (path === r.path) { ctx.strokeStyle = '#8a3c10'; ctx.lineWidth = 1; ctx.stroke(); }
     }
     if (tNow >= T1) {
-      const qg = proj(r.ghostPlate), qr = proj(r.plate);
-      ctx.strokeStyle = '#c4472f'; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(qg.x, qg.y); ctx.lineTo(qr.x, qr.y); ctx.stroke(); ctx.setLineDash([]);
-      const d = Math.hypot(r.releaseMovementCm.x, r.releaseMovementCm.z);
       ctx.fillStyle = '#1f3140'; ctx.font = '600 12px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(`旋轉讓球偏了 ${d.toFixed(0)} 公分`, 10, h - 12);
+      const call = P.zoneCall(r);
+      if (r.ground) ctx.fillText(`球在離本壘 ${r.ground.toPlate.toFixed(1)} m 處落地`, 10, h - 12);
+      else {
+        if (!r.ghostGround) {
+          const qg = proj(r.ghostPlate), qr = proj(r.plate);
+          ctx.strokeStyle = '#c4472f'; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]);
+          ctx.beginPath(); ctx.moveTo(qg.x, qg.y); ctx.lineTo(qr.x, qr.y); ctx.stroke(); ctx.setLineDash([]);
+        }
+        const d = Math.hypot(r.releaseMovementCm.x, r.releaseMovementCm.z);
+        ctx.fillText(`旋轉讓球偏了 ${d.toFixed(0)} 公分　·　${call === 'strike' ? '好球' : '壞球'}`, 10, h - 12);
+      }
     }
     if (tNow > T1 + 1.6) pitchStart = now; // loop
     ctx.fillStyle = '#5d7080'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
@@ -414,6 +420,7 @@
   // ---------- state & UI ----------
   document.querySelectorAll('.term-wrap[data-k]').forEach((el) => { el.innerHTML = PL.term(el.dataset.k); });
   $('r-vec-term').innerHTML = PL.term('vec');
+  $('r-angle-term').innerHTML = `${PL.term('elev', '出手仰角')} ／ ${PL.term('azim', '偏角')}`;
   function buildPresets() {
     const box = $('presets'); box.textContent = '';
     for (const k of Object.keys(P.PRESETS)) {
@@ -446,7 +453,7 @@
   }
   function computePresetResults() {
     state.presetResults = {};
-    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, aimMode: state.aimMode, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext) });
+    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, aimMode: state.aimMode, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext) });
   }
   const sideWord = (hcm) => (Math.abs(hcm) < 0.5 ? '' : hcm > 0 ? '三壘側' : '一壘側');
   function update(replay) {
@@ -481,6 +488,12 @@
     $('r-plate').textContent = `${r.plateSpeedKmh.toFixed(0)} km/h`;
     $('r-force').textContent = `${r.magnusN.toFixed(2)} N（重力的 ${Math.round(r.magnusOverWeight * 100)}%）`;
     $('r-s').textContent = `${r.spinFactor.toFixed(3)} ／ ${r.cl.toFixed(3)}`;
+    const ang = r.angles, sgn = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
+    $('r-angle').textContent = `${sgn(ang.elevation)}° ／ ${sgn(ang.azimuth)}°${state.aimMode === 'manual' ? '（手動）' : '（自動）'}`;
+    const call = P.zoneCall(r);
+    $('r-call').textContent = call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : `${call === 'strike' ? '好球' : '壞球'}（進壘高 ${r.plate[2].toFixed(2)} m）`;
+    $('r-call').className = 'call-' + call;
+    if (state.aimMode === 'manual') { $('elev').value = state.elev; $('azim').value = state.azim; setIf('elev-num', (+state.elev).toFixed(2)); setIf('azim-num', (+state.azim).toFixed(2)); }
     const wv = r.spinRate > 0 ? r.omega.map((x) => x / r.spinRate) : [0, 0, 0];
     $('r-vec').textContent = `(${(-wv[1]).toFixed(2)}, ${wv[2].toFixed(2)}, ${(-wv[0]).toFixed(2)})`;
     updateBallPose();
@@ -507,7 +520,18 @@
   $('slow').addEventListener('change', (e) => { state.slow = Number(e.target.value); updateBallPose(); });
   $('show-flow').addEventListener('change', (e) => { flowLines.visible = e.target.checked; });
   $('replay').addEventListener('click', () => { pitchStart = performance.now(); });
-  $('aim-mode').addEventListener('change', (e) => { state.aimMode = e.target.value; computePresetResults(); update(true); });
+  function autoAngles() { const a = P.simulate({ ...cfg(), aimMode: 'nospin' }).angles; state.elev = +a.elevation.toFixed(2); state.azim = +a.azimuth.toFixed(2); }
+  $('aim-mode').addEventListener('change', (e) => {
+    if (e.target.value === 'manual' && state.result) { state.elev = +state.result.angles.elevation.toFixed(2); state.azim = +state.result.angles.azimuth.toFixed(2); }
+    state.aimMode = e.target.value; $('manual-aim').hidden = state.aimMode !== 'manual';
+    computePresetResults(); update(true);
+  });
+  for (const [k, lo, hi] of [['elev', -10, 15], ['azim', -8, 8]]) {
+    $(k).addEventListener('input', (e) => { state[k] = Number(e.target.value); computePresetResults(); update(true); });
+    $(k + '-num').addEventListener('input', (e) => { const v = Number(e.target.value), ok = e.target.value !== '' && v >= lo && v <= hi; e.target.classList.toggle('bad', !ok); if (ok) { state[k] = v; computePresetResults(); update(true); } });
+    $(k + '-num').addEventListener('blur', () => update(false));
+  }
+  $('aim-auto').addEventListener('click', () => { autoAngles(); computePresetResults(); update(true); });
   document.querySelectorAll('[data-view]').forEach((b) => { if (b.closest('#stage')) b.addEventListener('click', () => setView(b.dataset.view)); });
   document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
     if (b.dataset.hand === state.hand) return;
