@@ -69,7 +69,10 @@
       // PitchLab/Statcast-style data are reported (垂直:水平 always matches 轉軸). 'fixed': the spin axis stays fixed in
       // space, so gyro spin slowly turns into side/back spin as the ball drops.
       follow: raw.axisMode !== 'fixed',
-      liftScale: num(raw.liftScale, 0, 10, 1)
+      liftScale: num(raw.liftScale, 0, 10, 1),
+      // seam-shifted wake (illustrative): an extra push, not from spin, toward ssw.clock, sized to give ssw.cm of break
+      ssw: raw.ssw && Number(raw.ssw.cm) > 0 ? { cm: num(raw.ssw.cm, 0, 30, 0), clock: Number(raw.ssw.clock) || 4 } : null,
+      sswAcc: 0
     };
   }
 
@@ -103,6 +106,7 @@
         const m = movementDirection(cfg.tilt), mp = unit(sub(m, mul(vh, dot(m, vh))));
         wp = mul(unit(cross(vh, mp)), cfg.rpm * 2 * Math.PI / 60 * cfg.efficiency);
       } else wp = sub(omega, mul(vh, dot(omega, vh)));
+      if (cfg.ssw && cfg.sswAcc > 0) { const q = movementDirection(cfg.ssw.clock), qp = unit(sub(q, mul(vh, dot(q, vh)))); a = add(a, mul(qp, cfg.sswAcc)); }
       const wpn = norm(wp);
       if (wpn > 0) {
         const S = BALL.radius * wpn / s;
@@ -188,13 +192,23 @@
   // the spin-only prediction is still returned as predictedMovementCm.
   function simulate(raw) {
     raw = raw || {};
-    const pred = simulateOnce(raw, normalize(raw));
+    const cfg0 = normalize(raw);
+    let sswExtra = null;
+    if (cfg0.ssw && !raw.measured) {
+      const base = simulateOnce(raw, cfg0);
+      cfg0.sswAcc = 2 * (cfg0.ssw.cm / 100) / (base.flightTime * base.flightTime);
+      const withSsw = simulateOnce(raw, cfg0);
+      sswExtra = { x: withSsw.releaseMovementCm.x - base.releaseMovementCm.x, z: withSsw.releaseMovementCm.z - base.releaseMovementCm.z };
+    }
+    const pred = simulateOnce(raw, cfg0);
+    pred.sswExtraCm = sswExtra;
     pred.predictedMovementCm = pred.releaseMovementCm; pred.liftScale = 1; pred.measured = null;
     const ms = raw.measured;
     if (!ms || !Number.isFinite(+ms.v) || !Number.isFinite(+ms.h)) return pred;
     const want = Math.hypot(ms.v, ms.h), have0 = Math.hypot(pred.releaseMovementCm.x, pred.releaseMovementCm.z);
     if (want < 0.05 || have0 < 0.05) return pred;
     const cfg = normalize(raw);
+    cfg.ssw = null; // a measured break already contains any seam effect
     cfg.tilt = ((Math.atan2(+ms.h, +ms.v) / DEG / 30) % 12 + 12) % 12;
     cfg.liftScale = want / have0;
     let res = null;

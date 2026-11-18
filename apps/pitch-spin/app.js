@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
 
   const PL = window.PitchLab;
-  const state = { measured: null, useMeasured: false, elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'real', typeKey: 'fourSeam', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const state = { sswOn: false, sswCm: 8, measured: null, useMeasured: false, elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'real', typeKey: 'fourSeam', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -14,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ measured: state.useMeasured && state.measured ? state.measured : undefined, pitchType: state.typeKey, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
+  const cfg = () => ({ ssw: state.sswOn && state.seams === 'two' ? { cm: state.sswCm, clock: state.hand === 'R' ? 4 : 8 } : undefined, measured: state.useMeasured && state.measured ? state.measured : undefined, pitchType: state.typeKey, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -487,6 +487,14 @@
     else if (obs) act.innerHTML = `模型預測：垂直 <b>${m.z.toFixed(1)}</b>、水平 <b>${hb.toFixed(1)}</b> cm　·　${obs.src}：垂直 <b>${obs.v.toFixed(1)}</b>、水平 <b>${obs.h.toFixed(1)}</b> cm${state.video != null && state.hand === 'L' ? '（左投為鏡像推算）' : ''}`;
     else act.innerHTML = `模型預測（由轉速、轉軸、陀螺角算出）：垂直 <b>${m.z.toFixed(1)}</b>、水平 <b>${hb.toFixed(1)}</b> cm`;
     $('use-measured').checked = state.useMeasured;
+    $('ssw-on').checked = state.sswOn; $('ssw').value = state.sswCm; setIf('ssw-num', state.sswCm);
+    document.querySelector('.ssw-control').hidden = !state.sswOn;
+    const sswHint = !state.sswOn ? '縫線讓兩側氣流不對稱，會多推球一把（不是旋轉造成的）。本模型預設不算，打勾可用滑桿加入示意值。'
+      : (state.useMeasured && state.measured) ? '目前球路照 PitchLab 實測畫，實測已經包含縫線效應，所以這裡不再另外加。'
+      : state.seams !== 'two' ? '四縫線握法的縫線效應很小，所以不加；把握法改成「二縫線」（伸卡球、變速球）才會有作用。'
+      : `二縫線：額外 ${state.sswCm} cm，往${state.hand === 'R' ? '三壘側' : '一壘側'}（手臂側）偏下推（從投手看約 ${state.hand === 'R' ? '4:00' : '8:00'} 方向）。`;
+    $('ssw-hint').textContent = sswHint;
+    if (r.sswExtraCm) act.innerHTML += `<br>其中縫線效應（示意）：垂直 ${r.sswExtraCm.z.toFixed(1)}、水平 ${hView(r.sswExtraCm.x).toFixed(1)} cm`;
     setIf('meas-v', state.measured ? state.measured.v : ''); setIf('meas-h', state.measured ? state.measured.h : '');
     $('data-tag').textContent = `水平 ${Math.abs(hb).toFixed(0)} cm ${sideWord(hb)}`;
     $('r-time').textContent = `${r.flightTime.toFixed(3)} s`;
@@ -516,6 +524,9 @@
   const readMeasured = () => { const v = $('meas-v').value, h = $('meas-h').value; return v !== '' && h !== '' ? { v: Number(v), h: Number(h) } : null; };
   ['meas-v', 'meas-h'].forEach((id) => $(id).addEventListener('input', () => { state.measured = readMeasured(); if (state.measured && !state.useMeasured) state.useMeasured = true; state.video = null; update(true); }));
   $('use-measured').addEventListener('change', (e) => { state.measured = readMeasured(); state.useMeasured = e.target.checked && !!state.measured; update(true); });
+  $('ssw-on').addEventListener('change', (e) => { state.sswOn = e.target.checked; update(true); });
+  $('ssw').addEventListener('input', (e) => { state.sswCm = Number(e.target.value); update(true); });
+  $('ssw-num').addEventListener('input', (e) => { const v = Number(e.target.value); if (e.target.value !== '' && v >= 0 && v <= 15) { state.sswCm = v; update(true); } });
   num('relH-num', 'relH', 0.5, 2.3); num('relS-num', 'relS', 0, 1.3); num('ext-num', 'ext', 0.8, 2.4);
   RELEASE_KEYS.forEach((k) => { $(k).addEventListener('input', (e) => setParam(k, Number(e.target.value))); $(k + '-num').addEventListener('blur', () => update(false)); });
   $('slot-chips').innerHTML = PL.SLOTS.map((s) => `<button type="button" data-slot="${s.key}">${s.name}<small>${s.h.toFixed(2)} m</small></button>`).join('');

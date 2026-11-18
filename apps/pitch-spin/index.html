@@ -7,11 +7,11 @@
   <meta name="description" content="3D 棒球旋轉實驗室：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸、有效轉速與效率，看球怎麼轉、怎麼飛，並在 3D 球場比較三顆球。">
   <title>SPIN 投球旋轉實驗室 | Physics Lab</title>
   <link rel="icon" href="../../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
   <script src="lib/three.min.js" defer></script>
-  <script src="pitch.js?v=7" defer></script>
-  <script src="pitchlab.js?v=7" defer></script>
-  <script src="app.js?v=7" defer></script>
+  <script src="pitch.js?v=8" defer></script>
+  <script src="pitchlab.js?v=8" defer></script>
+  <script src="app.js?v=8" defer></script>
   <script src="explainer.js?v=2" defer></script>
   <script src="field.js?v=7" defer></script>
 </head>
@@ -133,6 +133,15 @@
           <div class="control">
             <div class="control-head"><label for="seams">握法（縫線方位）</label></div>
             <select id="seams"><option value="four">四縫線：每轉一圈有 4 段縫線劃過空氣</option><option value="two">二縫線：每轉一圈 2 段縫線</option></select>
+          </div>
+          <div class="ssw-box">
+            <label class="ssw-toggle"><input type="checkbox" id="ssw-on"> 加入縫線效應（SSW，示意）</label>
+            <div class="control ssw-control">
+              <div class="control-head"><span class="term-wrap" data-k="ssw"></span><span class="num-wrap"><input id="ssw-num" class="num" type="number" min="0" max="15" step="0.5" inputmode="decimal" aria-label="縫線效應額外位移（cm）"><span class="unit">cm</span></span></div>
+              <input id="ssw" type="range" min="0" max="15" step="0.5" aria-label="縫線效應額外位移滑桿">
+            </div>
+            <p class="hint" id="ssw-hint"></p>
+            <p class="hint"><a href="../baseball-cfd/index.html">想看縫線怎麼改變氣流 → 棒球縫線流場實驗室 ↗</a></p>
           </div>
           <details class="release-box" open>
             <summary>出手點（影片沒有這個數據，可自己調）</summary>

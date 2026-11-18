@@ -287,3 +287,9 @@ body.fs-on{overflow:hidden}
 .measured-row{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin:6px 0 2px;font-size:12px}
 .measured-row .num{width:70px;color:#16733e;border-color:#b9d8c3;background:#fff}
 #measured-hint{margin:4px 0 0;font-size:11.5px}
+
+.ssw-box{margin:10px 0 4px;padding:8px 10px;border-radius:10px;background:#f6f3fb;border:1px solid #e1d9ee}
+.ssw-toggle{display:flex;gap:6px;align-items:center;font-size:12.5px;font-weight:600;color:#6b4aa0}
+.ssw-control{margin:6px 0 2px}
+.ssw-control[hidden]{display:none}
+.ssw-box .hint{margin:4px 0 0;font-size:11.5px}
