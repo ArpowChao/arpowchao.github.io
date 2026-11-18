@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
 
   const PL = window.PitchLab;
-  const state = { hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const state = { aimMode: 'nospin', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -14,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
+  const cfg = () => ({ aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -306,6 +306,8 @@
     ctx.strokeStyle = '#1f314022'; ctx.lineWidth = 1; ctx.beginPath();
     for (const k of [1, 2]) { const x = a.x + (b.x - a.x) * k / 3, y = a.y + (b.y - a.y) * k / 3; ctx.moveTo(x, a.y); ctx.lineTo(x, b.y); ctx.moveTo(a.x, y); ctx.lineTo(b.x, y); }
     ctx.stroke();
+    const tc = proj([0, P.PLATE_Y, .76]); // strike-zone centre (the aim point)
+    ctx.strokeStyle = '#1f3140aa'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(tc.x - 6, tc.y); ctx.lineTo(tc.x + 6, tc.y); ctx.moveTo(tc.x, tc.y - 6); ctx.lineTo(tc.x, tc.y + 6); ctx.stroke();
     // paths
     const drawPath = (path, color, dash, width) => {
       ctx.save(); ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
@@ -434,7 +436,7 @@
   }
   function computePresetResults() {
     state.presetResults = {};
-    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand });
+    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, aimMode: state.aimMode });
   }
   const sideWord = (hcm) => (Math.abs(hcm) < 0.5 ? '' : hcm > 0 ? '三壘側' : '一壘側');
   function update(replay) {
@@ -488,6 +490,7 @@
   $('slow').addEventListener('change', (e) => { state.slow = Number(e.target.value); updateBallPose(); });
   $('show-flow').addEventListener('change', (e) => { flowLines.visible = e.target.checked; });
   $('replay').addEventListener('click', () => { pitchStart = performance.now(); });
+  $('aim-mode').addEventListener('change', (e) => { state.aimMode = e.target.value; computePresetResults(); update(true); });
   document.querySelectorAll('[data-view]').forEach((b) => { if (b.closest('#stage')) b.addEventListener('click', () => setView(b.dataset.view)); });
   document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
     if (b.dataset.hand === state.hand) return;

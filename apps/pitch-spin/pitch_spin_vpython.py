@@ -14,6 +14,7 @@ tilt = 1.0            # 轉軸時鐘方向（PitchLab 的「轉軸」；從投�
 gyro_deg = 36.9       # 陀螺角（度）：轉軸偏向前進方向的角度，PitchLab 的「陀螺」；效率 = cos(陀螺角)
 seams = 'four'        # 'four' 四縫線、'two' 二縫線
 slow = 8              # 慢動作倍率
+aim_with_spin = False # False：出手方向讓「不轉的球」進好球帶中心，所以看得出旋轉把球帶偏多少；True：讓會旋轉的球投進正中央
 
 # ---------- 物理常數 ----------
 g = 9.80665           # 重力加速度
@@ -89,7 +90,7 @@ def fly(p, v, omega, magnus, dt=0.0005):
 
 
 def aim():
-    # 調整出手方向，讓「會旋轉的球」通過好球帶中心
+    # 調整出手方向，讓「不轉的球」（或 aim_with_spin = True 時「會旋轉的球」）通過好球帶中心
     p0 = release_point()
     speed = speed_kmh / 3.6
     D = p0.y - plate_y
@@ -97,7 +98,7 @@ def aim():
     pitch_angle = atan2(target.z - p0.z, D)
     for i in range(40):
         v0 = speed * vector(cos(pitch_angle) * sin(yaw), -cos(pitch_angle) * cos(yaw), sin(pitch_angle))
-        end, ve, te = fly(p0, v0, spin_vector(norm(v0)), True, 0.001)
+        end, ve, te = fly(p0, v0, spin_vector(norm(v0)), aim_with_spin, 0.001)
         ex = target.x - end.x
         ez = target.z - end.z
         if abs(ex) < 1e-5 and abs(ez) < 1e-5:

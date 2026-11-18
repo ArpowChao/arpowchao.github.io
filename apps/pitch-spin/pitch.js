@@ -125,7 +125,8 @@
     throw new Error('ball never reached the plate');
   }
 
-  // Release velocity aimed so the spinning ball crosses the plate at the target (the pitcher "hits his spot").
+  // Release velocity aimed at the target. withSpin === false aims a ball that does not spin (so spin shows up as a miss);
+  // otherwise the spinning ball itself crosses the plate at the target (the pitcher "hits his spot").
   // The spin axis is tied to the release direction, so it is recomputed on every iteration.
   function aim(cfg, withSpin) {
     const r = [cfg.release.x, cfg.release.y, cfg.release.z], speed = cfg.speedKmh / 3.6;
@@ -145,7 +146,7 @@
   function simulate(raw) {
     const cfg = normalize(raw);
     const r = [cfg.release.x, cfg.release.y, cfg.release.z];
-    const v0 = aim(cfg), vhat = unit(v0);
+    const v0 = aim(cfg, !(raw && raw.aimMode === 'nospin')), vhat = unit(v0);
     const spin = spinVector(cfg, vhat);
     const real = fly(r, v0, spin.omega, cfg, true, PLATE_Y);
     const ghost = fly(r, v0, spin.omega, cfg, false, PLATE_Y);

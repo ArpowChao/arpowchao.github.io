@@ -251,3 +251,5 @@ body.fs-on{overflow:hidden}
 @media(max-width:1020px){.f-cards{grid-template-columns:minmax(0,1fr)}.explain-grid{grid-template-columns:minmax(0,1fr)}.ex-eff{grid-template-columns:minmax(0,1fr)}.project{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.ex-row{flex-direction:column}.ex-ball{flex:none;width:100%;max-width:280px}.ex-tr{grid-template-columns:76px minmax(0,1fr)}.ex-tr .ex-what{grid-column:1/-1}.explain-head h2{font-size:21px}.pl-cell b{font-size:15px}.seg button{padding:4px 7px;font-size:12px}#ex-cos{height:240px}}
 @media(max-width:760px){.fs-dock-title{display:none}.fs-dock-btn{padding:7px 9px;font-size:12.5px}#lab.fs-active .stage-legend,#lab.fs-active .stage-note{display:none}}
+
+.aim-mode{margin:0 0 8px;font-size:12px;padding:5px 7px}

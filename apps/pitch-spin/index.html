@@ -7,11 +7,11 @@
   <meta name="description" content="3D 棒球旋轉實驗室：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸、有效轉速與效率，看球怎麼轉、怎麼飛，並在 3D 球場比較三顆球。">
   <title>SPIN 投球旋轉實驗室 | Physics Lab</title>
   <link rel="icon" href="../../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
   <script src="lib/three.min.js" defer></script>
-  <script src="pitch.js" defer></script>
+  <script src="pitch.js?v=3" defer></script>
   <script src="pitchlab.js?v=2" defer></script>
-  <script src="app.js?v=2" defer></script>
+  <script src="app.js?v=3" defer></script>
   <script src="explainer.js?v=2" defer></script>
   <script src="field.js?v=2" defer></script>
 </head>
@@ -64,8 +64,9 @@
         <div class="two-panels" id="win-path">
           <section class="panel">
             <div class="panel-head"><h2>捕手看到的進壘</h2><button id="replay" class="mini-button" type="button">▶ 再投一次</button></div>
+            <select id="aim-mode" class="aim-mode" aria-label="瞄準方式"><option value="nospin" selected>瞄準：同樣出手，看旋轉把球帶到哪（不轉的球進正中央）</option><option value="spin">瞄準：投手修正出手方向，讓這顆球投進正中央</option></select>
             <canvas id="plate-canvas" class="plate-canvas" aria-label="從捕手後方看的球路：灰色虛線為完全不轉的球，橘色為實際球路"></canvas>
-            <p class="panel-note"><i class="dot ghost"></i>不轉的球　<i class="dot real"></i>這顆球（放慢 4 倍播放）</p>
+            <p class="panel-note"><i class="dot ghost"></i>不轉的球　<i class="dot real"></i>這顆球（放慢 4 倍播放）　＋＝好球帶中心</p>
           </section>
           <section class="panel">
             <div class="panel-head"><h2>旋轉造成的位移</h2><span class="panel-tag">投手背後看 · 和 PitchLab 同方向</span></div>
@@ -245,7 +246,7 @@
         </div>
         <details><summary>教師補充：「幾點鐘＋陀螺角」怎麼換算成旋轉軸、模型與參考</summary>
           <p><b>換算：</b>θ = (時 + 分/60) × 30°。從投手背後看，被推的方向 m̂ = (往三壘側 sinθ, 往上 cosθ)。馬格努斯力方向是 ω × v，所以橫向轉軸 ω̂<sub>⊥</sub> = v̂ × m̂（12:00 時水平指向三壘側＝純後旋）。再把轉軸朝前進方向轉陀螺角 φ：ω̂ = cosφ·ω̂<sub>⊥</sub> ± sinφ·v̂（右投取 ＋、左投鏡像取 −）。效率 = cosφ，啟用中 = 轉速 × cosφ。</p>
-          <p>座標以捕手視角：x 向一壘側、y 由本壘指向投手丘、z 向上；「旋轉軸向量」改用 X 朝本壘、Y 朝上、Z 朝三壘側顯示。出手點距本壘前緣約 16.3 m、高 1.78 m（右投在三壘側 0.55 m）。初速方向設定成這顆球會通過好球帶中心；灰色是同樣出手、但完全不轉的球，兩者的差就是旋轉造成的位移（從出手點起算）。轉軸在飛行中視為固定。以 RK4 積分（Δt = 0.5 ms）。</p>
+          <p>座標以捕手視角：x 向一壘側、y 由本壘指向投手丘、z 向上；「旋轉軸向量」改用 X 朝本壘、Y 朝上、Z 朝三壘側顯示。出手點距本壘前緣約 16.3 m、高 1.78 m（右投在三壘側 0.55 m）。預設的出手方向是「如果完全不轉，會通過好球帶中心」（灰色球），所以橘色真實球偏離中心多少，就是旋轉造成的位移（從出手點起算）；也可切換成「投手修正出手方向，讓這顆球投進正中央」，這時改由灰色球顯示若不轉會偏到哪裡。轉軸在飛行中視為固定。以 RK4 積分（Δt = 0.5 ms）。</p>
           <p>垂直／水平位移從出手量到本壘。PitchLab 的量法未公開；本模型對慢速、低有效轉速的業餘投球，位移通常比 PitchLab 大，比較時看方向與量級。「看氣流」的流線是示意圖，不是數值模擬。</p>
           <p>升力係數採 Sawicki, Hubbard &amp; Stronge (2003) 的經驗式；此式對慢速、高轉速的變化球可能略為高估，所以大聯盟預設的效率取得較保守。「大聯盟約略平均」為近年右投手各球種位移的大致數值，僅供比較方向與量級。</p>
           <p>參考：<a href="https://doi.org/10.1119/1.1604384" target="_blank" rel="noopener">Sawicki et al. 2003, Am. J. Phys.</a>　<a href="https://baseball.physics.illinois.edu/" target="_blank" rel="noopener">Alan Nathan：The Physics of Baseball</a>　<a href="https://baseballsavant.mlb.com/" target="_blank" rel="noopener">Baseball Savant</a></p>

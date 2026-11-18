@@ -50,7 +50,7 @@
     return [0, 1, 2].map((k) => a.p[k] + (b.p[k] - a.p[k]) * u);
   };
   function throwPitch() {
-    res = P.simulate({ hand: st.hand, speedKmh: st.speedKmh, rpm: st.rpm, tilt: st.tilt, efficiency: st.efficiency });
+    res = P.simulate({ hand: st.hand, speedKmh: st.speedKmh, rpm: st.rpm, tilt: st.tilt, efficiency: st.efficiency, aimMode: 'nospin' });
     wRate = res.spinRate;
     wS = wRate > 0 ? Sv(res.omega).norm() : vec(0, 1, 0);
     tSim = 0; flying = true;
