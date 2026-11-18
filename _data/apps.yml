@@ -1,6 +1,6 @@
 changelog:
   - date: "2026年11月18日"
-    entry: "改版「Pitcher's Baseball simulation」：旋轉軸不再用 X／Y／Z 滑桿，改成直接輸入 PitchLab 畫面上的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸向量、啟用中轉速與效率（效率＝cos 陀螺角），算出垂直／水平位移並和影片實測比較；每個專有名詞點一下就有白話說明。"
+    entry: "「SPIN 投球旋轉實驗室」與「Pitcher's Baseball simulation」合併：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸、啟用中轉速與效率（效率＝cos 陀螺角），並和影片實測對照；新增「轉軸與陀螺角」互動說明、VPython 3D 球場三顆球同場比較，以及可拖曳小視窗調參數的全螢幕模式。"
   - date: "2026年10月26日"
     entry: "改版「棒球氣流實驗室」：以 2025 MLB Statcast 八顆實際投球個案設定出手位置、方向與球速，預設 101.1 mph 四縫線速球；3D 比較官方軌跡與模型誤差，分開呈現總氣動力推演與縫線機制假設。氣溫、濕度、測站氣壓及風速均進入純 JavaScript 計算。"
   - date: "2026年10月25日"
@@ -75,7 +75,7 @@ projects:
     tags: ["Physics", "Baseball", "Air Drag", "Magnus", "3D", "Statcast"]
   - title: "SPIN 投球旋轉實驗室"
     image: "/assets/img/apps/pitch-spin.svg"
-    description: "3D 真實縫線的棒球照轉速、轉軸（時鐘方向）與有效旋轉轉動，看轉軸、馬格努斯力與前進方向的關係；捕手視角看進壘、位移圖比較各球種。附 VPython 版與 Colab 筆記本，可用 Python 自己改參數探究。"
+    description: "照 PitchLab 輸入球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸與有效轉速；3D 縫線棒球看轉軸與馬格努斯力，互動說明轉軸與陀螺角，VPython 3D 球場比較三顆球，支援全螢幕小視窗操作。附 Python 程式與 Colab 筆記本。"
     url: "/apps/pitch-spin/index.html"
     category: "力學"
     tags: ["Physics", "Baseball", "Magnus", "3D", "VPython"]
@@ -163,12 +163,6 @@ projects:
     url: "/apps/friction-simulation/index.html"
     category: "力學"
     tags: ["Physics", "Simulation", "Friction"]
-  - title: "Pitcher's Baseball simulation"
-    image: "/assets/img/apps/vpython-baseball-simulation.png"
-    description: "輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸，用 GlowScript 3D 模擬三顆球的軌跡與馬格努斯位移。"
-    url: "/apps/phy-vpython-baseball.html"
-    category: "力學"
-    tags: ["Simulation", "Vpython", "Physics"]
   - title: "競賽題-棒子滑落"
     image: "https://i.postimg.cc/Cx7xDZRX/olympic-bar-wall.png"
     description: "使用守恆定律與牛頓定律來進行運動分析。"

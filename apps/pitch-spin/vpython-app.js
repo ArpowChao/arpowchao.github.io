@@ -88,9 +88,9 @@
 
   // ---------- controls ----------
   function sync() {
-    $('vp-speed').value = st.speedKmh; $('vp-rpm').value = st.rpm; $('vp-tilt').value = st.tilt; $('vp-eff').value = Math.round(st.efficiency * 100);
+    $('vp-speed').value = st.speedKmh; $('vp-rpm').value = st.rpm; $('vp-tilt').value = st.tilt; $('vp-eff').value = (Math.acos(Math.min(1, st.efficiency)) * 180 / Math.PI).toFixed(1);
     $('vp-speed-out').textContent = `${st.speedKmh} km/h`; $('vp-rpm-out').textContent = `${st.rpm} rpm`;
-    $('vp-tilt-out').textContent = tiltText(st.tilt); $('vp-eff-out').textContent = `${Math.round(st.efficiency * 100)} %`;
+    $('vp-tilt-out').textContent = tiltText(st.tilt); $('vp-eff-out').textContent = `${(Math.acos(Math.min(1, st.efficiency)) * 180 / Math.PI).toFixed(1)}°（效率 ${Math.round(st.efficiency * 100)} %）`;
   }
   function applyPreset(k) {
     const p = presetFor(k);
@@ -101,7 +101,7 @@
   for (const [k, p] of Object.entries(P.PRESETS)) { const o = document.createElement('option'); o.value = k; o.textContent = p.name; sel.appendChild(o); }
   sel.addEventListener('change', () => applyPreset(sel.value));
   const bind = (id, key, f) => $(id).addEventListener('input', (e) => { st[key] = f(Number(e.target.value)); sync(); });
-  bind('vp-speed', 'speedKmh', (v) => v); bind('vp-rpm', 'rpm', (v) => v); bind('vp-tilt', 'tilt', (v) => v); bind('vp-eff', 'efficiency', (v) => v / 100);
+  bind('vp-speed', 'speedKmh', (v) => v); bind('vp-rpm', 'rpm', (v) => v); bind('vp-tilt', 'tilt', (v) => v); bind('vp-eff', 'efficiency', (v) => Math.cos(v * Math.PI / 180));
   ['vp-speed', 'vp-rpm', 'vp-tilt', 'vp-eff'].forEach((id) => $(id).addEventListener('change', throwPitch));
   $('vp-slow').addEventListener('change', (e) => { st.slow = Number(e.target.value); });
   $('vp-cam').addEventListener('change', (e) => setCam(e.target.value));

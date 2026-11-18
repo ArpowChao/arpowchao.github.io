@@ -5,7 +5,8 @@
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const DEG = Math.PI / 180;
 
-  const state = { hand: 'R', preset: 'fourSeam', speedKmh: 152, rpm: 2300, tilt: 1, efficiency: 0.8, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const PL = window.PitchLab;
+  const state = { hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -13,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: state.efficiency });
+  const cfg = () => ({ hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -220,7 +221,7 @@
     if (v === 'flow') { orbit.custom = flowView(); orbit.r = 8.6; }
     else { const [az, el, r] = VIEWS[v]; orbit.custom = null; orbit.az = az * DEG; orbit.el = el * DEG; orbit.r = r; }
     placeCamera();
-    document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+    document.querySelectorAll('#stage [data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
   }
   let drag = null;
   canvas.addEventListener('pointerdown', (e) => {
@@ -232,7 +233,7 @@
     orbit.az = drag.az - (e.clientX - drag.x) * .008;
     orbit.el = clamp(drag.el + (e.clientY - drag.y) * .008, -1.2, 1.2);
     placeCamera(); state.view = null;
-    document.querySelectorAll('[data-view]').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('#stage [data-view]').forEach((b) => b.classList.remove('active'));
   });
   ['pointerup', 'pointercancel'].forEach((t) => canvas.addEventListener(t, () => { drag = null; }));
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.r = clamp(orbit.r * (1 + Math.sign(e.deltaY) * .08), 3.6, 13); placeCamera(); }, { passive: false });
@@ -335,11 +336,13 @@
     ctx.fillText(state.hand === 'R' ? '右投（從三壘側出手）' : '左投（從一壘側出手）', w - 10, 16);
   }
 
-  // ---------- movement chart ----------
+  // ---------- movement chart (seen from behind the pitcher, like PitchLab: + = 3B side) ----------
+  const hView = (xCatcher) => -xCatcher;
   function drawMovement() {
     const r = state.result; if (!r) return;
     const { ctx, w, h } = setupCanvas($('move-canvas'));
-    const R = 70, pad = 24, cx = w / 2, cy = h / 2, s = Math.min(w, h) / 2 / (R + 8) * .95;
+    if (!w || !h) return;
+    const R = 70, cx = w / 2, cy = h / 2, s = Math.min(w, h) / 2 / (R + 8) * .95;
     const X = (v) => cx + v * s, Y = (v) => cy - v * s;
     ctx.fillStyle = '#f7f9f9'; ctx.fillRect(0, 0, w, h);
     ctx.lineWidth = 1; ctx.font = '10px sans-serif'; ctx.fillStyle = '#8796a0'; ctx.textAlign = 'center';
@@ -349,26 +352,29 @@
       if (v) { ctx.fillText(String(v), X(v), cy + 12); ctx.textAlign = 'right'; ctx.fillText(String(v), cx - 4, Y(v) + 3); ctx.textAlign = 'center'; }
     }
     ctx.fillStyle = '#5d7080'; ctx.font = '10.5px sans-serif';
-    const armLeft = state.hand === 'R';
-    ctx.textAlign = 'left'; ctx.fillText(`← 三壘側${armLeft ? '（手臂側）' : '（手套側）'}`, 4, h - 6);
-    ctx.textAlign = 'right'; ctx.fillText(`一壘側${armLeft ? '（手套側）' : '（手臂側）'} →`, w - 4, h - 6);
-    ctx.textAlign = 'left'; ctx.fillText('↑ 往上', cx + 4, 12);
-    // other pitches (model)
+    const R_hand = state.hand === 'R';
+    ctx.textAlign = 'left'; ctx.fillText(`← 一壘側${R_hand ? '（手套側）' : '（手臂側）'}`, 4, h - 6);
+    ctx.textAlign = 'right'; ctx.fillText(`三壘側${R_hand ? '（手臂側）' : '（手套側）'} →`, w - 4, h - 6);
+    ctx.textAlign = 'left'; ctx.fillText('↑ 掉得少', cx + 4, 12);
     for (const [k, res] of Object.entries(state.presetResults)) {
       const m = res.releaseMovementCm, isSel = k === state.preset;
       ctx.fillStyle = isSel ? '#9aa9b1' : '#c3ced3';
-      ctx.beginPath(); ctx.arc(X(m.x), Y(m.z), 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(X(hView(m.x)), Y(m.z), 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#7d8d96'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(P.PRESETS[k].name.replace(/（.*）/, ''), X(m.x) + 6, Y(m.z) + 3);
+      ctx.fillText(P.PRESETS[k].name.replace(/（.*）/, ''), X(hView(m.x)) + 6, Y(m.z) + 3);
     }
-    if (state.preset) {
-      const o = presetFor(state.preset, state.hand).observed;
-      ctx.strokeStyle = '#c4472f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(o[0]), Y(o[1]), 6, 0, Math.PI * 2); ctx.stroke();
-    }
-    const m = r.releaseMovementCm;
-    ctx.strokeStyle = '#ef7a2c88'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(X(m.x), Y(m.z)); ctx.stroke();
-    ctx.fillStyle = '#ef7a2c'; ctx.beginPath(); ctx.arc(X(clamp(m.x, -R, R)), Y(clamp(m.z, -R, R)), 7, 0, Math.PI * 2); ctx.fill();
+    const obs = observed();
+    if (obs) { ctx.strokeStyle = '#c4472f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(clamp(obs.h, -R, R)), Y(clamp(obs.v, -R, R)), 6, 0, Math.PI * 2); ctx.stroke(); }
+    const m = r.releaseMovementCm, hx = hView(m.x);
+    ctx.strokeStyle = '#ef7a2c88'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(X(hx), Y(m.z)); ctx.stroke();
+    ctx.fillStyle = '#ef7a2c'; ctx.beginPath(); ctx.arc(X(clamp(hx, -R, R)), Y(clamp(m.z, -R, R)), 7, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  // measured movement for the selected preset (pitcher's view, cm): PitchLab video or MLB average
+  function observed() {
+    if (state.video != null) { const v = PL.VIDEO[state.video]; return { v: v.v, h: state.hand === 'R' ? v.h : -v.h, src: 'PitchLab 實測' }; }
+    if (state.preset) { const o = presetFor(state.preset, state.hand).observed; return { v: o[1], h: hView(o[0]), src: '大聯盟約略平均' }; }
+    return null;
   }
 
   // ---------- clock control ----------
@@ -395,77 +401,124 @@
     else return; e.preventDefault();
   });
   document.querySelectorAll('[data-tilt]').forEach((b) => b.addEventListener('click', () => setParam('tilt', (state.tilt + 12 + Number(b.dataset.tilt)) % 12)));
-
   // ---------- state & UI ----------
+  document.querySelectorAll('.term-wrap[data-k]').forEach((el) => { el.innerHTML = PL.term(el.dataset.k); });
+  $('r-vec-term').innerHTML = PL.term('vec');
   function buildPresets() {
     const box = $('presets'); box.textContent = '';
     for (const k of Object.keys(P.PRESETS)) {
       const p = presetFor(k, state.hand), b = document.createElement('button');
       b.type = 'button'; b.dataset.preset = k;
-      b.innerHTML = `<span>${p.name}</span><small>${p.speedKmh} · ${p.rpm} · ${tiltText(p.tilt)}</small>`;
+      b.innerHTML = `<span>${p.name}</span><small>${p.speedKmh} · ${p.rpm} · ${tiltText(p.tilt)} · ${PL.gyroFromEff(p.efficiency).toFixed(0)}°</small>`;
       b.addEventListener('click', () => applyPreset(k));
       box.appendChild(b);
     }
   }
+  const vsel = $('video-preset');
+  vsel.innerHTML = '<option value="">PitchLab 影片範例（右投實測）…</option>' + PL.VIDEO.map((v, i) => `<option value="${i}">${v.label}</option>`).join('');
+  vsel.addEventListener('change', () => { if (vsel.value !== '') applyVideo(Number(vsel.value)); });
   function applyPreset(k) {
     const p = presetFor(k, state.hand);
-    Object.assign(state, { preset: k, speedKmh: p.speedKmh, rpm: p.rpm, tilt: p.tilt, efficiency: p.efficiency, seams: p.seams });
+    Object.assign(state, { preset: k, video: null, speedKmh: p.speedKmh, rpm: p.rpm, tilt: p.tilt, gyro: +PL.gyroFromEff(p.efficiency).toFixed(1), seams: p.seams });
+    update(true);
+  }
+  function applyVideo(i) {
+    const v = PL.VIDEO[i], t = PL.parseClock(v.clock);
+    Object.assign(state, { preset: null, video: i, speedKmh: v.kph, rpm: v.rpm, tilt: state.hand === 'R' ? t : (12 - t) % 12, gyro: v.gyro, seams: /伸卡|變速/.test(v.type) ? 'two' : 'four' });
     update(true);
   }
   function setParam(key, value) {
     state[key] = value;
-    if (key !== 'seams') state.preset = null;
+    if (key !== 'seams') { state.preset = null; state.video = null; }
     update(true);
   }
   function computePresetResults() {
     state.presetResults = {};
     for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand });
   }
+  const sideWord = (hcm) => (Math.abs(hcm) < 0.5 ? '' : hcm > 0 ? '三壘側' : '一壘側');
   function update(replay) {
     state.result = P.simulate(cfg());
-    const r = state.result;
-    $('speed').value = state.speedKmh; $('rpm').value = state.rpm; $('eff').value = Math.round(state.efficiency * 100); $('seams').value = state.seams;
-    $('speed-out').textContent = `${state.speedKmh} km/h`;
-    $('rpm-out').textContent = `${state.rpm} rpm`;
-    $('eff-out').textContent = `${Math.round(state.efficiency * 100)} %`;
-    $('tilt-out').textContent = tiltText(state.tilt);
+    const r = state.result, eff = PL.effFromGyro(state.gyro), active = state.rpm * eff;
+    const setIf = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; el.classList.remove('bad'); };
+    $('speed').value = state.speedKmh; $('rpm').value = state.rpm; $('gyro').value = state.gyro; $('seams').value = state.seams;
+    setIf('speed-num', state.speedKmh); setIf('rpm-num', state.rpm); setIf('gyro-num', state.gyro); setIf('tilt-num', tiltText(state.tilt));
+    $('eff-out').textContent = `${Math.round(eff * 100)} %`;
+    $('active-out').textContent = `${Math.round(active)} rpm`;
     $('clock-hand').setAttribute('transform', `rotate(${state.tilt * 30})`);
     clock.setAttribute('aria-valuenow', state.tilt); clock.setAttribute('aria-valuetext', tiltText(state.tilt));
     document.querySelectorAll('[data-preset]').forEach((b) => b.classList.toggle('active', b.dataset.preset === state.preset));
-    $('custom-tag').textContent = state.preset ? P.PRESETS[state.preset].name : '自訂';
-    const m = r.releaseMovementCm, armSign = state.hand === 'R' ? -1 : 1;
-    const side = Math.abs(m.x) < .5 ? '' : (Math.sign(m.x) === armSign ? '手臂側' : '手套側');
-    $('r-hb').textContent = `${Math.abs(m.x).toFixed(0)} cm ${side}`;
-    $('r-ivb').textContent = `${m.z >= 0 ? '+' : '−'}${Math.abs(m.z).toFixed(0)} cm`;
+    vsel.value = state.video == null ? '' : String(state.video);
+    const name = state.preset ? P.PRESETS[state.preset].name : state.video != null ? PL.VIDEO[state.video].short : '自訂';
+    $('custom-tag').textContent = name;
+    // PitchLab-style card
+    const m = r.releaseMovementCm, hb = hView(m.x);
+    $('pl-type').textContent = name;
+    const cell = (k, label, val, unit, kind) => `<div class="pl-cell ${kind}">${PL.term(k, label)}<b>${val}<small>${unit}</small></b></div>`;
+    $('pl-grid').innerHTML =
+      cell('kph', '球速', state.speedKmh.toFixed(1), 'kph', 'in') + cell('vb', '垂直', m.z.toFixed(1), 'cm', 'out') + cell('hb', '水平', hb.toFixed(1), 'cm', 'out') + cell('clock', '轉軸', tiltText(state.tilt), '', 'in') +
+      cell('rpm', '轉速', Math.round(state.rpm), 'rpm', 'in') + cell('active', '啟用中', Math.round(active), 'rpm', 'auto') + cell('eff', '效率', Math.round(eff * 100), '%', 'auto') + cell('gyro', '陀螺', (+state.gyro).toFixed(1), '°', 'in');
+    const obs = observed(), act = $('pl-actual');
+    act.hidden = !obs;
+    if (obs) act.innerHTML = `${obs.src}：垂直 <b>${obs.v.toFixed(1)}</b> cm、水平 <b>${obs.h.toFixed(1)}</b> cm${state.video != null && state.hand === 'L' ? '（左投為鏡像推算）' : ''}`;
+    $('data-tag').textContent = `水平 ${Math.abs(hb).toFixed(0)} cm ${sideWord(hb)}`;
     $('r-time').textContent = `${r.flightTime.toFixed(3)} s`;
     $('r-plate').textContent = `${r.plateSpeedKmh.toFixed(0)} km/h`;
-    $('r-active').textContent = `${Math.round(r.activeSpinRpm)} rpm`;
     $('r-force').textContent = `${r.magnusN.toFixed(2)} N（重力的 ${Math.round(r.magnusOverWeight * 100)}%）`;
     $('r-s').textContent = `${r.spinFactor.toFixed(3)} ／ ${r.cl.toFixed(3)}`;
+    const wv = r.spinRate > 0 ? r.omega.map((x) => x / r.spinRate) : [0, 0, 0];
+    $('r-vec').textContent = `(${(-wv[1]).toFixed(2)}, ${wv[2].toFixed(2)}, ${(-wv[0]).toFixed(2)})`;
     updateBallPose();
     drawMovement();
     if (replay) pitchStart = performance.now();
   }
 
+  const num = (id, key, lo, hi) => $(id).addEventListener('input', (e) => {
+    const v = Number(e.target.value), ok = e.target.value !== '' && v >= lo && v <= hi;
+    e.target.classList.toggle('bad', !ok);
+    if (ok) setParam(key, v);
+  });
+  num('speed-num', 'speedKmh', 60, 165); num('rpm-num', 'rpm', 0, 3200); num('gyro-num', 'gyro', 0, 90);
+  ['speed-num', 'rpm-num', 'gyro-num', 'tilt-num'].forEach((id) => $(id).addEventListener('blur', () => update(false)));
+  $('tilt-num').addEventListener('input', (e) => { const t = PL.parseClock(e.target.value); e.target.classList.toggle('bad', t === null); if (t !== null) setParam('tilt', t); });
   $('speed').addEventListener('input', (e) => setParam('speedKmh', Number(e.target.value)));
   $('rpm').addEventListener('input', (e) => setParam('rpm', Number(e.target.value)));
-  $('eff').addEventListener('input', (e) => setParam('efficiency', Number(e.target.value) / 100));
+  $('gyro').addEventListener('input', (e) => setParam('gyro', Number(e.target.value)));
   $('seams').addEventListener('change', (e) => setParam('seams', e.target.value));
   $('slow').addEventListener('change', (e) => { state.slow = Number(e.target.value); updateBallPose(); });
   $('show-flow').addEventListener('change', (e) => { flowLines.visible = e.target.checked; });
   $('replay').addEventListener('click', () => { pitchStart = performance.now(); });
-  document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  document.querySelectorAll('[data-view]').forEach((b) => { if (b.closest('#stage')) b.addEventListener('click', () => setView(b.dataset.view)); });
   document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
     if (b.dataset.hand === state.hand) return;
     state.hand = b.dataset.hand; state.tilt = (12 - state.tilt) % 12;
     document.querySelectorAll('[data-hand]').forEach((x) => x.classList.toggle('active', x === b));
     buildPresets(); computePresetResults(); update(true);
   }));
+  // send the current pitch to the 3-ball field below
+  document.querySelectorAll('[data-send]').forEach((b) => b.addEventListener('click', () => {
+    const pitch = { kph: state.speedKmh, rpm: state.rpm, tilt: state.tilt, gyro: state.gyro, video: state.video, name: $('custom-tag').textContent };
+    (window.__fieldQueue = window.__fieldQueue || []).push([b.dataset.send, pitch]);
+    window.dispatchEvent(new CustomEvent('field-send'));
+    if (!document.body.classList.contains('fs-on')) document.getElementById('field').scrollIntoView({ behavior: 'smooth' });
+    b.textContent = '✓ 已放入'; setTimeout(() => { b.textContent = `球 ${b.dataset.send}`; }, 1400);
+  }));
+  // let the explainer drive the 3D ball
+  window.addEventListener('spin-apply', (e) => { const d = e.detail; state.tilt = d.tilt; state.gyro = d.gyro; if (d.rpm) state.rpm = d.rpm; state.preset = null; state.video = null; update(true); });
+
+  // full screen with small windows
+  const fs = PL.fullscreenLab($('lab'), [
+    { el: $('win-params'), title: '參數', icon: '⚙', place: { left: 12, top: 60, width: 340 }, open: true },
+    { el: $('win-data'), title: '數據', icon: '📊', place: { right: 12, top: 60, width: 320 }, open: true },
+    { el: $('win-path'), title: '球路與位移', icon: '⚾', place: { right: 12, bottom: 12, width: 380 }, open: false }
+  ], { title: 'SPIN 投球旋轉實驗室' });
+  $('fs-lab').addEventListener('click', () => fs.toggle(true));
+
   window.addEventListener('resize', () => { resize3D(); drawMovement(); });
-  if (window.ResizeObserver) new ResizeObserver(() => { resize3D(); drawMovement(); }).observe($('stage'));
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => { resize3D(); drawMovement(); }); ro.observe($('stage')); ro.observe($('move-canvas')); }
 
   buildPresets(); computePresetResults(); applyPreset('fourSeam');
   setView('flow'); resize3D();
   requestAnimationFrame(animate);
-  window.__spin = { state, P, setParam, applyPreset, flow, flowAt, setView };
+  window.__spin = { state, P, setParam, applyPreset, applyVideo, flow, flowAt, setView, fs };
 })();

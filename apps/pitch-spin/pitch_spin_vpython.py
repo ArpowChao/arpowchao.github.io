@@ -8,10 +8,10 @@ from vpython import *
 
 # ---------- 可以改的參數（也可以用畫面下方的滑桿） ----------
 hand = 'R'            # 'R' 右投、'L' 左投
-speed_kmh = 152       # 出手球速 km/h
+speed_kmh = 152       # 出手球速 km/h（PitchLab 的「球速」kph）
 rpm = 2300            # 轉速
-tilt = 1.0            # 轉軸時鐘方向（從投手背後看；12 = 純後旋往上、6 = 純上旋往下）
-efficiency = 0.80     # 有效旋轉比例（其餘是陀螺旋轉）
+tilt = 1.0            # 轉軸時鐘方向（PitchLab 的「轉軸」；從投手背後看，12 = 純後旋往上、6 = 純上旋往下；10:30 寫成 10.5）
+gyro_deg = 36.9       # 陀螺角（度）：轉軸偏向前進方向的角度，PitchLab 的「陀螺」；效率 = cos(陀螺角)
 seams = 'four'        # 'four' 四縫線、'two' 二縫線
 slow = 8              # 慢動作倍率
 
@@ -39,7 +39,8 @@ def release_point():
 
 
 def spin_vector(vhat):
-    # 由「時鐘方向」與有效旋轉比例算出旋轉向量 ω（rad/s）
+    # 由「時鐘方向」與「陀螺角」算出旋轉向量 ω（rad/s）
+    efficiency = cos(radians(gyro_deg))         # 效率 = cos(陀螺角)；啟用中 = 轉速 × 效率
     w = rpm * 2 * pi / 60
     th = radians(tilt * 30)
     mdir = vector(-sin(th), 0, cos(th))          # 旋轉把球推去的方向（投手的右手邊 = 三壘側 = -x）
@@ -213,33 +214,36 @@ def set_tilt(s):
     tilt_text.text = ' ' + str(hour) + ':' + ('0' if minute < 10 else '') + str(minute)
 
 
-def set_eff(s):
-    global efficiency
-    efficiency = s.value
-    eff_text.text = ' ' + str(round(s.value * 100)) + ' %'
+def set_gyro(s):
+    global gyro_deg
+    gyro_deg = s.value
+    eff = cos(radians(gyro_deg))
+    gyro_text.text = ' ' + str(round(s.value, 1)) + '°（效率 ' + str(round(eff * 100)) + ' %，啟用中 ' + str(round(rpm * eff)) + ' rpm）'
 
 
-PRESETS = [['四縫線速球', 152, 2300, 1.0, 0.80, 'four'], ['伸卡球', 150, 2150, 2.0, 0.70, 'two'],
-           ['卡特球', 143, 2400, 11.75, 0.25, 'four'], ['滑球', 138, 2450, 9.5, 0.15, 'two'],
-           ['橫掃球', 132, 2600, 9.0, 0.40, 'two'], ['曲球', 128, 2550, 7.25, 0.36, 'four'],
-           ['變速球', 138, 1750, 2.25, 0.68, 'two'], ['指叉球', 139, 1350, 2.5, 0.52, 'two']]
+# 球種：名稱、球速 kph、轉速 rpm、轉軸（時鐘）、陀螺角（度）、握法
+PRESETS = [['四縫線速球', 152, 2300, 1.0, 36.9, 'four'], ['伸卡球', 150, 2150, 2.0, 45.6, 'two'],
+           ['卡特球', 143, 2400, 11.75, 75.5, 'four'], ['滑球', 138, 2450, 9.5, 81.4, 'two'],
+           ['橫掃球', 132, 2600, 9.0, 66.4, 'two'], ['曲球', 128, 2550, 7.25, 68.9, 'four'],
+           ['變速球', 138, 1750, 2.25, 47.2, 'two'], ['指叉球', 139, 1350, 2.5, 58.7, 'two'],
+           ['PitchLab 影片：曲球', 75.6, 1352, 10.5, 66.2, 'four'], ['PitchLab 影片：滑球', 77.2, 1290, 9.5, 61.0, 'four']]
 
 
 def choose(menu_obj):
-    global speed_kmh, rpm, tilt, efficiency, seams
+    global speed_kmh, rpm, tilt, gyro_deg, seams
     for row in PRESETS:
         if row[0] == menu_obj.selected:
-            speed_kmh, rpm, tilt, efficiency, seams = row[1], row[2], row[3], row[4], row[5]
+            speed_kmh, rpm, tilt, gyro_deg, seams = row[1], row[2], row[3], row[4], row[5]
             if hand == 'L':
                 tilt = (12 - tilt) % 12
     s_speed.value = speed_kmh
     s_rpm.value = rpm
     s_tilt.value = tilt
-    s_eff.value = efficiency
+    s_gyro.value = gyro_deg
     set_speed(s_speed)
     set_rpm(s_rpm)
     set_tilt(s_tilt)
-    set_eff(s_eff)
+    set_gyro(s_gyro)
     setup_pitch()
 
 
@@ -252,22 +256,22 @@ menu(choices=[row[0] for row in PRESETS], bind=choose)
 scene.append_to_caption('　')
 button(text='▶ 投球', bind=throw)
 scene.append_to_caption('\n\n球速 ')
-s_speed = slider(min=100, max=165, step=1, value=speed_kmh, length=220, bind=set_speed)
+s_speed = slider(min=60, max=165, step=0.1, value=speed_kmh, length=220, bind=set_speed)
 speed_text = wtext(text='')
 scene.append_to_caption('\n轉速 ')
-s_rpm = slider(min=0, max=3200, step=25, value=rpm, length=220, bind=set_rpm)
+s_rpm = slider(min=0, max=3200, step=1, value=rpm, length=220, bind=set_rpm)
 rpm_text = wtext(text='')
 scene.append_to_caption('\n轉軸方向（時鐘）')
 s_tilt = slider(min=0, max=11.75, step=0.25, value=tilt, length=220, bind=set_tilt)
 tilt_text = wtext(text='')
-scene.append_to_caption('\n有效旋轉 ')
-s_eff = slider(min=0, max=1, step=0.01, value=efficiency, length=220, bind=set_eff)
-eff_text = wtext(text='')
+scene.append_to_caption('\n陀螺角 ')
+s_gyro = slider(min=0, max=90, step=0.1, value=gyro_deg, length=220, bind=set_gyro)
+gyro_text = wtext(text='')
 scene.append_to_caption('\n\n改完參數按「投球」。橘色是這顆球，灰色是同樣出手但完全不轉的球；黃色箭頭是轉軸，橘色箭頭是馬格努斯力。')
 set_speed(s_speed)
 set_rpm(s_rpm)
 set_tilt(s_tilt)
-set_eff(s_eff)
+set_gyro(s_gyro)
 setup_pitch()
 
 # ---------- 動畫 ----------

@@ -30,7 +30,7 @@
   <script src="vpython-app.js" defer></script>
 </head>
 <body>
-  <header class="topbar"><a href="index.html" class="back-link">← SPIN 3D 版</a><span>VPython / GLOWSCRIPT</span><a href="../index.html">Physics Lab ↗</a></header>
+  <header class="topbar"><a href="index.html" class="back-link">← SPIN 投球旋轉實驗室</a><span>VPython / GLOWSCRIPT</span><a href="../index.html">Physics Lab ↗</a></header>
   <main>
     <header class="hero">
       <div><p class="eyebrow">同一套物理，用 VPython 寫出來。</p><h1><span class="wordmark">SPIN</span><span class="hero-subtitle">VPython 版</span></h1></div>
@@ -61,17 +61,17 @@
             <div class="hand-toggle" role="group" aria-label="投手慣用手"><button type="button" data-hand="R" class="active">右投</button><button type="button" data-hand="L">左投</button></div>
           </div>
           <div class="control"><div class="control-head"><label for="vp-preset">球種</label></div><select id="vp-preset"></select></div>
-          <div class="control"><div class="control-head"><label for="vp-speed">球速</label><output id="vp-speed-out"></output></div><input id="vp-speed" type="range" min="100" max="165" step="1"></div>
+          <div class="control"><div class="control-head"><label for="vp-speed">球速</label><output id="vp-speed-out"></output></div><input id="vp-speed" type="range" min="60" max="165" step="0.1"></div>
           <div class="control"><div class="control-head"><label for="vp-rpm">轉速</label><output id="vp-rpm-out"></output></div><input id="vp-rpm" type="range" min="0" max="3200" step="25"></div>
           <div class="control"><div class="control-head"><label for="vp-tilt">轉軸方向（時鐘）</label><output id="vp-tilt-out"></output></div><input id="vp-tilt" type="range" min="0" max="11.75" step="0.25"></div>
-          <div class="control"><div class="control-head"><label for="vp-eff">有效旋轉比例</label><output id="vp-eff-out"></output></div><input id="vp-eff" type="range" min="0" max="100" step="1"></div>
+          <div class="control"><div class="control-head"><label for="vp-eff">陀螺角（效率 = cos 陀螺角）</label><output id="vp-eff-out"></output></div><input id="vp-eff" type="range" min="0" max="90" step="0.1"></div>
           <div class="control"><div class="control-head"><label for="vp-slow">慢動作</label></div><select id="vp-slow"><option value="4">4 倍</option><option value="8" selected>8 倍</option><option value="16">16 倍</option></select></div>
           <div class="control"><div class="control-head"><label for="vp-cam">視角</label></div><select id="vp-cam"><option value="behind">捕手後方</option><option value="side">三壘側面</option><option value="pitcher">投手後方</option><option value="top">正上方</option></select></div>
           <button id="vp-throw" class="run-button" type="button">▶ 投球</button>
         </section>
         <section class="panel">
           <div class="panel-head"><h2>和 3D 版的關係</h2></div>
-          <p class="hint">兩個版本用同一套物理（重力、空氣阻力、馬格努斯力，C<sub>L</sub> = 1/(2.32+0.4/S)），算出來的位移相同。3D 版近看球的縫線與轉軸；這裡看整條球路從投手丘到本壘。</p>
+          <p class="hint">兩個版本用同一套物理（重力、空氣阻力、馬格努斯力，C<sub>L</sub> = 1/(2.32+0.4/S)，效率 = cos 陀螺角），算出來的位移相同。三顆球同場比較請回主頁的「3D 球場」。3D 版近看球的縫線與轉軸；這裡看整條球路從投手丘到本壘。</p>
         </section>
       </aside>
     </div>
