@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年11月18日"
+    entry: "改版「Pitcher's Baseball simulation」：旋轉軸不再用 X／Y／Z 滑桿，改成直接輸入 PitchLab 畫面上的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸向量、啟用中轉速與效率（效率＝cos 陀螺角），算出垂直／水平位移並和影片實測比較；每個專有名詞點一下就有白話說明。"
   - date: "2026年10月26日"
     entry: "改版「棒球氣流實驗室」：以 2025 MLB Statcast 八顆實際投球個案設定出手位置、方向與球速，預設 101.1 mph 四縫線速球；3D 比較官方軌跡與模型誤差，分開呈現總氣動力推演與縫線機制假設。氣溫、濕度、測站氣壓及風速均進入純 JavaScript 計算。"
   - date: "2026年10月25日"
@@ -163,7 +165,7 @@ projects:
     tags: ["Physics", "Simulation", "Friction"]
   - title: "Pitcher's Baseball simulation"
     image: "/assets/img/apps/vpython-baseball-simulation.png"
-    description: "使用 GlowScript 製作的棒球投球軌跡物理模擬器，展示馬格努斯效應與空氣阻力。"
+    description: "輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸，用 GlowScript 3D 模擬三顆球的軌跡與馬格努斯位移。"
     url: "/apps/phy-vpython-baseball.html"
     category: "力學"
     tags: ["Simulation", "Vpython", "Physics"]

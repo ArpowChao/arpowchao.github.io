@@ -1,1082 +1,674 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>棒球投球模擬</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="棒球投球模擬（VPython / GlowScript）：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）、陀螺角，自動換算旋轉軸並模擬球路。">
+<title>投球模擬：輸入 PitchLab 數據 | Physics Lab</title>
+<link rel="icon" href="../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
+<style>
+:root{--bg:#f3f5f2;--ink:#17201c;--muted:#5d6a64;--line:#dfe4e0;--card:#fff;--accent:#d9480f;--A:#e5484d;--B:#2f6fdb;--C:#1f9d55;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 20px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);background:#fafbf9}
+.topbar a{color:var(--ink);text-decoration:none}
+main{max-width:1280px;margin:0 auto;padding:18px 20px 40px}
+.hero{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 30px;margin:6px 0 16px}
+.hero h1{margin:0;font-size:clamp(24px,3.4vw,36px);line-height:1.25;letter-spacing:.02em}
+.hero h1 small{display:block;font-size:14px;font-weight:500;color:var(--accent);letter-spacing:.12em;margin-bottom:4px}
+.hero p{margin:0;max-width:520px;color:var(--muted);font-size:14px}
+
+/* 3D stage */
+.stage{position:relative;border-radius:18px;overflow:hidden;background:#9fd4e6;border:1px solid #cfd8d3}
+.stage .glowscript{width:100%}
+.stage canvas{display:block}
+.toolbar{position:absolute;left:10px;right:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;pointer-events:none}
+.toolbar>*{pointer-events:auto}
+.seg{display:inline-flex;background:#ffffffe6;border:1px solid #d4dcd7;border-radius:10px;padding:2px;gap:2px}
+.seg button{border:0;background:none;padding:5px 10px;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--ink);color:#fff}
+.tb-btn{border:0;border-radius:10px;padding:7px 14px;font-size:14px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;box-shadow:0 2px 6px #0002}
+.tb-btn.ghost{background:#ffffffe6;color:var(--ink);border:1px solid #d4dcd7;font-weight:500;box-shadow:none}
+.tb-sel{background:#ffffffe6;border:1px solid #d4dcd7;border-radius:10px;padding:5px 8px;font-size:13px}
+.hud{position:absolute;left:12px;bottom:12px;background:#0d1a20d0;color:#e8f0f2;border-radius:10px;padding:8px 12px;font:12.5px/1.65 var(--mono);pointer-events:none;white-space:pre}
+.pause-note{position:absolute;left:50%;top:56px;transform:translateX(-50%);background:#fff;border-radius:10px;padding:6px 14px;font-size:14px;box-shadow:0 4px 14px #0003;display:none}
+.stage-note{position:absolute;right:12px;bottom:12px;margin:0;font-size:11.5px;color:#123;background:#ffffffc0;border-radius:8px;padding:3px 8px;pointer-events:none}
+.opts{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;margin:10px 2px 0;font-size:13.5px;color:var(--muted)}
+.opts label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.opts select{background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 6px;font-size:13px}
+
+/* PitchLab cards */
+.section-title{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px;margin:26px 2px 10px}
+.section-title h2{margin:0;font-size:20px}
+.section-title p{margin:0;color:var(--muted);font-size:13.5px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.pcard{background:var(--card);border-radius:18px;border:1px solid var(--line);padding:14px 14px 12px;position:relative;box-shadow:0 1px 0 #0000000a}
+.pcard.off{opacity:.55}
+.pcard::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--c)}
+.p-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.p-name{font-weight:700;font-size:16px;white-space:nowrap}
+.p-name i{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:0}
+.p-head select{flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:4px 6px;background:#fafbf9;font-size:13px}
+.p-head label{font-size:12.5px;color:var(--muted);display:flex;gap:3px;align-items:center;white-space:nowrap;cursor:pointer}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.06em;border-radius:6px;padding:1px 7px;margin:8px 0 6px}
+.tag.in{background:#fff1e8;color:#c2410c}
+.tag.auto{background:#eef3ff;color:#2f55b5}
+.tag.out{background:#eaf7ef;color:#16733e}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px}
+.cell{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.term{font-size:12.5px;color:var(--muted);border:0;background:none;padding:0;cursor:help;text-decoration:underline dotted #9aa6a0;text-underline-offset:3px;white-space:nowrap}
+.term:hover,.term:focus-visible{color:var(--accent)}
+.val{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
+.val small{font-size:11px;font-weight:500;color:var(--muted);margin-left:1px}
+.cell input[type=number],.cell input[type=text]{width:100%;max-width:92px;text-align:center;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;border:1.5px solid #f0c6a8;border-radius:9px;padding:3px 2px;background:#fffaf6}
+.cell input:focus{outline:2px solid #f59e0b55;border-color:#ea8a3a}
+.cell input.bad{border-color:#e5484d;background:#fff0f0}
+.unit{font-size:11px;color:var(--muted)}
+.clock-steps{display:flex;gap:3px;margin-top:3px}
+.clock-steps button{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:11px;padding:0 5px;cursor:pointer}
+input[type=range].gyro{width:100%;accent-color:#ea8a3a;margin:4px 0 0}
+.diagrams{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.diagram{background:#f7f9f7;border-radius:12px;padding:6px 6px 4px;text-align:center}
+.diagram svg{width:100%;max-width:150px;height:auto;display:block;margin:0 auto}
+.diagram p{margin:2px 0 0;font-size:11.5px;color:var(--muted);line-height:1.45}
+.vector{margin-top:8px;font-size:12px;color:var(--muted);background:#f7f9f7;border-radius:10px;padding:6px 9px;line-height:1.55}
+.vector b{font-family:var(--mono);color:var(--ink);font-weight:600}
+.actual{margin-top:6px;font-size:12.5px;color:#7a4b0b;background:#fff7e6;border-radius:10px;padding:5px 9px}
+.actual.hide{display:none}
+
+/* glossary popover */
+.pop{position:absolute;z-index:50;max-width:320px;background:#17201c;color:#f1f5f3;border-radius:12px;padding:10px 13px 11px;font-size:13.5px;line-height:1.6;box-shadow:0 10px 30px #0004;display:none}
+.pop h4{margin:0 0 3px;font-size:14.5px;color:#ffb27a}
+.pop p{margin:0}
+.pop .eg{margin-top:5px;color:#c9d4cf;font-size:12.5px}
+
+/* lower panels */
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;margin-top:14px}
+.panel{background:var(--card);border-radius:18px;border:1px solid var(--line);padding:16px}
+.panel h3{margin:0 0 6px;font-size:16px}
+.panel .note{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+#move-canvas{width:100%;aspect-ratio:1/1;max-height:440px;display:block}
+.gloss{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.g-item{background:#f7f9f7;border-radius:12px;padding:10px 12px}
+.g-item h4{margin:0 0 2px;font-size:14.5px}
+.g-item h4 span{font-size:12px;color:var(--muted);font-weight:500;margin-left:4px}
+.g-item p{margin:0;font-size:13.5px}
+.g-item .eg{margin-top:4px;font-size:12.5px;color:var(--muted)}
+.formula{font-family:var(--mono);background:#fff3e8;color:#8a3a0a;border-radius:6px;padding:1px 6px;white-space:nowrap}
+details.teacher{margin-top:14px}
+details.teacher summary{cursor:pointer;font-weight:700;font-size:15px}
+.steps{margin:10px 0 0;padding-left:22px}
+.steps li{margin:6px 0}
+.live{font-family:var(--mono);font-size:12.5px;background:#0f1c26;color:#d8e4ea;border-radius:10px;padding:10px 12px;white-space:pre-wrap;margin-top:8px;line-height:1.6}
+footer{margin-top:26px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+@media(max-width:1020px){.cards{grid-template-columns:minmax(0,1fr)}.lower{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){main{padding:12px 10px 30px}.gloss{grid-template-columns:minmax(0,1fr)}.val{font-size:18px}.cell input[type=number],.cell input[type=text]{font-size:16px}.hud{font-size:11px}.stage-note{display:none}}
+</style>
+<script src="pitch-spin/lib/glow/jquery.min.js" defer></script>
+<script src="pitch-spin/lib/glow/jquery-ui.custom.min.js" defer></script>
+<script src="pitch-spin/lib/glow/glow.min.js" defer></script>
+<script src="pitch-spin/pitch.js" defer></script>
 </head>
 <body>
-    <a href="index.html" style="position: fixed; top: 20px; left: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; z-index: 1000;">回首頁</a>
+<header class="topbar"><a href="index.html">← Physics Lab</a><span>投球物理 · VPython / GlowScript</span><a href="#glossary">名詞說明 ↓</a></header>
+<main>
+  <header class="hero">
+    <h1><small>PITCHLAB → 3D 球路</small>把 PitchLab 的數字，投成一條球路</h1>
+    <p>照著 PitchLab 畫面輸入<b>球速、轉速、轉軸（幾點鐘）、陀螺角</b>，程式會自動換算出旋轉軸、有效轉速與效率，再算出球怎麼飛。看不懂的名詞，點一下就有說明。</p>
+  </header>
 
-<div id="glowscript" class="glowscript">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
-<link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
-<script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
-<script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
-<script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
-<script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
-<script type="text/javascript"><!--//--><![CDATA[//><!--
+  <div class="stage" id="stage">
+    <div id="glowscript" class="glowscript"></div>
+    <div class="toolbar">
+      <button class="tb-btn" id="play" type="button">▶ 投球</button>
+      <button class="tb-btn ghost" id="pause" type="button">❚❚ 暫停</button>
+      <select class="tb-sel" id="slow" title="慢動作">
+        <option value="1">真實速度</option><option value="4">放慢 4 倍</option><option value="10" selected>放慢 10 倍</option><option value="25">放慢 25 倍</option>
+      </select>
+      <div class="seg" id="views" role="group" aria-label="視角">
+        <button data-view="batter">打擊者</button><button data-view="catcher" class="on">捕手後方</button><button data-view="pitcher">投手後方</button><button data-view="side">三壘側</button><button data-view="top">正上方</button>
+      </div>
+    </div>
+    <div class="pause-note" id="pause-note">t = 0.2 s 暫停：這時候打者必須決定要不要揮棒了</div>
+    <div class="hud" id="hud"></div>
+    <p class="stage-note">球放大 2 倍顯示 · 彩色箭頭＝旋轉軸 · 右鍵拖曳（手機兩指）轉視角，滾輪縮放</p>
+  </div>
+  <div class="opts">
+    <label><input type="checkbox" id="opt-trail" checked>顯示軌跡</label>
+    <label><input type="checkbox" id="opt-axis" checked>顯示旋轉軸</label>
+    <label><input type="checkbox" id="opt-ghost">顯示「完全不轉」的對照球</label>
+    <label><input type="checkbox" id="opt-markers">距離標記</label>
+    <label><input type="checkbox" id="opt-pause02">0.2 秒時暫停</label>
+    <label>投手：<select id="hand"><option value="R">右投</option><option value="L">左投</option></select></label>
+    <label>瞄準：<select id="aim"><option value="nospin">不轉的話會進正中央（看得出旋轉造成的位移）</option><option value="spin">每顆都投進正中央</option></select></label>
+  </div>
 
-// START JAVASCRIPT
-;(function() {;
-var ρσ_modules = {};
-var running, paused_at_0_2, t, slowcheck, fastball_speed, fastball_angle, fastball_axis_x, fastball_axis_y, fastball_axis_z, forkball_speed, forkball_angle, forkball_axis_x, forkball_axis_y, forkball_axis_z, changeup_speed, changeup_angle, changeup_axis_x, changeup_axis_y, changeup_axis_z;
-ρσ_modules.pythonize = {};
+  <div class="section-title">
+    <h2>輸入 PitchLab 數據</h2>
+    <p>橘框＝照 PitchLab 輸入　藍字＝自動換算　綠字＝模擬結果　·　點底線名詞看說明</p>
+  </div>
+  <div class="cards" id="cards"></div>
 
-(function(){
-    function strings() {
-        var string_funcs, exclude, name;
-        string_funcs = set("capitalize strip lstrip rstrip islower isupper isspace lower upper swapcase center count endswith startswith find rfind index rindex format join ljust rjust partition rpartition replace split rsplit splitlines zfill".split(" "));
-        if (!arguments.length) {
-            exclude = (function(){
-                var s = ρσ_set();
-                s.jsset.add("split");
-                s.jsset.add("replace");
-                return s;
-            })();
-        } else if (arguments[0]) {
-            exclude = Array.prototype.slice.call(arguments);
-        } else {
-            exclude = null;
-        }
-        if (exclude) {
-            string_funcs = string_funcs.difference(set(exclude));
-        }
-        var ρσ_Iter0 = string_funcs;
-        ρσ_Iter0 = ((typeof ρσ_Iter0[Symbol.iterator] === "function") ? (ρσ_Iter0 instanceof Map ? ρσ_Iter0.keys() : ρσ_Iter0) : Object.keys(ρσ_Iter0));
-        for (var ρσ_Index0 of ρσ_Iter0) {
-            name = ρσ_Index0;
-            (ρσ_expr_temp = String.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name] = (ρσ_expr_temp = ρσ_str.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name];
-        }
-    };
-    if (!strings.__module__) Object.defineProperties(strings, {
-        __module__ : {value: "pythonize"}
+  <div class="lower">
+    <section class="panel">
+      <h3>位移圖（從投手背後看，和 PitchLab 同方向）</h3>
+      <canvas id="move-canvas" width="520" height="520" aria-label="位移圖"></canvas>
+      <p class="note">實心點＝本模擬　空心圈＝PitchLab 實測（影片範例才有）。中心＝完全不轉的球；往上＝掉得比較少，往右＝往三壘側（右投手的慣用手側）。</p>
+    </section>
+    <section class="panel" id="glossary">
+      <h3>名詞小教室</h3>
+      <div class="gloss" id="gloss"></div>
+      <details class="teacher">
+        <summary>教師補充：「幾點鐘＋幾度」怎麼換算成旋轉軸？</summary>
+        <ol class="steps">
+          <li><b>時鐘換成角度：</b>θ = (時 + 分/60) × 30°。例如 10:30 → θ = 315°。</li>
+          <li><b>球被推的方向：</b>從投手背後看，m̂ = (往三壘側 sinθ, 往上 cosθ)。12:00 往上、3:00 往三壘側、6:00 往下、9:00 往一壘側。</li>
+          <li><b>橫向轉軸：</b>馬格努斯力方向是 ω × v，所以讓它指向 m̂ 的轉軸是 <span class="formula">ω̂⊥ = v̂ × m̂</span>（和 m̂、前進方向都垂直）。12:00 時 ω̂⊥ 水平指向三壘側＝純後旋。</li>
+          <li><b>加上陀螺角 φ：</b>把轉軸朝前進方向轉 φ：<span class="formula">ω̂ = cosφ·ω̂⊥ + sinφ·v̂</span>。</li>
+          <li><b>效率與有效轉速：</b>只有 ω̂⊥ 那一份會推球，所以 <span class="formula">效率 = cosφ</span>、<span class="formula">啟用中 = 轉速 × cosφ</span>。影片裡每一球都符合這個關係（例如 1352 rpm、66.2° → 1352 × cos66.2° ≈ 546 rpm）。</li>
+          <li><b>算力：</b><span class="formula">F = ½ρAC<sub>L</sub>v²</span>，<span class="formula">C<sub>L</sub> = 1/(2.32 + 0.4/S)</span>，<span class="formula">S = rω⊥/v</span>（Sawicki 等 2003）；另有阻力 C<sub>D</sub> = 0.33 與重力，以 RK4 積分。</li>
+        </ol>
+        <div class="live" id="live"></div>
+        <p class="note">座標：X 朝本壘、Y 朝上、Z 朝三壘側（投手的右手邊）——就是舊版「軸 X／Y／Z」滑桿的方向，所以舊版的 (0, 0, 1) ＝ 12:00、陀螺 0° 的純後旋。</p>
+        <p class="note">模型限制：轉軸在飛行中視為固定；沒有縫線偏移尾流（SSW），伸卡球、變速球的實際位移常比只算旋轉更大；升力式對慢速球可能有誤差。「垂直／水平」採 MLB Statcast 的量法（最後 40 呎、約 12.2 m，與同一點出發但不轉的球比較）；PitchLab 的量法未公開，比較時看方向與量級即可。左投手的水平正負號依 PitchLab 設定可能相反。</p>
+        <p class="note">參考：<a href="https://doi.org/10.1119/1.1604384" target="_blank" rel="noopener">Sawicki, Hubbard &amp; Stronge (2003)</a>　<a href="https://baseball.physics.illinois.edu/" target="_blank" rel="noopener">Alan Nathan：The Physics of Baseball</a>　<a href="pitch-spin/index.html">SPIN 3D 投球旋轉實驗室 ↗</a></p>
+      </details>
+    </section>
+  </div>
+  <footer><span>投球模擬 / Physics Lab</span><span>GlowScript VPython 3D 引擎（MIT）</span></footer>
+</main>
+<div class="pop" id="pop" role="tooltip"></div>
+
+<script>
+'use strict';
+window.addEventListener('DOMContentLoaded', () => {
+  const P = window.PitchPhysics;
+  const { add, sub, mul, dot, cross, norm, unit } = P.vec;
+  const DEG = Math.PI / 180;
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- PitchLab readings from the video (right-handed pitcher) ---------- */
+  const VIDEO = [
+    ['伸卡球', 92.8, 1299, '12:45', 38.7, 29.7, 14.2],
+    ['速球', 96.4, 1233, '12:30', 39.5, 27.1, 9.0],
+    ['曲球', 75.6, 1352, '10:30', 66.2, 17.5, -16.9],
+    ['曲球', 80.0, 1364, '10:15', 73.7, 19.8, -22.8],
+    ['滑球', 77.2, 1290, '9:30', 61.0, 8.9, -26.7],
+    ['滑球', 81.8, 1360, '9:45', 69.0, 13.0, -30.7],
+    ['滑球', 76.0, 1366, '10:15', 70.7, 12.8, -15.4],
+    ['滑球', 74.9, 1303, '10:00', 67.6, 15.8, -28.4],
+    ['滑球', 76.6, 1298, '10:45', 71.2, 25.1, -18.6],
+    ['曲球', 69.3, 1274, '10:15', 61.3, 14.5, -21.0],
+    ['滑球', 78.1, 1361, '10:00', 72.3, 8.8, -14.8],
+    ['滑球', 75.0, 1295, '10:45', 68.0, 27.2, -19.4],
+    ['變速球', 79.8, 911, '12:30', 30.8, 27.4, 7.7],
+    ['卡特球', 78.7, 965, '12:45', 45.3, 30.6, 10.4]
+  ].map(([type, kph, rpm, clock, gyro, v, h], i) => ({ label: `影片第 ${i + 1} 球｜${type} ${kph} kph`, type, kph, rpm, clock, gyro, v, h }));
+  VIDEO.push({ label: '簡報範例｜卡特球 91.9 kph', type: '卡特球', kph: 91.9, rpm: 1345, clock: '12:00', gyro: 26.5, v: 23.3, h: -0.7 });
+
+  /* ---------- clock helpers ---------- */
+  function parseClock(s) {
+    const m = String(s).trim().replace('：', ':').match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+    if (!m) return null;
+    const h = Number(m[1]), mi = Number(m[2] || 0);
+    if (h < 0 || h > 12 || mi > 59) return null;
+    return (h % 12) + mi / 60;
+  }
+  function clockText(t) {
+    t = ((t % 12) + 12) % 12;
+    let h = Math.floor(t + 1e-9), m = Math.round((t - h) * 60);
+    if (m === 60) { h += 1; m = 0; }
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
+  }
+
+  /* ---------- glossary ---------- */
+  const GLOSS = {
+    kph: { t: '球速', en: 'Velocity', b: '球飛多快。kph 就是 km/h（每小時幾公里）。', eg: '96 kph ≈ 每秒 27 公尺，從投手丘到本壘大約 0.6 秒。' },
+    rpm: { t: '轉速', en: 'Spin Rate', b: '球每分鐘轉幾圈（rpm），把所有方向的旋轉都算進去。', eg: '1300 rpm ≈ 每秒 22 圈；球飛到本壘只轉十幾圈。' },
+    clock: { t: '轉軸（幾點鐘）', en: 'Spin Axis / Tilt', b: '從投手背後看，旋轉把球「推」向時針指的方向。12:00 往上（後旋，掉得少）、6:00 往下（上旋，掉得多）、3:00／9:00 往右／左（側旋）。', eg: '注意：時針是「被推的方向」，真正的轉軸跟時針垂直。' },
+    gyro: { t: '陀螺角', en: 'Gyro Degree', b: '轉軸偏向「前進方向」幾度。0°＝轉軸橫躺、全部旋轉都在推球；90°＝像子彈、美式足球那樣螺旋前進，旋轉推不動球。', eg: '滑球常有 60–75° 的陀螺角，轉很快但推球的力不大。' },
+    active: { t: '啟用中（有效轉速）', en: 'Active Spin', b: '總轉速中，真正能產生馬格努斯力（把球推偏）的那一部分。', eg: '啟用中 = 轉速 × 效率。' },
+    eff: { t: '效率', en: 'Spin Efficiency', b: '有效轉速占總轉速的比例。它由陀螺角決定：效率 = cos(陀螺角)。', eg: '陀螺 0° → 100%；45° → 71%；60° → 50%；90° → 0%。不是直線關係！' },
+    vb: { t: '垂直位移', en: 'Vertical Break', b: '和一顆完全不轉的球比，旋轉讓球「高了」或「低了」幾公分。正值不是球往上飛，而是比不轉的球掉得少。', eg: '本頁採 MLB 量法：最後 40 呎（約 12.2 m）。' },
+    hb: { t: '水平位移', en: 'Horizontal Break', b: '和不轉的球比，左右多跑了幾公分。本頁正值＝從投手看出去往右（三壘側，右投手的慣用手側）。', eg: '右投手的滑球、曲球往一壘側跑，所以是負值。' },
+    vec: { t: '旋轉軸向量', en: 'Spin Axis Vector', b: '由「幾點鐘＋陀螺角」自動換算出的旋轉軸方向（長度 1）。X 朝本壘、Y 朝上、Z 朝三壘側，和舊版 X／Y／Z 滑桿同一套方向。', eg: '球繞著這根軸轉（右手定則：四指沿旋轉方向，拇指指向軸）。' },
+    stuff: { t: 'Stuff+', en: '球質評分', b: '平台用模型把球速、位移等特徵算成的綜合分數，不是直接量到的物理量，本頁不計算。', eg: '許多平台以 100 代表平均，但各平台的模型與基準不同，不能直接互比。' }
+  };
+  const glossEl = $('gloss');
+  for (const k of ['kph', 'rpm', 'clock', 'gyro', 'eff', 'active', 'vb', 'hb', 'vec', 'stuff']) {
+    const g = GLOSS[k];
+    glossEl.insertAdjacentHTML('beforeend', `<div class="g-item"><h4>${g.t}<span>${g.en}</span></h4><p>${g.b}</p><p class="eg">${g.eg}</p></div>`);
+  }
+  const pop = $('pop');
+  let popFor = null;
+  function showPop(btn) {
+    const g = GLOSS[btn.dataset.term];
+    if (popFor === btn) { hidePop(); return; }
+    pop.innerHTML = `<h4>${g.t}（${g.en}）</h4><p>${g.b}</p><p class="eg">${g.eg}</p>`;
+    pop.style.display = 'block';
+    const r = btn.getBoundingClientRect(), w = Math.min(320, innerWidth - 20);
+    pop.style.maxWidth = w + 'px';
+    pop.style.left = Math.max(10, Math.min(innerWidth - w - 10, r.left + r.width / 2 - w / 2)) + scrollX + 'px';
+    pop.style.top = r.bottom + scrollY + 6 + 'px';
+    popFor = btn;
+  }
+  function hidePop() { pop.style.display = 'none'; popFor = null; }
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('.term');
+    if (t) { showPop(t); e.stopPropagation(); } else if (!e.target.closest('#pop')) hidePop();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hidePop(); });
+  const term = (k, text) => `<button type="button" class="term" data-term="${k}">${text || GLOSS[k].t}</button>`;
+
+  /* ---------- state ---------- */
+  const st = { hand: 'R', aim: 'nospin', slow: 10, playing: false, t: 0, paused02: false, pause02: false };
+  const COLORS = { A: [0.9, 0.28, 0.3], B: [0.18, 0.44, 0.86], C: [0.12, 0.62, 0.33] };
+  const balls = [
+    { id: 'A', css: 'var(--A)', on: true, src: 1 },
+    { id: 'B', css: 'var(--B)', on: true, src: 2 },
+    { id: 'C', css: 'var(--C)', on: true, src: 4 }
+  ];
+  function loadPreset(b, i) {
+    const p = VIDEO[i];
+    Object.assign(b, { src: i, kph: p.kph, rpm: p.rpm, tilt: parseClock(p.clock), gyro: p.gyro });
+  }
+  balls.forEach((b) => loadPreset(b, b.src));
+
+  /* ---------- physics (shared model with the SPIN lab: pitch-spin/pitch.js) ---------- */
+  function simulate(b) {
+    const eff = Math.cos(b.gyro * DEG);
+    const cfg = P.normalize({
+      hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff,
+      release: { x: (st.hand === 'R' ? -1 : 1) * 0.55, y: 16.7, z: 1.75 }, target: { x: 0, z: 0.76 }
     });
-
-    ρσ_modules.pythonize.strings = strings;
-})();
-async function __main__() {
-"use strict";
-    var display = canvas;
-    var scene = canvas();
-
-    function round(num, n=0) {return Number(num.toFixed(n))}
-
-    var version, print, arange, __name__, type, ρσ_ls, g, dt, rho, r, m, A, I, tau_omega, k_omega, t, running, paused_at_0_2, slowcheck, slow, markers, fastball_speed, fastball_angle, fastball_axis_x, fastball_axis_y, fastball_axis_z, forkball_speed, forkball_angle, forkball_axis_x, forkball_axis_y, forkball_axis_z, changeup_speed, changeup_angle, changeup_axis_x, changeup_axis_y, changeup_axis_z, fastball_speed_slider, fastball_speed_text, fastball_angle_slider, fastball_angle_text, fastball_axisx_slider, fastball_axisx_text, fastball_axisy_slider, fastball_axisy_text, fastball_axisz_slider, fastball_axisz_text, forkball_speed_slider, forkball_speed_text, forkball_angle_slider, forkball_angle_text, forkball_axisx_slider, forkball_axisx_text, forkball_axisy_slider, forkball_axisy_text, forkball_axisz_slider, forkball_axisz_text, changeup_speed_slider, changeup_speed_text, changeup_angle_slider, changeup_angle_text, changeup_axisx_slider, changeup_axisx_text, changeup_axisy_slider, changeup_axisy_text, changeup_axisz_slider, changeup_axisz_text, ground, target, strike_zone, pitcher_mound_height, pitcher_mound_radius, pitcher_mound, pitcher_plate_width, pitcher_plate_depth, pitcher_plate_height, pitcher_plate, pitcher_color, pitcher_height, leg_width, leg_height, leg_depth, leg_offset, left_leg, right_leg, torso_width, torso_height, torso_depth, torso, head_radius, head, arm_length, arm_width, arm_height, left_arm, right_arm, batter_color, batter_height, batter_x, batter_z, batter_leg_width, batter_leg_height, batter_leg_depth, batter_leg_offset, batter_left_leg, batter_right_leg, batter_torso_width, batter_torso_height, batter_torso_depth, batter_torso, batter_head_radius, batter_head, batter_arm_length, batter_arm_width, batter_arm_height, batter_left_arm, batter_right_arm, bat_length, bat_radius, bat, x_pos, marker_height, marker_size, marker_pos, m_box, m_label, i, fastball, forkball, changeup, balls_data, b, C_M, v_mag, omega_vec, magnus_dir, F_M, magnus_force, C_D, drag_force, a, data;
-    version = ρσ_list_decorate([ "3.2", "glowscript" ]);
-    Array.prototype['+'] = function(r) {return this.concat(r)}
-    Array.prototype['*'] = function(r) {return __array_times_number(this, r)}
-    window.__GSlang = "vpython";
-    print = GSprint;
-    arange = range;
-    __name__ = "__main__";
-    type = pytype;
-    var strings = ρσ_modules.pythonize.strings;
-
-    strings();
-    "6";
-    scene.width = 1e3;
-    "7";
-    scene.height = 600;
-    "8";
-    scene.background = vec(0, .8, .8);
-    "9";
-    scene.center = vector(9.22, .5, 0);
-    "10";
-    scene.camera.pos = vector(1["-u"]()["*"](1.5), 1.5, 10);
-    "11";
-    scene.camera.axis = vector(12, 1["-u"]()["*"](3), 1["-u"]()["*"](15));
-    "14";
-    scene.caption = "";
-    "17";
-    g = 9.81;
-    "18";
-    dt = .001;
-    "19";
-    rho = 1.2;
-    "20";
-    r = .037;
-    "21";
-    m = .145;
-    "22";
-    A = pi["*"](Math.pow(r, 2));
-    "23";
-    I = 2["/"](5)["*"](m)["*"](Math.pow(r, 2));
-    "26";
-    tau_omega = 3.33;
-    "27";
-    k_omega = I["/"](tau_omega);
-    "30";
-    t = 0;
-    "31";
-    running = false;
-    "32";
-    paused_at_0_2 = false;
-    "33";
-    slowcheck = false;
-    "34";
-    slow = 1;
-    "40";
-    async function start_button() {
-        "41";
-        "42";
-        running = true;
+    const r = [cfg.release.x, cfg.release.y, cfg.release.z];
+    const v0 = P.aim(cfg, st.aim === 'spin');
+    const vhat = unit(v0), spin = P.spinVector(cfg, vhat);
+    const real = P.fly(r, v0, spin.omega, cfg, true, P.PLATE_Y);
+    const ghost = P.fly(r, v0, spin.omega, cfg, false, P.PLATE_Y);
+    const at40 = P.fly(r, v0, spin.omega, cfg, true, P.STATCAST_Y);
+    const w = P.fly(at40.p, at40.v, spin.omega, cfg, true, P.PLATE_Y);
+    const n = P.fly(at40.p, at40.v, spin.omega, cfg, false, P.PLATE_Y);
+    const brk = sub(w.p, n.p);
+    const wh = norm(spin.omega) > 0 ? unit(spin.omega) : unit(spin.transverseAxis);
+    return {
+      eff, active: b.rpm * eff, rate: spin.rate, omegaHat: wh, transverse: spin.transverseAxis, vhat,
+      // axis in the classic VPython frame: X → home plate, Y ↑, Z → 3B side (pitcher's right)
+      axisXYZ: [-wh[1], wh[2], -wh[0]],
+      real, ghost, time: real.t, plate: real.p, plateKmh: norm(real.v) * 3.6,
+      vb: brk[2] * 100, hb: -brk[0] * 100
     };
-    if (!start_button.__module__) Object.defineProperties(start_button, {
-        __module__ : {value: null}
-    });
+  }
 
-    "44";
-    async function pause_button() {
-        "45";
-        "46";
-        running = false;
-    };
-    if (!pause_button.__module__) Object.defineProperties(pause_button, {
-        __module__ : {value: null}
+  /* ---------- cards ---------- */
+  const cardsEl = $('cards');
+  const options = VIDEO.map((p, i) => `<option value="${i}">${p.label}</option>`).join('') + '<option value="custom">自訂（自己輸入）</option>';
+  for (const b of balls) {
+    const el = document.createElement('article');
+    el.className = 'pcard'; el.style.setProperty('--c', b.css); el.id = 'card-' + b.id;
+    el.innerHTML = `
+      <div class="p-head"><span class="p-name"><i></i>球 ${b.id}</span><select data-k="src" aria-label="球 ${b.id} 的資料來源">${options}</select><label><input type="checkbox" data-k="on" checked>顯示</label></div>
+      <span class="tag in">照 PitchLab 輸入</span>
+      <div class="grid4">
+        <div class="cell">${term('kph')}<input type="number" data-k="kph" min="60" max="170" step="0.1" inputmode="decimal"><span class="unit">kph</span></div>
+        <div class="cell">${term('rpm')}<input type="number" data-k="rpm" min="0" max="3500" step="1" inputmode="numeric"><span class="unit">rpm</span></div>
+        <div class="cell">${term('clock', '轉軸')}<input type="text" data-k="clock" inputmode="numeric" aria-label="轉軸幾點鐘，例如 12:45"><div class="clock-steps"><button type="button" data-step="-0.25" aria-label="逆時針 15 分">−15</button><button type="button" data-step="0.25" aria-label="順時針 15 分">+15</button></div></div>
+        <div class="cell">${term('gyro', '陀螺')}<input type="number" data-k="gyro" min="0" max="90" step="0.1" inputmode="decimal"><span class="unit">度（0–90）</span></div>
+      </div>
+      <input type="range" class="gyro" data-k="gyroR" min="0" max="90" step="0.1" aria-label="陀螺角滑桿">
+      <span class="tag auto">自動換算</span>
+      <div class="grid4">
+        <div class="cell">${term('active', '啟用中')}<span class="val" data-o="active"></span></div>
+        <div class="cell">${term('eff')}<span class="val" data-o="eff"></span></div>
+        <div class="cell" style="grid-column:span 2">${term('vec')}<span class="val" data-o="vecShort" style="font-size:15px;padding-top:4px"></span><span class="unit">X 朝本壘 · Y 朝上 · Z 朝三壘</span></div>
+      </div>
+      <span class="tag out">模擬結果</span>
+      <div class="grid4">
+        <div class="cell">${term('vb', '垂直')}<span class="val" data-o="vb"></span></div>
+        <div class="cell">${term('hb', '水平')}<span class="val" data-o="hb"></span></div>
+        <div class="cell"><span class="term" style="cursor:default;text-decoration:none">到本壘</span><span class="val" data-o="time"></span></div>
+        <div class="cell"><span class="term" style="cursor:default;text-decoration:none">進壘球速</span><span class="val" data-o="pkph"></span></div>
+      </div>
+      <p class="actual" data-o="actual"></p>
+      <div class="diagrams">
+        <div class="diagram"><svg viewBox="-62 -62 124 124" data-o="clockSvg" aria-label="轉軸時鐘圖"></svg><p>投手背後看：<b style="color:#d9480f">箭頭</b>＝球被推的方向<br><b style="color:#555">虛線</b>＝橫向轉軸</p></div>
+        <div class="diagram"><svg viewBox="-62 -62 124 124" data-o="gyroSvg" aria-label="陀螺角示意圖"></svg><p>陀螺角 φ：轉軸偏向前進方向<br>效率 = cos φ</p></div>
+      </div>`;
+    cardsEl.appendChild(el);
+    b.el = el;
+    const q = (s) => el.querySelector(s);
+    b.q = q;
+    q('[data-k=src]').addEventListener('change', (e) => {
+      if (e.target.value !== 'custom') loadPreset(b, Number(e.target.value)); else b.src = 'custom';
+      fillInputs(b); recompute(true);
     });
-
-    "48";
-    async function continue_button() {
-        "49";
-        "50";
-        running = true;
-        "51";
-        paused_at_0_2 = false;
-    };
-    if (!continue_button.__module__) Object.defineProperties(continue_button, {
-        __module__ : {value: null}
+    q('[data-k=on]').addEventListener('change', (e) => { b.on = e.target.checked; recompute(true); });
+    const markCustom = () => { b.src = 'custom'; q('[data-k=src]').value = 'custom'; };
+    const num = (k, lo, hi) => q(`[data-k=${k}]`).addEventListener('input', (e) => {
+      const v = Number(e.target.value), ok = e.target.value !== '' && v >= lo && v <= hi;
+      e.target.classList.toggle('bad', !ok);
+      if (!ok) return;
+      b[k] = v; markCustom();
+      if (k === 'gyro') q('[data-k=gyroR]').value = v;
+      recompute(false);
     });
-
-    "53";
-    async function reset_button() {
-        var ρσ_ls, fb_axis, fk_axis, cu_axis, b, data;
-        "59";
-        "60";
-        running = false;
-        "61";
-        t = 0;
-        "64";
-        fastball.initial_speed = fastball_speed;
-        "65";
-        fastball.initial_angle = fastball_angle;
-        "67";
-        fb_axis = vector(fastball_axis_x, fastball_axis_y, fastball_axis_z);
-        "68";
-        if (mag(fb_axis)["<"](1e-9)) {
-            "69";
-            fb_axis = vector(0, 0, 1);
-        }
-        "70";
-        fastball.initial_axis = fb_axis.hat;
-        "73";
-        forkball.initial_speed = forkball_speed;
-        "74";
-        forkball.initial_angle = forkball_angle;
-        "75";
-        fk_axis = vector(forkball_axis_x, forkball_axis_y, forkball_axis_z);
-        "76";
-        if (mag(fk_axis)["<"](1e-9)) {
-            "77";
-            fk_axis = vector(0, 0, 1["-u"]()["*"](1));
-        }
-        "78";
-        forkball.initial_axis = fk_axis.hat;
-        "81";
-        changeup.initial_speed = changeup_speed;
-        "82";
-        changeup.initial_angle = changeup_angle;
-        "83";
-        cu_axis = vector(changeup_axis_x, changeup_axis_y, changeup_axis_z);
-        "84";
-        if (mag(cu_axis)["<"](1e-9)) {
-            "85";
-            cu_axis = vector(0, 0, 1);
-        }
-        "86";
-        changeup.initial_axis = cu_axis.hat;
-        "89";
-        var ρσ_Iter1 = balls_data;
-        ρσ_Iter1 = ((typeof ρσ_Iter1[Symbol.iterator] === "function") ? (ρσ_Iter1 instanceof Map ? ρσ_Iter1.keys() : ρσ_Iter1) : Object.keys(ρσ_Iter1));
-        for (var ρσ_Index1 of ρσ_Iter1) {
-            data = ρσ_Index1;
-            "90";
-            b = ρσ_getitem(data, "ball");
-            "91";
-            b.pos = vector(0, 1.8, 0);
-            "92";
-            b.v = vector(b.initial_speed["*"](cos((await radians(b.initial_angle)))), b.initial_speed["*"](sin((await radians(b.initial_angle)))), 0);
-            "96";
-            b.axis_vec = b.initial_axis;
-            "97";
-            b.omega = b.initial_spin["*"](2)["*"](pi)["/"](60);
-            "98";
-            b.clear_trail();
-        }
-    };
-    if (!reset_button.__module__) Object.defineProperties(reset_button, {
-        __module__ : {value: null}
+    num('kph', 60, 170); num('rpm', 0, 3500); num('gyro', 0, 90);
+    q('[data-k=gyroR]').addEventListener('input', (e) => { b.gyro = Number(e.target.value); q('[data-k=gyro]').value = b.gyro; q('[data-k=gyro]').classList.remove('bad'); markCustom(); recompute(false); });
+    q('[data-k=clock]').addEventListener('input', (e) => {
+      const t = parseClock(e.target.value);
+      e.target.classList.toggle('bad', t === null);
+      if (t === null) return;
+      b.tilt = t; markCustom(); recompute(false);
     });
+    q('[data-k=clock]').addEventListener('blur', (e) => { e.target.value = clockText(b.tilt); e.target.classList.remove('bad'); });
+    el.querySelectorAll('[data-step]').forEach((btn) => btn.addEventListener('click', () => {
+      b.tilt = (((b.tilt + Number(btn.dataset.step)) % 12) + 12) % 12;
+      q('[data-k=clock]').value = clockText(b.tilt); q('[data-k=clock]').classList.remove('bad');
+      markCustom(); recompute(true);
+    }));
+    ['kph', 'rpm', 'gyro', 'gyroR', 'clock'].forEach((k) => q(`[data-k=${k}]`).addEventListener('change', () => recompute(true)));
+  }
+  function fillInputs(b) {
+    const q = b.q;
+    q('[data-k=src]').value = String(b.src);
+    q('[data-k=kph]').value = b.kph; q('[data-k=rpm]').value = b.rpm;
+    q('[data-k=clock]').value = clockText(b.tilt);
+    q('[data-k=gyro]').value = b.gyro; q('[data-k=gyroR]').value = b.gyro;
+    b.el.querySelectorAll('input.bad').forEach((x) => x.classList.remove('bad'));
+  }
+  balls.forEach(fillInputs);
 
-    "100";
-    async function toggle_trail(chk) {
-        var ρσ_ls, data;
-        "102";
-        var ρσ_Iter2 = balls_data;
-        ρσ_Iter2 = ((typeof ρσ_Iter2[Symbol.iterator] === "function") ? (ρσ_Iter2 instanceof Map ? ρσ_Iter2.keys() : ρσ_Iter2) : Object.keys(ρσ_Iter2));
-        for (var ρσ_Index2 of ρσ_Iter2) {
-            data = ρσ_Index2;
-            "103";
-            ρσ_getitem(data, "ball").make_trail = chk.checked;
-        }
-    };
-    if (!toggle_trail.__argnames__) Object.defineProperties(toggle_trail, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "105";
-    async function toggle_paused_at_0_2(chk) {
-        "106";
-        "107";
-        paused_at_0_2 = chk.checked;
-    };
-    if (!toggle_paused_at_0_2.__argnames__) Object.defineProperties(toggle_paused_at_0_2, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "109";
-    async function toggle_slow(chk) {
-        "110";
-        "111";
-        slowcheck = chk.checked;
-    };
-    if (!toggle_slow.__argnames__) Object.defineProperties(toggle_slow, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "114";
-    async function toggle_fastball(chk) {
-        "115";
-        fastball.visible = chk.checked;
-    };
-    if (!toggle_fastball.__argnames__) Object.defineProperties(toggle_fastball, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "117";
-    async function toggle_forkball(chk) {
-        "118";
-        forkball.visible = chk.checked;
-    };
-    if (!toggle_forkball.__argnames__) Object.defineProperties(toggle_forkball, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "120";
-    async function toggle_changeup(chk) {
-        "121";
-        changeup.visible = chk.checked;
-    };
-    if (!toggle_changeup.__argnames__) Object.defineProperties(toggle_changeup, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "124";
-    markers = ρσ_list_decorate([]);
-    "127";
-    async function toggle_markers(chk) {
-        var ρσ_ls, m;
-        "128";
-        var ρσ_Iter3 = markers;
-        ρσ_Iter3 = ((typeof ρσ_Iter3[Symbol.iterator] === "function") ? (ρσ_Iter3 instanceof Map ? ρσ_Iter3.keys() : ρσ_Iter3) : Object.keys(ρσ_Iter3));
-        for (var ρσ_Index3 of ρσ_Iter3) {
-            m = ρσ_Index3;
-            "129";
-            m.visible = chk.checked;
-        }
-    };
-    if (!toggle_markers.__argnames__) Object.defineProperties(toggle_markers, {
-        __argnames__ : {value: ["chk"]},
-        __module__ : {value: null}
-    });
-
-    "134";
-    async function batter_view() {
-        var ρσ_ls, camera_x, camera_y, camera_z, pitcher_mound_center, camera_to_pitcher;
-        "135";
-        camera_x = batter_x;
-        "136";
-        camera_y = batter_leg_height["+"](batter_torso_height)["+"](batter_head_radius["*"](.8));
-        "137";
-        if (batter_z[">"](0)) {
-            "138";
-            camera_z = batter_z["+"](.3);
-            "139";
-        } else {
-            "140";
-            camera_z = batter_z["-"](1["*"](.3));
-        }
-        "141";
-        scene.camera.pos = vector(camera_x, camera_y, camera_z);
-        "143";
-        pitcher_mound_center = vector(0, pitcher_mound_height, 0);
-        "144";
-        camera_to_pitcher = pitcher_mound_center["-"](1["*"](scene.camera.pos));
-        "145";
-        scene.camera.axis = camera_to_pitcher;
-    };
-    if (!batter_view.__module__) Object.defineProperties(batter_view, {
-        __module__ : {value: null}
-    });
-
-    "147";
-    async function umpire_view() {
-        "148";
-        scene.camera.pos = vector(21, 1.2, 0);
-        "149";
-        scene.camera.axis = vector(1["-u"]()["*"](21), 0, 0);
-    };
-    if (!umpire_view.__module__) Object.defineProperties(umpire_view, {
-        __module__ : {value: null}
-    });
-
-    "151";
-    async function pitcher_view() {
-        var ρσ_ls, camera_x, camera_y, camera_z, home_plate_center, camera_to_home_plate;
-        "152";
-        camera_x = 1["-u"]()["*"](4);
-        "153";
-        camera_y = 1.8;
-        "154";
-        camera_z = 1;
-        "155";
-        scene.camera.pos = vector(camera_x, camera_y, camera_z);
-        "156";
-        home_plate_center = vector(18.44["+"](.3), 0, .5);
-        "157";
-        camera_to_home_plate = home_plate_center["-"](1["*"](scene.camera.pos));
-        "158";
-        scene.camera.axis = camera_to_home_plate;
-    };
-    if (!pitcher_view.__module__) Object.defineProperties(pitcher_view, {
-        __module__ : {value: null}
-    });
-
-    "159";
-    async function Side_view() {
-        var ρσ_ls, camera_x, camera_y, camera_z, home_plate_center, camera_to_home_plate;
-        "160";
-        camera_x = 11;
-        "161";
-        camera_y = 1.2;
-        "162";
-        camera_z = 13;
-        "163";
-        scene.camera.pos = vector(camera_x, camera_y, camera_z);
-        "164";
-        home_plate_center = vector(9, 1.2, 1["-u"]()["*"](1));
-        "165";
-        camera_to_home_plate = home_plate_center["-"](1["*"](scene.camera.pos));
-        "166";
-        scene.camera.axis = camera_to_home_plate;
-    };
-    if (!Side_view.__module__) Object.defineProperties(Side_view, {
-        __module__ : {value: null}
-    });
-
-    "172";
-    scene.append_to_caption("動畫執行： ");
-    "173";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Start", bind: start_button})]);
-    "174";
-    scene.append_to_caption(" ");
-    "175";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Pause", bind: pause_button})]);
-    "176";
-    scene.append_to_caption(" ");
-    "177";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Continue", bind: continue_button})]);
-    "178";
-    scene.append_to_caption(" ");
-    "179";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "Reset", bind: reset_button})]);
-    "180";
-    scene.append_to_caption("  ");
-    "182";
-    scene.append_to_caption("視角： ");
-    "183";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "打擊者視角", bind: batter_view})]);
-    "184";
-    scene.append_to_caption(" ");
-    "185";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "主審視角", bind: umpire_view})]);
-    "186";
-    scene.append_to_caption(" ");
-    "187";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "投手後方視角", bind: pitcher_view})]);
-    "188";
-    scene.append_to_caption(" ");
-    "189";
-    ρσ_interpolate_kwargs.call(this, button, [ρσ_desugar_kwargs({text: "側邊方視角", bind: Side_view})]);
-    "191";
-    scene.append_to_caption("\n");
-    "194";
-    scene.append_to_caption("功能勾選： ");
-    "195";
-    scene.append_to_caption("顯示軌跡: ");
-    "196";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_trail, checked: false})]);
-    "197";
-    scene.append_to_caption("  0.2s暫停: ");
-    "198";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_paused_at_0_2, checked: false})]);
-    "199";
-    scene.append_to_caption("  0.1倍速: ");
-    "200";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_slow, checked: false})]);
-    "202";
-    scene.append_to_caption("\n");
-    "205";
-    scene.append_to_caption("顯示勾選： ");
-    "206";
-    scene.append_to_caption("顯示直球: ");
-    "207";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_fastball, checked: true})]);
-    "208";
-    scene.append_to_caption("  顯示指叉球: ");
-    "209";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_forkball, checked: true})]);
-    "210";
-    scene.append_to_caption("  顯示變速球: ");
-    "211";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_changeup, checked: true})]);
-    "212";
-    scene.append_to_caption("  顯示距離標記: ");
-    "213";
-    ρσ_interpolate_kwargs.call(this, checkbox, [ρσ_desugar_kwargs({bind: toggle_markers, checked: false})]);
-    "214";
-    scene.append_to_caption("\n\n");
-    "230";
-    fastball_speed = 44.704;
-    "231";
-    fastball_angle = 1["-u"]()["*"](1.5);
-    "232";
-    fastball_axis_x = 0;
-    "233";
-    fastball_axis_y = 0;
-    "234";
-    fastball_axis_z = 1;
-    "236";
-    forkball_speed = 40.2336;
-    "237";
-    forkball_angle = 0;
-    "238";
-    forkball_axis_x = 0;
-    "239";
-    forkball_axis_y = 0;
-    "240";
-    forkball_axis_z = 1["-u"]()["*"](1);
-    "242";
-    changeup_speed = 40.2336;
-    "243";
-    changeup_angle = 1["-u"]()["*"](1);
-    "244";
-    changeup_axis_x = 0;
-    "245";
-    changeup_axis_y = 0;
-    "246";
-    changeup_axis_z = 1;
-    "251";
-    scene.append_to_caption("<b>Fastball(直球) 參數<\/b>\n");
-    "253";
-    async function update_fastball_speed(s) {
-        "254";
-        "255";
-        fastball_speed = s.value;
-        "256";
-        fastball_speed_text.text = "Speed = "["+"](ρσ_str.format("{:.2f}", fastball_speed))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", fastball_speed["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", fastball_speed["*"](2.23694)))["+"](" mph\n");
-    };
-    if (!update_fastball_speed.__argnames__) Object.defineProperties(update_fastball_speed, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "258";
-    async function update_fastball_angle(s) {
-        "259";
-        "260";
-        fastball_angle = s.value;
-        "261";
-        fastball_angle_text.text = "Angle = "["+"](ρσ_str.format("{:.1f}", fastball_angle))["+"]("°");
-    };
-    if (!update_fastball_angle.__argnames__) Object.defineProperties(update_fastball_angle, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "263";
-    async function update_fastball_axisx(s) {
-        "264";
-        "265";
-        fastball_axis_x = s.value;
-        "266";
-        fastball_axisx_text.text = "Axis X = "["+"](ρσ_str.format("{:.2f}", fastball_axis_x))["+"]("");
-    };
-    if (!update_fastball_axisx.__argnames__) Object.defineProperties(update_fastball_axisx, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "268";
-    async function update_fastball_axisy(s) {
-        "269";
-        "270";
-        fastball_axis_y = s.value;
-        "271";
-        fastball_axisy_text.text = "Axis Y = "["+"](ρσ_str.format("{:.2f}", fastball_axis_y))["+"]("");
-    };
-    if (!update_fastball_axisy.__argnames__) Object.defineProperties(update_fastball_axisy, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "273";
-    async function update_fastball_axisz(s) {
-        "274";
-        "275";
-        fastball_axis_z = s.value;
-        "276";
-        fastball_axisz_text.text = "Axis Z = "["+"](ρσ_str.format("{:.2f}", fastball_axis_z))["+"]("");
-    };
-    if (!update_fastball_axisz.__argnames__) Object.defineProperties(update_fastball_axisz, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "279";
-    scene.append_to_caption(" 速度: ");
-    "280";
-    fastball_speed_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 20, max: 50, step: .1, value: fastball_speed, bind: update_fastball_speed})]);
-    "281";
-    fastball_speed_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Speed = "["+"](ρσ_str.format("{:.2f}", fastball_speed_slider.value))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", fastball_speed_slider.value["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", fastball_speed_slider.value["*"](2.23694)))["+"](" mph\n")})]);
-    "282";
-    scene.append_to_caption("\n");
-    "284";
-    scene.append_to_caption(" 仰角: ");
-    "285";
-    fastball_angle_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](10), max: 10, step: .1, value: fastball_angle, bind: update_fastball_angle})]);
-    "286";
-    fastball_angle_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Angle = "["+"](ρσ_str.format("{:.1f}", fastball_angle_slider.value))["+"]("°\n")})]);
-    "287";
-    scene.append_to_caption("\n");
-    "289";
-    scene.append_to_caption(" 軸X: ");
-    "290";
-    fastball_axisx_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: fastball_axis_x, bind: update_fastball_axisx})]);
-    "291";
-    fastball_axisx_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis X = "["+"](ρσ_str.format("{:.2f}", fastball_axisx_slider.value))["+"]("\n")})]);
-    "292";
-    scene.append_to_caption("\n");
-    "294";
-    scene.append_to_caption(" 軸Y: ");
-    "295";
-    fastball_axisy_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: fastball_axis_y, bind: update_fastball_axisy})]);
-    "296";
-    fastball_axisy_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Y = "["+"](ρσ_str.format("{:.2f}", fastball_axisy_slider.value))["+"]("\n")})]);
-    "297";
-    scene.append_to_caption("\n");
-    "299";
-    scene.append_to_caption(" 軸Z: ");
-    "300";
-    fastball_axisz_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: fastball_axis_z, bind: update_fastball_axisz})]);
-    "301";
-    fastball_axisz_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Z = "["+"](ρσ_str.format("{:.2f}", fastball_axisz_slider.value))["+"]("\n\n")})]);
-    "302";
-    scene.append_to_caption("\n");
-    "306";
-    scene.append_to_caption("<b>Forkball(指叉球)參數</b>\n");
-    "308";
-    async function update_forkball_speed(s) {
-        "309";
-        "310";
-        forkball_speed = s.value;
-        "311";
-        forkball_speed_text.text = "Speed = "["+"](ρσ_str.format("{:.2f}", forkball_speed))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", forkball_speed["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", forkball_speed["*"](2.23694)))["+"](" mph\n");
-    };
-    if (!update_forkball_speed.__argnames__) Object.defineProperties(update_forkball_speed, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "313";
-    async function update_forkball_angle(s) {
-        "314";
-        "315";
-        forkball_angle = s.value;
-        "316";
-        forkball_angle_text.text = "Angle = "["+"](ρσ_str.format("{:.1f}", forkball_angle))["+"]("°");
-    };
-    if (!update_forkball_angle.__argnames__) Object.defineProperties(update_forkball_angle, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "318";
-    async function update_forkball_axisx(s) {
-        "319";
-        "320";
-        forkball_axis_x = s.value;
-        "321";
-        forkball_axisx_text.text = "Axis X = "["+"](ρσ_str.format("{:.2f}", forkball_axis_x))["+"]("");
-    };
-    if (!update_forkball_axisx.__argnames__) Object.defineProperties(update_forkball_axisx, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "323";
-    async function update_forkball_axisy(s) {
-        "324";
-        "325";
-        forkball_axis_y = s.value;
-        "326";
-        forkball_axisy_text.text = "Axis Y = "["+"](ρσ_str.format("{:.2f}", forkball_axis_y))["+"]("");
-    };
-    if (!update_forkball_axisy.__argnames__) Object.defineProperties(update_forkball_axisy, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "328";
-    async function update_forkball_axisz(s) {
-        "329";
-        "330";
-        forkball_axis_z = s.value;
-        "331";
-        forkball_axisz_text.text = "Axis Z = "["+"](ρσ_str.format("{:.2f}", forkball_axis_z))["+"]("");
-    };
-    if (!update_forkball_axisz.__argnames__) Object.defineProperties(update_forkball_axisz, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "335";
-    scene.append_to_caption(" 速度: ");
-    "336";
-    forkball_speed_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 20, max: 50, step: .1, value: forkball_speed, bind: update_forkball_speed})]);
-    "337";
-    forkball_speed_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Speed = "["+"](ρσ_str.format("{:.2f}", forkball_speed_slider.value))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", forkball_speed_slider.value["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", forkball_speed_slider.value["*"](2.23694)))["+"](" mph\n")})]);
-    "338";
-    scene.append_to_caption("\n");
-    "340";
-    scene.append_to_caption(" 仰角: ");
-    "341";
-    forkball_angle_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](10), max: 10, step: .1, value: forkball_angle, bind: update_forkball_angle})]);
-    "342";
-    forkball_angle_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Angle = "["+"](ρσ_str.format("{:.1f}", forkball_angle_slider.value))["+"]("°\n")})]);
-    "343";
-    scene.append_to_caption("\n");
-    "345";
-    scene.append_to_caption(" 軸X: ");
-    "346";
-    forkball_axisx_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: forkball_axis_x, bind: update_forkball_axisx})]);
-    "347";
-    forkball_axisx_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis X = "["+"](ρσ_str.format("{:.2f}", forkball_axisx_slider.value))["+"]("\n")})]);
-    "348";
-    scene.append_to_caption("\n");
-    "350";
-    scene.append_to_caption(" 軸Y: ");
-    "351";
-    forkball_axisy_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: forkball_axis_y, bind: update_forkball_axisy})]);
-    "352";
-    forkball_axisy_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Y = "["+"](ρσ_str.format("{:.2f}", forkball_axisy_slider.value))["+"]("\n")})]);
-    "353";
-    scene.append_to_caption("\n");
-    "355";
-    scene.append_to_caption(" 軸Z: ");
-    "356";
-    forkball_axisz_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: forkball_axis_z, bind: update_forkball_axisz})]);
-    "357";
-    forkball_axisz_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Z = "["+"](ρσ_str.format("{:.2f}", forkball_axisz_slider.value))["+"]("\n\n")})]);
-    "358";
-    scene.append_to_caption("\n");
-    "362";
-    scene.append_to_caption("<b>Changeup(變速球) 參數</b>\n");
-    "364";
-    async function update_changeup_speed(s) {
-        "365";
-        "366";
-        changeup_speed = s.value;
-        "367";
-        changeup_speed_text.text = "Speed = "["+"](ρσ_str.format("{:.2f}", changeup_speed))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", changeup_speed["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", changeup_speed["*"](2.23694)))["+"](" mph\n");
-    };
-    if (!update_changeup_speed.__argnames__) Object.defineProperties(update_changeup_speed, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "369";
-    async function update_changeup_angle(s) {
-        "370";
-        "371";
-        changeup_angle = s.value;
-        "372";
-        changeup_angle_text.text = "Angle = "["+"](ρσ_str.format("{:.1f}", changeup_angle))["+"]("°");
-    };
-    if (!update_changeup_angle.__argnames__) Object.defineProperties(update_changeup_angle, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "374";
-    async function update_changeup_axisx(s) {
-        "375";
-        "376";
-        changeup_axis_x = s.value;
-        "377";
-        changeup_axisx_text.text = "Axis X = "["+"](ρσ_str.format("{:.2f}", changeup_axis_x))["+"]("");
-    };
-    if (!update_changeup_axisx.__argnames__) Object.defineProperties(update_changeup_axisx, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "379";
-    async function update_changeup_axisy(s) {
-        "380";
-        "381";
-        changeup_axis_y = s.value;
-        "382";
-        changeup_axisy_text.text = "Axis Y = "["+"](ρσ_str.format("{:.2f}", changeup_axis_y))["+"]("");
-    };
-    if (!update_changeup_axisy.__argnames__) Object.defineProperties(update_changeup_axisy, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "384";
-    async function update_changeup_axisz(s) {
-        "385";
-        "386";
-        changeup_axis_z = s.value;
-        "387";
-        changeup_axisz_text.text = "Axis Z = "["+"](ρσ_str.format("{:.2f}", changeup_axis_z))["+"]("");
-    };
-    if (!update_changeup_axisz.__argnames__) Object.defineProperties(update_changeup_axisz, {
-        __argnames__ : {value: ["s"]},
-        __module__ : {value: null}
-    });
-
-    "390";
-    scene.append_to_caption(" 速度: ");
-    "391";
-    changeup_speed_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 20, max: 50, step: .1, value: changeup_speed, bind: update_changeup_speed})]);
-    "392";
-    changeup_speed_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Speed = "["+"](ρσ_str.format("{:.2f}", changeup_speed_slider.value))["+"](" m/s, ")["+"](ρσ_str.format("{:.2f}", changeup_speed_slider.value["*"](3.6)))["+"](" km/hr, ")["+"](ρσ_str.format("{:.2f}", changeup_speed_slider.value["*"](2.23694)))["+"](" mph\n")})]);
-    "394";
-    scene.append_to_caption("\n");
-    "396";
-    scene.append_to_caption(" 仰角: ");
-    "397";
-    changeup_angle_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](10), max: 10, step: .1, value: changeup_angle, bind: update_changeup_angle})]);
-    "398";
-    changeup_angle_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Angle = "["+"](ρσ_str.format("{:.1f}", changeup_angle_slider.value))["+"]("°\n")})]);
-    "399";
-    scene.append_to_caption("\n");
-    "401";
-    scene.append_to_caption(" 軸X: ");
-    "402";
-    changeup_axisx_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: changeup_axis_x, bind: update_changeup_axisx})]);
-    "403";
-    changeup_axisx_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis X = "["+"](ρσ_str.format("{:.2f}", changeup_axisx_slider.value))["+"]("\n")})]);
-    "404";
-    scene.append_to_caption("\n");
-    "406";
-    scene.append_to_caption(" 軸Y: ");
-    "407";
-    changeup_axisy_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: changeup_axis_y, bind: update_changeup_axisy})]);
-    "408";
-    changeup_axisy_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Y = "["+"](ρσ_str.format("{:.2f}", changeup_axisy_slider.value))["+"]("\n")})]);
-    "409";
-    scene.append_to_caption("\n");
-    "411";
-    scene.append_to_caption(" 軸Z: ");
-    "412";
-    changeup_axisz_slider = ρσ_interpolate_kwargs.call(this, slider, [ρσ_desugar_kwargs({min: 1["-u"]()["*"](1), max: 1, step: .1, value: changeup_axis_z, bind: update_changeup_axisz})]);
-    "413";
-    changeup_axisz_text = ρσ_interpolate_kwargs.call(this, wtext, [ρσ_desugar_kwargs({text: "Axis Z = "["+"](ρσ_str.format("{:.2f}", changeup_axisz_slider.value))["+"]("\n\n")})]);
-    "414";
-    scene.append_to_caption("\n");
-    "418";
-    ground = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(9.22, 1["-u"]()["*"](.05), 0), size: vector(18.44, .1, 10), color: color.green})]);
-    "419";
-    target = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(18.44, .5, 0), size: vector(.1, 1, .43), color: color.white, opacity: .5})]);
-    "420";
-    strike_zone = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(18.44, .85, 0), size: vector(.1, .7, .43), color: color.yellow, opacity: .2})]);
-    "422";
-    pitcher_mound_height = .254;
-    "423";
-    pitcher_mound_radius = 2.7432["/"](2);
-    "424";
-    pitcher_mound = ρσ_interpolate_kwargs.call(this, cylinder, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["/"](2), 0), axis: vector(0, 1, 0), radius: pitcher_mound_radius, length: pitcher_mound_height, color: color.orange})]);
-    "430";
-    pitcher_plate_width = .6096;
-    "431";
-    pitcher_plate_depth = .1524;
-    "432";
-    pitcher_plate_height = .01;
-    "433";
-    pitcher_plate = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["+"](pitcher_plate_height["/"](2)), 0), size: vector(pitcher_plate_width, pitcher_plate_height, pitcher_plate_depth), color: color.white})]);
-    "437";
-    pitcher_color = vec(.7, .5, .3);
-    "438";
-    pitcher_height = 1.8;
-    "440";
-    leg_width = .1;
-    "441";
-    leg_height = pitcher_height["-"](1["*"](pitcher_mound_height))["*"](.5);
-    "442";
-    leg_depth = .1;
-    "443";
-    leg_offset = .06;
-    "445";
-    left_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(1["-u"]()["*"](leg_offset), pitcher_mound_height["+"](leg_height["/"](2)), 0), size: vector(leg_width, leg_height, leg_depth), color: pitcher_color})]);
-    "448";
-    right_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(leg_offset, pitcher_mound_height["+"](leg_height["/"](2)), 0), size: vector(leg_width, leg_height, leg_depth), color: pitcher_color})]);
-    "452";
-    torso_width = leg_width["*"](3);
-    "453";
-    torso_height = leg_height["*"](.8);
-    "454";
-    torso_depth = leg_depth["*"](1.5);
-    "455";
-    torso = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["+"](leg_height)["+"](torso_height["/"](2)), 0), size: vector(torso_width, torso_height, torso_depth), color: pitcher_color})]);
-    "459";
-    head_radius = torso_width["/"](2.5);
-    "460";
-    head = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({pos: vector(0, pitcher_mound_height["+"](leg_height)["+"](torso_height)["+"](head_radius), 0), radius: head_radius, color: pitcher_color})]);
-    "464";
-    arm_length = torso_width["*"](.8);
-    "465";
-    arm_width = leg_width["/"](2);
-    "466";
-    arm_height = leg_height["/"](4);
-    "468";
-    left_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(1["-u"]()["*"](torso_width)["/"](2)["-"](1["*"](arm_length)["/"](2)), pitcher_mound_height["+"](leg_height)["+"](torso_height["/"](1.5)), 0), size: vector(arm_length, arm_height, arm_width), color: pitcher_color})]);
-    "472";
-    right_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(torso_width["/"](2)["+"](arm_length["/"](2)), pitcher_mound_height["+"](leg_height)["+"](torso_height["/"](1.5)), 0), size: vector(arm_length, arm_height, arm_width), color: pitcher_color})]);
-    "477";
-    batter_color = vec(.4, .4, .7);
-    "478";
-    batter_height = 1.7;
-    "479";
-    batter_x = 18.44["+"](.3);
-    "480";
-    batter_z = .5;
-    "482";
-    batter_leg_width = .1;
-    "483";
-    batter_leg_height = batter_height["*"](.45);
-    "484";
-    batter_leg_depth = .1;
-    "485";
-    batter_leg_offset = .08;
-    "487";
-    batter_left_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_leg_offset)), batter_leg_height["/"](2), batter_z), size: vector(batter_leg_width, batter_leg_height, batter_leg_depth), color: batter_color})]);
-    "490";
-    batter_right_leg = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["+"](batter_leg_offset), batter_leg_height["/"](2), batter_z), size: vector(batter_leg_width, batter_leg_height, batter_leg_depth), color: batter_color})]);
-    "494";
-    batter_torso_width = batter_leg_width["*"](2.8);
-    "495";
-    batter_torso_height = batter_leg_height["*"](.9);
-    "496";
-    batter_torso_depth = batter_leg_depth["*"](1.5);
-    "497";
-    batter_torso = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x, batter_leg_height["+"](batter_torso_height["/"](2)), batter_z), size: vector(batter_torso_width, batter_torso_height, batter_torso_depth), color: batter_color})]);
-    "505";
-    batter_head_radius = batter_torso_width["/"](2.8);
-    "506";
-    batter_head = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({pos: vector(batter_x, batter_leg_height["+"](batter_torso_height)["+"](batter_head_radius), batter_z), radius: batter_head_radius, color: batter_color})]);
-    "512";
-    batter_arm_length = batter_torso_width["*"](.7);
-    "513";
-    batter_arm_width = batter_leg_width["/"](2.5);
-    "514";
-    batter_arm_height = batter_leg_height["/"](4);
-    "516";
-    batter_left_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_torso_width)["/"](2.5))["-"](1["*"](batter_arm_length)["/"](2)), batter_leg_height["+"](batter_torso_height["/"](1.3)), batter_z["-"](1["*"](.1))), size: vector(batter_arm_length, batter_arm_height, batter_arm_width), color: batter_color})]);
-    "522";
-    batter_right_arm = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_torso_width)["/"](2.5))["-"](1["*"](batter_arm_length)["/"](2)), batter_leg_height["+"](batter_torso_height["/"](1.8)), batter_z["-"](1["*"](.1))), size: vector(batter_arm_length, batter_arm_height, batter_arm_width), color: batter_color})]);
-    "528";
-    bat_length = .8;
-    "529";
-    bat_radius = .035;
-    "530";
-    bat = ρσ_interpolate_kwargs.call(this, cylinder, [ρσ_desugar_kwargs({pos: vector(batter_x["-"](1["*"](batter_torso_width)["/"](2))["-"](1["*"](batter_arm_length)), batter_leg_height["+"](batter_torso_height["/"](1.2)), batter_z["-"](1["*"](.1))), axis: vector(.6, .4, 1["-u"]()["*"](.1)), radius: bat_radius, length: bat_length, color: color.yellow})]);
-    "541";
-    for (var ρσ_Index4 = 0; ρσ_Index4["<"](19); ρσ_Index4++) {
-        i = ρσ_Index4;
-        "542";
-        x_pos = i["*"](1);
-        "543";
-        marker_height = .15;
-        "544";
-        marker_size = vector(.02, marker_height, .2);
-        "545";
-        marker_pos = vector(x_pos["+"](.44), marker_height["/"](2), 0);
-        "547";
-        m_box = ρσ_interpolate_kwargs.call(this, box, [ρσ_desugar_kwargs({pos: marker_pos, size: marker_size, color: color.white})]);
-        "548";
-        m_box.visible = false;
-        "549";
-        markers.append(m_box);
-        "551";
-        m_label = ρσ_interpolate_kwargs.call(this, label, [ρσ_desugar_kwargs({pos: vector(x_pos["+"](.44), marker_height["+"](.1), 0), text: str(18["-"](1["*"](i))), height: 10, color: color.white, opacity: .8, box: false, font: "sans"})]);
-        "558";
-        m_label.visible = false;
-        "559";
-        markers.append(m_label);
+  const signed = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1);
+  function clockSvg(tilt) {
+    let s = '<circle r="54" fill="#fff" stroke="#c9d1cc" stroke-width="2"/>';
+    for (let i = 0; i < 12; i++) {
+      const a = i * 30 * DEG, x = Math.sin(a), y = -Math.cos(a);
+      s += `<line x1="${x * 47}" y1="${y * 47}" x2="${x * 53}" y2="${y * 53}" stroke="#9aa6a0" stroke-width="${i % 3 ? 1.2 : 2.4}"/>`;
+      if (i % 3 === 0) s += `<text x="${x * 38}" y="${y * 38 + 4}" font-size="11" text-anchor="middle" fill="#5d6a64">${i || 12}</text>`;
     }
-    "564";
-    async function create_ball(speed_m_s, angle_deg, spin_rpm, axis_vec, col, name) {
-        var ρσ_ls, theta, b;
-        "565";
-        theta = (await radians(angle_deg));
-        "566";
-        b = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({pos: vector(0, 1.8, 0), radius: r, color: col, trail_radius: r["/"](2), make_trail: false})]);
-        "567";
-        b.v = vector(speed_m_s["*"](cos(theta)), speed_m_s["*"](sin(theta)), 0);
-        "568";
-        b.omega = spin_rpm["*"](2)["*"](pi)["/"](60);
-        "569";
-        b.axis_vec = axis_vec.hat;
-        "570";
-        b.name = name;
-        "572";
-        b.initial_speed = speed_m_s;
-        "573";
-        b.initial_angle = angle_deg;
-        "574";
-        b.initial_spin = spin_rpm;
-        "575";
-        b.initial_axis = axis_vec.hat;
-        "576";
-        return b;
-    };
-    if (!create_ball.__argnames__) Object.defineProperties(create_ball, {
-        __argnames__ : {value: ["speed_m_s", "angle_deg", "spin_rpm", "axis_vec", "col", "name"]},
-        __module__ : {value: null}
-    });
+    const a = tilt * 30 * DEG, x = Math.sin(a), y = -Math.cos(a);
+    s += `<line x1="${-y * 50}" y1="${x * 50}" x2="${y * 50}" y2="${-x * 50}" stroke="#555" stroke-width="2" stroke-dasharray="4 3"/>`;
+    s += '<circle r="15" fill="#fff" stroke="#c0392b" stroke-width="1.6"/><path d="M-9 -11 Q-3 0 -9 11 M9 -11 Q3 0 9 11" fill="none" stroke="#c0392b" stroke-width="1.3"/>';
+    s += `<line x1="0" y1="0" x2="${x * 40}" y2="${y * 40}" stroke="#d9480f" stroke-width="4" stroke-linecap="round"/>`;
+    const hx = x * 46, hy = y * 46, px = -y, py = x;
+    s += `<polygon points="${hx},${hy} ${x * 34 + px * 7},${y * 34 + py * 7} ${x * 34 - px * 7},${y * 34 - py * 7}" fill="#d9480f"/>`;
+    return s;
+  }
+  function gyroSvg(phi) {
+    const a = phi * DEG;
+    let s = '<rect x="-60" y="-60" width="120" height="120" rx="12" fill="#fff"/>';
+    s += '<line x1="0" y1="44" x2="0" y2="-44" stroke="#2f6fdb" stroke-width="3"/><polygon points="0,-54 -6,-42 6,-42" fill="#2f6fdb"/>';
+    s += '<text x="5" y="-46" font-size="9.5" fill="#2f6fdb">前進方向</text>';
+    s += '<line x1="-50" y1="0" x2="50" y2="0" stroke="#9aa6a0" stroke-width="1.2" stroke-dasharray="4 3"/><text x="-56" y="13" font-size="9" fill="#7a8781">陀螺 0°</text>';
+    s += '<circle r="13" fill="#fff" stroke="#c0392b" stroke-width="1.4"/>';
+    const ex = Math.cos(a) * 48, ey = -Math.sin(a) * 48;
+    s += `<line x1="${-ex}" y1="${-ey}" x2="${ex}" y2="${ey}" stroke="#d9480f" stroke-width="3.5" stroke-linecap="round"/>`;
+    const R = 26, ax = Math.cos(a) * R, ay = -Math.sin(a) * R;
+    if (phi > 1) s += `<path d="M${R} 0 A${R} ${R} 0 0 0 ${ax.toFixed(2)} ${ay.toFixed(2)}" fill="none" stroke="#d9480f" stroke-width="1.5"/>`;
+    const lx = phi < 14 ? R + 18 : Math.cos(a / 2) * (R + 12), ly = phi < 14 ? -10 : -Math.sin(a / 2) * (R + 12);
+    s += `<text x="${lx}" y="${ly + 4}" font-size="11" font-weight="700" text-anchor="middle" fill="#d9480f">${+phi.toFixed(1)}°</text>`;
+    s += `<text x="0" y="56" font-size="10" text-anchor="middle" fill="#17201c">效率 ${(Math.cos(a) * 100).toFixed(0)}%</text>`;
+    return s;
+  }
 
-    "579";
-    fastball = (await create_ball(100["*"](.44704), 1["-u"]()["*"](1.5), 2300, vector(0, 0, 1), color.red, "四縫線直球"));
-    "580";
-    forkball = (await create_ball(90["*"](.44704), 0, 900, vector(0, 0, 1["-u"]()["*"](1)), color.blue, "快速指叉球"));
-    "581";
-    changeup = (await create_ball(90["*"](.44704), 1["-u"]()["*"](1), 1500, vector(0, 0, 1), color.green, "變速球"));
-    "583";
-    balls_data = ρσ_list_decorate([ (function(){
-        var ρσ_d = ρσ_dict();
-        ρσ_d.set("ball", fastball);
-        ρσ_d.set("C_M", .18);
-        return ρσ_d;
-    }).call(this), (function(){
-        var ρσ_d = ρσ_dict();
-        ρσ_d.set("ball", forkball);
-        ρσ_d.set("C_M", .05);
-        return ρσ_d;
-    }).call(this), (function(){
-        var ρσ_d = ρσ_dict();
-        ρσ_d.set("ball", changeup);
-        ρσ_d.set("C_M", .15);
-        return ρσ_d;
-    }).call(this) ]);
-    "592";
-    while (true) {
-        "594";
-        if (slowcheck) {
-            "595";
-            slow = 10;
-            "596";
-        } else {
-            "597";
-            slow = 1;
-        }
-        "599";
-        (await rate(1["/"](dt["*"](slow))));
-        "601";
-        if (running) {
-            "602";
-            var ρσ_Iter5 = balls_data;
-            ρσ_Iter5 = ((typeof ρσ_Iter5[Symbol.iterator] === "function") ? (ρσ_Iter5 instanceof Map ? ρσ_Iter5.keys() : ρσ_Iter5) : Object.keys(ρσ_Iter5));
-            for (var ρσ_Index5 of ρσ_Iter5) {
-                data = ρσ_Index5;
-                "603";
-                b = ρσ_getitem(data, "ball");
-                "604";
-                C_M = ρσ_getitem(data, "C_M");
-                "607";
-                if (b.pos.x["<"](18.44) && b.pos.y[">="](0)) {
-                    "609";
-                    b.omega=b.omega["*"](1["-"](1["*"](k_omega["/"](I))["*"](dt)));
-                    "611";
-                    v_mag = mag(b.v);
-                    "612";
-                    omega_vec = b.omega["*"](b.axis_vec);
-                    "613";
-                    magnus_dir = norm(cross(omega_vec, b.v));
-                    "614";
-                    F_M = .5["*"](rho)["*"](C_M)["*"](A)["*"](Math.pow(v_mag, 2));
-                    "615";
-                    magnus_force = F_M["/"](m)["*"](magnus_dir);
-                    "618";
-                    C_D = .35;
-                    "619";
-                    drag_force = 1["-u"]()["*"](.5)["*"](rho)["*"](C_D)["*"](A)["*"](Math.pow(v_mag, 2))["*"](norm(b.v))["/"](m);
-                    "621";
-                    a = vector(0, 1["-u"]()["*"](g), 0)["+"](drag_force)["+"](magnus_force);
-                    "622";
-                    b.v=b.v["+"](a["*"](dt));
-                    "623";
-                    b.pos=b.pos["+"](b.v["*"](dt));
-                    "626";
-                    if (abs(b.pos.x["-"](1["*"](18.44)))["<"](.1)) {
-                        "627";
-                        print(""["+"](ρσ_str.format("{}", b.name))["+"]("本壘板高度: ")["+"](ρσ_str.format("{:.2f}", b.pos.y))["+"](" m"));
-                        "628";
-                        print(""["+"](ρσ_str.format("{}", b.name))["+"]("最終轉速: ")["+"](ρσ_str.format("{:.0f}", b.omega["*"](60)["/"](2["*"](pi))))["+"](" RPM"));
-                        "629";
-                        print("到達時間: "["+"](ρσ_str.format("{:.3f}", t))["+"](" s"));
-                    }
-                }
-            }
-            "631";
-            t=t["+"](dt);
-            "634";
-            if (t[">="](.2) && paused_at_0_2) {
-                "635";
-                running = false;
-                "636";
-                print("模擬在時間 t = 0.2 s 暫停。");
-            }
-        }
+  function updateCard(b) {
+    const r = b.res, q = (k) => b.el.querySelector(`[data-o=${k}]`);
+    b.el.classList.toggle('off', !b.on);
+    q('active').innerHTML = `${Math.round(r.active)}<small>rpm</small>`;
+    q('eff').innerHTML = `${Math.round(r.eff * 100)}<small>%</small>`;
+    const [X, Y, Z] = r.axisXYZ;
+    q('vecShort').innerHTML = `(${X.toFixed(2)}, ${Y.toFixed(2)}, ${Z.toFixed(2)})`;
+    q('vb').innerHTML = `${r.vb.toFixed(1)}<small>cm</small>`;
+    q('hb').innerHTML = `${r.hb.toFixed(1)}<small>cm</small>`;
+    q('time').innerHTML = `${r.time.toFixed(2)}<small>s</small>`;
+    q('pkph').innerHTML = `${r.plateKmh.toFixed(1)}<small>kph</small>`;
+    const act = q('actual');
+    if (b.src !== 'custom') {
+      const p = VIDEO[b.src];
+      act.classList.remove('hide');
+      act.innerHTML = `PitchLab 實測：垂直 <b>${p.v}</b> cm、水平 <b>${p.h}</b> cm（模型：${r.vb.toFixed(1)}、${r.hb.toFixed(1)}）`;
+    } else act.classList.add('hide');
+    q('clockSvg').innerHTML = clockSvg(b.tilt);
+    q('gyroSvg').innerHTML = gyroSvg(b.gyro);
+  }
+
+  function updateLive() {
+    const b = balls[0], r = b.res, th = (b.tilt * 30) % 360;
+    const mh = [Math.sin(th * DEG), Math.cos(th * DEG)];
+    const f = (v) => (v >= 0 ? ' ' : '') + v.toFixed(3);
+    const tr = r.transverse, trX = [-tr[1], tr[2], -tr[0]];
+    $('live').textContent =
+`以球 A 為例（${clockText(b.tilt)}、陀螺 ${b.gyro}°、${b.rpm} rpm）
+θ = ${clockText(b.tilt)} → ${th.toFixed(1)}°
+被推的方向 m̂（投手看）：往三壘側 ${f(mh[0])}，往上 ${f(mh[1])}
+橫向轉軸 ω̂⊥ (X, Y, Z) = (${f(trX[0])}, ${f(trX[1])}, ${f(trX[2])})
+旋轉軸   ω̂  (X, Y, Z) = (${f(r.axisXYZ[0])}, ${f(r.axisXYZ[1])}, ${f(r.axisXYZ[2])})
+效率 = cos ${b.gyro}° = ${r.eff.toFixed(3)}　啟用中 = ${b.rpm} × ${r.eff.toFixed(3)} = ${Math.round(r.active)} rpm
+（X 稍帶分量是因為出手方向略為朝上、朝本壘中央，不完全沿 X 軸。）`;
+  }
+
+  /* ---------- movement chart ---------- */
+  const mv = $('move-canvas'), mctx = mv.getContext('2d');
+  function drawMove() {
+    const dpr = Math.min(2, devicePixelRatio || 1), W = mv.clientWidth || 520;
+    if (mv.width !== Math.round(W * dpr)) { mv.width = Math.round(W * dpr); mv.height = Math.round(W * dpr); }
+    const c = mctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, W);
+    const R = 60, pad = 34, sc = (W / 2 - pad) / R, cx = W / 2, cy = W / 2;
+    const X = (h) => cx + h * sc, Y = (v) => cy - v * sc;
+    c.font = '12px ' + getComputedStyle(document.body).fontFamily;
+    c.strokeStyle = '#e3e8e5'; c.lineWidth = 1;
+    for (let g = -60; g <= 60; g += 10) { c.beginPath(); c.moveTo(X(g), Y(-R)); c.lineTo(X(g), Y(R)); c.moveTo(X(-R), Y(g)); c.lineTo(X(R), Y(g)); c.stroke(); }
+    c.strokeStyle = '#9aa6a0'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(X(-R), cy); c.lineTo(X(R), cy); c.moveTo(cx, Y(-R)); c.lineTo(cx, Y(R)); c.stroke();
+    c.fillStyle = '#5d6a64'; c.textAlign = 'center';
+    for (let g = -60; g <= 60; g += 20) if (g) { c.fillText(g, X(g), cy + 15); c.fillText(g, cx - 14, Y(g) + 4); }
+    c.fillText('垂直 ↑（掉得少）', cx, 14); c.fillText('↓（掉得多）', cx, W - 4);
+    c.textAlign = 'left'; c.fillText('← 一壘側', 4, cy - 8); c.textAlign = 'right'; c.fillText('三壘側 →', W - 4, cy - 8);
+    c.textAlign = 'right'; c.fillText('單位 cm', W - 4, W - 4); c.textAlign = 'center';
+    for (const b of balls) {
+      if (!b.on || !b.res) continue;
+      const col = getComputedStyle(document.body).getPropertyValue('--' + b.id).trim();
+      if (b.src !== 'custom') {
+        const p = VIDEO[b.src];
+        c.strokeStyle = col; c.lineWidth = 2.5; c.setLineDash([]);
+        c.beginPath(); c.arc(X(p.h), Y(p.v), 8, 0, 2 * Math.PI); c.stroke();
+        c.setLineDash([3, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(p.h), Y(p.v)); c.lineTo(X(b.res.hb), Y(b.res.vb)); c.stroke(); c.setLineDash([]);
+      }
+      c.fillStyle = col; c.beginPath(); c.arc(X(b.res.hb), Y(b.res.vb), 7, 0, 2 * Math.PI); c.fill();
+      c.fillStyle = '#fff'; c.font = 'bold 10px sans-serif'; c.fillText(b.id, X(b.res.hb), Y(b.res.vb) + 3.5);
+      c.font = '12px ' + getComputedStyle(document.body).fontFamily;
     }
-};
-if (!__main__.__module__) Object.defineProperties(__main__, {
-    __module__ : {value: null}
+  }
+
+  /* ---------- GlowScript scene ---------- */
+  window.__context = { glowscript_container: window.jQuery('#glowscript').removeAttr('id') };
+  const stageEl = $('stage');
+  const W = () => stageEl.clientWidth, H = () => Math.round(Math.min(620, Math.max(360, stageEl.clientWidth * 0.56)));
+  const scene = canvas({ width: W(), height: H(), background: vec(0.62, 0.83, 0.9) });
+  scene.userpan = true;
+  const S = (x, y, z) => vec(x, z, -y);   // physics (x → 1B, y → mound, z ↑) → screen
+  const Sv = (a) => vec(a[0], a[2], -a[1]);
+  const BOX = (x, y, z, sx, sy, sz, col, o) => box(Object.assign({ pos: S(x, y, z), size: vec(sx, sz, sy), color: col }, o || {}));
+
+  // field
+  box({ pos: S(0, 9, -0.06), size: vec(70, 0.1, 70), color: vec(0.33, 0.6, 0.3), shininess: 0 });
+  cylinder({ pos: S(0, 0, -0.01), axis: vec(0, 0.012, 0), radius: 3.6, color: vec(0.7, 0.53, 0.36), shininess: 0 });
+  cylinder({ pos: S(0, 18.44, -0.01), axis: vec(0, 0.25, 0), radius: 2.74, color: vec(0.7, 0.53, 0.36), shininess: 0 });
+  BOX(0, 18.44, 0.255, 0.61, 0.15, 0.012, color.white);
+  BOX(0, 0.215, 0.006, 0.43, 0.43, 0.012, color.white);
+  const zx = 0.216 + P.BALL.radius, py = P.PLATE_Y;
+  curve({ pos: [S(-zx, py, 0.46), S(zx, py, 0.46), S(zx, py, 1.07), S(-zx, py, 1.07), S(-zx, py, 0.46)], color: vec(1, 0.9, 0.2), radius: 0.008 });
+  box({ pos: S(0, py, 0.765), size: vec(2 * zx, 0.61, 0.004), color: vec(1, 0.9, 0.2), opacity: 0.12 });
+  const tgt = 0.03;
+  curve({ pos: [S(-tgt, py, 0.76), S(tgt, py, 0.76)], color: color.white, radius: 0.004 });
+  curve({ pos: [S(0, py, 0.76 - tgt), S(0, py, 0.76 + tgt)], color: color.white, radius: 0.004 });
+
+  // pitcher & batter (blocky, after the original version)
+  const figure = (x, y, base, h, col, parts) => {
+    const leg = (h - base) * 0.47, torso = leg * 0.8;
+    parts.push(BOX(x - 0.09, y, base + leg / 2, 0.1, 0.12, leg, col), BOX(x + 0.09, y, base + leg / 2, 0.1, 0.12, leg, col),
+      BOX(x, y, base + leg + torso / 2, 0.36, 0.2, torso, col), sphere({ pos: S(x, y, base + leg + torso + 0.12), radius: 0.12, color: col }));
+    return base + leg + torso;
+  };
+  const batterParts = [];
+  const pc = vec(0.72, 0.5, 0.32), bc = vec(0.36, 0.38, 0.72);
+  let pitcherArm = null;
+  const shoulder = figure(0, 18.1, 0.25, 1.85, pc, []);
+  function drawPitcherArm() {
+    const sx = st.hand === 'R' ? -0.2 : 0.2;
+    if (pitcherArm) pitcherArm.visible = false;
+    pitcherArm = cylinder({ pos: S(sx, 18.1, shoulder - 0.06), axis: Sv(sub([(st.hand === 'R' ? -1 : 1) * 0.55, 16.9, 1.75], [sx, 18.1, shoulder - 0.06])), radius: 0.045, color: pc });
+  }
+  drawPitcherArm();
+  const bShoulder = figure(-0.95, 0.05, 0, 1.75, bc, batterParts);
+  batterParts.push(cylinder({ pos: S(-0.78, -0.12, bShoulder - 0.05), axis: Sv([-0.12, -0.3, 0.72]), radius: 0.03, color: vec(0.55, 0.37, 0.2) }));
+
+  // distance markers (metres from the plate)
+  const markers = [];
+  for (let d = 0; d <= 18; d++) {
+    markers.push(BOX(1.5, d, 0.02, 0.4, 0.03, 0.03, color.white));
+    if (d % 2 === 0) markers.push(label({ pos: S(1.95, d, 0.08), text: `${d} m`, height: 11, box: false, line: false, opacity: 0, color: color.white }));
+  }
+  markers.forEach((m) => { m.visible = false; });
+
+  // balls
+  const R_SHOW = 0.075, A_S = 4 / 13, seamBody = [];
+  for (let i = 0; i <= 120; i++) {
+    const t = 2 * Math.PI * i / 120;
+    seamBody.push(vec((1 - A_S) * Math.cos(t) + A_S * Math.cos(3 * t), (1 - A_S) * Math.sin(t) - A_S * Math.sin(3 * t), 2 * Math.sqrt(A_S * (1 - A_S)) * Math.sin(2 * t)).norm());
+  }
+  for (const b of balls) {
+    const c = COLORS[b.id], col = vec(c[0], c[1], c[2]);
+    b.g = {
+      col,
+      ball: sphere({ radius: R_SHOW, color: vec(0.97, 0.96, 0.93), make_trail: true, trail_color: col, trail_radius: 0.012, retain: 2000 }),
+      ghost: sphere({ radius: R_SHOW * 0.8, color: vec(0.6, 0.63, 0.66), opacity: 0.55, make_trail: true, trail_color: vec(0.6, 0.63, 0.66), trail_radius: 0.005, visible: false }),
+      axis: arrow({ color: col, shaftwidth: 0.022, headwidth: 0.05, headlength: 0.06 }),
+      tag: label({ text: b.id, height: 12, box: false, line: false, opacity: 0, color: col, yoffset: 18 }),
+      seam: null
+    };
+  }
+  function placeSeam(b) {
+    const g = b.g, w = Sv(b.res.omegaHat);
+    const body = vec(0, 0, 1), turn = body.cross(w), ang = Math.acos(Math.max(-1, Math.min(1, body.dot(w))));
+    const pts = seamBody.map((q) => (turn.mag > 1e-9 ? q.rotate({ angle: ang, axis: turn }) : q).multiply(R_SHOW * 1.03));
+    if (g.seam) g.seam.visible = false;
+    g.seam = curve({ pos: pts, color: vec(0.8, 0.08, 0.15), radius: R_SHOW * 0.06 });
+    g.seam.origin = g.ball.pos;
+    g.wS = w;
+  }
+  const at = (path, t) => {
+    if (t >= path[path.length - 1].t) return path[path.length - 1].p;
+    let i = 1; while (path[i].t < t) i++;
+    const a = path[i - 1], c = path[i], u = (t - a.t) / (c.t - a.t);
+    return [0, 1, 2].map((k) => a.p[k] + (c.p[k] - a.p[k]) * u);
+  };
+  const ARROW_L = 0.32;
+  function poseBall(b, t) {
+    const g = b.g, r = b.res;
+    let p = at(r.real.path, t);
+    g.ball.pos = Sv(p); g.seam.origin = g.ball.pos;
+    g.ghost.pos = Sv(at(r.ghost.path, t));
+    g.axis.pos = g.ball.pos.sub(g.wS.multiply(ARROW_L / 2)); g.axis.axis = g.wS.multiply(ARROW_L);
+    g.tag.pos = g.ball.pos;
+  }
+  function setVisibility() {
+    for (const b of balls) {
+      const g = b.g, on = b.on;
+      g.ball.visible = on; if (g.seam) g.seam.visible = on; g.tag.visible = on;
+      g.axis.visible = on && $('opt-axis').checked;
+      g.ghost.visible = on && $('opt-ghost').checked;
+      g.ball.make_trail = on && $('opt-trail').checked;
+      g.ghost.make_trail = g.ghost.visible && $('opt-trail').checked;
+      if (!g.ball.make_trail) g.ball.clear_trail();
+      if (!g.ghost.make_trail) g.ghost.clear_trail();
+    }
+  }
+
+  /* ---------- views ---------- */
+  const VIEWS = {
+    batter: { pos: [-0.9, 0.12, 1.6], look: [-0.45, 16.7, 1.55] },
+    catcher: { pos: [0.2, -2.8, 1.35], look: [0, 10, 0.95] },
+    pitcher: { pos: [-1.1, 21.8, 2.25], look: [0, 0, 0.75] },
+    side: { pos: [-13.5, 8.6, 1.6], look: [0, 8.6, 1.0] },
+    top: { pos: [0.3, 9.2, 15], look: [0, 9.2, 0] }
+  };
+  function setView(k) {
+    const v = VIEWS[k];
+    scene.up = k === 'top' ? vec(0, 0, -1) : vec(0, 1, 0);
+    batterParts.forEach((o) => { o.visible = k !== 'batter'; });
+    scene.camera.pos = S(...v.pos);
+    scene.camera.axis = S(...v.look).sub(S(...v.pos));
+    document.querySelectorAll('#views button').forEach((x) => x.classList.toggle('on', x.dataset.view === k));
+  }
+  $('views').addEventListener('click', (e) => { const btn = e.target.closest('button'); if (btn) setView(btn.dataset.view); });
+
+  /* ---------- run ---------- */
+  let maxT = 1, ended = false;
+  function recompute(replay) {
+    for (const b of balls) { b.res = simulate(b); updateCard(b); placeSeam(b); }
+    maxT = Math.max(...balls.filter((b) => b.on).map((b) => b.res.time), 0.3);
+    setVisibility(); drawMove(); updateLive();
+    if (replay) throwAll(); else { for (const b of balls) poseBall(b, Math.min(st.t, b.res.time)); hud(); }
+  }
+  function throwAll() {
+    st.t = 0; st.playing = true; st.paused02 = false; ended = false;
+    $('pause-note').style.display = 'none';
+    for (const b of balls) { b.g.ball.clear_trail(); b.g.ghost.clear_trail(); poseBall(b, 0); b.g.ball.clear_trail(); b.g.ghost.clear_trail(); }
+    $('pause').textContent = '❚❚ 暫停';
+  }
+  function hud() {
+    const lines = [`t = ${st.t.toFixed(3)} s` + (st.slow > 1 ? `（放慢 ${st.slow} 倍）` : '')];
+    for (const b of balls) {
+      if (!b.on) continue;
+      const r = b.res, done = st.t >= r.time;
+      lines.push(`球 ${b.id}  ${done ? `到本壘 ${r.time.toFixed(2)} s　進壘高 ${r.plate[2].toFixed(2)} m` : `距本壘 ${Math.max(0, at(r.real.path, st.t)[1] - P.PLATE_Y).toFixed(1)} m`}`);
+    }
+    $('hud').textContent = lines.join('\n');
+  }
+  let last = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!st.playing) return;
+    const step = dt / st.slow, t0 = st.t;
+    let t1 = t0 + step;
+    if ($('opt-pause02').checked && !st.paused02 && t0 < 0.2 && t1 >= 0.2) { t1 = 0.2; st.paused02 = true; st.playing = false; $('pause-note').style.display = 'block'; $('pause').textContent = '▶ 繼續'; }
+    st.t = t1;
+    for (const b of balls) {
+      const r = b.res;
+      const spinDt = Math.max(0, Math.min(t1, r.time) - Math.min(t0, r.time));
+      if (spinDt > 0 && r.rate > 0) b.g.seam.rotate({ angle: r.rate * spinDt, axis: b.g.wS, origin: b.g.ball.pos });
+      poseBall(b, Math.min(t1, r.time));
+    }
+    hud();
+    if (st.t >= maxT + 0.05) { st.playing = false; ended = true; $('pause').textContent = '❚❚ 暫停'; }
+  }
+
+  $('play').addEventListener('click', throwAll);
+  $('pause').addEventListener('click', () => {
+    if (ended) { throwAll(); return; }
+    st.playing = !st.playing;
+    if (st.playing) $('pause-note').style.display = 'none';
+    $('pause').textContent = st.playing ? '❚❚ 暫停' : '▶ 繼續';
+  });
+  $('slow').addEventListener('change', (e) => { st.slow = Number(e.target.value); hud(); });
+  $('opt-trail').addEventListener('change', setVisibility);
+  $('opt-axis').addEventListener('change', setVisibility);
+  $('opt-ghost').addEventListener('change', setVisibility);
+  $('opt-markers').addEventListener('change', (e) => markers.forEach((m) => { m.visible = e.target.checked; }));
+  $('hand').addEventListener('change', (e) => { st.hand = e.target.value; drawPitcherArm(); recompute(true); });
+  $('aim').addEventListener('change', (e) => { st.aim = e.target.value; recompute(true); });
+  window.addEventListener('resize', () => { scene.width = W(); scene.height = H(); drawMove(); hidePop(); });
+
+  setView('catcher');
+  recompute(true);
+  requestAnimationFrame(frame);
+  window.__pl = { st, balls, simulate, parseClock, clockText, setView, scene, VIDEO };
 });
-
-;$(function(){ window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })})()
-// END JAVASCRIPT
-
-//--><!]]></script>
-</div>
-
+</script>
 </body>
 </html>
