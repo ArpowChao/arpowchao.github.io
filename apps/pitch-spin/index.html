@@ -7,13 +7,13 @@
   <meta name="description" content="3D 棒球旋轉實驗室：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸、有效轉速與效率，看球怎麼轉、怎麼飛，並在 3D 球場比較三顆球。">
   <title>SPIN 投球旋轉實驗室 | Physics Lab</title>
   <link rel="icon" href="../../assets/img/apps/pitch-spin.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
   <script src="lib/three.min.js" defer></script>
   <script src="pitch.js?v=3" defer></script>
-  <script src="pitchlab.js?v=2" defer></script>
-  <script src="app.js?v=3" defer></script>
+  <script src="pitchlab.js?v=4" defer></script>
+  <script src="app.js?v=4" defer></script>
   <script src="explainer.js?v=2" defer></script>
-  <script src="field.js?v=2" defer></script>
+  <script src="field.js?v=4" defer></script>
 </head>
 <body>
   <header class="topbar"><a href="../index.html" class="back-link">← Physics Lab</a><span>投球物理 / PITCH SPIN &amp; MOVEMENT</span><a href="#axis-gyro">轉軸與陀螺角 ↓</a></header>
@@ -37,9 +37,10 @@
           <div class="stage-top">
             <div class="view-buttons" role="group" aria-label="視角">
               <button type="button" data-view="flow" class="active">看氣流</button>
+              <button type="button" data-view="pitcher">投手視角</button>
+              <button type="button" data-view="batter">打擊者視角</button>
               <button type="button" data-view="catcher">捕手視角</button>
-              <button type="button" data-view="pitcher">投手後方</button>
-              <button type="button" data-view="side">三壘側</button>
+              <button type="button" data-view="side">側面</button>
             </div>
             <div class="stage-tools">
             <label class="flow-toggle"><input id="show-flow" type="checkbox" checked><span>氣流線</span></label>
@@ -112,6 +113,23 @@
             <div class="control-head"><label for="seams">握法（縫線方位）</label></div>
             <select id="seams"><option value="four">四縫線：每轉一圈有 4 段縫線劃過空氣</option><option value="two">二縫線：每轉一圈 2 段縫線</option></select>
           </div>
+          <details class="release-box" open>
+            <summary>出手點（影片沒有這個數據，可自己調）</summary>
+            <div class="slot-chips" id="slot-chips"></div>
+            <div class="control">
+              <div class="control-head"><span class="term-wrap" data-k="relH"></span><span class="num-wrap"><input id="relH-num" class="num" type="number" min="0.5" max="2.3" step="0.01" inputmode="decimal" aria-label="出手高度（公尺）"><span class="unit">m</span></span></div>
+              <input id="relH" type="range" min="0.5" max="2.3" step="0.01" aria-label="出手高度滑桿">
+            </div>
+            <div class="control">
+              <div class="control-head"><span class="term-wrap" data-k="relS"></span><span class="num-wrap"><input id="relS-num" class="num" type="number" min="0" max="1.3" step="0.01" inputmode="decimal" aria-label="出手左右（公尺，往手臂側）"><span class="unit">m</span></span></div>
+              <input id="relS" type="range" min="0" max="1.3" step="0.01" aria-label="出手左右滑桿">
+            </div>
+            <div class="control">
+              <div class="control-head"><span class="term-wrap" data-k="ext"></span><span class="num-wrap"><input id="ext-num" class="num" type="number" min="0.8" max="2.4" step="0.01" inputmode="decimal" aria-label="延伸距離（公尺）"><span class="unit">m</span></span></div>
+              <input id="ext" type="range" min="0.8" max="2.4" step="0.01" aria-label="延伸距離滑桿">
+            </div>
+            <p class="hint" id="release-hint"></p>
+          </details>
           <div class="send-row"><span>放到下方球場比較：</span><button type="button" data-send="A">球 A</button><button type="button" data-send="B">球 B</button><button type="button" data-send="C">球 C</button></div>
         </section>
         <section class="panel readout-panel" id="win-data">
@@ -204,7 +222,7 @@
             <button class="tb-btn" id="f-play" type="button">▶ 投球</button>
             <button class="tb-btn ghost" id="f-pause" type="button">❚❚ 暫停</button>
             <select class="tb-sel" id="f-slow" title="慢動作"><option value="1">真實速度</option><option value="4">放慢 4 倍</option><option value="10" selected>放慢 10 倍</option><option value="25">放慢 25 倍</option></select>
-            <div class="seg" id="f-views" role="group" aria-label="視角"><button data-view="batter">打擊者</button><button data-view="catcher" class="on">捕手後方</button><button data-view="pitcher">投手後方</button><button data-view="side">三壘側</button><button data-view="top">正上方</button></div>
+            <div class="seg" id="f-views" role="group" aria-label="視角"><button data-view="pitcher">投手視角</button><button data-view="batter">打擊者視角</button><button data-view="catcher" class="on">捕手視角</button><button data-view="side">側面</button><button data-view="top">正上方</button></div>
             <button type="button" class="tb-btn ghost" id="fs-field">⛶ 全螢幕</button>
           </div>
           <div class="pause-note" id="f-pause-note">t = 0.2 s 暫停：這時候打者必須決定要不要揮棒了</div>

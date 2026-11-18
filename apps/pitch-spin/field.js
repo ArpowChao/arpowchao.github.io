@@ -9,13 +9,13 @@
   const st = { hand: 'R', aim: 'nospin', slow: 10, playing: false, t: 0, paused02: false };
   const COLORS = { A: [0.9, 0.28, 0.3], B: [0.18, 0.44, 0.86], C: [0.12, 0.62, 0.33] };
   const CSS = { A: '#e5484d', B: '#2f6fdb', C: '#1f9d55' };
-  const balls = [{ id: 'A', on: true, src: 1 }, { id: 'B', on: true, src: 2 }, { id: 'C', on: true, src: 4 }];
+  const balls = [{ id: 'A', on: true, src: 1 }, { id: 'B', on: true, src: 2 }, { id: 'C', on: true, src: 4 }].map((b) => ({ ...b, relH: 1.78, relS: 0.55, ext: 1.74 }));
   function loadVideo(b, i) { const p = PL.VIDEO[i]; Object.assign(b, { src: i, kph: p.kph, rpm: p.rpm, tilt: PL.parseClock(p.clock), gyro: p.gyro, name: null }); }
   balls.forEach((b) => loadVideo(b, b.src));
 
   function simulate(b) {
     const eff = PL.effFromGyro(b.gyro);
-    const cfg = P.normalize({ hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff, release: { x: (st.hand === 'R' ? -1 : 1) * 0.55, y: 16.7, z: 1.78 }, target: { x: 0, z: 0.76 } });
+    const cfg = P.normalize({ hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff, release: PL.releaseOf(st.hand, b.relH, b.relS, b.ext), target: { x: 0, z: 0.76 } });
     const r = [cfg.release.x, cfg.release.y, cfg.release.z];
     const v0 = P.aim(cfg, st.aim === 'spin');
     const spin = P.spinVector(cfg, unit(v0));
@@ -50,6 +50,12 @@
         <div><span class="term plain">到本壘</span><b data-o="time"></b></div>
         <div><span class="term plain">進壘球速</span><b data-o="pkph"></b></div>
       </div>
+      <div class="fc-release">
+        <div><span class="term plain">出手</span><select data-k="slot" aria-label="球 ${b.id} 出手方式">${PL.SLOTS.map((s) => `<option value="${s.key}">${s.name}</option>`).join('')}<option value="custom">自訂</option></select></div>
+        <div>${T('relH', '高度')}<input type="number" class="num" data-k="relH" min="0.5" max="2.3" step="0.01" inputmode="decimal"></div>
+        <div>${T('relS', '左右')}<input type="number" class="num" data-k="relS" min="0" max="1.3" step="0.01" inputmode="decimal"></div>
+        <div>${T('ext', '延伸')}<input type="number" class="num" data-k="ext" min="0.8" max="2.4" step="0.01" inputmode="decimal"></div>
+      </div>
       <p class="fc-actual" data-o="actual"></p>`;
     $('f-cards').appendChild(el);
     b.el = el;
@@ -64,17 +70,22 @@
       b[k] = v; custom(); if (k === 'gyro') q('[data-k=gyroR]').value = v; recompute(false);
     });
     num('kph', 60, 170); num('rpm', 0, 3500); num('gyro', 0, 90);
+    const relNum = (k, lo, hi) => { const el = q(`[data-k=${k}]`); el.addEventListener('input', (e) => { const v = Number(e.target.value), ok = e.target.value !== '' && v >= lo && v <= hi; e.target.classList.toggle('bad', !ok); if (!ok) return; b[k] = v; q('[data-k=slot]').value = slotOf(b); recompute(false); }); el.addEventListener('change', () => recompute(true)); };
+    relNum('relH', 0.5, 2.3); relNum('relS', 0, 1.3); relNum('ext', 0.8, 2.4);
+    q('[data-k=slot]').addEventListener('change', (e) => { const s = PL.SLOTS.find((x) => x.key === e.target.value); if (!s) return; Object.assign(b, { relH: s.h, relS: s.s, ext: s.e }); fill(b); recompute(true); });
     q('[data-k=gyroR]').addEventListener('input', (e) => { b.gyro = Number(e.target.value); q('[data-k=gyro]').value = b.gyro; custom(); recompute(false); });
     q('[data-k=clock]').addEventListener('input', (e) => { const t = PL.parseClock(e.target.value); e.target.classList.toggle('bad', t === null); if (t === null) return; b.tilt = t; custom(); recompute(false); });
     q('[data-k=clock]').addEventListener('blur', (e) => { e.target.value = PL.clockText(b.tilt); e.target.classList.remove('bad'); });
     el.querySelectorAll('[data-step]').forEach((btn) => btn.addEventListener('click', () => { b.tilt = (((b.tilt + Number(btn.dataset.step)) % 12) + 12) % 12; q('[data-k=clock]').value = PL.clockText(b.tilt); custom(); recompute(true); }));
     ['kph', 'rpm', 'gyro', 'gyroR', 'clock'].forEach((k) => q(`[data-k=${k}]`).addEventListener('change', () => recompute(true)));
   }
+  function slotOf(b) { const s = PL.SLOTS.find((x) => Math.abs(x.h - b.relH) < .005 && Math.abs(x.s - b.relS) < .005 && Math.abs(x.e - b.ext) < .005); return s ? s.key : 'custom'; }
   function fill(b) {
     const q = b.q;
     q('[data-k=src]').value = String(b.src);
     q('[data-k=kph]').value = b.kph; q('[data-k=rpm]').value = b.rpm; q('[data-k=clock]').value = PL.clockText(b.tilt);
     q('[data-k=gyro]').value = b.gyro; q('[data-k=gyroR]').value = b.gyro;
+    q('[data-k=relH]').value = b.relH.toFixed(2); q('[data-k=relS]').value = b.relS.toFixed(2); q('[data-k=ext]').value = b.ext.toFixed(2); q('[data-k=slot]').value = slotOf(b);
     b.el.querySelectorAll('.bad').forEach((x) => x.classList.remove('bad'));
   }
   balls.forEach(fill);
@@ -155,6 +166,7 @@
     for (const [id, p] of q) {
       const b = balls.find((x) => x.id === id); if (!b) continue;
       Object.assign(b, { kph: p.kph, rpm: p.rpm, tilt: p.tilt, gyro: +(+p.gyro).toFixed(1), src: p.video != null ? p.video : 'custom', name: p.name, on: true });
+      if (p.relH != null) Object.assign(b, { relH: p.relH, relS: p.relS, ext: p.ext });
       b.q('[data-k=on]').checked = true; fill(b);
     }
     if (q.length) recompute(true);
@@ -189,9 +201,9 @@
     const shoulder = figure(0, 18.1, 0.25, 1.85, pc, []);
     let arm = null;
     const drawArm = () => {
-      const sx = st.hand === 'R' ? -0.2 : 0.2;
+      const sx = st.hand === 'R' ? -0.2 : 0.2, a = balls[0], rp = PL.releaseOf(st.hand, a.relH, a.relS, a.ext), sh = [sx, 18.1, shoulder - 0.06];
       if (arm) arm.visible = false;
-      arm = cylinder({ pos: S(sx, 18.1, shoulder - 0.06), axis: Sv(sub([(st.hand === 'R' ? -1 : 1) * 0.55, 16.9, 1.78], [sx, 18.1, shoulder - 0.06])), radius: 0.045, color: pc });
+      arm = cylinder({ pos: S(...sh), axis: Sv(sub([rp.x, rp.y + 0.1, rp.z], sh)), radius: 0.045, color: pc });
     };
     drawArm();
     const bs = figure(-0.95, 0.05, 0, 1.75, vec(0.36, 0.38, 0.72), batterParts);
@@ -261,6 +273,7 @@
     };
     recompute = (replay) => {
       for (const b of balls) { b.res = simulate(b); updateCard(b); placeSeam(b); }
+      drawArm();
       maxT = Math.max(0.3, ...balls.filter((b) => b.on).map((b) => b.res.time));
       vis(); drawMove();
       if (replay) throwAll(); else { balls.forEach((b) => pose(b, Math.min(st.t, b.res.time))); hud(); }

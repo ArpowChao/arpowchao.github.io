@@ -37,6 +37,15 @@
     return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
   }
   const effFromGyro = (g) => Math.cos(g * DEG);
+  // arm slots: release height / side (toward the throwing arm) / extension, metres
+  const SLOTS = [
+    { key: 'over', name: '上肩', h: 1.95, s: 0.35, e: 1.75 },
+    { key: 'tq', name: '四分之三', h: 1.78, s: 0.55, e: 1.74 },
+    { key: 'side', name: '側投', h: 1.30, s: 0.95, e: 1.65 },
+    { key: 'sub', name: '低肩', h: 0.75, s: 0.80, e: 1.80 }
+  ];
+  const MOUND = 18.44;
+  const releaseOf = (hand, h, s, e) => ({ x: (hand === 'L' ? 1 : -1) * s, y: MOUND - e, z: h });
   const gyroFromEff = (e) => Math.acos(Math.max(0, Math.min(1, e))) / DEG;
 
   /* ---------- glossary ---------- */
@@ -50,6 +59,9 @@
     vb: { t: '垂直位移', en: 'Vertical Break', b: '和一顆完全不轉的球比，旋轉讓球高了（＋）或低了（−）幾公分。正值不是球往上飛，而是比不轉的球掉得少。', eg: '本頁從出手量到本壘；各裝置量法不同，比較時看方向與量級。' },
     hb: { t: '水平位移', en: 'Horizontal Break', b: '和不轉的球比，左右多跑了幾公分。正值＝從投手看出去往右（三壘側，右投手的慣用手側）。', eg: '右投手的滑球、曲球往一壘側跑，所以是負值。' },
     vec: { t: '旋轉軸向量', en: 'Spin Axis Vector', b: '由「幾點鐘＋陀螺角」自動換算出的轉軸方向（長度 1）。X 朝本壘、Y 朝上、Z 朝三壘側。', eg: '球繞著這根軸轉（右手定則：四指沿旋轉方向，拇指指向軸）。' },
+    relH: { t: '出手高度', en: 'Release Height', b: '球離手那一瞬間，球離地面多高（公尺）。上肩投手高、側投低、低肩（潛水艇）更低。', eg: '職業投手多在 1.6–1.9 m；側投約 1.2–1.4 m。' },
+    relS: { t: '出手左右', en: 'Release Side', b: '出手點離投手板中線往「手臂那一側」偏多少（公尺）。右投往三壘側、左投往一壘側。手臂越往旁邊伸（側投），偏越多。', eg: '上肩約 0.3–0.5 m，側投常超過 0.8 m。' },
+    ext: { t: '延伸距離', en: 'Extension', b: '出手點比投手板往本壘前進了多少（公尺）。延伸越長，球越晚離手、離本壘越近。', eg: '大聯盟平均約 1.9 m（6.3 呎）；延伸長，飛行時間短，旋轉來不及推那麼多。' },
     stuff: { t: 'Stuff+', en: '球質評分', b: '平台用模型把球速、位移等特徵算成的綜合分數，不是直接量到的物理量，本頁不計算。', eg: '許多平台以 100 代表平均，但各平台的模型與基準不同。' }
   };
   const term = (k, text) => `<button type="button" class="term" data-term="${k}">${text || GLOSS[k].t}</button>`;
@@ -166,5 +178,5 @@
     return { toggle, isOn: () => on, open: (i) => setOpen(items[i], true) };
   }
 
-  window.PitchLab = { VIDEO, parseClock, clockText, effFromGyro, gyroFromEff, GLOSS, term, hidePop, fullscreenLab, DEG };
+  window.PitchLab = { SLOTS, releaseOf, VIDEO, parseClock, clockText, effFromGyro, gyroFromEff, GLOSS, term, hidePop, fullscreenLab, DEG };
 })();

@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
 
   const PL = window.PitchLab;
-  const state = { aimMode: 'nospin', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const state = { relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'nospin', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -14,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
+  const cfg = () => ({ release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -201,7 +201,10 @@
 
   // orbit camera (custom = a fixed direction + up vector, used by the "flow" view)
   const orbit = { az: 0, el: 6 * DEG, r: 6.2, custom: null };
-  const VIEWS = { catcher: [0, 6, 6.2], pitcher: [180, 8, 6.2], side: [-90, 6, 6.2] };
+  // [azimuth°, elevation°, distance]: az 0 = from the catcher, 180 = from behind the pitcher, −90 = from the 3B side;
+  // batter = a right-handed hitter standing on the 3B side of the plate, looking out at the incoming ball
+  const VIEWS = { catcher: [0, 6, 6.2], pitcher: [180, 6, 6.2], side: [-90, 4, 6.2], batter: [-34, 9, 6.2] };
+  const VIEW_NOTE = { flow: '看氣流：轉動的表面帶著空氣，尾流被甩向推力的反方向', pitcher: '投手視角：從投手背後看，和 PitchLab「轉軸幾點鐘」同一個方向；橘箭頭指的就是幾點鐘', batter: '打擊者視角：右打者站在三壘側，看著球迎面飛來', catcher: '捕手視角：從本壘後方迎著球看，左右和投手視角相反', side: '側面：從三壘側看，前進方向朝右，看得出後旋／前旋與陀螺角' };
   // "flow" view: face the plane that holds the flight direction and the Magnus force,
   // with the flight running left → right and the force pointing up the screen (or down, if it points down)
   function flowView() {
@@ -216,12 +219,17 @@
     else { camera.up.set(0, 1, 0); camera.position.set(r * Math.cos(el) * Math.sin(az), r * Math.sin(el), r * Math.cos(el) * Math.cos(az)); }
     camera.lookAt(0, 0, 0);
   }
+  function stageNote() {
+    const rps = (state.rpm / 60).toFixed(0), n = VIEW_NOTE[state.view];
+    $('stage-note').textContent = (n ? n + '　·　' : '') + (state.slow ? `實際每秒 ${rps} 圈，放慢 ${state.slow} 倍` : `已暫停（實際每秒 ${rps} 圈）`) + '　·　拖曳可轉動視角';
+  }
   function setView(v) {
     state.view = v;
     if (v === 'flow') { orbit.custom = flowView(); orbit.r = 8.6; }
     else { const [az, el, r] = VIEWS[v]; orbit.custom = null; orbit.az = az * DEG; orbit.el = el * DEG; orbit.r = r; }
     placeCamera();
     document.querySelectorAll('#stage [data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+    stageNote();
   }
   let drag = null;
   canvas.addEventListener('pointerdown', (e) => {
@@ -261,7 +269,7 @@
     buildFlow();
     if (state.view === 'flow') setView('flow');
     const rps = state.rpm / 60;
-    $('stage-note').textContent = state.slow ? `實際每秒 ${rps.toFixed(0)} 圈，畫面放慢 ${state.slow} 倍　·　氣流線為示意（看偏轉方向）　·　拖曳可轉動視角` : `已暫停（實際每秒 ${rps.toFixed(0)} 圈）　·　氣流線為示意　·　拖曳可轉動視角`;
+    stageNote();
   }
 
   let lastT = performance.now();
@@ -335,7 +343,7 @@
     }
     if (tNow > T1 + 1.6) pitchStart = now; // loop
     ctx.fillStyle = '#5d7080'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText(state.hand === 'R' ? '右投（從三壘側出手）' : '左投（從一壘側出手）', w - 10, 16);
+    ctx.fillText(`${state.hand === 'R' ? '右投' : '左投'} · 出手高 ${state.relH.toFixed(2)} m · ${state.hand === 'R' ? '三壘' : '一壘'}側 ${state.relS.toFixed(2)} m`, w - 10, 16);
   }
 
   // ---------- movement chart (seen from behind the pitcher, like PitchLab: + = 3B side) ----------
@@ -429,14 +437,16 @@
     Object.assign(state, { preset: null, video: i, speedKmh: v.kph, rpm: v.rpm, tilt: state.hand === 'R' ? t : (12 - t) % 12, gyro: v.gyro, seams: /伸卡|變速/.test(v.type) ? 'two' : 'four' });
     update(true);
   }
+  const RELEASE_KEYS = ['relH', 'relS', 'ext'];
   function setParam(key, value) {
     state[key] = value;
-    if (key !== 'seams') { state.preset = null; state.video = null; }
+    if (RELEASE_KEYS.includes(key)) computePresetResults();
+    else if (key !== 'seams') { state.preset = null; state.video = null; }
     update(true);
   }
   function computePresetResults() {
     state.presetResults = {};
-    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, aimMode: state.aimMode });
+    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, aimMode: state.aimMode, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext) });
   }
   const sideWord = (hcm) => (Math.abs(hcm) < 0.5 ? '' : hcm > 0 ? '三壘側' : '一壘側');
   function update(replay) {
@@ -445,6 +455,9 @@
     const setIf = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; el.classList.remove('bad'); };
     $('speed').value = state.speedKmh; $('rpm').value = state.rpm; $('gyro').value = state.gyro; $('seams').value = state.seams;
     setIf('speed-num', state.speedKmh); setIf('rpm-num', state.rpm); setIf('gyro-num', state.gyro); setIf('tilt-num', tiltText(state.tilt));
+    for (const k of RELEASE_KEYS) { $(k).value = state[k]; setIf(k + '-num', (+state[k]).toFixed(2)); }
+    document.querySelectorAll('#slot-chips button').forEach((b) => { const s = PL.SLOTS.find((x) => x.key === b.dataset.slot); b.classList.toggle('active', Math.abs(s.h - state.relH) < .005 && Math.abs(s.s - state.relS) < .005 && Math.abs(s.e - state.ext) < .005); });
+    $('release-hint').textContent = `出手點：離地 ${state.relH.toFixed(2)} m、往${state.hand === 'R' ? '三壘' : '一壘'}側 ${state.relS.toFixed(2)} m、離本壘 ${(18.44 - state.ext).toFixed(2)} m。延伸越長，飛行時間越短，旋轉推球的時間也越短。`;
     $('eff-out').textContent = `${Math.round(eff * 100)} %`;
     $('active-out').textContent = `${Math.round(active)} rpm`;
     $('clock-hand').setAttribute('transform', `rotate(${state.tilt * 30})`);
@@ -480,6 +493,10 @@
     e.target.classList.toggle('bad', !ok);
     if (ok) setParam(key, v);
   });
+  num('relH-num', 'relH', 0.5, 2.3); num('relS-num', 'relS', 0, 1.3); num('ext-num', 'ext', 0.8, 2.4);
+  RELEASE_KEYS.forEach((k) => { $(k).addEventListener('input', (e) => setParam(k, Number(e.target.value))); $(k + '-num').addEventListener('blur', () => update(false)); });
+  $('slot-chips').innerHTML = PL.SLOTS.map((s) => `<button type="button" data-slot="${s.key}">${s.name}<small>${s.h.toFixed(2)} m</small></button>`).join('');
+  $('slot-chips').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const s = PL.SLOTS.find((x) => x.key === b.dataset.slot); Object.assign(state, { relH: s.h, relS: s.s, ext: s.e }); computePresetResults(); update(true); });
   num('speed-num', 'speedKmh', 60, 165); num('rpm-num', 'rpm', 0, 3200); num('gyro-num', 'gyro', 0, 90);
   ['speed-num', 'rpm-num', 'gyro-num', 'tilt-num'].forEach((id) => $(id).addEventListener('blur', () => update(false)));
   $('tilt-num').addEventListener('input', (e) => { const t = PL.parseClock(e.target.value); e.target.classList.toggle('bad', t === null); if (t !== null) setParam('tilt', t); });
@@ -500,7 +517,7 @@
   }));
   // send the current pitch to the 3-ball field below
   document.querySelectorAll('[data-send]').forEach((b) => b.addEventListener('click', () => {
-    const pitch = { kph: state.speedKmh, rpm: state.rpm, tilt: state.tilt, gyro: state.gyro, video: state.video, name: $('custom-tag').textContent };
+    const pitch = { kph: state.speedKmh, rpm: state.rpm, tilt: state.tilt, gyro: state.gyro, video: state.video, name: $('custom-tag').textContent, relH: state.relH, relS: state.relS, ext: state.ext };
     (window.__fieldQueue = window.__fieldQueue || []).push([b.dataset.send, pitch]);
     window.dispatchEvent(new CustomEvent('field-send'));
     if (!document.body.classList.contains('fs-on')) document.getElementById('field').scrollIntoView({ behavior: 'smooth' });

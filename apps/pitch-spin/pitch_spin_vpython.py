@@ -14,6 +14,9 @@ tilt = 1.0            # 轉軸時鐘方向（PitchLab 的「轉軸」；從投�
 gyro_deg = 36.9       # 陀螺角（度）：轉軸偏向前進方向的角度，PitchLab 的「陀螺」；效率 = cos(陀螺角)
 seams = 'four'        # 'four' 四縫線、'two' 二縫線
 slow = 8              # 慢動作倍率
+release_height = 1.78 # 出手高度 (m)：上肩約 1.95、四分之三約 1.78、側投約 1.30、低肩約 0.75
+release_side = 0.55   # 出手左右 (m)：往手臂側偏離投手板中線多少（右投往三壘側）
+extension = 1.74      # 延伸距離 (m)：出手點比投手板往本壘前進多少
 aim_with_spin = False # False：出手方向讓「不轉的球」進好球帶中心，所以看得出旋轉把球帶偏多少；True：讓會旋轉的球投進正中央
 
 # ---------- 物理常數 ----------
@@ -35,8 +38,8 @@ def CL(S):
 
 
 def release_point():
-    side = -0.55 if hand == 'R' else 0.55
-    return vector(side, 16.7, 1.78)
+    side = -release_side if hand == 'R' else release_side
+    return vector(side, 18.44 - extension, release_height)
 
 
 def spin_vector(vhat):
