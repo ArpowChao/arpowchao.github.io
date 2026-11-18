@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
 
   const PL = window.PitchLab;
-  const state = { elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'real', typeKey: 'fourSeam', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const state = { measured: null, useMeasured: false, elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'real', typeKey: 'fourSeam', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -14,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ pitchType: state.typeKey, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
+  const cfg = () => ({ measured: state.useMeasured && state.measured ? state.measured : undefined, pitchType: state.typeKey, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -382,6 +382,7 @@
     const obs = observed();
     if (obs) { ctx.strokeStyle = '#c4472f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(clamp(obs.h, -R, R)), Y(clamp(obs.v, -R, R)), 6, 0, Math.PI * 2); ctx.stroke(); }
     const m = r.releaseMovementCm, hx = hView(m.x);
+    if (r.measured) { const pm = r.predictedMovementCm; ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = '#ef7a2c'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(X(clamp(hView(pm.x), -R, R)), Y(clamp(pm.z, -R, R)), 7, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); ctx.fillStyle = '#c4632c'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('轉速預測', X(clamp(hView(pm.x), -R, R)) + 9, Y(clamp(pm.z, -R, R)) + 3); }
     ctx.strokeStyle = '#ef7a2c88'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(X(hx), Y(m.z)); ctx.stroke();
     ctx.fillStyle = '#ef7a2c'; ctx.beginPath(); ctx.arc(X(clamp(hx, -R, R)), Y(clamp(m.z, -R, R)), 7, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -436,12 +437,12 @@
   vsel.addEventListener('change', () => { if (vsel.value !== '') applyVideo(Number(vsel.value)); });
   function applyPreset(k) {
     const p = presetFor(k, state.hand);
-    Object.assign(state, { typeKey: k, preset: k, video: null, speedKmh: p.speedKmh, rpm: p.rpm, tilt: p.tilt, gyro: +PL.gyroFromEff(p.efficiency).toFixed(1), seams: p.seams });
+    Object.assign(state, { measured: null, useMeasured: false, typeKey: k, preset: k, video: null, speedKmh: p.speedKmh, rpm: p.rpm, tilt: p.tilt, gyro: +PL.gyroFromEff(p.efficiency).toFixed(1), seams: p.seams });
     update(true);
   }
   function applyVideo(i) {
     const v = PL.VIDEO[i], t = PL.parseClock(v.clock);
-    Object.assign(state, { typeKey: PL.TYPE_KEY[v.type] || 'fourSeam', preset: null, video: i, speedKmh: v.kph, rpm: v.rpm, tilt: state.hand === 'R' ? t : (12 - t) % 12, gyro: v.gyro, seams: /伸卡|變速/.test(v.type) ? 'two' : 'four' });
+    Object.assign(state, { measured: { v: v.v, h: state.hand === 'R' ? v.h : -v.h }, useMeasured: true, typeKey: PL.TYPE_KEY[v.type] || 'fourSeam', preset: null, video: i, speedKmh: v.kph, rpm: v.rpm, tilt: state.hand === 'R' ? t : (12 - t) % 12, gyro: v.gyro, seams: /伸卡|變速/.test(v.type) ? 'two' : 'four' });
     update(true);
   }
   const RELEASE_KEYS = ['relH', 'relS', 'ext'];
@@ -480,9 +481,13 @@
     $('pl-grid').innerHTML =
       cell('kph', '球速', state.speedKmh.toFixed(1), 'kph', 'in') + cell('vb', '垂直', m.z.toFixed(1), 'cm', 'out') + cell('hb', '水平', hb.toFixed(1), 'cm', 'out') + cell('clock', '轉軸', tiltText(state.tilt), '', 'in') +
       cell('rpm', '轉速', Math.round(state.rpm), 'rpm', 'in') + cell('active', '啟用中', Math.round(active), 'rpm', 'auto') + cell('eff', '效率', Math.round(eff * 100), '%', 'auto') + cell('gyro', '陀螺', (+state.gyro).toFixed(1), '°', 'in');
-    const obs = observed(), act = $('pl-actual');
-    act.hidden = !obs;
-    if (obs) act.innerHTML = `${obs.src}：垂直 <b>${obs.v.toFixed(1)}</b> cm、水平 <b>${obs.h.toFixed(1)}</b> cm${state.video != null && state.hand === 'L' ? '（左投為鏡像推算）' : ''}`;
+    const obs = observed(), act = $('pl-actual'), pm = r.predictedMovementCm;
+    act.hidden = false;
+    if (r.measured) act.innerHTML = `球路照 <b>PitchLab 實測</b>畫：垂直 <b>${r.measured.v.toFixed(1)}</b>、水平 <b>${r.measured.h.toFixed(1)}</b> cm<br>只用轉速、轉軸、陀螺角預測：垂直 ${pm.z.toFixed(1)}、水平 ${hView(pm.x).toFixed(1)} cm（實測約為預測的 ${r.liftScale.toFixed(2)} 倍）`;
+    else if (obs) act.innerHTML = `模型預測：垂直 <b>${m.z.toFixed(1)}</b>、水平 <b>${hb.toFixed(1)}</b> cm　·　${obs.src}：垂直 <b>${obs.v.toFixed(1)}</b>、水平 <b>${obs.h.toFixed(1)}</b> cm${state.video != null && state.hand === 'L' ? '（左投為鏡像推算）' : ''}`;
+    else act.innerHTML = `模型預測（由轉速、轉軸、陀螺角算出）：垂直 <b>${m.z.toFixed(1)}</b>、水平 <b>${hb.toFixed(1)}</b> cm`;
+    $('use-measured').checked = state.useMeasured;
+    setIf('meas-v', state.measured ? state.measured.v : ''); setIf('meas-h', state.measured ? state.measured.h : '');
     $('data-tag').textContent = `水平 ${Math.abs(hb).toFixed(0)} cm ${sideWord(hb)}`;
     $('r-time').textContent = `${r.flightTime.toFixed(3)} s`;
     $('r-plate').textContent = `${r.plateSpeedKmh.toFixed(0)} km/h`;
@@ -508,6 +513,9 @@
     e.target.classList.toggle('bad', !ok);
     if (ok) setParam(key, v);
   });
+  const readMeasured = () => { const v = $('meas-v').value, h = $('meas-h').value; return v !== '' && h !== '' ? { v: Number(v), h: Number(h) } : null; };
+  ['meas-v', 'meas-h'].forEach((id) => $(id).addEventListener('input', () => { state.measured = readMeasured(); if (state.measured && !state.useMeasured) state.useMeasured = true; state.video = null; update(true); }));
+  $('use-measured').addEventListener('change', (e) => { state.measured = readMeasured(); state.useMeasured = e.target.checked && !!state.measured; update(true); });
   num('relH-num', 'relH', 0.5, 2.3); num('relS-num', 'relS', 0, 1.3); num('ext-num', 'ext', 0.8, 2.4);
   RELEASE_KEYS.forEach((k) => { $(k).addEventListener('input', (e) => setParam(k, Number(e.target.value))); $(k + '-num').addEventListener('blur', () => update(false)); });
   $('slot-chips').innerHTML = PL.SLOTS.map((s) => `<button type="button" data-slot="${s.key}">${s.name}<small>${s.h.toFixed(2)} m</small></button>`).join('');

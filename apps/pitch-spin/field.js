@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
   const { sub, norm, unit } = P.vec;
 
-  const st = { elev: 0, azim: 0, hand: 'R', aim: 'real', slow: 10, playing: false, t: 0, paused02: false };
+  const st = { useMeasured: true, elev: 0, azim: 0, hand: 'R', aim: 'real', slow: 10, playing: false, t: 0, paused02: false };
   const COLORS = { A: [0.9, 0.28, 0.3], B: [0.18, 0.44, 0.86], C: [0.12, 0.62, 0.33] };
   const CSS = { A: '#e5484d', B: '#2f6fdb', C: '#1f9d55' };
   const balls = [{ id: 'A', on: true, src: 1 }, { id: 'B', on: true, src: 2 }, { id: 'C', on: true, src: 4 }].map((b) => ({ ...b, relH: 1.78, relS: 0.55, ext: 1.74 }));
@@ -16,11 +16,12 @@
   function simulate(b) {
     const eff = PL.effFromGyro(b.gyro);
     const res = P.simulate({ hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff, release: PL.releaseOf(st.hand, b.relH, b.relS, b.ext), target: { x: 0, z: 0.76 },
-      aimMode: st.aim, pitchType: b.typeKey, elevationDeg: st.elev, azimuthDeg: st.azim });
+      aimMode: st.aim, pitchType: b.typeKey, elevationDeg: st.elev, azimuthDeg: st.azim,
+      measured: st.useMeasured && b.src !== 'custom' ? { v: PL.VIDEO[b.src].v, h: st.hand === 'R' ? PL.VIDEO[b.src].h : -PL.VIDEO[b.src].h } : undefined });
     const wh = res.spinRate > 0 ? unit(res.omega) : unit(res.transverseAxis);
     return { eff, active: b.rpm * eff, rate: res.spinRate, omegaHat: wh, axisXYZ: [-wh[1], wh[2], -wh[0]], real: { path: res.path }, ghost: { path: res.ghostPath },
       time: res.flightTime, plate: res.plate, plateKmh: res.plateSpeedKmh, vb: res.releaseMovementCm.z, hb: -res.releaseMovementCm.x,
-      angles: res.angles, ground: res.ground, call: P.zoneCall(res) };
+      angles: res.angles, ground: res.ground, call: P.zoneCall(res), measured: res.measured, pred: { vb: res.predictedMovementCm.z, hb: -res.predictedMovementCm.x }, liftScale: res.liftScale };
   }
 
   /* ---------- cards ---------- */
@@ -102,7 +103,7 @@
     const sg = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
     q('angle').innerHTML = `${T('elev', '出手仰角')} ${sg(r.angles.elevation)}°　${T('azim', '偏角')} ${sg(r.angles.azimuth)}°　${st.aim === 'real' ? `（${PL.TYPE_NAME[b.typeKey]}的真實仰角）` : ''}　→ <b class="call-${r.call}">${r.call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : r.call === 'strike' ? '好球' : '壞球'}</b>`;
     const act = q('actual');
-    if (b.src !== 'custom') { const p = PL.VIDEO[b.src]; act.hidden = false; act.innerHTML = `PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm${st.hand === 'L' ? '（右投實測）' : ''}`; }
+    if (b.src !== 'custom') { const p = PL.VIDEO[b.src]; act.hidden = false; act.innerHTML = r.measured ? `球路照 PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm　·　只用轉速預測：${r.pred.vb.toFixed(1)}、${r.pred.hb.toFixed(1)} cm` : `PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm${st.hand === 'L' ? '（右投實測）' : ''}`; }
     else if (b.name) { act.hidden = false; act.textContent = `從上方 3D 球送來：${b.name}`; }
     else act.hidden = true;
   }
@@ -305,6 +306,7 @@
     $('f-slow').addEventListener('change', (e) => { st.slow = Number(e.target.value); hud(); });
     ['f-trail', 'f-axis', 'f-ghost'].forEach((id) => $(id).addEventListener('change', vis));
     $('f-markers').addEventListener('change', (e) => markers.forEach((m) => { m.visible = e.target.checked; }));
+    $('f-measured').addEventListener('change', (e) => { st.useMeasured = e.target.checked; recompute(true); });
     $('f-hand').addEventListener('change', (e) => { st.hand = e.target.value; drawArm(); recompute(true); });
     $('f-aim').addEventListener('change', (e) => {
       if (e.target.value === 'manual') { const a = balls[0].res.angles; st.elev = +a.elevation.toFixed(2); st.azim = +a.azimuth.toFixed(2); $('f-elev').value = st.elev; $('f-azim').value = st.azim; }

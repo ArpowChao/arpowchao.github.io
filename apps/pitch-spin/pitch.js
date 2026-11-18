@@ -64,7 +64,12 @@
       rho: num(raw.rho, 0.9, 1.3, 1.2),
       cd: num(raw.cd, 0.2, 0.5, 0.33),
       release: raw.release || { x: (hand === 'R' ? -1 : 1) * 0.55, y: 16.7, z: 1.78 },
-      target: raw.target || { x: 0, z: 0.76 }
+      target: raw.target || { x: 0, z: 0.76 },
+      // 'follow' (default): the spin-induced push keeps pointing at the clock direction as the path bends — the way
+      // PitchLab/Statcast-style data are reported (垂直:水平 always matches 轉軸). 'fixed': the spin axis stays fixed in
+      // space, so gyro spin slowly turns into side/back spin as the ball drops.
+      follow: raw.axisMode !== 'fixed',
+      liftScale: num(raw.liftScale, 0, 10, 1)
     };
   }
 
@@ -93,12 +98,16 @@
     let a = add([0, 0, -G], mul(v, -k * cfg.cd * s));
     if (magnus && s > 0) {
       const vh = mul(v, 1 / s);
-      const wp = sub(omega, mul(vh, dot(omega, vh)));
+      let wp;
+      if (cfg.follow) {
+        const m = movementDirection(cfg.tilt), mp = unit(sub(m, mul(vh, dot(m, vh))));
+        wp = mul(unit(cross(vh, mp)), cfg.rpm * 2 * Math.PI / 60 * cfg.efficiency);
+      } else wp = sub(omega, mul(vh, dot(omega, vh)));
       const wpn = norm(wp);
       if (wpn > 0) {
         const S = BALL.radius * wpn / s;
         const dir = unit(cross(wp, v));
-        a = add(a, mul(dir, k * liftCoefficient(S) * s * s));
+        a = add(a, mul(dir, k * liftCoefficient(S) * cfg.liftScale * s * s));
       }
     }
     return a;
@@ -174,8 +183,31 @@
     return Math.abs(p[0]) <= zx && p[2] >= 0.46 - BALL.radius && p[2] <= 1.07 + BALL.radius ? 'strike' : 'ball';
   }
 
+  // raw.measured = { v, h } (cm, pitcher's view, release → plate): measured spin-induced break, e.g. from PitchLab.
+  // The push is then pointed at the measured direction and scaled so the drawn path has exactly that break;
+  // the spin-only prediction is still returned as predictedMovementCm.
   function simulate(raw) {
+    raw = raw || {};
+    const pred = simulateOnce(raw, normalize(raw));
+    pred.predictedMovementCm = pred.releaseMovementCm; pred.liftScale = 1; pred.measured = null;
+    const ms = raw.measured;
+    if (!ms || !Number.isFinite(+ms.v) || !Number.isFinite(+ms.h)) return pred;
+    const want = Math.hypot(ms.v, ms.h), have0 = Math.hypot(pred.releaseMovementCm.x, pred.releaseMovementCm.z);
+    if (want < 0.05 || have0 < 0.05) return pred;
     const cfg = normalize(raw);
+    cfg.tilt = ((Math.atan2(+ms.h, +ms.v) / DEG / 30) % 12 + 12) % 12;
+    cfg.liftScale = want / have0;
+    let res = null;
+    for (let i = 0; i < 4; i++) {
+      res = simulateOnce(raw, cfg);
+      const have = Math.hypot(res.releaseMovementCm.x, res.releaseMovementCm.z);
+      if (have < 1e-6 || Math.abs(have - want) < 0.02) break;
+      cfg.liftScale *= want / have;
+    }
+    res.predictedMovementCm = pred.releaseMovementCm; res.liftScale = cfg.liftScale; res.measured = { v: +ms.v, h: +ms.h };
+    return res;
+  }
+  function simulateOnce(raw, cfg) {
     const r = [cfg.release.x, cfg.release.y, cfg.release.z];
     let v0;
     if (raw && raw.aimMode === 'manual') v0 = velocityFromAngles(cfg.speedKmh, Number(raw.elevationDeg) || 0, Number(raw.azimuthDeg) || 0);
@@ -196,7 +228,7 @@
     const noSpin = fly(at40.p, at40.v, spin.omega, cfg, false, PLATE_Y);
     const brk = sub(withSpin.p, noSpin.p);
     const s0 = norm(v0), wp = norm(sub(spin.omega, mul(vhat, dot(spin.omega, vhat))));
-    const S = BALL.radius * wp / s0, CL = liftCoefficient(S);
+    const S = BALL.radius * wp / s0, CL = liftCoefficient(S) * cfg.liftScale;
     const magnusN = 0.5 * cfg.rho * AREA * CL * s0 * s0;
     // Total vertical drop measured the same way (gravity included), as "vertical approach".
     const gReal = groundCut(real), gGhost = groundCut(ghost);
