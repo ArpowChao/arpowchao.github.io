@@ -45,6 +45,10 @@
     splitter: { name: '指叉球', speedKmh: 139, rpm: 1350, tilt: 2.5, efficiency: 0.52, seams: 'two', observed: [-25, 8] }
   };
 
+  // Typical big-league vertical release angles by pitch type (degrees, + = upward). Rough Statcast-era values:
+  // fastballs leave the hand slightly downward; curveballs usually leave it upward.
+  const REAL_VRA = { fourSeam: -1.6, sinker: -2.0, cutter: -1.0, slider: -0.5, sweeper: -0.3, curveball: 1.6, changeup: -1.3, splitter: -1.4 };
+
   function normalize(raw) {
     raw = raw || {};
     const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
@@ -175,6 +179,12 @@
     const r = [cfg.release.x, cfg.release.y, cfg.release.z];
     let v0;
     if (raw && raw.aimMode === 'manual') v0 = velocityFromAngles(cfg.speedKmh, Number(raw.elevationDeg) || 0, Number(raw.azimuthDeg) || 0);
+    else if (raw && raw.aimMode === 'real') {
+      // real pitchers: the pitch type's usual vertical release angle; sideways, straight at the plate centre
+      const vra = REAL_VRA[raw.pitchType] != null ? REAL_VRA[raw.pitchType] : REAL_VRA.fourSeam;
+      const azim = Math.atan2(-(cfg.target.x - cfg.release.x), cfg.release.y - PLATE_Y) / DEG;
+      v0 = velocityFromAngles(cfg.speedKmh, vra, azim);
+    }
     else v0 = aim(cfg, !(raw && raw.aimMode === 'nospin'));
     const vhat = unit(v0);
     const spin = spinVector(cfg, vhat);
@@ -209,7 +219,7 @@
   }
 
   return {
-    BALL, AREA, G, PLATE_Y, STATCAST_Y, PRESETS,
+    BALL, AREA, G, PLATE_Y, STATCAST_Y, PRESETS, REAL_VRA,
     liftCoefficient, normalize, movementDirection, spinVector, accel, fly, aim, simulate, velocityFromAngles, releaseAngles, zoneCall,
     vec: { add, sub, mul, dot, cross, norm, unit }
   };

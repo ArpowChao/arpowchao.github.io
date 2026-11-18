@@ -6,7 +6,7 @@
   const DEG = Math.PI / 180;
 
   const PL = window.PitchLab;
-  const state = { elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'nospin', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
+  const state = { elev: 0, azim: 0, relH: 1.78, relS: 0.55, ext: 1.74, aimMode: 'real', typeKey: 'fourSeam', hand: 'R', preset: 'fourSeam', video: null, speedKmh: 152, rpm: 2300, tilt: 1, gyro: 36.9, seams: 'four', view: 'catcher', slow: 40, result: null, presetResults: {} };
 
   // ---------- helpers ----------
   const tiltText = (h) => { let H = Math.floor(h + 1e-9), M = Math.round((h - H) * 60); if (M === 60) { H += 1; M = 0; } H = H % 12 || 12; return `${H}:${String(M).padStart(2, '0')}`; };
@@ -14,7 +14,7 @@
     const p = P.PRESETS[key];
     return hand === 'L' ? { ...p, tilt: (12 - p.tilt) % 12, observed: [-p.observed[0], p.observed[1]] } : p;
   };
-  const cfg = () => ({ elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
+  const cfg = () => ({ pitchType: state.typeKey, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext), aimMode: state.aimMode, hand: state.hand, speedKmh: state.speedKmh, rpm: state.rpm, tilt: state.tilt, efficiency: PL.effFromGyro(state.gyro) });
   // physics (x: catcher's right, y: toward mound, z: up) → three.js (X right, Y up, Z toward catcher)
   const toThree = (v) => new T.Vector3(v[0], v[2], -v[1]);
 
@@ -436,12 +436,12 @@
   vsel.addEventListener('change', () => { if (vsel.value !== '') applyVideo(Number(vsel.value)); });
   function applyPreset(k) {
     const p = presetFor(k, state.hand);
-    Object.assign(state, { preset: k, video: null, speedKmh: p.speedKmh, rpm: p.rpm, tilt: p.tilt, gyro: +PL.gyroFromEff(p.efficiency).toFixed(1), seams: p.seams });
+    Object.assign(state, { typeKey: k, preset: k, video: null, speedKmh: p.speedKmh, rpm: p.rpm, tilt: p.tilt, gyro: +PL.gyroFromEff(p.efficiency).toFixed(1), seams: p.seams });
     update(true);
   }
   function applyVideo(i) {
     const v = PL.VIDEO[i], t = PL.parseClock(v.clock);
-    Object.assign(state, { preset: null, video: i, speedKmh: v.kph, rpm: v.rpm, tilt: state.hand === 'R' ? t : (12 - t) % 12, gyro: v.gyro, seams: /伸卡|變速/.test(v.type) ? 'two' : 'four' });
+    Object.assign(state, { typeKey: PL.TYPE_KEY[v.type] || 'fourSeam', preset: null, video: i, speedKmh: v.kph, rpm: v.rpm, tilt: state.hand === 'R' ? t : (12 - t) % 12, gyro: v.gyro, seams: /伸卡|變速/.test(v.type) ? 'two' : 'four' });
     update(true);
   }
   const RELEASE_KEYS = ['relH', 'relS', 'ext'];
@@ -453,7 +453,7 @@
   }
   function computePresetResults() {
     state.presetResults = {};
-    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, aimMode: state.aimMode, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext) });
+    for (const k of Object.keys(P.PRESETS)) state.presetResults[k] = P.simulate({ ...presetFor(k, state.hand), hand: state.hand, pitchType: k, aimMode: state.aimMode, elevationDeg: state.elev, azimuthDeg: state.azim, release: PL.releaseOf(state.hand, state.relH, state.relS, state.ext) });
   }
   const sideWord = (hcm) => (Math.abs(hcm) < 0.5 ? '' : hcm > 0 ? '三壘側' : '一壘側');
   function update(replay) {
@@ -489,7 +489,9 @@
     $('r-force').textContent = `${r.magnusN.toFixed(2)} N（重力的 ${Math.round(r.magnusOverWeight * 100)}%）`;
     $('r-s').textContent = `${r.spinFactor.toFixed(3)} ／ ${r.cl.toFixed(3)}`;
     const ang = r.angles, sgn = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
-    $('r-angle').textContent = `${sgn(ang.elevation)}° ／ ${sgn(ang.azimuth)}°${state.aimMode === 'manual' ? '（手動）' : '（自動）'}`;
+    $('r-angle').textContent = `${sgn(ang.elevation)}° ／ ${sgn(ang.azimuth)}°${state.aimMode === 'manual' ? '（手動）' : state.aimMode === 'real' ? `（${PL.TYPE_NAME[state.typeKey]}的真實仰角）` : '（修正進正中央）'}`;
+    $('type-row').hidden = state.aimMode !== 'real'; $('pitch-type').value = state.typeKey;
+    $('aim-hint').textContent = state.aimMode !== 'real' ? '' : (r.ground || state.speedKmh < 115) ? `注意：這是大聯盟約 130–150 kph 投手的仰角；這顆球只有 ${state.speedKmh.toFixed(0)} kph，真實投手會抬得更高才進得了好球帶。可切到「手動」試試要幾度。` : '仰角是該球種大聯盟投手的約略平均；左右直線對準本壘中央，被旋轉帶偏多少就偏多少。';
     const call = P.zoneCall(r);
     $('r-call').textContent = call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : `${call === 'strike' ? '好球' : '壞球'}（進壘高 ${r.plate[2].toFixed(2)} m）`;
     $('r-call').className = 'call-' + call;
@@ -520,7 +522,7 @@
   $('slow').addEventListener('change', (e) => { state.slow = Number(e.target.value); updateBallPose(); });
   $('show-flow').addEventListener('change', (e) => { flowLines.visible = e.target.checked; });
   $('replay').addEventListener('click', () => { pitchStart = performance.now(); });
-  function autoAngles() { const a = P.simulate({ ...cfg(), aimMode: 'nospin' }).angles; state.elev = +a.elevation.toFixed(2); state.azim = +a.azimuth.toFixed(2); }
+  function autoAngles() { const a = P.simulate({ ...cfg(), aimMode: 'real' }).angles; state.elev = +a.elevation.toFixed(2); state.azim = +a.azimuth.toFixed(2); }
   $('aim-mode').addEventListener('change', (e) => {
     if (e.target.value === 'manual' && state.result) { state.elev = +state.result.angles.elevation.toFixed(2); state.azim = +state.result.angles.azimuth.toFixed(2); }
     state.aimMode = e.target.value; $('manual-aim').hidden = state.aimMode !== 'manual';
@@ -531,6 +533,8 @@
     $(k + '-num').addEventListener('input', (e) => { const v = Number(e.target.value), ok = e.target.value !== '' && v >= lo && v <= hi; e.target.classList.toggle('bad', !ok); if (ok) { state[k] = v; computePresetResults(); update(true); } });
     $(k + '-num').addEventListener('blur', () => update(false));
   }
+  $('pitch-type').innerHTML = Object.keys(P.REAL_VRA).map((k) => `<option value="${k}">${PL.TYPE_NAME[k]}（${P.REAL_VRA[k] > 0 ? '+' : ''}${P.REAL_VRA[k]}°）</option>`).join('');
+  $('pitch-type').addEventListener('change', (e) => { state.typeKey = e.target.value; update(true); });
   $('aim-auto').addEventListener('click', () => { autoAngles(); computePresetResults(); update(true); });
   document.querySelectorAll('[data-view]').forEach((b) => { if (b.closest('#stage')) b.addEventListener('click', () => setView(b.dataset.view)); });
   document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
@@ -541,7 +545,7 @@
   }));
   // send the current pitch to the 3-ball field below
   document.querySelectorAll('[data-send]').forEach((b) => b.addEventListener('click', () => {
-    const pitch = { kph: state.speedKmh, rpm: state.rpm, tilt: state.tilt, gyro: state.gyro, video: state.video, name: $('custom-tag').textContent, relH: state.relH, relS: state.relS, ext: state.ext };
+    const pitch = { kph: state.speedKmh, rpm: state.rpm, tilt: state.tilt, gyro: state.gyro, video: state.video, name: $('custom-tag').textContent, typeKey: state.typeKey, relH: state.relH, relS: state.relS, ext: state.ext };
     (window.__fieldQueue = window.__fieldQueue || []).push([b.dataset.send, pitch]);
     window.dispatchEvent(new CustomEvent('field-send'));
     if (!document.body.classList.contains('fs-on')) document.getElementById('field').scrollIntoView({ behavior: 'smooth' });

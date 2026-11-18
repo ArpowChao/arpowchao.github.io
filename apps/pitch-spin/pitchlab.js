@@ -37,6 +37,9 @@
     return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
   }
   const effFromGyro = (g) => Math.cos(g * DEG);
+  // PitchLab pitch names → pitch-type keys used for the typical release angle
+  const TYPE_KEY = { '速球': 'fourSeam', '伸卡球': 'sinker', '卡特球': 'cutter', '滑球': 'slider', '曲球': 'curveball', '變速球': 'changeup', '指叉球': 'splitter' };
+  const TYPE_NAME = { fourSeam: '四縫線速球', sinker: '伸卡球', cutter: '卡特球', slider: '滑球', sweeper: '橫掃球', curveball: '曲球', changeup: '變速球', splitter: '指叉球' };
   // arm slots: release height / side (toward the throwing arm) / extension, metres
   const SLOTS = [
     { key: 'over', name: '上肩', h: 1.95, s: 0.35, e: 1.75 },
@@ -180,5 +183,5 @@
     return { toggle, isOn: () => on, open: (i) => setOpen(items[i], true) };
   }
 
-  window.PitchLab = { SLOTS, releaseOf, VIDEO, parseClock, clockText, effFromGyro, gyroFromEff, GLOSS, term, hidePop, fullscreenLab, DEG };
+  window.PitchLab = { TYPE_KEY, TYPE_NAME, SLOTS, releaseOf, VIDEO, parseClock, clockText, effFromGyro, gyroFromEff, GLOSS, term, hidePop, fullscreenLab, DEG };
 })();

@@ -17,7 +17,8 @@ slow = 8              # 慢動作倍率
 release_height = 1.78 # 出手高度 (m)：上肩約 1.95、四分之三約 1.78、側投約 1.30、低肩約 0.75
 release_side = 0.55   # 出手左右 (m)：往手臂側偏離投手板中線多少（右投往三壘側）
 extension = 1.74      # 延伸距離 (m)：出手點比投手板往本壘前進多少
-aim_with_spin = False # False：出手方向讓「不轉的球」進好球帶中心，所以看得出旋轉把球帶偏多少；True：讓會旋轉的球投進正中央
+release_angle = -1.6  # 出手仰角（度，往上為正）：用真實投手的約略平均；四縫線約 −1.6、伸卡 −2.0、卡特 −1.0、滑球 −0.5、曲球 +1.6、變速 −1.3、指叉 −1.4
+aim_with_spin = None  # None：用上面的 release_angle 出手；True：改成修正出手方向，讓會旋轉的球投進正中央
 
 # ---------- 物理常數 ----------
 g = 9.80665           # 重力加速度
@@ -93,15 +94,19 @@ def fly(p, v, omega, magnus, dt=0.0005):
 
 
 def aim():
-    # 調整出手方向，讓「不轉的球」（或 aim_with_spin = True 時「會旋轉的球」）通過好球帶中心
+    # 預設：用 release_angle（真實投手的出手仰角）出手，左右直線對準本壘中央
+    # aim_with_spin = True 時：反覆修正出手方向，讓會旋轉的球通過好球帶中心
     p0 = release_point()
     speed = speed_kmh / 3.6
     D = p0.y - plate_y
     yaw = atan2(target.x - p0.x, D)
     pitch_angle = atan2(target.z - p0.z, D)
+    if aim_with_spin is None:
+        a = radians(release_angle)
+        return speed * vector(cos(a) * sin(yaw), -cos(a) * cos(yaw), sin(a))
     for i in range(40):
         v0 = speed * vector(cos(pitch_angle) * sin(yaw), -cos(pitch_angle) * cos(yaw), sin(pitch_angle))
-        end, ve, te = fly(p0, v0, spin_vector(norm(v0)), aim_with_spin, 0.001)
+        end, ve, te = fly(p0, v0, spin_vector(norm(v0)), True, 0.001)
         ex = target.x - end.x
         ez = target.z - end.z
         if abs(ex) < 1e-5 and abs(ez) < 1e-5:
@@ -226,18 +231,19 @@ def set_gyro(s):
 
 
 # 球種：名稱、球速 kph、轉速 rpm、轉軸（時鐘）、陀螺角（度）、握法
-PRESETS = [['四縫線速球', 152, 2300, 1.0, 36.9, 'four'], ['伸卡球', 150, 2150, 2.0, 45.6, 'two'],
-           ['卡特球', 143, 2400, 11.75, 75.5, 'four'], ['滑球', 138, 2450, 9.5, 81.4, 'two'],
-           ['橫掃球', 132, 2600, 9.0, 66.4, 'two'], ['曲球', 128, 2550, 7.25, 68.9, 'four'],
-           ['變速球', 138, 1750, 2.25, 47.2, 'two'], ['指叉球', 139, 1350, 2.5, 58.7, 'two'],
-           ['PitchLab 影片：曲球', 75.6, 1352, 10.5, 66.2, 'four'], ['PitchLab 影片：滑球', 77.2, 1290, 9.5, 61.0, 'four']]
+PRESETS = [['四縫線速球', 152, 2300, 1.0, 36.9, 'four', -1.6], ['伸卡球', 150, 2150, 2.0, 45.6, 'two', -2.0],
+           ['卡特球', 143, 2400, 11.75, 75.5, 'four', -1.0], ['滑球', 138, 2450, 9.5, 81.4, 'two', -0.5],
+           ['橫掃球', 132, 2600, 9.0, 66.4, 'two', -0.3], ['曲球', 128, 2550, 7.25, 68.9, 'four', 1.6],
+           ['變速球', 138, 1750, 2.25, 47.2, 'two', -1.3], ['指叉球', 139, 1350, 2.5, 58.7, 'two', -1.4],
+           ['PitchLab 影片：曲球', 75.6, 1352, 10.5, 66.2, 'four', 1.6], ['PitchLab 影片：滑球', 77.2, 1290, 9.5, 61.0, 'four', -0.5]]
+# 每列最後一個數字：該球種真實投手（大聯盟約略平均）的出手仰角（度）；影片的業餘慢速球套用會偏低，可自行把仰角調高
 
 
 def choose(menu_obj):
-    global speed_kmh, rpm, tilt, gyro_deg, seams
+    global speed_kmh, rpm, tilt, gyro_deg, seams, release_angle
     for row in PRESETS:
         if row[0] == menu_obj.selected:
-            speed_kmh, rpm, tilt, gyro_deg, seams = row[1], row[2], row[3], row[4], row[5]
+            speed_kmh, rpm, tilt, gyro_deg, seams, release_angle = row[1], row[2], row[3], row[4], row[5], row[6]
             if hand == 'L':
                 tilt = (12 - tilt) % 12
     s_speed.value = speed_kmh

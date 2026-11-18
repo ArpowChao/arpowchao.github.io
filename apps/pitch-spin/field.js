@@ -6,17 +6,17 @@
   const DEG = Math.PI / 180;
   const { sub, norm, unit } = P.vec;
 
-  const st = { elev: 0, azim: 0, hand: 'R', aim: 'nospin', slow: 10, playing: false, t: 0, paused02: false };
+  const st = { elev: 0, azim: 0, hand: 'R', aim: 'real', slow: 10, playing: false, t: 0, paused02: false };
   const COLORS = { A: [0.9, 0.28, 0.3], B: [0.18, 0.44, 0.86], C: [0.12, 0.62, 0.33] };
   const CSS = { A: '#e5484d', B: '#2f6fdb', C: '#1f9d55' };
   const balls = [{ id: 'A', on: true, src: 1 }, { id: 'B', on: true, src: 2 }, { id: 'C', on: true, src: 4 }].map((b) => ({ ...b, relH: 1.78, relS: 0.55, ext: 1.74 }));
-  function loadVideo(b, i) { const p = PL.VIDEO[i]; Object.assign(b, { src: i, kph: p.kph, rpm: p.rpm, tilt: PL.parseClock(p.clock), gyro: p.gyro, name: null }); }
+  function loadVideo(b, i) { const p = PL.VIDEO[i]; Object.assign(b, { src: i, kph: p.kph, rpm: p.rpm, tilt: PL.parseClock(p.clock), gyro: p.gyro, name: null, typeKey: PL.TYPE_KEY[p.type] || 'fourSeam' }); }
   balls.forEach((b) => loadVideo(b, b.src));
 
   function simulate(b) {
     const eff = PL.effFromGyro(b.gyro);
     const res = P.simulate({ hand: st.hand, speedKmh: b.kph, rpm: b.rpm, tilt: b.tilt, efficiency: eff, release: PL.releaseOf(st.hand, b.relH, b.relS, b.ext), target: { x: 0, z: 0.76 },
-      aimMode: st.aim, elevationDeg: st.elev, azimuthDeg: st.azim });
+      aimMode: st.aim, pitchType: b.typeKey, elevationDeg: st.elev, azimuthDeg: st.azim });
     const wh = res.spinRate > 0 ? unit(res.omega) : unit(res.transverseAxis);
     return { eff, active: b.rpm * eff, rate: res.spinRate, omegaHat: wh, axisXYZ: [-wh[1], wh[2], -wh[0]], real: { path: res.path }, ghost: { path: res.ghostPath },
       time: res.flightTime, plate: res.plate, plateKmh: res.plateSpeedKmh, vb: res.releaseMovementCm.z, hb: -res.releaseMovementCm.x,
@@ -100,7 +100,7 @@
     q('time').innerHTML = `${r.time.toFixed(2)}<small>s</small>`;
     q('pkph').innerHTML = `${r.plateKmh.toFixed(1)}<small>kph</small>`;
     const sg = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
-    q('angle').innerHTML = `${T('elev', '出手仰角')} ${sg(r.angles.elevation)}°　${T('azim', '偏角')} ${sg(r.angles.azimuth)}°　→ <b class="call-${r.call}">${r.call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : r.call === 'strike' ? '好球' : '壞球'}</b>`;
+    q('angle').innerHTML = `${T('elev', '出手仰角')} ${sg(r.angles.elevation)}°　${T('azim', '偏角')} ${sg(r.angles.azimuth)}°　${st.aim === 'real' ? `（${PL.TYPE_NAME[b.typeKey]}的真實仰角）` : ''}　→ <b class="call-${r.call}">${r.call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : r.call === 'strike' ? '好球' : '壞球'}</b>`;
     const act = q('actual');
     if (b.src !== 'custom') { const p = PL.VIDEO[b.src]; act.hidden = false; act.innerHTML = `PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm${st.hand === 'L' ? '（右投實測）' : ''}`; }
     else if (b.name) { act.hidden = false; act.textContent = `從上方 3D 球送來：${b.name}`; }
@@ -167,7 +167,7 @@
     const q = window.__fieldQueue || []; window.__fieldQueue = [];
     for (const [id, p] of q) {
       const b = balls.find((x) => x.id === id); if (!b) continue;
-      Object.assign(b, { kph: p.kph, rpm: p.rpm, tilt: p.tilt, gyro: +(+p.gyro).toFixed(1), src: p.video != null ? p.video : 'custom', name: p.name, on: true });
+      Object.assign(b, { kph: p.kph, rpm: p.rpm, tilt: p.tilt, gyro: +(+p.gyro).toFixed(1), src: p.video != null ? p.video : 'custom', name: p.name, on: true, typeKey: p.typeKey || b.typeKey });
       if (p.relH != null) Object.assign(b, { relH: p.relH, relS: p.relS, ext: p.ext });
       b.q('[data-k=on]').checked = true; fill(b);
     }
