@@ -71,6 +71,7 @@ body {
 .seg button:first-child { border-radius: 8px 0 0 8px; }
 .seg button:last-child { border-radius: 0 8px 8px 0; }
 .seg button + button { border-left: none; }
+.seg button { white-space: nowrap; padding: 8px 4px; }
 .seg button.on { background: var(--accent); color: #fff; font-weight: 700; }
 
 .q {

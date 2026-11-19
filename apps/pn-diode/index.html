@@ -108,7 +108,8 @@
     <section class="ctrl" data-for="3">
       <h2>PN 二極體裡發生什麼事？</h2>
       <div class="seg" id="pn_mode">
-        <button data-m="off">不接電池</button>
+        <button data-m="apart">接觸前</button>
+        <button data-m="contact">接觸後</button>
         <button data-m="fwd">順向偏壓</button>
         <button data-m="rev">逆向偏壓</button>
       </div>
@@ -119,12 +120,16 @@
       <label class="chk"><input type="checkbox" id="pn_cur" checked> 顯示電流方向</label>
       <label class="chk"><input type="checkbox" id="pn_wire"> 顯示導線中的電子</label>
       <label class="chk"><input type="checkbox" id="pn_sign" checked> 粒子上標示 ＋／－</label>
+      <label class="chk"><input type="checkbox" id="pn_ions" checked> 顯示固定離子（方塊）</label>
+      <label class="chk"><input type="checkbox" id="pn_charge" checked> 顯示電性答案</label>
       <div class="btns">
         <button id="pn_pause">暫停</button>
         <button id="pn_reset" class="ghost">粒子重新排好</button>
       </div>
       <div class="explain" id="pn_explain"></div>
       <div class="q">
+        <p class="qt">本來電中性，接觸後 P 型帶 ___ 電、N 型帶 ___ 電？</p>
+        <button class="reveal" data-ans="P 型帶負電（少了電洞，留下負離子）；N 型帶正電（少了電子，留下正離子）">看答案</button>
         <p class="qt">為什麼二極體可以讓電流「單方向」通過？</p>
         <button class="reveal" data-ans="順向：電池把電洞、電子都推向中間，越過交界相遇，電流一直流（阻礙小、電阻小）。逆向：電池把電洞、電子都拉向兩端，中間沒有能移動的電荷，電流幾乎是 0（阻礙大、電阻大）。">看答案</button>
       </div>

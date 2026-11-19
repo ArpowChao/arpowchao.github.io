@@ -334,16 +334,29 @@ const wirePathRev = pathInfo([...[[G.bx - 24, G.wb], [G.wl, G.wb], [G.wl, G.yc],
 const WIRE_SKIP = [[G.P0 - 2, G.Y0 - 10, G.N1 + 2, G.Y1 + 10], [G.wr - 30, G.ay - 30, G.wr + 30, G.ay + 30], [G.bx - 30, G.wb - 40, G.bx + 30, G.wb + 40]];
 const LED_COLORS = { red: ['#ff3b30', 1.8], yellow: ['#ffc400', 2.0], green: ['#2fd05c', 2.2], blue: ['#2f6bff', 2.8] };
 
+// 固定不動的離子：P 型是負離子、N 型是正離子，數量和電洞／電子一樣多 → 原本電中性
+const LAT = (() => {
+  const cols = 4, rows = 4, cw = (G.J - G.P0) / cols, ch = (G.Y1 - G.Y0) / rows, P = [], N = [];
+  for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
+    const y = G.Y0 + ch * (i + 0.5);
+    P.push([G.P0 + cw * (j + 0.5), y]); N.push([G.J + cw * (j + 0.5), y]);
+  }
+  return { P, N, cw, ch };
+})();
+const CONTACT_N = 4;                        // 接觸時越過交界結合的對數（＝交界旁那一排離子）
 function makePN() {
-  const o = { holes: [], elecs: [], flashes: [], photons: [], acc: 0, phase: 0, t: 0, glow: 0, paused: false };
+  const o = { holes: [], elecs: [], flashes: [], photons: [], acc: 0, phase: 0, t: 0, glow: 0, paused: false,
+    w: 0, gap: 0, done: 0, ionsP: LAT.P, ionsN: LAT.N };
   o.reset = () => {
-    o.holes = []; o.elecs = []; o.flashes = []; o.photons = [];
-    const cols = 4, rows = 4, w = G.J - G.P0, h = G.Y1 - G.Y0;
-    for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
-      const y = G.Y0 + (h / rows) * (i + 0.5);
-      o.holes.push(mk('h', G.P0 + (w / cols) * (j + 0.5), y));
-      o.elecs.push(mk('e', G.J + (w / cols) * (j + 0.5), y));
-    }
+    o.holes = []; o.elecs = []; o.flashes = []; o.photons = []; o.done = 0; o.acc = 0;
+    const dx = LAT.cw * 0.24, dy = LAT.ch * 0.26;
+    LAT.P.forEach(([x, y]) => o.holes.push(mk('h', x - dx, y - dy)));
+    LAT.N.forEach(([x, y]) => o.elecs.push(mk('e', x + dx, y - dy)));
+  };
+  // 接上電池時，電池從兩端補足電洞、電子
+  o.topUp = () => {
+    while (o.holes.length < LAT.P.length) { const p = mk('h', G.P0 + G.r + 4, G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60)); p.a = 0; o.holes.push(p); }
+    while (o.elecs.length < LAT.N.length) { const p = mk('e', G.N1 - G.r - 4, G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60)); p.a = 0; o.elecs.push(p); }
   };
   function mk(k, x, y) { return { k, x, y, vx: 0, vy: 0, st: 'free', a: 1, partner: null }; }
   o.mk = mk;
@@ -358,6 +371,8 @@ function stepPN(o, dt, cfg) {
   let vd = 0;                               // 正值：往交界推；負值：往兩端拉
   if (cfg.mode === 'fwd') vd = 40 + 90 * clamp(cfg.push, 0, 1.2);
   else if (cfg.mode === 'rev') vd = -(35 + 55 * clamp(cfg.V / 20, 0, 1));
+  o.w += ((cfg.w || 0) - o.w) * Math.min(1, dt * 3);
+  o.gap += ((cfg.gap || 0) - o.gap) * Math.min(1, dt * 4);
   const all = [o.holes, o.elecs];
   for (const arr of all) for (const p of arr) {
     if (p.a < 1) p.a = Math.min(1, p.a + dt * 3);
@@ -374,7 +389,7 @@ function stepPN(o, dt, cfg) {
     p.vy += (-gam * p.vy) * dt + randn() * sig * Math.sqrt(dt);
     if (p.st === 'wait') { p.vx *= 0.9; p.vy *= 0.9; }
     p.x += p.vx * dt; p.y += p.vy * dt;
-    const xmin = p.k === 'h' ? G.P0 + r + 3 : G.J + r + 3, xmax = p.k === 'h' ? G.J - r - 3 : G.N1 - r - 3;
+    const xmin = p.k === 'h' ? G.P0 + r + 3 : G.J + o.w + r + 3, xmax = p.k === 'h' ? G.J - o.w - r - 3 : G.N1 - r - 3;
     if (p.x < xmin) { p.x = xmin; p.vx = Math.abs(p.vx); }
     if (p.x > xmax) { p.x = xmax; p.vx = -Math.abs(p.vx); }
     if (p.y < G.Y0 + r + 3) { p.y = G.Y0 + r + 3; p.vy = Math.abs(p.vy); }
@@ -394,6 +409,9 @@ function stepPN(o, dt, cfg) {
     let guard = 0;
     while (o.acc >= 1 && guard++ < 5) { o.acc -= 1; startCross(o); }
     o.acc = Math.min(o.acc, 2);
+  } else if (cfg.mode === 'contact') {
+    const pending = o.holes.filter(p => p.st === 'cross').length + o.elecs.filter(p => p.st === 'cross').length;
+    if (o.gap < 3 && o.done + pending < CONTACT_N) { o.acc += 1.5 * dt; if (o.acc >= 1) { o.acc -= 1; startCross(o); } }
   } else o.acc = 0;
   // 特效
   o.flashes = o.flashes.filter(f => (f.t += dt) < 0.5);
@@ -422,6 +440,8 @@ function recombine(o, p, q, cfg) {
   }
   o.holes = o.holes.filter(z => z !== p && z !== q);
   o.elecs = o.elecs.filter(z => z !== p && z !== q);
+  o.done++;
+  if (cfg.spawn === false) return;
   // 電池從兩端補進新的電洞和電子
   const nh = o.mk('h', G.P0 + G.r + 4, G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60)); nh.vx = 80; nh.a = 0;
   const ne = o.mk('e', G.N1 - G.r - 4, G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60)); ne.vx = -80; ne.a = 0;
@@ -431,38 +451,33 @@ function recombine(o, p, q, cfg) {
 function drawPN(o, cfg, opt) {
   const { P0, J, N1, Y0, Y1, r } = G;
   // 導線
-  const connected = cfg.mode !== 'off';
+  const connected = cfg.mode === 'fwd' || cfg.mode === 'rev';
+  const gP = -o.gap, gN = o.gap;
+  if (connected) {
   poly([[G.P0, G.yc], [G.wl, G.yc], [G.wl, G.wb], [G.bx - 22, G.wb]]);
   poly([[G.N1, G.yc], [G.wr, G.yc], [G.wr, G.wb], [G.bx + 22, G.wb]]);
-  if (connected) {
     const pi = cfg.flowDir >= 0 ? wirePathFwd : wirePathRev;
     if (opt.cur) drawFlow(pi, o.phase, 48, 'chev', WIRE_SKIP, cfg.flow > 0 ? 1 : 0);
     if (opt.wire) {
       const pe = cfg.flowDir >= 0 ? wirePathRev : wirePathFwd;
       drawFlow(pe, o.phase + 24, 48, 'e', WIRE_SKIP, cfg.flow > 0 ? 1 : 0);
     }
-  }
-  // 電池或開關
-  if (connected) battery(G.bx, G.wb, cfg.mode === 'fwd', cfg.V.toFixed(cfg.V >= 10 ? 1 : 2) + ' V');
-  else {
-    ctx.fillStyle = '#fff'; ctx.fillRect(G.bx - 40, G.wb - 20, 80, 40);
-    text('（沒有接電池）', G.bx, G.wb + 2, 20, C.muted, 'center');
-  }
+  // 電池
+  battery(G.bx, G.wb, cfg.mode === 'fwd', cfg.V.toFixed(cfg.V >= 10 ? 1 : 2) + ' V');
   // 電流計
   ctx.fillStyle = '#fff'; ctx.fillRect(G.wr - 28, G.ay - 30, 56, 60);
   meter(G.wr, G.ay, 'A');
-  readout(G.wr - 205, G.ay, 165, connected ? fmtI(cfg.I).replace('≈ 0', '0.00 mA') : '0.00 mA', C.ink, 22);
+  readout(G.wr - 205, G.ay, 165, fmtI(cfg.I).replace('≈ 0', '0.00 mA'), C.ink, 22);
   // 兩端外加電壓文字
-  if (connected) {
     const leftPlus = cfg.mode === 'fwd';
     text('外加', G.wl + 14, G.yc - 26, 20, C.ink); text(leftPlus ? '正' : '負', G.wl + 56, G.yc - 26, 22, leftPlus ? C.hole : C.elec, 'left', '700'); text('電壓', G.wl + 80, G.yc - 26, 20, C.ink);
     text('外加', G.N1 + 8, G.yc - 26, 20, C.ink); text(leftPlus ? '負' : '正', G.N1 + 50, G.yc - 26, 22, leftPlus ? C.elec : C.hole, 'left', '700'); text('電壓', G.N1 + 74, G.yc - 26, 20, C.ink);
   }
   // 兩塊半導體
   if (cfg.breakdown) { ctx.save(); ctx.shadowColor = 'rgba(255,60,0,0.9)'; ctx.shadowBlur = 40 + 20 * Math.sin(o.t * 20); }
-  for (const [x0, x1] of [[P0, J], [J, N1]]) {
+  for (const [x0, x1, g] of [[P0, J, gP], [J, N1, gN]]) {
     ctx.fillStyle = cfg.breakdown ? '#f7b9a3' : C.blockFill; ctx.strokeStyle = C.blockEdge; ctx.lineWidth = 5; ctx.setLineDash([3, 3]);
-    rrect(x0 + 2, Y0, x1 - x0 - 4, Y1 - Y0, 26); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+    rrect(x0 + 2 + g, Y0, x1 - x0 - 4, Y1 - Y0, 26); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
   }
   if (cfg.breakdown) ctx.restore();
   // LED 發光
@@ -471,18 +486,29 @@ function drawPN(o, cfg, opt) {
     g.addColorStop(0, hexA(cfg.led, 0.75 * o.glow)); g.addColorStop(1, hexA(cfg.led, 0));
     ctx.fillStyle = g; ctx.fillRect(P0 - 60, Y0 - 120, N1 - P0 + 120, Y1 - Y0 + 200);
   }
-  text('P型半導體（較多', P0 + 40, Y0 - 30, 24, C.ink, 'left', '700');
-  font(24, '700'); let w1 = ctx.measureText('P型半導體（較多').width; text('電洞', P0 + 40 + w1, Y0 - 30, 24, C.hole, 'left', '700');
-  text('）', P0 + 40 + w1 + 48, Y0 - 30, 24, C.ink, 'left', '700');
-  text('N型半導體（較多', J + 30, Y0 - 30, 24, C.ink, 'left', '700');
-  text('電子', J + 30 + w1, Y0 - 30, 24, C.elec, 'left', '700');
-  text('）', J + 30 + w1 + 48, Y0 - 30, 24, C.ink, 'left', '700');
+  text('P型半導體（較多', P0 + 40 + gP, Y0 - 30, 24, C.ink, 'left', '700');
+  font(24, '700'); let w1 = ctx.measureText('P型半導體（較多').width; text('電洞', P0 + 40 + w1 + gP, Y0 - 30, 24, C.hole, 'left', '700');
+  text('）', P0 + 40 + w1 + 48 + gP, Y0 - 30, 24, C.ink, 'left', '700');
+  text('N型半導體（較多', J + 30 + gN, Y0 - 30, 24, C.ink, 'left', '700');
+  text('電子', J + 30 + w1 + gN, Y0 - 30, 24, C.elec, 'left', '700');
+  text('）', J + 30 + w1 + 48 + gN, Y0 - 30, 24, C.ink, 'left', '700');
+  // 固定離子（方塊）
+  if (opt.ions) {
+    for (const [list, kind] of [[o.ionsP, 'P'], [o.ionsN, 'N']]) for (const [x0, y] of list) {
+      const x = x0 + (kind === 'P' ? gP : gN);
+      const hot = o.w > 8 && Math.abs(x0 - J) < o.w + 2, sz = hot ? 12 : 10;
+      ctx.fillStyle = hot ? (kind === 'P' ? '#1456b8' : '#c0261d') : 'rgba(70,85,100,0.32)';
+      ctx.fillRect(x - sz, y - sz, 2 * sz, 2 * sz);
+      text(kind === 'P' ? '−' : '+', x, y + 1, hot ? 22 : 18, '#fff', 'center', '700');
+    }
+  }
   // 粒子
   for (const arr of [o.holes, o.elecs]) for (const p of arr) {
     ctx.globalAlpha = p.a;
+    const px = p.x + (p.k === 'h' ? gP : gN);
     ctx.fillStyle = p.k === 'h' ? C.hole : C.elec;
-    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
-    if (opt.sign) text(p.k === 'h' ? '+' : '−', p.x, p.y + 1, 20, '#fff', 'center', '700');
+    ctx.beginPath(); ctx.arc(px, p.y, r, 0, 7); ctx.fill();
+    if (opt.sign) text(p.k === 'h' ? '+' : '−', px, p.y + 1, 20, '#fff', 'center', '700');
     ctx.globalAlpha = 1;
   }
   // 相遇閃光
@@ -514,6 +540,26 @@ function drawPN(o, cfg, opt) {
     }
     ctx.shadowBlur = 0;
   }
+  // 電性（沒接電池時）
+  if (!connected) {
+    const netP = o.holes.length - LAT.P.length, netN = LAT.N.length - o.elecs.length;
+    const cxP = (P0 + J) / 2 + gP, cxN = (J + N1) / 2 + gN, yy = Y1 + 40;
+    const lab = (cx, net, word, col) => {
+      if (net === 0) { text('電性：電中性', cx, yy, 26, C.ink, 'center', '700'); return; }
+      if (!opt.charge) { text('電性：帶 ＿＿ 電', cx, yy, 26, C.ink, 'center', '700'); return; }
+      font(26, '700'); const w0 = ctx.measureText('電性：帶').width, w2 = ctx.measureText('負').width, w3 = ctx.measureText('電').width, x0 = cx - (w0 + w2 + w3) / 2;
+      text('電性：帶', x0, yy, 26, C.ink, 'left', '700'); text(word, x0 + w0, yy, 26, col, 'left', '700'); text('電', x0 + w0 + w2, yy, 26, C.ink, 'left', '700');
+    };
+    lab(cxP, netP, '負', C.elec); lab(cxN, netN, '正', C.hole);
+    text(`電洞 ${o.holes.length} 個（＋）　負離子 ${LAT.P.length} 個（－）`, cxP, yy + 34, 18, C.muted, 'center');
+    text(`電子 ${o.elecs.length} 個（－）　正離子 ${LAT.N.length} 個（＋）`, cxN, yy + 34, 18, C.muted, 'center');
+    if (cfg.mode === 'contact' && o.gap < 3 && o.done < CONTACT_N) {
+      arrow(J - 150, yy + 92, J + 60, yy + 92, C.hole, 7, 24); text('電洞往 N 型跑', J - 160, yy + 92, 22, C.hole, 'right', '700');
+      arrow(J + 150, yy + 132, J - 60, yy + 132, C.elec, 7, 24); text('電子往 P 型跑', J + 160, yy + 132, 22, C.elec, 'left', '700');
+    } else if (cfg.mode === 'contact' && o.done >= CONTACT_N && opt.charge) {
+      text('交界的 －、＋ 離子把後面的電洞、電子推回去 → 停住了', J, yy + 100, 22, C.ink, 'center', '700');
+    }
+  }
   // 電流方向大箭頭（塊體下方）
   if (opt.cur && cfg.mode === 'fwd' && cfg.flow > 20) {
     ctx.save(); ctx.globalAlpha = clamp(cfg.flow / 120, 0.3, 1);
@@ -532,14 +578,20 @@ function banner(t, col, sub) {
 }
 
 /* ---------- 場景④ PN 動畫 ---------- */
-const sP = { pn: makePN(), mode: 'fwd', Vf: 0.7, Vr: 5, sp: 1, opt: { cur: true, wire: false, sign: true } };
+const sP = { pn: makePN(), mode: 'apart', Vf: 0.7, Vr: 5, sp: 1, opt: { cur: true, wire: false, sign: true, ions: true, charge: true } };
 sP.pn.tRev = 0;
 function pnCfg() {
   const V = sP.mode === 'fwd' ? sP.Vf : sP.mode === 'rev' ? sP.Vr : 0;
   let I = 0, rate = 0, flowDir = 1, breakdown = false;
   if (sP.mode === 'fwd') { I = iDiode(V); rate = 3.5 * (1 - Math.exp(-I / 1.2)); }
   if (sP.mode === 'rev') { I = iDiode(-V); breakdown = V > VBR; flowDir = -1; }
-  return { mode: sP.mode, V, I, rate, push: V / 0.7, breakdown, flowDir, flow: sP.mode === 'off' ? 0 : flowSpeed(I), led: null };
+  let w = 0, gap = 0;
+  if (sP.mode === 'apart') gap = 45;
+  else if (sP.mode === 'contact') w = 55 * Math.min(sP.pn.done, CONTACT_N) / CONTACT_N;
+  else if (sP.mode === 'fwd') w = 55 * (1 - clamp((V - 0.2) / 0.45, 0, 1));
+  else w = Math.min(55 + 5 * V, 190);
+  const conn = sP.mode === 'fwd' || sP.mode === 'rev';
+  return { mode: sP.mode, V, I, rate, push: V / 0.7, breakdown, flowDir, flow: conn ? flowSpeed(I) : 0, led: null, w, gap, spawn: conn };
 }
 function scenePN(dt) {
   const cfg = pnCfg(), o = sP.pn;
@@ -547,25 +599,37 @@ function scenePN(dt) {
   if (!o.paused) { const n = Math.ceil((dt * sP.sp) / (1 / 60)); for (let i = 0; i < n; i++) stepPN(o, (dt * sP.sp) / n, cfg); }
   begin();
   drawPN(o, cfg, sP.opt);
-  if (cfg.mode === 'off') banner('沒有接電池', C.muted, '電洞、電子只在自己的區域亂動，電流 = 0');
-  else if (cfg.mode === 'fwd') {
-    if (cfg.V < 0.45) banner('順向，但電壓太小', '#c47a00', '推向中間，但幾乎過不去 → 電流很小');
+  if (o.done !== o.lastDone) { o.lastDone = o.done; pnExplain(); }
+  if (cfg.mode === 'apart') banner('接觸前：P 型、N 型各自電中性', C.ink, '電洞(＋)和負離子(－)一樣多；電子(－)和正離子(＋)一樣多');
+  else if (cfg.mode === 'contact') {
+    if (o.done < CONTACT_N) banner('剛接觸：電洞、電子跑向對面相遇', '#c47a00', '相遇後結合、一起消失');
+    else if (sP.opt.charge) banner('接觸後：P 型帶負電、N 型帶正電', C.accent, '交界留下沒被抵消的離子 → 把後面的電洞、電子推回去');
+    else banner('接觸後：P 型、N 型各帶什麼電？', C.accent, '數一數：電洞、電子少了幾個？離子還是一樣多');
+  } else if (cfg.mode === 'fwd') {
+    if (cfg.V < 0.45) banner('順向，但電壓太小', '#c47a00', '交界的 －、＋ 電荷把它們推回去 → 電流很小');
     else if (cfg.V < 0.6) banner('開始導通…', '#c47a00', '有一些電洞、電子越過交界相遇');
     else banner('順向偏壓：阻礙小、電阻小', C.good, '電洞、電子越過交界相遇，電池不斷補充 → 電流一直流');
   } else if (cfg.breakdown) banner('崩潰！電流暴增，會燒壞', '#8b1a14', '逆向電壓超過約 40 V');
   else banner('逆向偏壓：阻礙大、電阻大', C.bad, '電洞、電子被拉向兩端，中間空了 → 電流幾乎 0');
   const R = Math.abs(cfg.I) > 1e-12 ? cfg.V / (Math.abs(cfg.I) / 1000) : Infinity;
-  infoBox(960, 14, [['電壓', (cfg.mode === 'rev' ? '−' : '') + cfg.V.toFixed(cfg.V >= 10 ? 1 : 2) + ' V'], ['電流', cfg.mode === 'off' ? '0' : fmtI(cfg.I)], ['電阻', cfg.mode === 'off' ? '—' : fmtR(R)]], 226);
+  if (cfg.mode === 'apart' || cfg.mode === 'contact') {
+    const netP = o.holes.length - LAT.P.length, netN = LAT.N.length - o.elecs.length, show = sP.opt.charge || (netP === 0);
+    infoBox(960, 14, [['P 型淨電荷', show ? (netP ? '−' + (-netP) : '0') : '?', netP && show ? C.elec : C.ink], ['N 型淨電荷', show ? (netN ? '+' + netN : '0') : '?', netN && show ? C.hole : C.ink], ['電流', '0']], 226);
+  } else infoBox(960, 14, [['電壓', (cfg.mode === 'rev' ? '−' : '') + cfg.V.toFixed(cfg.V >= 10 ? 1 : 2) + ' V'], ['電流', fmtI(cfg.I)], ['電阻', fmtR(R)]], 226);
   if (sP.pn.paused) text('⏸ 暫停中', 600, 680, 22, C.muted, 'center', '700');
 }
 function pnExplain() {
   const c = pnCfg(); let t;
-  if (c.mode === 'off') t = '沒有接電池：P 區的<b style="color:#ec2a1f">電洞</b>、N 區的<b style="color:#12a0f5">電子</b>只是在各自區域裡亂動，沒有朝同一個方向流，所以電流 = 0。';
+  const done = sP.pn.done >= CONTACT_N;
+  if (c.mode === 'apart') t = 'P 型裡有可以移動的<b style="color:#ec2a1f">電洞（＋）</b>，也有同樣多個<b>固定不動的負離子</b>（灰色方塊 －），正負抵消 → <b>電中性</b>。<br>N 型裡是可以移動的<b style="color:#12a0f5">電子（－）</b>和同樣多的<b>正離子</b>（＋）→ 也是<b>電中性</b>。<br>按「接觸後」把兩塊接在一起。';
+  else if (c.mode === 'contact' && !done) t = 'P、N 一接觸：交界附近的電洞跑到 N 型、電子跑到 P 型，兩個相遇就<b>結合消失</b>（黃色閃光）。<br>注意灰色的離子固定不動，不會跟著跑。';
+  else if (c.mode === 'contact' && !sP.opt.charge) t = '數一數：P 型少了幾個電洞？N 型少了幾個電子？固定的離子有沒有變少？<br>想一想：現在 P 型、N 型各帶什麼電？';
+  else if (c.mode === 'contact') t = 'P 型少了電洞，交界旁留下沒被抵消的<b style="color:#1456b8">負離子</b> → <b>P 型帶負電</b>；N 型少了電子，留下<b style="color:#c0261d">正離子</b> → <b>N 型帶正電</b>。<br>這些電荷會把後面的電洞、電子<b>推回去</b>，所以只過去幾個就停了。<br><span style="color:#5b6b7c">（整顆二極體加起來還是電中性，多出來的電荷集中在交界兩側。）</span>';
   else if (c.mode === 'fwd') {
-    if (c.V < 0.45) t = '順向偏壓，但電壓還太小：電洞、電子只被往中間推一點，幾乎過不了交界，電流非常小。試著把電壓調到 0.6 V 以上。';
-    else t = '電池<b style="color:#ec2a1f">正極</b>把電洞往右推、<b style="color:#12a0f5">負極</b>把電子往左推，它們越過交界、相遇結合（黃色閃光）。電池又從兩端不斷補充新的電洞和電子，所以電流一直流。<br><b>電壓越大 → 相遇越多 → 電流越大 → 電阻越小。</b>';
+    if (c.V < 0.45) t = '接觸後交界旁 P 型帶負電、N 型帶正電，會把電洞、電子<b>推回去</b>。電池電壓太小推不過去，電流非常小；要大到約 0.6 V 以上才推得過。';
+    else t = '電池<b style="color:#ec2a1f">正極</b>把電洞往右推、<b style="color:#12a0f5">負極</b>把電子往左推，蓋過了交界電荷的推回力，它們越過交界、相遇結合（黃色閃光）。電池又從兩端不斷補充新的電洞和電子，所以電流一直流。<br><b>電壓越大 → 相遇越多 → 電流越大 → 電阻越小。</b>';
   } else if (c.breakdown) t = '逆向電壓太大（超過約 40 V）：二極體「崩潰」，電流突然暴增，會發熱壞掉。實際使用不能超過額定的逆向電壓。';
-  else t = '電池<b style="color:#12a0f5">負極</b>把電洞拉到左邊、<b style="color:#ec2a1f">正極</b>把電子拉到右邊，中間空了，沒有可以移動的電荷越過交界，電流幾乎是 0。<br><b>阻礙大 → 電阻大，電流過不去。</b>';
+  else t = '電池<b style="color:#12a0f5">負極</b>把電洞拉到左邊、<b style="color:#ec2a1f">正極</b>把電子拉到右邊，交界旁露出更多離子（P 型更負、N 型更正），中間空了，沒有可以移動的電荷越過交界，電流幾乎是 0。<br><b>阻礙大 → 電阻大，電流過不去。</b>';
   document.getElementById('pn_explain').innerHTML = t;
 }
 
@@ -577,14 +641,15 @@ function ledCfg() {
   let I = 0, rate = 0, flowDir = 1;
   if (sL.mode === 'fwd') { I = 2 * (Math.exp((sL.V - von) / 0.08) - Math.exp(-von / 0.08)); rate = 12 * (1 - Math.exp(-I / 3)); }
   else { I = iDiode(-sL.V); flowDir = -1; }
-  return { mode: sL.mode, V: sL.V, I, rate, push: sL.V / von, breakdown: false, flowDir, flow: flowSpeed(I), led: col, von };
+  const w = sL.mode === 'fwd' ? 55 * (1 - clamp((sL.V - (von - 0.6)) / 0.5, 0, 1)) : Math.min(55 + 5 * sL.V, 190);
+  return { mode: sL.mode, V: sL.V, I, rate, push: sL.V / von, breakdown: false, flowDir, flow: flowSpeed(I), led: col, von, w, gap: 0, spawn: true };
 }
 function sceneLED(dt) {
   const cfg = ledCfg(), o = sL.pn;
   o.tRev = cfg.mode === 'rev' ? o.tRev + dt * sL.sp : 0;
   const n = Math.ceil((dt * sL.sp) / (1 / 60)); for (let i = 0; i < n; i++) stepPN(o, (dt * sL.sp) / n, cfg);
   begin();
-  drawPN(o, cfg, { cur: true, wire: false, sign: true });
+  drawPN(o, cfg, { cur: true, wire: false, sign: true, ions: true });
   // LED 小圖示
   const lx = 1160, ly = 190;
   if (o.glow > 0.02) { const g = ctx.createRadialGradient(lx, ly, 5, lx, ly, 70); g.addColorStop(0, hexA(cfg.led, 0.9 * o.glow)); g.addColorStop(1, hexA(cfg.led, 0)); ctx.fillStyle = g; ctx.fillRect(lx - 70, ly - 70, 140, 140); }
@@ -734,7 +799,11 @@ $('c_s').addEventListener('input', e => { sC.s = +e.target.value; const V = cV(s
 document.querySelectorAll('[data-cv]').forEach(b => b.addEventListener('click', () => setVal('c_s', b.dataset.cv)));
 // ④
 function pnMode(m) {
+  const prev = sP.mode, o = sP.pn;
   sP.mode = m;
+  if (m === 'apart') o.reset();
+  else if (m === 'contact') { if (prev !== 'apart') o.topUp(); o.done = 0; o.acc = 0; }
+  else o.topUp();
   document.querySelectorAll('#pn_mode button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   const sl = $('pn_v');
   if (m === 'rev') { sl.disabled = false; sl.min = 0; sl.max = 50; sl.step = 0.5; sl.value = sP.Vr; }
@@ -749,6 +818,8 @@ $('pn_sp').addEventListener('input', e => { sP.sp = +e.target.value; $('pn_spLbl
 $('pn_cur').addEventListener('change', e => { sP.opt.cur = e.target.checked; });
 $('pn_wire').addEventListener('change', e => { sP.opt.wire = e.target.checked; });
 $('pn_sign').addEventListener('change', e => { sP.opt.sign = e.target.checked; });
+$('pn_ions').addEventListener('change', e => { sP.opt.ions = e.target.checked; });
+$('pn_charge').addEventListener('change', e => { sP.opt.charge = e.target.checked; pnExplain(); });
 $('pn_pause').addEventListener('click', () => { sP.pn.paused = !sP.pn.paused; $('pn_pause').textContent = sP.pn.paused ? '繼續' : '暫停'; });
 $('pn_reset').addEventListener('click', () => sP.pn.reset());
 // ⑤
@@ -769,7 +840,7 @@ document.querySelectorAll('#k_dir button').forEach(b => b.addEventListener('clic
 }));
 document.querySelector('#k_dir button[data-d=fwd]').classList.add('on');
 
-pnMode('fwd'); ledMode('fwd');
+pnMode('apart'); ledMode('fwd');
 resize();
 const h = parseInt(location.hash.slice(1), 10);
 show(h >= 1 && h <= 6 ? h - 1 : 0);
