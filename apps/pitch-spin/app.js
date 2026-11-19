@@ -183,10 +183,13 @@
     }
     dotGeo.setDrawRange(0, n);
     dotGeo.attributes.position.needsUpdate = true; dotGeo.attributes.color.needsUpdate = true;
+    flowDirty = true;
   }
-  let flowPhase = 0;
+  let flowPhase = 0, flowDirty = true;
   function animateFlow(dt) {
     if (!flow.lines.length) return;
+    if (!state.slow && !flowDirty) return;
+    flowDirty = false;
     if (state.slow) flowPhase += dt * 40 / state.slow;
     const col = flowGeo.attributes.color.array, L = .55; // pulse spacing in "time" units
     let j = 0;
@@ -228,6 +231,7 @@
     if (v === 'flow') { orbit.custom = flowView(); orbit.r = 8.6; }
     else { const [az, el, r] = VIEWS[v]; orbit.custom = null; orbit.az = az * DEG; orbit.el = el * DEG; orbit.r = r; }
     placeCamera();
+    flowDirty = true;
     document.querySelectorAll('#stage [data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
     stageNote();
   }
@@ -240,11 +244,11 @@
     if (!drag) return;
     orbit.az = drag.az - (e.clientX - drag.x) * .008;
     orbit.el = clamp(drag.el + (e.clientY - drag.y) * .008, -1.2, 1.2);
-    placeCamera(); state.view = null;
+    placeCamera(); flowDirty = true; state.view = null;
     document.querySelectorAll('#stage [data-view]').forEach((b) => b.classList.remove('active'));
   });
   ['pointerup', 'pointercancel'].forEach((t) => canvas.addEventListener(t, () => { drag = null; }));
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.r = clamp(orbit.r * (1 + Math.sign(e.deltaY) * .08), 3.6, 13); placeCamera(); }, { passive: false });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.r = clamp(orbit.r * (1 + Math.sign(e.deltaY) * .08), 3.6, 13); placeCamera(); flowDirty = true; }, { passive: false });
 
   function resize3D() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -272,10 +276,12 @@
     stageNote();
   }
 
-  let lastT = performance.now();
+  let lastT = performance.now(), labVisible = true;
+  if (window.IntersectionObserver) new IntersectionObserver((es) => { labVisible = es.some((x) => x.isIntersecting); }).observe($('lab'));
   function animate(now) {
     requestAnimationFrame(animate);
     const dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
+    if (!labVisible && !document.body.classList.contains('fs-on')) return;
     if (state.slow) spinAngle += omegaRate * dt / state.slow;
     const qs = new T.Quaternion().setFromAxisAngle(omegaHat, spinAngle);
     ball.quaternion.copy(qs.multiply(q0));
@@ -286,8 +292,21 @@
 
   // ---------- catcher's-view pitch path ----------
   const plateCanvas = $('plate-canvas'), pctx = plateCanvas.getContext('2d');
-  let pitchStart = performance.now();
+  let pitchStart = performance.now(), platePaused = false, platePausedElapsed = 0;
   const PLAYBACK = 4;
+  plateCanvas.style.cursor = 'pointer';
+  plateCanvas.title = '點擊畫面可暫停／繼續球路動畫';
+  plateCanvas.addEventListener('click', () => {
+    const now = performance.now();
+    if (!platePaused) {
+      platePausedElapsed = now - pitchStart;
+      platePaused = true;
+    } else {
+      pitchStart = now - platePausedElapsed;
+      platePaused = false;
+    }
+    drawPlate(now);
+  });
   function setupCanvas(c) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2), w = c.clientWidth, h = c.clientHeight;
     if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
@@ -324,7 +343,8 @@
     drawPath(r.ghostPath, '#93a1a9', [4, 4], 1.4);
     drawPath(r.path, '#ef7a2c', [], 2);
     // animated balls
-    const tNow = ((now - pitchStart) / 1000) / PLAYBACK, T1 = r.flightTime;
+    const elapsedMs = platePaused ? platePausedElapsed : (now - pitchStart);
+    const tNow = (elapsedMs / 1000) / PLAYBACK, T1 = r.flightTime;
     const at = (path, t) => { if (t >= path[path.length - 1].t) return path[path.length - 1].p; let i = 1; while (path[i].t < t) i++; const A = path[i - 1], B = path[i], u = (t - A.t) / (B.t - A.t); return [0, 1, 2].map((k) => A.p[k] + (B.p[k] - A.p[k]) * u); };
     const tt = Math.min(tNow, T1);
     for (const [path, color] of [[r.ghostPath, '#aab6bd'], [r.path, '#ef7a2c']]) {
@@ -347,9 +367,10 @@
         ctx.fillText(`旋轉讓球偏了 ${d.toFixed(0)} 公分　·　${call === 'strike' ? '好球' : '壞球'}`, 10, h - 12);
       }
     }
-    if (tNow > T1 + 1.6) pitchStart = now; // loop
+    if (!platePaused && tNow > T1 + 1.6) pitchStart = now; // loop
     ctx.fillStyle = '#5d7080'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(`${state.hand === 'R' ? '右投' : '左投'} · 出手高 ${state.relH.toFixed(2)} m · ${state.hand === 'R' ? '三壘' : '一壘'}側 ${state.relS.toFixed(2)} m`, w - 10, 16);
+    if (platePaused) { ctx.fillStyle = '#c4472f'; ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('⏸ 已暫停（點擊繼續）', 10, 16); }
   }
 
   // ---------- movement chart (seen from behind the pitcher, like PitchLab: + = 3B side) ----------
@@ -489,9 +510,12 @@
     $('use-measured').checked = state.useMeasured;
     $('ssw-on').checked = state.sswOn; $('ssw').value = state.sswCm; setIf('ssw-num', state.sswCm);
     document.querySelector('.ssw-control').hidden = !state.sswOn;
+    const sswNeedsTwo = state.sswOn && state.seams !== 'two' && !(state.useMeasured && state.measured);
+    $('ssw').disabled = sswNeedsTwo; $('ssw-num').disabled = sswNeedsTwo;
+    $('ssw-switch-two').hidden = !sswNeedsTwo;
     const sswHint = !state.sswOn ? '縫線讓兩側氣流不對稱，會多推球一把（不是旋轉造成的）。本模型預設不算，打勾可用滑桿加入示意值。'
       : (state.useMeasured && state.measured) ? '目前球路照 PitchLab 實測畫，實測已經包含縫線效應，所以這裡不再另外加。'
-      : state.seams !== 'two' ? '四縫線握法的縫線效應很小，所以不加；把握法改成「二縫線」（伸卡球、變速球）才會有作用。'
+      : state.seams !== 'two' ? '四縫線握法的縫線效應很小，所以目前不作用；切換為「二縫線」才會加上額外位移。'
       : `二縫線：額外 ${state.sswCm} cm，往${state.hand === 'R' ? '三壘側' : '一壘側'}（手臂側）偏下推（從投手看約 ${state.hand === 'R' ? '4:00' : '8:00'} 方向）。`;
     $('ssw-hint').textContent = sswHint;
     if (r.sswExtraCm) act.innerHTML += `<br>其中縫線效應（示意）：垂直 ${r.sswExtraCm.z.toFixed(1)}、水平 ${hView(r.sswExtraCm.x).toFixed(1)} cm`;
@@ -500,7 +524,10 @@
     $('r-time').textContent = `${r.flightTime.toFixed(3)} s`;
     $('r-plate').textContent = `${r.plateSpeedKmh.toFixed(0)} km/h`;
     $('r-force').textContent = `${r.magnusN.toFixed(2)} N（重力的 ${Math.round(r.magnusOverWeight * 100)}%）`;
-    $('r-s').textContent = `${r.spinFactor.toFixed(3)} ／ ${r.cl.toFixed(3)}`;
+    const modelCl = P.liftCoefficient(r.spinFactor);
+    $('r-s').textContent = r.measured
+      ? `${r.spinFactor.toFixed(3)} ／ ${r.cl.toFixed(3)}（實測反推，模型 ${modelCl.toFixed(3)}）`
+      : `${r.spinFactor.toFixed(3)} ／ ${r.cl.toFixed(3)}`;
     const ang = r.angles, sgn = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
     $('r-angle').textContent = `${sgn(ang.elevation)}° ／ ${sgn(ang.azimuth)}°${state.aimMode === 'manual' ? '（手動）' : state.aimMode === 'real' ? `（${PL.TYPE_NAME[state.typeKey]}的真實仰角）` : '（修正進正中央）'}`;
     $('type-row').hidden = state.aimMode !== 'real'; $('pitch-type').value = state.typeKey;
@@ -525,6 +552,7 @@
   ['meas-v', 'meas-h'].forEach((id) => $(id).addEventListener('input', () => { state.measured = readMeasured(); if (state.measured && !state.useMeasured) state.useMeasured = true; state.video = null; update(true); }));
   $('use-measured').addEventListener('change', (e) => { state.measured = readMeasured(); state.useMeasured = e.target.checked && !!state.measured; update(true); });
   $('ssw-on').addEventListener('change', (e) => { state.sswOn = e.target.checked; update(true); });
+  $('ssw-switch-two').addEventListener('click', () => { state.seams = 'two'; update(true); });
   $('ssw').addEventListener('input', (e) => { state.sswCm = Number(e.target.value); update(true); });
   $('ssw-num').addEventListener('input', (e) => { const v = Number(e.target.value); if (e.target.value !== '' && v >= 0 && v <= 15) { state.sswCm = v; update(true); } });
   num('relH-num', 'relH', 0.5, 2.3); num('relS-num', 'relS', 0, 1.3); num('ext-num', 'ext', 0.8, 2.4);
@@ -540,7 +568,7 @@
   $('seams').addEventListener('change', (e) => setParam('seams', e.target.value));
   $('slow').addEventListener('change', (e) => { state.slow = Number(e.target.value); updateBallPose(); });
   $('show-flow').addEventListener('change', (e) => { flowLines.visible = e.target.checked; });
-  $('replay').addEventListener('click', () => { pitchStart = performance.now(); });
+  $('replay').addEventListener('click', () => { platePaused = false; pitchStart = performance.now(); });
   function autoAngles() { const a = P.simulate({ ...cfg(), aimMode: 'real' }).angles; state.elev = +a.elevation.toFixed(2); state.azim = +a.azimuth.toFixed(2); }
   $('aim-mode').addEventListener('change', (e) => {
     if (e.target.value === 'manual' && state.result) { state.elev = +state.result.angles.elevation.toFixed(2); state.azim = +state.result.angles.azimuth.toFixed(2); }
@@ -559,6 +587,7 @@
   document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
     if (b.dataset.hand === state.hand) return;
     state.hand = b.dataset.hand; state.tilt = (12 - state.tilt) % 12;
+    if (state.measured) state.measured = { v: state.measured.v, h: -state.measured.h };
     document.querySelectorAll('[data-hand]').forEach((x) => x.classList.toggle('active', x === b));
     buildPresets(); computePresetResults(); update(true);
   }));

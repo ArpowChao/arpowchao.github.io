@@ -8,7 +8,7 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="home" href="/" title="回首頁">⌂</a>
+  <a class="home" href="../index.html" title="回 Physics Lab">⌂</a>
   <h1>DIODE 二極體單行道實驗室</h1>
   <nav class="tabs" id="tabs">
     <button data-scene="0">① 電阻 V–I</button>
@@ -62,9 +62,10 @@
     <section class="ctrl" data-for="1">
       <h2>二極體的電壓與電流</h2>
       <label>二極體兩端電壓 <b id="d_vLbl">0.30 V</b>
-        <input type="range" id="d_v" min="0" max="0.64" step="0.01" value="0.3"></label>
+        <input type="range" id="d_v" min="0" max="0.70" step="0.01" value="0.3"></label>
       <div class="btns">
         <button id="d_rec">記錄這一點</button>
+        <button id="d_auto">自動量一輪</button>
         <button id="d_class">載入課堂數據</button>
         <button id="d_clr" class="ghost">清除</button>
       </div>
@@ -153,6 +154,9 @@
         <input type="range" id="led_v" min="0" max="3.4" step="0.02" value="1.8"></label>
       <label>動畫速度 <b id="led_spLbl">1.0×</b>
         <input type="range" id="led_sp" min="0.2" max="2" step="0.1" value="1"></label>
+      <div class="btns">
+        <button id="led_pause">暫停</button>
+      </div>
       <div class="explain" id="led_explain"></div>
       <div class="q">
         <p class="qt">LED 的光是從哪裡來的？</p>
@@ -171,6 +175,12 @@
         <button data-d="fwd">二極體順接</button>
         <button data-d="rev">二極體反接</button>
       </div>
+      <label>元件種類
+        <select id="k_type">
+          <option value="si" selected>矽二極體（約 0.7 V）</option>
+          <option value="red">紅光 LED（約 1.8 V）</option>
+          <option value="blue">藍光 LED（約 2.8 V）</option>
+        </select></label>
       <label>串聯電阻
         <select id="k_R">
           <option value="100">100 Ω</option>

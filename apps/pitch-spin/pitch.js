@@ -2,7 +2,7 @@
  * Coordinates (catcher's view, metres): x → catcher's right (1B side), y → from home plate toward the mound, z ↑.
  * Forces: gravity, quadratic drag (C_D), Magnus lift from the spin component perpendicular to the velocity:
  *   C_L = 1 / (2.32 + 0.4 / S),  S = r·|ω⊥| / v    (Sawicki, Hubbard & Stronge, Am. J. Phys. 71, 1152, 2003)
- * The spin vector is fixed in space during the ~0.4 s flight (spin decay and seam-shifted wake are not modelled).
+ * By default (`follow` = true), the transverse spin direction tracks the clock tilt along the bent trajectory to match PitchLab reports; pass `axisMode: 'fixed'` to keep ω fixed in space. Seam-shifted wake is optional/illustrative.
  * Spin direction uses the Statcast/Savant "tilt": the clock-face direction of spin-induced movement seen from
  * behind the pitcher (12:00 = straight up / pure backspin, 3:00 = toward the pitcher's right = 3B side).
  */

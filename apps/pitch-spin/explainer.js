@@ -34,23 +34,31 @@
     const px = -dy, py = dx;
     return `<polyline points="${(x - dx * s + px * s).toFixed(1)},${(y - dy * s + py * s).toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)} ${(x - dx * s - px * s).toFixed(1)},${(y - dy * s - py * s).toFixed(1)}" fill="none" stroke="#c0392b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="${op.toFixed(2)}"/>`;
   };
-  let phase = 0;
-  function drawClock() {
+  let phase = 0, clockChev = null, frontChev = null;
+  function buildClockStatic() {
     const th = ex.tilt * 30 * DEG, mx = Math.sin(th), my = -Math.cos(th); // SVG: y down
     let s = ticks(96, 104, 86) + ballDeco(66);
     s += '<path d="M-40 -52 Q-18 0 -40 52 M40 -52 Q18 0 40 52" fill="none" stroke="#e2b8b0" stroke-width="2"/>';
     // spin axis (perpendicular to the push)
     s += `<line x1="${(my * 98).toFixed(1)}" y1="${(-mx * 98).toFixed(1)}" x2="${(-my * 98).toFixed(1)}" y2="${(mx * 98).toFixed(1)}" stroke="#41505a" stroke-width="2.2" stroke-dasharray="7 5"/>`;
-    // surface motion: chevrons travel opposite to the push
+    s += '<g id="ex-clock-chev"></g>';
+    s += `<line x1="0" y1="0" x2="${(mx * 74).toFixed(1)}" y2="${(my * 74).toFixed(1)}" stroke="#d9480f" stroke-width="7" stroke-linecap="round"/>`;
+    s += `<polygon points="${(mx * 96).toFixed(1)},${(my * 96).toFixed(1)} ${(mx * 72 - my * 12).toFixed(1)},${(my * 72 + mx * 12).toFixed(1)} ${(mx * 72 + my * 12).toFixed(1)},${(my * 72 - mx * 12).toFixed(1)}" fill="#d9480f"/>`;
+    s += '<circle r="5" fill="#17201c"/>';
+    svgClock.innerHTML = s;
+    clockChev = $('ex-clock-chev');
+    updateClockMotion();
+  }
+  function updateClockMotion() {
+    if (!clockChev) return;
+    const th = ex.tilt * 30 * DEG, mx = Math.sin(th), my = -Math.cos(th);
+    let s = '';
     for (let k = -2; k <= 2; k++) {
       const u = ((k * 26 - phase * 26) % 130 + 195) % 130 - 65; // −65 … 65 along the push line, moving toward −m
       const op = Math.max(0, 1 - Math.abs(u) / 70);
       s += chevron(mx * u, my * u, -mx, -my, 9, op);
     }
-    s += `<line x1="0" y1="0" x2="${(mx * 74).toFixed(1)}" y2="${(my * 74).toFixed(1)}" stroke="#d9480f" stroke-width="7" stroke-linecap="round"/>`;
-    s += `<polygon points="${(mx * 96).toFixed(1)},${(my * 96).toFixed(1)} ${(mx * 72 - my * 12).toFixed(1)},${(my * 72 + mx * 12).toFixed(1)} ${(mx * 72 + my * 12).toFixed(1)},${(my * 72 - mx * 12).toFixed(1)}" fill="#d9480f"/>`;
-    s += '<circle r="5" fill="#17201c"/>';
-    svgClock.innerHTML = s;
+    clockChev.innerHTML = s;
   }
   function clockDesc() {
     const th = ex.tilt * 30, c = Math.cos(th * DEG), sn = Math.sin(th * DEG);
@@ -108,7 +116,7 @@
     s += '<text x="-104" y="-80" font-size="9.5" fill="#5d7080">俯視（以 12:00 為例）</text>';
     svgTop.innerHTML = s;
   }
-  function drawFront() {
+  function buildFrontStatic() {
     const { a, m } = axisVec(), R = 70;
     let s = '<rect x="-110" y="-110" width="220" height="220" rx="16" fill="#f7f9f9"/>';
     s += `<circle r="${R}" fill="#fbf8f1" stroke="#d6cdbb" stroke-width="2"/>`;
@@ -116,7 +124,7 @@
     // axis: back half (pointing away from the viewer, z < 0) first
     const tip = P(a, 96), flat = Math.abs(a[2]) < 0.06, back = a[2] < 0;
     if (!flat) s += `<line x1="0" y1="0" x2="${back ? tip[0].toFixed(1) : (-tip[0]).toFixed(1)}" y2="${back ? tip[1].toFixed(1) : (-tip[1]).toFixed(1)}" stroke="#41505a" stroke-width="2" stroke-dasharray="5 5" opacity=".55"/>`;
-    // spin "equator" (great circle ⟂ axis) and moving dots: visible where z > 0
+    // spin "equator" (great circle ⟂ axis)
     const e1 = m, e2 = cross(a, e1);
     let pathF = '', pathB = '';
     for (let i = 0; i <= 96; i++) {
@@ -125,6 +133,21 @@
       if (p[2] >= 0) { pathF += seg; pathB += `M${q[0].toFixed(1)} ${q[1].toFixed(1)}`; } else { pathB += seg; pathF += `M${q[0].toFixed(1)} ${q[1].toFixed(1)}`; }
     }
     s += `<path d="${pathB}" fill="none" stroke="#e2b8b0" stroke-width="2" stroke-dasharray="3 4"/><path d="${pathF}" fill="none" stroke="#c0392b" stroke-width="3"/>`;
+    s += '<g id="ex-front-chev"></g>';
+    // axis: front half
+    s += flat ? `<line x1="${(-tip[0]).toFixed(1)}" y1="${(-tip[1]).toFixed(1)}" x2="${tip[0].toFixed(1)}" y2="${tip[1].toFixed(1)}" stroke="#41505a" stroke-width="3" stroke-linecap="round"/>`
+      : `<line x1="0" y1="0" x2="${back ? (-tip[0]).toFixed(1) : tip[0].toFixed(1)}" y2="${back ? (-tip[1]).toFixed(1) : tip[1].toFixed(1)}" stroke="#41505a" stroke-width="3" stroke-linecap="round"/>`;
+    s += '<circle r="5" fill="#41505a"/>';
+    s += `<text x="0" y="104" text-anchor="middle" font-size="10" fill="#5d7080">投手背後看（${PL.clockText(ex.tilt)}、陀螺 ${f(ex.gyro)}°）</text>`;
+    svgFront.innerHTML = s;
+    frontChev = $('ex-front-chev');
+    updateFrontMotion();
+  }
+  function updateFrontMotion() {
+    if (!frontChev) return;
+    const { a, m } = axisVec(), R = 70, e1 = m, e2 = cross(a, e1);
+    const P = (p, k) => [p[0] * k, -p[1] * k];
+    let s = '';
     for (let k = 0; k < 8; k++) {
       const t = k / 8 * 2 * Math.PI + phase * 0.9, p = add(e1.map((x) => x * Math.cos(t)), e2, Math.sin(t)), q = P(p, R);
       if (p[2] < -1e-6) continue;
@@ -132,12 +155,7 @@
       if (n > .12) s += chevron(q[0], q[1], vv[0] / n, vv[1] / n, 7, .95);
       else s += `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="4" fill="#c0392b"/>`;
     }
-    // axis: front half
-    s += flat ? `<line x1="${(-tip[0]).toFixed(1)}" y1="${(-tip[1]).toFixed(1)}" x2="${tip[0].toFixed(1)}" y2="${tip[1].toFixed(1)}" stroke="#41505a" stroke-width="3" stroke-linecap="round"/>`
-      : `<line x1="0" y1="0" x2="${back ? (-tip[0]).toFixed(1) : tip[0].toFixed(1)}" y2="${back ? (-tip[1]).toFixed(1) : tip[1].toFixed(1)}" stroke="#41505a" stroke-width="3" stroke-linecap="round"/>`;
-    s += '<circle r="5" fill="#41505a"/>';
-    s += `<text x="0" y="104" text-anchor="middle" font-size="10" fill="#5d7080">投手背後看（${PL.clockText(ex.tilt)}、陀螺 ${f(ex.gyro)}°）</text>`;
-    svgFront.innerHTML = s;
+    frontChev.innerHTML = s;
   }
   $('ex-gyro-chips').innerHTML = [[0, '純推球'], [26.5, '簡報卡特球'], [45, ''], [60, ''], [66.2, '影片曲球'], [90, '子彈旋轉']]
     .map(([g, n]) => `<button type="button" data-g="${g}">${g}°<small>${n || `效率 ${Math.round(Math.cos(g * DEG) * 100)}%`}</small></button>`).join('');
@@ -191,7 +209,7 @@
   });
   document.querySelectorAll('#axis-gyro .term-wrap[data-k]').forEach((el) => { el.innerHTML = PL.term(el.dataset.k); });
 
-  function refresh() { clockDesc(); drawTop(); drawCos(); bars(); drawClock(); drawFront(); }
+  function refresh() { clockDesc(); drawTop(); drawCos(); bars(); buildClockStatic(); buildFrontStatic(); }
   let visible = true, last = performance.now();
   if (window.IntersectionObserver) new IntersectionObserver((es) => { visible = es.some((x) => x.isIntersecting); }).observe($('axis-gyro'));
   function loop(now) {
@@ -199,7 +217,7 @@
     const dt = Math.min(.1, (now - last) / 1000); last = now;
     if (!visible) return;
     phase += dt * 0.9;
-    drawClock(); drawFront();
+    updateClockMotion(); updateFrontMotion();
   }
   window.addEventListener('resize', drawCos);
   refresh();

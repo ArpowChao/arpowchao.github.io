@@ -22,6 +22,7 @@ function resize() {
   S = Math.min(r.width / VW, r.height / VH);
   OX = (r.width - VW * S) / 2;
   OY = (r.height - VH * S) / 2;
+  dirtyC = true;
 }
 window.addEventListener('resize', resize);
 
@@ -70,8 +71,22 @@ function iDiode(v) {                        // 回傳 mA
   if (v < -VBR) i -= 0.02 * (Math.exp(Math.min(-v - VBR, 12) / 0.6) - 1);
   return i;
 }
+function ledCurrent(v, von) {               // 含小內阻 (3 Ω) 避免無限制指數暴衝，回傳 mA
+  if (v <= 0) return iDiode(v);
+  const rInt = 3.0;
+  let lo = 0, hi = v;
+  for (let k = 0; k < 40; k++) {
+    const m = 0.5 * (lo + hi);
+    const iEst = 2 * (Math.exp(Math.min(m - von, 12) / 0.08) - Math.exp(-von / 0.08));
+    if (m + (iEst / 1000) * rInt > v) hi = m;
+    else lo = m;
+  }
+  const vj = 0.5 * (lo + hi);
+  return Math.max(0, 2 * (Math.exp(Math.min(vj - von, 12) / 0.08) - Math.exp(-von / 0.08)));
+}
 function fmtI(mA) {
   const a = Math.abs(mA);
+  if (a >= 1000) return (mA / 1000).toFixed(2) + ' A';
   if (a >= 100) return mA.toFixed(0) + ' mA';
   if (a >= 1) return mA.toFixed(2) + ' mA';
   if (a >= 0.01) return mA.toFixed(3) + ' mA';
@@ -256,8 +271,20 @@ function recR() {
    場景② 二極體 V–I
    ===================================================================== */
 const CLASS_DATA = [[0.2, 0], [0.4, 0], [0.5, 0.09], [0.54, 0.25], [0.56, 0.44], [0.58, 0.61], [0.59, 0.8], [0.6, 1.02], [0.61, 1.2], [0.61, 1.41]];
-const sD = { V: 0.3, I: 0, phase: 0, pts: [], cmp: false };
+const D_SWEEP = [0, 0.2, 0.4, 0.5, 0.54, 0.57, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7];
+const sD = { V: 0.3, I: 0, phase: 0, pts: [], cmp: false, auto: null };
+function recD() {
+  if (!sD.pts.some(p => Math.abs(p[0] - sD.V) < 1e-6)) sD.pts.push([sD.V, +iDiode(sD.V).toFixed(3)]);
+}
 function sceneD(dt) {
+  if (sD.auto) {
+    sD.auto.t += dt;
+    if (sD.auto.t > 0.32) {
+      sD.auto.t = 0; sD.auto.k++;
+      if (sD.auto.k >= D_SWEEP.length) sD.auto = null;
+      else { setVal('d_v', D_SWEEP[sD.auto.k]); recD(); }
+    }
+  }
   sD.I = iDiode(sD.V);
   sD.phase += flowSpeed(sD.I) * dt;
   begin();
@@ -265,7 +292,7 @@ function sceneD(dt) {
   const b = { x: 660, y: 90, w: 500, h: 480 };
   // 縱軸隨最大電流自動放大（0.63 V 以上電流超過 2 mA）
   const maxI = Math.max(sD.I, ...sD.pts.map(p => p[1]), 0);
-  const yMax = maxI <= 2 ? 2 : Math.ceil(maxI * 2) / 2, yStep = yMax <= 3 ? 0.5 : 1;
+  const yMax = maxI <= 2 ? 2 : Math.ceil(maxI * 2) / 2, yStep = yMax <= 3 ? 0.5 : (yMax <= 8 ? 1 : 2);
   const g = chart(b, [0, 0.7], [0, yMax], [0, 0.1], [0, yStep], '二極體兩端電壓 (V)', '電流 (mA)', '縱軸：電流(mA)，橫軸：二極體兩端電壓(V)', v => v.toFixed(1), v => v.toFixed(1));
   ctx.save(); ctx.beginPath(); ctx.rect(b.x, b.y - 2, b.w, b.h + 4); ctx.clip();
   if (sD.cmp) {
@@ -284,6 +311,7 @@ function sceneD(dt) {
    場景③ 工作曲線
    ===================================================================== */
 const sC = { s: 0.75 };
+let dirtyC = true;
 const cV = (s) => (s < 0 ? s * 45 : s * 0.8);
 function sceneC() {
   const V = cV(sC.s), I = iDiode(V);
@@ -311,21 +339,25 @@ function sceneC() {
   text('導電', mx(0.7) + 18, b.y + 130, 32, C.blue, 'left', '700');
   text('不導電', mx(-20), b.y + 130, 32, C.bad, 'center', '700');
   text('崩潰壞掉', b.x + 6, b.y + b.h - 40, 26, '#8b1a14', 'left', '700');
-  text('※ 左右、上下刻度不同：逆向用 V／μA，順向用 0.1 V／mA', b.x + 6, b.y + b.h + 22, 16, C.muted);
+  text('※ 左右、上下刻度不同：逆向用 V／μA，順向用 0.1 V／mA（可直接點擊或拖曳圖表調電壓）', b.x + 6, b.y + b.h + 22, 16, C.muted);
   // 曲線
   ctx.save(); ctx.beginPath(); ctx.rect(b.x, b.y, b.w, b.h); ctx.clip();
   ctx.strokeStyle = C.accent; ctx.lineWidth = 4; ctx.beginPath();
   for (let k = 0; k <= 600; k++) { const v = -45 + (45 * k) / 600; const p = [mx(v), my(iDiode(v))]; k ? ctx.lineTo(...p) : ctx.moveTo(...p); }
   for (let k = 0; k <= 400; k++) { const v = (0.8 * k) / 400; ctx.lineTo(mx(v), my(iDiode(v))); }
   ctx.stroke();
-  const px = mx(V), py = clamp(my(I), b.y - 20, b.y + b.h + 20);
+  const rawPy = my(I);
+  const px = mx(V), py = clamp(rawPy, b.y + 12, b.y + b.h - 12);
   line(px, yz, px, py, '#666', 1.5, [4, 4]);
   dot(px, py, 13, '#111'); dot(px, py, 8, '#ffd23f');
+  if (rawPy < b.y + 12) text('↑ 超過 20 mA', Math.min(b.x + b.w - 135, px + 18), py + 2, 16, C.blue, 'left', '700');
+  else if (rawPy > b.y + b.h - 12) text('↓ 崩潰電流暴衝', Math.max(b.x + 12, px + 18), py - 2, 16, '#8b1a14', 'left', '700');
   ctx.restore();
   const R = Math.abs(I) > 1e-12 ? V / (I / 1000) : Infinity;
   let st, col;
   if (V < -VBR) { st = '崩潰！會燒壞'; col = '#8b1a14'; } else if (V <= 0.45) { st = '不導電'; col = C.bad; } else if (V < 0.6) { st = '開始導電'; col = '#c47a00'; } else { st = '導電'; col = C.blue; }
   infoBox(b.x + 20, b.y + 10, [['電壓', V.toFixed(V < -1 ? 1 : 2) + ' V'], ['電流', fmtI(I)], ['電阻 = V／I', fmtR(Math.abs(R))], ['狀態', st, col]], 280);
+  dirtyC = false;
 }
 
 /* =====================================================================
@@ -348,20 +380,24 @@ const LAT = (() => {
 })();
 const CONTACT_N = 4;                        // 接觸時越過交界結合的對數（＝交界旁那一排離子）
 function makePN() {
-  const o = { holes: [], elecs: [], flashes: [], photons: [], acc: 0, phase: 0, t: 0, glow: 0, paused: false,
+  const o = { holes: [], elecs: [], flashes: [], photons: [], acc: 0, avAcc: 0, phase: 0, t: 0, glow: 0, paused: false,
     w: 0, gap: 0, done: 0, ionsP: LAT.P, ionsN: LAT.N };
   o.reset = () => {
-    o.holes = []; o.elecs = []; o.flashes = []; o.photons = []; o.done = 0; o.acc = 0;
+    o.holes = []; o.elecs = []; o.flashes = []; o.photons = []; o.done = 0; o.acc = 0; o.avAcc = 0;
     const dx = LAT.cw * 0.24, dy = LAT.ch * 0.26;
     LAT.P.forEach(([x, y]) => o.holes.push(mk('h', x - dx, y - dy)));
     LAT.N.forEach(([x, y]) => o.elecs.push(mk('e', x + dx, y - dy)));
+  };
+  o.cancelCross = () => {
+    for (const arr of [o.holes, o.elecs]) for (const p of arr) { p.st = 'free'; p.partner = null; p.dead = false; }
+    o.acc = 0;
   };
   // 接上電池時，電池從兩端補足電洞、電子
   o.topUp = () => {
     while (o.holes.length < LAT.P.length) { const p = mk('h', G.P0 + G.r + 4, G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60)); p.a = 0; o.holes.push(p); }
     while (o.elecs.length < LAT.N.length) { const p = mk('e', G.N1 - G.r - 4, G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60)); p.a = 0; o.elecs.push(p); }
   };
-  function mk(k, x, y) { return { k, x, y, vx: 0, vy: 0, st: 'free', a: 1, partner: null }; }
+  function mk(k, x, y) { return { k, x, y, vx: 0, vy: 0, st: 'free', a: 1, partner: null, dead: false, av: false }; }
   o.mk = mk;
   o.reset();
   return o;
@@ -378,44 +414,67 @@ function stepPN(o, dt, cfg) {
   o.gap += ((cfg.gap || 0) - o.gap) * Math.min(1, dt * 4);
   const all = [o.holes, o.elecs];
   for (const arr of all) for (const p of arr) {
+    if (p.dead) continue;
     if (p.a < 1) p.a = Math.min(1, p.a + dt * 3);
     if (p.st === 'cross') {
-      const q = p.partner, dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy);
+      const q = p.partner;
+      if (!q || q.dead) { p.st = 'free'; p.partner = null; continue; }
+      const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy);
       const sp = 260;
       if (d < r * 1.1) { recombine(o, p, q, cfg); continue; }
       p.x += (dx / d) * sp * dt; p.y += (dy / d) * sp * dt;
       continue;
     }
     const dir = p.k === 'h' ? 1 : -1;     // 電洞往 +x 是往交界
-    const drift = p.st === 'wait' ? 0 : vd * dir;
+    const drift = p.st === 'wait' ? 0 : (p.av ? -220 : vd) * dir;
     p.vx += (drift * gam - gam * p.vx) * dt + randn() * sig * Math.sqrt(dt);
     p.vy += (-gam * p.vy) * dt + randn() * sig * Math.sqrt(dt);
     if (p.st === 'wait') { p.vx *= 0.9; p.vy *= 0.9; }
     p.x += p.vx * dt; p.y += p.vy * dt;
-    const xmin = p.k === 'h' ? G.P0 + r + 3 : G.J + o.w + r + 3, xmax = p.k === 'h' ? G.J - o.w - r - 3 : G.N1 - r - 3;
+    const xmin = p.k === 'h' ? G.P0 + r + 3 : (cfg.breakdown ? G.J - 10 : G.J + o.w + r + 3);
+    const xmax = p.k === 'h' ? (cfg.breakdown ? G.J + 10 : G.J - o.w - r - 3) : G.N1 - r - 3;
+    if (p.av && ((p.k === 'h' && p.x <= G.P0 + r + 5) || (p.k === 'e' && p.x >= G.N1 - r - 5))) {
+      p.dead = true; continue;
+    }
     if (p.x < xmin) { p.x = xmin; p.vx = Math.abs(p.vx); }
     if (p.x > xmax) { p.x = xmax; p.vx = -Math.abs(p.vx); }
     if (p.y < G.Y0 + r + 3) { p.y = G.Y0 + r + 3; p.vy = Math.abs(p.vy); }
     if (p.y > G.Y1 - r - 3) { p.y = G.Y1 - r - 3; p.vy = -Math.abs(p.vy); }
   }
+  o.holes = o.holes.filter(p => !p.dead);
+  o.elecs = o.elecs.filter(p => !p.dead);
   // 同種粒子互相推開（排列整齊、不重疊）
-  for (const arr of all) {
+  for (const arr of [o.holes, o.elecs]) {
     const free = arr.filter(p => p.st !== 'cross');
     for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) {
       const a = free[i], b = free[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy, m = 2 * r + 5;
       if (d2 < m * m && d2 > 1e-6) { const d = Math.sqrt(d2), k = ((m - d) / d) * 0.25; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; }
     }
   }
-  // 越過交界、相遇
+  // 越過交界、相遇／雪崩崩潰
   if (cfg.mode === 'fwd') {
     o.acc += cfg.rate * dt;
     let guard = 0;
     while (o.acc >= 1 && guard++ < 5) { o.acc -= 1; startCross(o); }
     o.acc = Math.min(o.acc, 2);
+    o.avAcc = 0;
+  } else if (cfg.mode === 'rev' && cfg.breakdown) {
+    o.avAcc += 10 * dt;
+    while (o.avAcc >= 1) {
+      o.avAcc -= 1;
+      if (o.holes.length < 26 && o.elecs.length < 26) {
+        const y0 = G.Y0 + 30 + Math.random() * (G.Y1 - G.Y0 - 60);
+        const h = o.mk('h', G.J - 12, y0); h.vx = -220; h.av = true;
+        const e = o.mk('e', G.J + 12, y0); e.vx = 220; e.av = true;
+        o.holes.push(h); o.elecs.push(e);
+        o.flashes.push({ x: G.J, y: y0, t: 0 });
+      }
+    }
   } else if (cfg.mode === 'contact') {
     const pending = o.holes.filter(p => p.st === 'cross').length + o.elecs.filter(p => p.st === 'cross').length;
     if (o.gap < 3 && o.done + pending < CONTACT_N) { o.acc += 1.5 * dt; if (o.acc >= 1) { o.acc -= 1; startCross(o); } }
-  } else o.acc = 0;
+    o.avAcc = 0;
+  } else { o.acc = 0; o.avAcc = 0; }
   // 特效
   o.flashes = o.flashes.filter(f => (f.t += dt) < 0.5);
   o.photons = o.photons.filter(ph => { ph.t += dt; ph.x += ph.vx * dt; ph.y += ph.vy * dt; return ph.t < 1.6; });
@@ -441,6 +500,7 @@ function recombine(o, p, q, cfg) {
     const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
     o.photons.push({ x, y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: 0, col: cfg.led });
   }
+  p.dead = true; q.dead = true;
   o.holes = o.holes.filter(z => z !== p && z !== q);
   o.elecs = o.elecs.filter(z => z !== p && z !== q);
   o.done++;
@@ -642,7 +702,7 @@ sL.pn.tRev = 0;
 function ledCfg() {
   const [col, von] = LED_COLORS[sL.col];
   let I = 0, rate = 0, flowDir = 1;
-  if (sL.mode === 'fwd') { I = 2 * (Math.exp((sL.V - von) / 0.08) - Math.exp(-von / 0.08)); rate = 12 * (1 - Math.exp(-I / 3)); }
+  if (sL.mode === 'fwd') { I = ledCurrent(sL.V, von); rate = 12 * (1 - Math.exp(-I / 3)); }
   else { I = iDiode(-sL.V); flowDir = -1; }
   const w = sL.mode === 'fwd' ? 55 * (1 - clamp((sL.V - (von - 0.6)) / 0.5, 0, 1)) : Math.min(55 + 5 * sL.V, 190);
   return { mode: sL.mode, V: sL.V, I, rate, push: sL.V / von, breakdown: false, flowDir, flow: flowSpeed(I), led: col, von, w, gap: 0, spawn: true };
@@ -650,12 +710,14 @@ function ledCfg() {
 function sceneLED(dt) {
   const cfg = ledCfg(), o = sL.pn;
   o.tRev = cfg.mode === 'rev' ? o.tRev + dt * sL.sp : 0;
-  const n = Math.ceil((dt * sL.sp) / (1 / 60)); for (let i = 0; i < n; i++) stepPN(o, (dt * sL.sp) / n, cfg);
+  if (!o.paused) {
+    const n = Math.ceil((dt * sL.sp) / (1 / 60)); for (let i = 0; i < n; i++) stepPN(o, (dt * sL.sp) / n, cfg);
+  }
   begin();
   drawPN(o, cfg, { cur: true, wire: false, sign: true, ions: true });
-  // LED 小圖示
-  const lx = 1160, ly = 190;
-  if (o.glow > 0.02) { const g = ctx.createRadialGradient(lx, ly, 5, lx, ly, 70); g.addColorStop(0, hexA(cfg.led, 0.9 * o.glow)); g.addColorStop(1, hexA(cfg.led, 0)); ctx.fillStyle = g; ctx.fillRect(lx - 70, ly - 70, 140, 140); }
+  // LED 小圖示（往左微移使光暈不被右邊界裁切）
+  const lx = 1135, ly = 190;
+  if (o.glow > 0.02) { const g = ctx.createRadialGradient(lx, ly, 5, lx, ly, 64); g.addColorStop(0, hexA(cfg.led, 0.9 * o.glow)); g.addColorStop(1, hexA(cfg.led, 0)); ctx.fillStyle = g; ctx.fillRect(lx - 65, ly - 65, 130, 130); }
   ctx.fillStyle = o.glow > 0.05 ? cfg.led : hexA(cfg.led, 0.35); ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(lx - 22, ly + 22); ctx.lineTo(lx - 22, ly - 4); ctx.arc(lx, ly - 4, 22, Math.PI, 0); ctx.lineTo(lx + 22, ly + 22); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillRect(lx - 28, ly + 20, 56, 8);
@@ -666,33 +728,39 @@ function sceneLED(dt) {
   else if (on) banner('相遇 → 放出光 → LED 亮！', C.good, '電壓越大，每秒相遇越多，越亮');
   else banner('電壓不夠：還不亮', '#c47a00', '這顆 LED 約要 ' + cfg.von.toFixed(1) + ' V 才會亮');
   infoBox(960, 14, [['電壓', (cfg.mode === 'rev' ? '−' : '') + cfg.V.toFixed(2) + ' V'], ['電流', fmtI(cfg.I)]], 226);
+  if (o.paused) text('⏸ 暫停中', 600, 680, 22, C.muted, 'center', '700');
 }
 function ledExplain() {
   const c = ledCfg(); let t;
   if (c.mode === 'rev') t = 'LED 接反了：電洞、電子被拉向兩端，不會在交界相遇，所以<b>不會發光</b>，電流也幾乎是 0。';
-  else if (c.rate <= 3) t = '電壓還不到這顆 LED 的發光電壓（約 ' + c.von.toFixed(1) + ' V），電洞和電子很少相遇，所以不亮。';
-  else if (c.I > 40) t = '電壓再加上去，電流會暴增（LED 的電流跟二極體一樣，超過發光電壓後急速上升），LED 會過熱燒壞。所以實際電路中 LED 一定要<b>串聯電阻</b>。';
-  else t = '電洞和電子在 P、N 交界<b>相遇結合</b>時，把多出來的能量變成<b>光</b>放出來（彎彎的箭頭）。<br>電壓越大 → 每秒相遇越多 → 越亮。不同材料放出不同顏色的光，需要的電壓也不同。';
+  else if (c.rate <= 3) t = '電壓還不到這顆 LED 的發光電壓（約 ' + c.von.toFixed(1) + ' V），電洞和電子很少相遇，所以不亮。<br><span style="color:#5b6b7c">（藍光光子能量 E=hf 比紅光高，所以需要的啟動電壓也比較高。）</span>';
+  else if (c.I > 40) t = '電壓再加上去，電流會暴增（LED 的電流跟二極體一樣，超過發光電壓後急速上升），LED 會過熱燒壞。所以實際電路中 LED 一定要<b>串聯電阻</b>（可到場景⑥實測）。';
+  else t = '電洞和電子在 P、N 交界<b>相遇結合</b>時，把多出來的能量變成<b>光</b>放出來（彎彎的箭頭）。<br>電壓越大 → 每秒相遇越多 → 越亮。不同材料放出不同顏色的光（藍光光子能量 E=hf 最高，所需電壓也最高）。';
   document.getElementById('led_explain').innerHTML = t;
 }
 
 /* =====================================================================
    場景⑥ 電路中的 0.7 V
    ===================================================================== */
-const sK = { Vs: 5, dir: 'fwd', R: 470, phase: 0 };
+const K_TYPES = {
+  si: { name: '二極體', note: '二極體（約 0.7 V）', fn: iDiode, col: null },
+  red: { name: '紅光 LED', note: '紅光 LED（約 1.8 V）', fn: v => ledCurrent(v, 1.8), col: '#ff3b30' },
+  blue: { name: '藍光 LED', note: '藍光 LED（約 2.8 V）', fn: v => ledCurrent(v, 2.8), col: '#2f6bff' }
+};
+const sK = { Vs: 5, dir: 'fwd', R: 470, type: 'si', phase: 0 };
 const KL = { L: 150, R: 1050, T: 300, B: 590, bx: 600, dx: 410, rx: 790, ay: 445 };
 const kPathF = pathInfo([[KL.bx - 22, KL.B], [KL.L, KL.B], [KL.L, KL.T], [KL.R, KL.T], [KL.R, KL.B], [KL.bx + 22, KL.B]]);
 function solveK() {
-  const Vs = sK.Vs, R = sK.R;
+  const Vs = sK.Vs, R = sK.R, fn = K_TYPES[sK.type].fn;
   if (sK.dir === 'fwd') {
-    let lo = 0, hi = Math.min(Vs, 1.3);
-    for (let k = 0; k < 60; k++) { const m = (lo + hi) / 2; (m + (iDiode(m) / 1000) * R > Vs) ? (hi = m) : (lo = m); }
-    const Vd = (lo + hi) / 2, I = iDiode(Vd); return { Vd, I, Vr: (I / 1000) * R };
+    let lo = 0, hi = Vs;
+    for (let k = 0; k < 60; k++) { const m = (lo + hi) / 2; (m + (fn(m) / 1000) * R > Vs) ? (hi = m) : (lo = m); }
+    const Vd = (lo + hi) / 2, I = fn(Vd); return { Vd, I, Vr: Math.max(0, Vs - Vd) };
   }
-  const I = -iDiode(-Vs); return { Vd: Vs - (I / 1000) * R, I, Vr: (I / 1000) * R };
+  const I = -fn(-Vs); return { Vd: Vs - (I / 1000) * R, I, Vr: (I / 1000) * R };
 }
 function sceneK(dt) {
-  const s = solveK();
+  const s = solveK(), kt = K_TYPES[sK.type];
   sK.phase += flowSpeed(s.I) * dt;
   begin();
   const { L, R, T, B, bx, dx, rx } = KL;
@@ -703,12 +771,19 @@ function sceneK(dt) {
     dot(cx - 70, y, 6, C.wire); dot(cx + 70, y, 6, C.wire);
   }
   drawFlow(kPathF, sK.phase, 50, 'chev', [[dx - 80, T - 35, dx + 80, T + 35], [rx - 80, T - 35, rx + 80, T + 35], [R - 30, KL.ay - 30, R + 30, KL.ay + 30], [bx - 30, B - 40, bx + 30, B + 40]], s.I > 0.005 ? 1 : 0);
-  diodeSym(dx, T, sK.dir === 'fwd');
+  const ledLit = kt.col && sK.dir === 'fwd' && s.I > 0.5;
+  if (ledLit) {
+    const gg = ctx.createRadialGradient(dx, T, 4, dx, T, 64);
+    gg.addColorStop(0, hexA(kt.col, clamp(s.I / 18, 0.25, 0.85)));
+    gg.addColorStop(1, hexA(kt.col, 0));
+    ctx.fillStyle = gg; ctx.fillRect(dx - 65, T - 65, 130, 130);
+  }
+  diodeSym(dx, T, sK.dir === 'fwd', ledLit ? kt.col : null);
   resistor(rx, T);
   meter(dx, T - 80, 'V'); meter(rx, T - 80, 'V');
   readout(dx - 85, T - 135, 170, s.Vd.toFixed(2) + ' V', '#ffd23f', 28);
   readout(rx - 85, T - 135, 170, Math.abs(s.Vr) < 0.005 ? '0.00 V' : s.Vr.toFixed(2) + ' V', '#7dffb0', 28);
-  text('二極體', dx, T + 50, 24, C.ink, 'center', '700');
+  text(kt.name, dx, T + 50, 24, C.ink, 'center', '700');
   text(sK.dir === 'fwd' ? '順接 P→N' : '反接 N←P', dx, T + 80, 18, C.muted, 'center');
   text('電阻 ' + sK.R + ' Ω', rx, T + 50, 24, C.ink, 'center', '700');
   ctx.fillStyle = '#fff'; ctx.fillRect(R - 28, KL.ay - 30, 56, 60); meter(R, KL.ay, 'A'); readout(R - 210, KL.ay, 170, meterMA(s.I), '#7dffb0', 24);
@@ -716,12 +791,13 @@ function sceneK(dt) {
   // 等式
   ctx.fillStyle = 'rgba(255,255,255,0.92)'; rrect(150, 18, 900, 104, 14); ctx.fill();
   if (sK.dir === 'fwd' && s.I > 0.5) {
-    text(`${sK.Vs.toFixed(1)} V  −  ${s.Vd.toFixed(2)} V  =  ${s.Vr.toFixed(2)} V`, 600, 60, 42, C.ink, 'center', '700');
-    text('電源', 400, 103, 19, C.muted, 'center'); text('二極體（約 0.7 V）', 600, 103, 19, '#b58900', 'center'); text('電阻', 800, 103, 19, C.muted, 'center');
+    text(`${sK.Vs.toFixed(1)} V  −  ${s.Vd.toFixed(2)} V  =  ${s.Vr.toFixed(2)} V`, 600, 58, 42, C.ink, 'center', '700');
+    text('電源', 400, 100, 19, C.muted, 'center'); text(kt.note, 600, 100, 19, '#b58900', 'center'); text('電阻', 800, 100, 19, C.muted, 'center');
+    if (sK.type !== 'si' && s.I > 35) text('⚠ 電流過大，LED 可能燒壞！', 900, 58, 17, '#c8231b', 'left', '700');
   } else if (sK.dir === 'fwd') {
-    text('電源太小：二極體還沒導通，電流很小', 600, 70, 32, '#c47a00', 'center', '700');
+    text(`電源太小：${kt.name}還沒導通，電流很小`, 600, 70, 32, '#c47a00', 'center', '700');
   } else {
-    text(`反接：${sK.Vs.toFixed(1)} V 幾乎全部落在二極體上，電流 ≈ 0`, 600, 70, 32, C.bad, 'center', '700');
+    text(`反接：${sK.Vs.toFixed(1)} V 幾乎全部落在${kt.name}上，電流 ≈ 0`, 600, 70, 32, C.bad, 'center', '700');
   }
 }
 
@@ -734,6 +810,8 @@ const $ = (id) => document.getElementById(id);
 function setVal(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event('input')); }
 function show(i) {
   cur = clamp(i, 0, scenes.length - 1);
+  sR.auto = null; sD.auto = null;
+  dirtyC = true;
   document.querySelectorAll('#tabs button').forEach((b, k) => b.classList.toggle('on', k === cur));
   document.querySelectorAll('.ctrl').forEach(s => s.classList.toggle('on', +s.dataset.for === cur));
   $('pName').textContent = NAMES[cur];
@@ -783,6 +861,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'Escape' && !document.fullscreenElement) setPresent(false);
   else if (e.key >= '1' && e.key <= '6') show(+e.key - 1);
   else if (e.key === ' ' && cur === 3) { e.preventDefault(); $('pn_pause').click(); }
+  else if (e.key === ' ' && cur === 4) { e.preventDefault(); $('led_pause').click(); }
 });
 
 // ①
@@ -793,17 +872,31 @@ $('r_auto').addEventListener('click', () => { sR.auto = { t: 0, k: 0 }; setVal('
 $('r_clr').addEventListener('click', () => { sR.pts = {}; sR.auto = null; });
 // ②
 $('d_v').addEventListener('input', e => { sD.V = +e.target.value; $('d_vLbl').textContent = sD.V.toFixed(2) + ' V'; });
-$('d_rec').addEventListener('click', () => { if (!sD.pts.some(p => Math.abs(p[0] - sD.V) < 1e-6)) sD.pts.push([sD.V, +iDiode(sD.V).toFixed(3)]); });
-$('d_class').addEventListener('click', () => { sD.pts = CLASS_DATA.map(p => p.slice()); });
-$('d_clr').addEventListener('click', () => { sD.pts = []; });
+$('d_rec').addEventListener('click', recD);
+$('d_auto').addEventListener('click', () => { sD.pts = []; sD.auto = { t: 0, k: 0 }; setVal('d_v', D_SWEEP[0]); recD(); });
+$('d_class').addEventListener('click', () => { sD.pts = CLASS_DATA.map(p => p.slice()); sD.auto = null; });
+$('d_clr').addEventListener('click', () => { sD.pts = []; sD.auto = null; });
 $('d_cmp').addEventListener('change', e => { sD.cmp = e.target.checked; });
-// ③
-$('c_s').addEventListener('input', e => { sC.s = +e.target.value; const V = cV(sC.s); $('c_vLbl').textContent = V.toFixed(V < -1 ? 1 : 2) + ' V'; });
+// ③（滑桿 + 直接點擊／拖曳圖表取點）
+$('c_s').addEventListener('input', e => { sC.s = +e.target.value; const V = cV(sC.s); $('c_vLbl').textContent = V.toFixed(V < -1 ? 1 : 2) + ' V'; dirtyC = true; });
 document.querySelectorAll('[data-cv]').forEach(b => b.addEventListener('click', () => setVal('c_s', b.dataset.cv)));
+let cDrag = false;
+function scrubC(e) {
+  const r = cv.getBoundingClientRect(), vx = (e.clientX - r.left - OX) / S, vy = (e.clientY - r.top - OY) / S;
+  const bx = 80, by = 70, bw = 1080, bh = 570, xz = bx + 0.6 * bw;
+  if (vx < bx - 20 || vx > bx + bw + 20 || vy < by - 20 || vy > by + bh + 20) return false;
+  const s = vx < xz ? clamp((vx - xz) / (xz - bx), -1, 0) : clamp((vx - xz) / (bx + bw - xz), 0, 1);
+  setVal('c_s', s.toFixed(3));
+  return true;
+}
+cv.addEventListener('pointerdown', e => { if (cur === 2 && scrubC(e)) { cDrag = true; cv.setPointerCapture?.(e.pointerId); } });
+cv.addEventListener('pointermove', e => { if (cur === 2 && cDrag) scrubC(e); });
+['pointerup', 'pointercancel'].forEach(t => cv.addEventListener(t, () => { cDrag = false; }));
 // ④
 function pnMode(m) {
   const prev = sP.mode, o = sP.pn;
   sP.mode = m;
+  o.cancelCross();
   if (m === 'apart') o.reset();
   else if (m === 'contact') { if (prev !== 'apart') o.topUp(); o.done = 0; o.acc = 0; }
   else o.topUp();
@@ -828,6 +921,7 @@ $('pn_reset').addEventListener('click', () => sP.pn.reset());
 // ⑤
 function ledMode(m) {
   sL.mode = m;
+  sL.pn.cancelCross();
   document.querySelectorAll('#led_mode button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   ledExplain();
 }
@@ -835,8 +929,10 @@ document.querySelectorAll('#led_mode button').forEach(b => b.addEventListener('c
 $('led_col').addEventListener('change', e => { sL.col = e.target.value; setVal('led_v', LED_COLORS[sL.col][1]); });
 $('led_v').addEventListener('input', e => { sL.V = +e.target.value; $('led_vLbl').textContent = sL.V.toFixed(2) + ' V'; ledExplain(); });
 $('led_sp').addEventListener('input', e => { sL.sp = +e.target.value; $('led_spLbl').textContent = sL.sp.toFixed(1) + '×'; });
+$('led_pause').addEventListener('click', () => { sL.pn.paused = !sL.pn.paused; $('led_pause').textContent = sL.pn.paused ? '繼續' : '暫停'; });
 // ⑥
 $('k_v').addEventListener('input', e => { sK.Vs = +e.target.value; $('k_vLbl').textContent = sK.Vs.toFixed(1) + ' V'; });
+$('k_type').addEventListener('change', e => { sK.type = e.target.value; });
 $('k_R').addEventListener('change', e => { sK.R = +e.target.value; });
 document.querySelectorAll('#k_dir button').forEach(b => b.addEventListener('click', () => {
   sK.dir = b.dataset.d; document.querySelectorAll('#k_dir button').forEach(x => x.classList.toggle('on', x === b));
@@ -852,10 +948,10 @@ let last = performance.now();
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (cv.width < 2) resize();
-  scenes[cur](dt);
+  if (cur !== 2 || dirtyC) scenes[cur](dt);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-window.__diode = { iDiode, show, sP, sL, sK, solveK };
+window.__diode = { iDiode, ledCurrent, fmtI, show, sP, sL, sK, solveK };
 })();

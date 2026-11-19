@@ -103,7 +103,13 @@
     const sg = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
     q('angle').innerHTML = `${T('elev', '出手仰角')} ${sg(r.angles.elevation)}°　${T('azim', '偏角')} ${sg(r.angles.azimuth)}°　${st.aim === 'real' ? `（${PL.TYPE_NAME[b.typeKey]}的真實仰角）` : ''}　→ <b class="call-${r.call}">${r.call === 'ground' ? `落地（離本壘 ${r.ground.toPlate.toFixed(1)} m）` : r.call === 'strike' ? '好球' : '壞球'}</b>`;
     const act = q('actual');
-    if (b.src !== 'custom') { const p = PL.VIDEO[b.src]; act.hidden = false; act.innerHTML = r.measured ? `球路照 PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm　·　只用轉速預測：${r.pred.vb.toFixed(1)}、${r.pred.hb.toFixed(1)} cm` : `PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm${st.hand === 'L' ? '（右投實測）' : ''}`; }
+    if (b.src !== 'custom') {
+      const p = PL.VIDEO[b.src], obsH = st.hand === 'R' ? p.h : -p.h;
+      act.hidden = false;
+      act.innerHTML = r.measured
+        ? `球路照 PitchLab 實測${st.hand === 'L' ? '（左投鏡像）' : ''}：垂直 <b>${p.v}</b>、水平 <b>${obsH}</b> cm　·　只用轉速預測：${r.pred.vb.toFixed(1)}、${r.pred.hb.toFixed(1)} cm`
+        : `PitchLab 實測：垂直 <b>${p.v}</b>、水平 <b>${p.h}</b> cm${st.hand === 'L' ? '（右投實測）' : ''}`;
+    }
     else if (b.name) { act.hidden = false; act.textContent = `從上方 3D 球送來：${b.name}`; }
     else act.hidden = true;
   }
@@ -128,9 +134,9 @@
       if (!b.on || !b.res) continue;
       const col = CSS[b.id], cl = (v) => Math.max(-Rr, Math.min(Rr, v));
       if (b.src !== 'custom') {
-        const p = PL.VIDEO[b.src];
-        c.strokeStyle = col; c.lineWidth = 2.4; c.beginPath(); c.arc(X(cl(p.h)), Y(cl(p.v)), 8, 0, 2 * Math.PI); c.stroke();
-        c.setLineDash([3, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(cl(p.h)), Y(cl(p.v))); c.lineTo(X(cl(b.res.hb)), Y(cl(b.res.vb))); c.stroke(); c.setLineDash([]);
+        const p = PL.VIDEO[b.src], obsH = st.hand === 'R' ? p.h : -p.h;
+        c.strokeStyle = col; c.lineWidth = 2.4; c.beginPath(); c.arc(X(cl(obsH)), Y(cl(p.v)), 8, 0, 2 * Math.PI); c.stroke();
+        c.setLineDash([3, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(cl(obsH)), Y(cl(p.v))); c.lineTo(X(cl(b.res.hb)), Y(cl(b.res.vb))); c.stroke(); c.setLineDash([]);
       }
       c.fillStyle = col; c.beginPath(); c.arc(X(cl(b.res.hb)), Y(cl(b.res.vb)), 7, 0, 2 * Math.PI); c.fill();
       c.fillStyle = '#fff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; c.fillText(b.id, X(cl(b.res.hb)), Y(cl(b.res.vb)) + 3.5); c.font = '10.5px sans-serif';
@@ -287,7 +293,26 @@
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
       if (!st.playing) return;
       const t0 = st.t; let t1 = t0 + dt / st.slow;
-      if ($('f-pause02').checked && !st.paused02 && t0 < 0.2 && t1 >= 0.2) { t1 = 0.2; st.paused02 = true; st.playing = false; $('f-pause-note').style.display = 'block'; $('f-pause').textContent = '▶ 繼續'; }
+      if ($('f-pause02').checked && !st.paused02 && t0 < 0.2 && t1 >= 0.2) {
+        t1 = 0.2; st.paused02 = true; st.playing = false;
+        const activeBalls = balls.filter((b) => b.on);
+        let noteText = 't = 0.2 s 暫停：這時候打者必須決定要不要揮棒了';
+        if (activeBalls.length >= 2) {
+          let d02 = 0, dEnd = 0;
+          for (let i = 0; i < activeBalls.length; i++) {
+            for (let j = i + 1; j < activeBalls.length; j++) {
+              const pA = at(activeBalls[i].res.real.path, 0.2), pB = at(activeBalls[j].res.real.path, 0.2);
+              d02 = Math.max(d02, Math.hypot(pA[0] - pB[0], pA[1] - pB[1], pA[2] - pB[2]));
+              const eA = activeBalls[i].res.plate, eB = activeBalls[j].res.plate;
+              dEnd = Math.max(dEnd, Math.hypot(eA[0] - eB[0], eA[2] - eB[2]));
+            }
+          }
+          noteText = `t = 0.2 s 暫停（揮棒決策點）：各球此刻僅相距 ${(d02 * 100).toFixed(0)} cm，進壘時將拉開至 ${(dEnd * 100).toFixed(0)} cm！`;
+        }
+        $('f-pause-note').textContent = noteText;
+        $('f-pause-note').style.display = 'block';
+        $('f-pause').textContent = '▶ 繼續';
+      }
       st.t = t1;
       for (const b of balls) {
         const r = b.res, sd = Math.max(0, Math.min(t1, r.time) - Math.min(t0, r.time));
@@ -307,7 +332,11 @@
     ['f-trail', 'f-axis', 'f-ghost'].forEach((id) => $(id).addEventListener('change', vis));
     $('f-markers').addEventListener('change', (e) => markers.forEach((m) => { m.visible = e.target.checked; }));
     $('f-measured').addEventListener('change', (e) => { st.useMeasured = e.target.checked; recompute(true); });
-    $('f-hand').addEventListener('change', (e) => { st.hand = e.target.value; drawArm(); recompute(true); });
+    $('f-hand').addEventListener('change', (e) => {
+      st.hand = e.target.value;
+      for (const b of balls) { b.tilt = ((12 - b.tilt) % 12 + 12) % 12; fill(b); }
+      drawArm(); recompute(true);
+    });
     $('f-aim').addEventListener('change', (e) => {
       if (e.target.value === 'manual') { const a = balls[0].res.angles; st.elev = +a.elevation.toFixed(2); st.azim = +a.azimuth.toFixed(2); $('f-elev').value = st.elev; $('f-azim').value = st.azim; }
       st.aim = e.target.value; $('f-manual').hidden = st.aim !== 'manual'; recompute(true);
