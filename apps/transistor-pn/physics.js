@@ -157,116 +157,159 @@
 
   function solveNPNBJT(params) {
     const p = params || {};
+    const reversed = Boolean(p.reversed);
     const vbe = clamp(p.vbe !== undefined ? Number(p.vbe) : 0.72, 0.0, 0.85);
     const vce = clamp(p.vce !== undefined ? Number(p.vce) : 5.0, 0.0, 10.0);
-    const wbUm = clamp(p.wbUm !== undefined ? Number(p.wbUm) : 0.8, 0.3, 5.0);
+    const wbUm = clamp(p.wbUm !== undefined ? Number(p.wbUm) : 0.6, 0.3, 6.0);
     const nab = clamp(Number(p.nab) || 2e16, 5e15, 5e17);
 
     const nde = 5e18;
     const ndc = 3e15;
+    const areaRatioCE = 2.5;
+    const bvEbo = 6.0;
+    const bvCbo = 60.0;
     const vbc = vbe - vce;
-    const vaEarly = 60.0;
 
     const vbiEB = VT * Math.log((nde * nab) / (NI * NI));
-    const vBarEB = Math.max(0.04, vbiEB - vbe);
-    const wEBCm = Math.sqrt((2 * EPS_SI / Q_E) * ((nde + nab) / (nde * nab)) * vBarEB);
+    const vbiBC = VT * Math.log((nab * ndc) / (NI * NI));
+
+    const nLeft = reversed ? ndc : nde;
+    const nRight = reversed ? nde : ndc;
+    const vbiLeft = reversed ? vbiBC : vbiEB;
+    const vbiRight = reversed ? vbiEB : vbiBC;
+    const vLeftApp = vbe;
+    const vRightApp = vbe - vce;
+
+    const vBarLeft = Math.max(0.04, vbiLeft - vLeftApp);
+    const wLeftCm = Math.sqrt((2 * EPS_SI / Q_E) * ((nLeft + nab) / (nLeft * nab)) * vBarLeft);
+    const wLeftUm = wLeftCm * CM_TO_UM;
+    const xnLeftUm = wLeftUm * (nab / (nLeft + nab));
+    const xpLeftUm = wLeftUm * (nLeft / (nLeft + nab));
+    const eMaxLeftKvCm = ((2 * vBarLeft) / Math.max(wLeftCm, 1e-9)) / 1000;
+
+    const vBarRight = Math.max(0.04, vbiRight - vRightApp);
+    const wRightCm = Math.sqrt((2 * EPS_SI / Q_E) * ((nRight + nab) / (nRight * nab)) * vBarRight);
+    const wRightUm = wRightCm * CM_TO_UM;
+    const xpRightUm = wRightUm * (nRight / (nRight + nab));
+    const xnRightUm = wRightUm * (nab / (nRight + nab));
+    const eMaxRightKvCm = ((2 * vBarRight) / Math.max(wRightCm, 1e-9)) / 1000;
+
+    const wEBCm = Math.sqrt((2 * EPS_SI / Q_E) * ((nde + nab) / (nde * nab)) * (reversed ? vBarRight : vBarLeft));
     const wEBUm = wEBCm * CM_TO_UM;
     const xnEBUm = wEBUm * (nab / (nde + nab));
     const xpEBUm = wEBUm * (nde / (nde + nab));
 
-    const vbiBC = VT * Math.log((nab * ndc) / (NI * NI));
-    const vBarBC = Math.max(0.04, vbiBC - vbc);
-    const wBCCm = Math.sqrt((2 * EPS_SI / Q_E) * ((nab + ndc) / (nab * ndc)) * vBarBC);
+    const wBCCm = Math.sqrt((2 * EPS_SI / Q_E) * ((nab + ndc) / (nab * ndc)) * (reversed ? vBarLeft : vBarRight));
     const wBCUm = wBCCm * CM_TO_UM;
     const xpBCUm = wBCUm * (ndc / (nab + ndc));
     const xnBCUm = wBCUm * (nab / (nab + ndc));
-    const eMaxBCKvCm = ((2 * vBarBC) / Math.max(wBCCm, 1e-9)) / 1000;
+    const eMaxBCKvCm = ((2 * (reversed ? vBarLeft : vBarRight)) / Math.max(wBCCm, 1e-9)) / 1000;
 
-    const wEffUm = Math.max(0.08, wbUm - 0.55 * xpEBUm - 0.55 * xpBCUm);
+    const wEffUm = Math.max(0.10, wbUm - 0.55 * xpLeftUm - 0.55 * xpRightUm);
     const wEffCm = wEffUm * UM_TO_CM;
 
     const muN = 100 + 1250 / (1 + Math.pow(nab / 1e17, 0.7));
     const dn = VT * muN;
-    const dp = 10.0;
-    const lpUm = 1.0;
-    const tauN = 3.2e-8 / (1 + nab / 2e16);
+    const tauN = 4.6e-9 / (1 + nab / 5e16);
     const lnCm = Math.sqrt(dn * tauN);
     const lnUm = lnCm * CM_TO_UM;
 
     const ratioWL = wEffUm / Math.max(lnUm, 1e-4);
     const alphaT = 1 / Math.cosh(ratioWL);
-    const gamma = 1 / (1 + (dp * nab * wEffUm) / (dn * nde * lpUm));
-    const alphaF = clamp(gamma * alphaT, 0.05, 0.9995);
+
+    const dpE = 6.0;
+    const lpE = 0.35;
+    const gammaF = 1 / (1 + (dpE * nab * wEffUm) / (dn * nde * lpE));
+    const alphaF = clamp(gammaF * alphaT, 0.05, 0.9995);
     const betaF = alphaF / (1 - alphaF);
-    const alphaR = 0.55;
+
+    const dpC = 11.5;
+    const lpC = 1.5;
+    const gammaR = 1 / (1 + areaRatioCE * (dpC * nab * wEffUm) / (dn * ndc * lpC));
+    const alphaR = clamp(gammaR * alphaT, 0.05, 0.90);
+    const betaR = alphaR / (1 - alphaR);
+
+    const gammaEff = reversed ? gammaR : gammaF;
+    const alphaEff = reversed ? alphaR : alphaF;
+    const betaEff = reversed ? betaR : betaF;
+    const holeBackFrac = 1 - gammaEff;
+    const baseRecombFrac = gammaEff * (1 - alphaT);
 
     const areaEff = 1.6e-3;
     const isAmp = (Q_E * areaEff * dn * NI * NI) / (nab * wEffCm);
-    const reOhm = 1.5;
-    const rcOhm = 4.5;
+    const rIn = reversed ? 4.5 : 1.5;
+    const rOut = reversed ? 1.5 : 4.5;
+    const rBase = 6.0;
+    const vaEarly = reversed ? 25.0 : 60.0;
+    const alphaFwd = reversed ? alphaR : alphaF;
+    const alphaRev = reversed ? alphaF : alphaR;
 
-    function solveOperatingPoint(vbeVal, vceVal) {
-      const ef = 1 + Math.max(0, vceVal) / vaEarly;
+    function solveOperatingPoint(vCtrlVal, vSupplyVal) {
+      const ef = 1 + Math.max(0, vSupplyVal) / vaEarly;
 
-      function solveInternalGivenVbe(vbeTrial) {
-        const iCF = isAmp * Math.expm1(vbeTrial / VT) * ef;
-        let loC = -0.35;
-        let hiC = vceVal;
+      function solveInternalGivenCtrl(vLeftTrial) {
+        const iFwd = isAmp * Math.expm1(vLeftTrial / VT) * ef;
+        let loOut = -0.35;
+        let hiOut = vSupplyVal;
         for (let k = 0; k < 32; k++) {
-          const midC = 0.5 * (loC + hiC);
-          const vbcMid = Math.min(0.85, vbeTrial - midC);
-          const iCR = isAmp * Math.expm1(vbcMid / VT);
-          const icMid = iCF - iCR / alphaR;
-          if (midC + icMid * rcOhm > vceVal) hiC = midC;
-          else loC = midC;
+          const midOut = 0.5 * (loOut + hiOut);
+          const vRightMid = Math.min(0.85, vLeftTrial - midOut);
+          const iRev = isAmp * Math.expm1(vRightMid / VT);
+          const iOutMid = iFwd - iRev / alphaRev;
+          if (midOut + iOutMid * rOut > vSupplyVal) hiOut = midOut;
+          else loOut = midOut;
         }
-        const vceInt = 0.5 * (loC + hiC);
-        const vbcInt = Math.min(0.85, vbeTrial - vceInt);
-        const iCR = isAmp * Math.expm1(vbcInt / VT);
-        const iEAmp = iCF / alphaF - iCR;
-        const iCAmp = iCF - iCR / alphaR;
-        return { vceInt, vbcInt, iCF, iCR, iEAmp, iCAmp };
+        const vOutInt = 0.5 * (loOut + hiOut);
+        const vRightInt = Math.min(0.85, vLeftTrial - vOutInt);
+        const iRev = isAmp * Math.expm1(vRightInt / VT);
+        const iOut = iFwd - iRev / alphaRev;
+        const iIn = iFwd / alphaFwd - iRev;
+        const iBase = iIn - iOut;
+        return { vOutInt, vRightInt, iFwd, iRev, iIn, iOut, iBase };
       }
 
-      let vbeTrial = vbeVal;
-      if (vbeVal > 0.30) {
+      let vLeftTrial = vCtrlVal;
+      if (vCtrlVal > 0.30) {
         let lo = 0;
-        let hi = vbeVal;
-        for (let iter = 0; iter < 34; iter++) {
+        let hi = vCtrlVal;
+        for (let iter = 0; iter < 36; iter++) {
           const mid = 0.5 * (lo + hi);
-          const st = solveInternalGivenVbe(mid);
-          if (mid + st.iEAmp * reOhm > vbeVal) hi = mid;
+          const st = solveInternalGivenCtrl(mid);
+          if (mid + st.iIn * rIn + Math.max(0, st.iBase) * rBase > vCtrlVal) hi = mid;
           else lo = mid;
         }
-        vbeTrial = 0.5 * (lo + hi);
+        vLeftTrial = 0.5 * (lo + hi);
       }
 
-      const st = solveInternalGivenVbe(vbeTrial);
+      const st = solveInternalGivenCtrl(vLeftTrial);
       return {
-        vbeInt: vbeTrial,
-        vceInt: st.vceInt,
-        vbcInt: st.vbcInt,
-        iEAmp: st.iEAmp,
-        iCAmp: st.iCAmp,
-        iBAmp: st.iEAmp - st.iCAmp
+        vLeftInt: vLeftTrial,
+        vOutInt: st.vOutInt,
+        vRightInt: st.vRightInt,
+        iInAmp: st.iIn,
+        iOutAmp: st.iOut,
+        iBaseAmp: st.iBase
       };
     }
 
     const op = solveOperatingPoint(vbe, vce);
-    const vbeInt = op.vbeInt;
-    const vbcInt = op.vbcInt;
-    const iEAmp = op.iEAmp;
-    const iCAmp = op.iCAmp;
-    const iBAmp = op.iBAmp;
+    const vbeInt = op.vLeftInt;
+    const vbcInt = op.vRightInt;
+    const iEAmp = op.iInAmp;
+    const iCAmp = op.iOutAmp;
+    const iBAmp = op.iBaseAmp;
 
-    const icMa = iCAmp * 1000;
-    const ibMa = iBAmp * 1000;
-    const ieMa = iEAmp * 1000;
+    const iOutMa = iCAmp * 1000;
+    const iBaseMa = iBAmp * 1000;
+    const iInMa = iEAmp * 1000;
+    const icMa = iOutMa;
+    const ibMa = iBaseMa;
+    const ieMa = iInMa;
 
-    let regime = 'active';
-    if (vbe < 0.50) {
+    let regime = reversed ? 'reverse-active' : 'active';
+    if (iOutMa < 0.15 && iBaseMa < 0.15) {
       regime = 'cutoff';
-    } else if (vbcInt > 0.40 || vce < Math.max(0.25, vbe - 0.42)) {
+    } else if (op.vRightInt > 0.40 || vce < Math.max(0.25, vbe - 0.42)) {
       regime = 'saturation';
     }
 
@@ -275,24 +318,24 @@
     const nBandPts = 180;
     const bandProfile = [];
     const ecE = 0;
-    const ecB = ecE + vBarEB;
-    const ecC = ecB - vBarBC;
+    const ecB = ecE + vBarLeft;
+    const ecC = ecB - vBarRight;
     const jEB = 0;
     const jBC = wbUm;
 
     for (let i = 0; i < nBandPts; i++) {
       const x = eStart + ((cEnd - eStart) * i) / (nBandPts - 1);
       let ec = ecE;
-      if (x <= jEB - xnEBUm) {
+      if (x <= jEB - xnLeftUm) {
         ec = ecE;
-      } else if (x < jEB + xpEBUm) {
-        const u = (x - (jEB - xnEBUm)) / Math.max(xnEBUm + xpEBUm, 1e-4);
+      } else if (x < jEB + xpLeftUm) {
+        const u = (x - (jEB - xnLeftUm)) / Math.max(xnLeftUm + xpLeftUm, 1e-4);
         const s = u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
         ec = ecE + (ecB - ecE) * s;
-      } else if (x <= jBC - xpBCUm) {
+      } else if (x <= jBC - xpRightUm) {
         ec = ecB;
-      } else if (x < jBC + xnBCUm) {
-        const u = (x - (jBC - xpBCUm)) / Math.max(xpBCUm + xnBCUm, 1e-4);
+      } else if (x < jBC + xnRightUm) {
+        const u = (x - (jBC - xpRightUm)) / Math.max(xpRightUm + xnRightUm, 1e-4);
         const s = u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
         ec = ecB + (ecC - ecB) * s;
       } else {
@@ -327,13 +370,14 @@
       for (let k = 0; k <= 60; k++) {
         const vx = (10.0 * k) / 60;
         const point = solveOperatingPoint(vbeCurve, vx);
-        pts.push({ vce: vx, icMa: Math.max(0, point.iCAmp * 1000) });
+        pts.push({ vce: vx, icMa: Math.max(0, point.iOutAmp * 1000) });
       }
       return { vbe: vbeCurve, pts };
     });
 
     return {
       mode: 'bjt',
+      reversed,
       vbe,
       vbeInt,
       vce,
@@ -343,10 +387,26 @@
       nab,
       nde,
       ndc,
+      areaRatioCE,
+      bvEbo,
+      bvCbo,
+      revBiasV: Math.max(0, vce - vbe),
+      nLeft,
+      nRight,
       vbiEB,
-      vBarEB,
+      vBarEB: reversed ? vBarRight : vBarLeft,
       vbiBC,
-      vBarBC,
+      vBarBC: reversed ? vBarLeft : vBarRight,
+      vBarLeft,
+      vBarRight,
+      wLeftUm,
+      xnLeftUm,
+      xpLeftUm,
+      wRightUm,
+      xpRightUm,
+      xnRightUm,
+      eMaxLeftKvCm,
+      eMaxRightKvCm,
       wEBUm,
       xnEBUm,
       xpEBUm,
@@ -356,13 +416,25 @@
       eMaxBCKvCm,
       lnUm,
       alphaT,
-      gamma,
+      gamma: gammaF,
+      gammaF,
+      gammaR,
+      gammaEff,
       alphaF,
+      alphaR,
+      alphaEff,
       betaF,
-      recombFraction: 1 - alphaF,
+      betaR,
+      betaEff,
+      holeBackFrac,
+      baseRecombFrac,
+      recombFraction: 1 - alphaEff,
       icMa,
       ibMa,
       ieMa,
+      iOutMa,
+      iBaseMa,
+      iInMa,
       regime,
       bandProfile,
       baseCarrierProfile,

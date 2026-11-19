@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f2f5f4">
-  <meta name="description" content="簡潔直覺的半導體物理互動圖解：PN 接面單向導通、NPN 電晶體 B 極如何控制 E→C 導通，以及 NPN 場效電晶體 G 極電場開闢通道。">
+  <meta name="description" content="簡潔直覺的半導體物理互動圖解：PN 接面單向導通、NPN 電晶體 B 極如何控制 E→C 導通與不對稱原理，以及 N 通道場效電晶體（N-MOSFET）G 極電場開闢通道。">
   <title>PN 接面與 NPN 電晶體導通圖解 | Physics Lab</title>
   <link rel="icon" href="../../assets/img/apps/transistor-pn.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <script src="physics.js" defer></script>
-  <script src="app.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=2">
+  <script src="physics.js?v=2" defer></script>
+  <script src="app.js?v=2" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -33,11 +33,11 @@
       </button>
       <button type="button" class="mode-tab active" role="tab" data-mode="bjt" aria-selected="true">
         <strong>② NPN 電晶體（B 極控制導通）</strong>
-        <span>B 極如何消除阻障、讓 99% 電子衝過薄 P 區進入 C 極</span>
+        <span>B 極消除阻障、為何 N⁺–P–N⁻ 結構不對稱不能反接</span>
       </button>
       <button type="button" class="mode-tab" role="tab" data-mode="mosfet" aria-selected="false">
-        <strong>③ NPN 場效電晶體（電場開闢通道）</strong>
-        <span>G 極絕緣不導電，如何靠電場在 P 區表面吸出一座藍色「電子橋」</span>
+        <strong>③ N 通道場效電晶體（N-MOSFET）</strong>
+        <span>G 極絕緣靠電場架出藍色「電子橋」；對照為何 MOSFET 可對稱</span>
       </button>
     </div>
 
@@ -63,9 +63,9 @@
         <div class="slider-box" id="secondary-slider-box">
           <div class="slider-head">
             <span id="secondary-label">中間 P 區（基極）厚度</span>
-            <span id="secondary-val" class="slider-val">0.8 μm（極薄）</span>
+            <span id="secondary-val" class="slider-val">0.6 μm（極薄）</span>
           </div>
-          <input id="secondary-slider" type="range" min="0.4" max="4.5" step="0.1" value="0.8">
+          <input id="secondary-slider" type="range" min="0.4" max="5.5" step="0.1" value="0.6">
           <div class="slider-ends">
             <span id="secondary-min-lbl">極薄（電子直接穿過）</span>
             <span id="secondary-max-lbl">過厚（半途複合失效）</span>

@@ -7,12 +7,14 @@
     return;
   }
 
+  const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
   const state = {
     mode: 'bjt',
     running: true,
     darkTheme: false,
     pn: { vd: 0.72 },
-    bjt: { vbe: 0.72, vce: 5.0, wbUm: 0.8 },
+    bjt: { vbe: 0.72, vce: 5.0, wbUm: 0.6, reversed: false },
     mosfet: { vgs: 3.5, vds: 2.5, vth: 1.0 }
   };
 
@@ -54,9 +56,10 @@
     },
     bjt: {
       buttons: [
-        { id: 'bjt-off', label: '🔴 關閉 OFF (B極 = 0 V)', apply: () => { state.bjt.vbe = 0.0; state.bjt.wbUm = 0.8; } },
-        { id: 'bjt-on', label: '🟢 導通 ON (B極 = +0.72 V)', apply: () => { state.bjt.vbe = 0.72; state.bjt.wbUm = 0.8; } },
-        { id: 'bjt-thick', label: '⚠️ 反事實：P 區太厚 (4.5 μm)', apply: () => { state.bjt.vbe = 0.72; state.bjt.wbUm = 4.5; } }
+        { id: 'bjt-off', label: '🔴 關閉 OFF (B極 = 0 V)', apply: () => { state.bjt.vbe = 0.0; state.bjt.wbUm = 0.6; state.bjt.reversed = false; } },
+        { id: 'bjt-on', label: '🟢 正常導通 ON (E→C)', apply: () => { state.bjt.vbe = 0.72; state.bjt.wbUm = 0.6; state.bjt.reversed = false; } },
+        { id: 'bjt-rev', label: '🔁 反接 E↔C 實測 (C→E)', apply: () => { state.bjt.vbe = 0.72; state.bjt.wbUm = 0.6; state.bjt.reversed = true; } },
+        { id: 'bjt-thick', label: '⚠️ 反事實：P 區太厚 (5.0 μm)', apply: () => { state.bjt.vbe = 0.72; state.bjt.wbUm = 5.0; state.bjt.reversed = false; } }
       ],
       primary: {
         label: 'B 極控制電壓 V_BE',
@@ -72,10 +75,10 @@
       secondary: {
         label: '中間 P 區（基極）厚度',
         min: 0.4,
-        max: 4.5,
+        max: 5.5,
         step: 0.1,
         minLbl: '極薄 0.4 μm（99% 直接穿過）',
-        maxLbl: '過厚 4.5 μm（半途複合失效）',
+        maxLbl: '過厚 5.5 μm（半途複合失效）',
         get: () => state.bjt.wbUm,
         set: (v) => { state.bjt.wbUm = v; },
         fmt: (v) => v <= 1.2 ? `${v.toFixed(1)} μm（極薄）` : `${v.toFixed(1)} μm（過厚）`
@@ -84,17 +87,34 @@
         {
           num: 'STEP 1 · B 極開門',
           title: '微弱 +0.7 V 就把左牆壓平',
-          body: '沒加 B 極電壓時，E–B 交界有高牆擋住電子。只要給 B 極約 +0.7 V，左邊閘門一打開，射極大量電子就湧入 P 區。'
+          body: '沒加 B 極電壓時，E–B 交界有高牆擋住電子。只要給 B 極約 +0.7 V，左邊閘門一打開，重摻雜 N⁺ 射極的大量電子就湧入 P 區。'
         },
         {
           num: 'STEP 2 · 超薄 P 區秘訣',
           title: '電子來不及複合就穿過去',
-          body: '中間 P 區設計得極薄（小於 1 微米）且電洞很少；99% 的電子根本來不及和電洞複合，就靠擴散衝到了右邊界。'
+          body: '中間 P 區設計得極薄（小於 1 微米）且電洞遠少於射極電子；99% 的電子根本來不及複合，就靠擴散衝到右邊界。'
         },
         {
-          num: 'STEP 3 · C 極電場瀑布',
-          title: 'B 極小電流控制 C 極大電流',
-          body: 'C 極接高正電 (+5 V)，在 B–C 交界形成陡峭的「電子溜滑梯」，瞬間把電子全吸走！B 極只需補回 1% 複合掉的電洞。'
+          num: 'STEP 3 · 為什麼不對稱？',
+          title: 'N⁺ 噴槍 / P 薄門 / N⁻ 耐壓大集極',
+          body: 'C 極故意輕摻雜 N⁻ 讓逆偏電場區主要往右撐開（耐壓 60 V），把所有電子吸走；若把 E 與 C 反接，淡 N⁻ 推不動電子、P 區電洞倒灌進 C，放大即刻崩盤！'
+        }
+      ],
+      reversedSteps: [
+        {
+          num: 'STEP 1 · 濃度差 1000 倍',
+          title: '集極太淡，電洞反過來倒灌進 C',
+          body: '集極是輕摻雜 N⁻ (3×10¹⁵)，比中間 P 區 (2×10¹⁶) 還淡！反接順偏時電子推不動，反而是 P 區大量紅電洞倒灌進 C 極。'
+        },
+        {
+          num: 'STEP 2 · 面積不對稱與增益崩盤',
+          title: '大 C 發射、小 E 根本接不完',
+          body: '大面積集極灑出的電子，小面積射極接不完；加上電洞倒灌，浪費的基極電流 I_B 比輸出電流還大，放大倍率 β_R < 1 徹底失效！'
+        },
+        {
+          num: 'STEP 3 · 逆向耐壓驟降易燒毀',
+          title: '重摻雜 N⁺ 受反壓容易直接擊穿',
+          body: '重摻雜 N⁺ 射極承受逆偏壓時，空乏區極窄、電場飆高 2.5 倍以上，崩潰電壓 BV_EBO 僅約 6 V（遠低於正常集極的 60 V），反接高壓極易擊穿！'
         }
       ]
     },
@@ -127,9 +147,9 @@
           body: '當 G 極加上超過門檻 (1.0 V) 的正電壓，向下穿透的電場會把 P 區的電洞推開，同時在表面吸聚大量電子，架出一座藍色「電子橋樑」。'
         },
         {
-          num: 'STEP 3 · 左右暢通',
+          num: 'STEP 3 · 左右對稱與雙向比較',
           title: '電子從 S 過橋直接衝進 D',
-          body: '一旦藍色電子橋連通了左右兩塊 N⁺ 區，原本斷路的元件立刻變成導體，電子順暢從源極 (S) 流向汲極 (D) 點亮燈泡！'
+          body: '藍色電子橋連通兩側 N⁺ 區後就成為導體點亮燈泡。IC 內的 MOSFET 左右 N⁺ 完全對稱可雙向導通；市面上三腳功率 MOSFET 則因內部將 S 與基底短接出寄生二極體才具方向性。'
         }
       ]
     }
@@ -162,7 +182,8 @@
     holes: [],
     flashes: [],
     hillDots: [],
-    spawnAcc: 0
+    spawnAcc: 0,
+    holeSpawnAcc: 0
   };
   let lastTime = performance.now();
   let animTime = 0;
@@ -174,6 +195,27 @@
     return `${(ma * 1000).toFixed(0)} μA`;
   }
 
+  function getBjtLayout(s) {
+    const reversed = Boolean(s && s.reversed);
+    const wbUm = s ? s.wbUm : state.bjt.wbUm;
+    const leftEnd = reversed ? 0.34 : 0.27;
+    const baseFrac = 0.08 + ((wbUm - 0.3) / 5.2) * 0.28;
+    const baseEnd = leftEnd + baseFrac;
+    const umScale = 0.075;
+
+    const xnLeft = Math.min(leftEnd - 0.04, Math.max(0.004, ((s && s.xnLeftUm) || 0.05) * umScale));
+    const xpLeft = Math.min(baseFrac * 0.42, Math.max(0.005, ((s && s.xpLeftUm) || 0.08) * umScale));
+    const xpRight = Math.min(baseFrac * 0.48, Math.max(0.005, ((s && s.xpRightUm) || 0.15) * umScale));
+    const xnRight = Math.min(0.95 - baseEnd, Math.max(0.005, ((s && s.xnRightUm) || 0.5) * umScale));
+
+    const leftDepL = Math.max(0.03, leftEnd - xnLeft);
+    const leftDepR = Math.min(baseEnd - 0.015, leftEnd + xpLeft);
+    const rightDepL = Math.max(leftEnd + 0.015, baseEnd - xpRight);
+    const rightDepR = Math.min(0.96, baseEnd + xnRight);
+
+    return { reversed, leftEnd, baseFrac, baseEnd, leftDepL, leftDepR, rightDepL, rightDepR };
+  }
+
   function solveCurrentMode() {
     if (state.mode === 'pn') {
       sol = Physics.solvePNJunction({ na: 2e16, nd: 2e16, vd: state.pn.vd });
@@ -182,7 +224,8 @@
         vbe: state.bjt.vbe,
         vce: state.bjt.vce,
         wbUm: state.bjt.wbUm,
-        nab: state.bjt.wbUm > 2.2 ? 1.2e17 : 2e16
+        nab: 2e16,
+        reversed: state.bjt.reversed
       });
     } else {
       sol = Physics.solveNMOSFET({
@@ -214,21 +257,32 @@
         statusReadout.textContent = '通過電流 = 0.00 mA';
       }
     } else if (sol.mode === 'bjt') {
+      primaryLabel.textContent = sol.reversed ? 'B 極控制電壓 V_BC（反接：把 C 當射極）' : 'B 極控制電壓 V_BE';
       if (sol.regime === 'cutoff') {
         statusBadge.textContent = '🔴 關閉斷路 OFF';
         statusBadge.classList.add('off');
-        statusText.textContent = 'B 極未加正電，E–B 高牆死死擋住電子；就算 C 極接 +5 V 也沒電流！';
-        statusReadout.textContent = 'I_C = 0 mA ｜ I_B = 0 mA';
-      } else if (sol.betaF < 15) {
+        statusText.textContent = 'B 極未加正電，左方阻障牆死死擋住電子；就算右端接 +5 V 也沒電流！';
+        statusReadout.textContent = '輸出 = 0 mA ｜ I_B = 0 mA';
+      } else if (sol.reversed) {
+        statusBadge.textContent = '🔁 反接失效（不對稱反證）';
+        statusBadge.classList.add('warn');
+        statusText.textContent = `反接把輕摻雜 N⁻ 集極當射極！P 區電洞大量倒灌進 C（佔 ${(sol.holeBackFrac * 100).toFixed(0)}%），放大倍率驟降至 ${sol.betaEff.toFixed(2)}×，且右牆電場飆高逼近 6 V 耐壓極限！`;
+        statusReadout.textContent = `輸出 I_E = ${fmtCurrent(sol.iOutMa)} ｜ 漏流 I_B = ${fmtCurrent(sol.iBaseMa)} (β_R = ${sol.betaEff.toFixed(2)}×)`;
+      } else if (sol.betaEff < 15) {
         statusBadge.textContent = '⚠️ 放大失靈（P 區太厚）';
         statusBadge.classList.add('warn');
-        statusText.textContent = `P 區太厚！只有 ${(sol.alphaF * 100).toFixed(0)}% 電子衝到 C 極，其餘半途與電洞複合並從 B 極漏走。`;
-        statusReadout.textContent = `到達 C 極 ${(sol.alphaF * 100).toFixed(0)}% ｜ 放大倍率 ${sol.betaF.toFixed(1)}×`;
+        statusText.textContent = `P 區太厚！只有 ${(sol.alphaEff * 100).toFixed(0)}% 電子衝到 C 極，其餘半途與電洞複合並從 B 極漏走。`;
+        statusReadout.textContent = `到達 C 極 ${(sol.alphaEff * 100).toFixed(0)}% ｜ 放大倍率 ${sol.betaEff.toFixed(1)}×`;
+      } else if (sol.iOutMa < 1.5) {
+        statusBadge.textContent = '🟡 微幅起導（剛跨門檻）';
+        statusBadge.classList.add('warn');
+        statusText.textContent = 'E–B 阻障牆開始變薄，已有微量電子越過，再提高一點 V_BE 電流就會指數暴增。';
+        statusReadout.textContent = `I_C = ${fmtCurrent(sol.iOutMa)} ｜ I_B = ${fmtCurrent(sol.iBaseMa)} (${sol.betaEff.toFixed(0)}× 放大)`;
       } else {
         statusBadge.textContent = '🟢 導通放大 ON';
         statusBadge.classList.add('on');
-        statusText.textContent = `B 極消除左牆、P 區極薄，${(sol.alphaF * 100).toFixed(1)}% 電子直衝進 C 極點亮燈泡！`;
-        statusReadout.textContent = `I_C = ${fmtCurrent(sol.icMa)} ｜ I_B = ${fmtCurrent(sol.ibMa)} (${sol.betaF.toFixed(0)}× 放大)`;
+        statusText.textContent = `B 極消除左牆、P 區極薄，${(sol.alphaEff * 100).toFixed(1)}% 電子直衝進 C 極點亮燈泡！`;
+        statusReadout.textContent = `I_C = ${fmtCurrent(sol.iOutMa)} ｜ I_B = ${fmtCurrent(sol.iBaseMa)} (${sol.betaEff.toFixed(0)}× 放大)`;
       }
     } else {
       if (sol.vgs < sol.vth) {
@@ -250,13 +304,28 @@
       if (id === 'pn-off') match = state.mode === 'pn' && state.pn.vd <= -2.5;
       if (id === 'pn-eq') match = state.mode === 'pn' && Math.abs(state.pn.vd) < 0.05;
       if (id === 'pn-on') match = state.mode === 'pn' && state.pn.vd >= 0.68;
-      if (id === 'bjt-off') match = state.mode === 'bjt' && state.bjt.vbe < 0.1;
-      if (id === 'bjt-on') match = state.mode === 'bjt' && state.bjt.vbe >= 0.68 && state.bjt.wbUm <= 1.0;
-      if (id === 'bjt-thick') match = state.mode === 'bjt' && state.bjt.wbUm >= 4.0;
+      if (id === 'bjt-off') match = state.mode === 'bjt' && !state.bjt.reversed && state.bjt.vbe < 0.1;
+      if (id === 'bjt-on') match = state.mode === 'bjt' && !state.bjt.reversed && state.bjt.vbe >= 0.68 && state.bjt.wbUm <= 1.0;
+      if (id === 'bjt-rev') match = state.mode === 'bjt' && state.bjt.reversed;
+      if (id === 'bjt-thick') match = state.mode === 'bjt' && !state.bjt.reversed && state.bjt.wbUm >= 4.5;
       if (id === 'mos-off') match = state.mode === 'mosfet' && state.mosfet.vgs < 0.2;
       if (id === 'mos-mid') match = state.mode === 'mosfet' && Math.abs(state.mosfet.vgs - 1.6) < 0.2;
       if (id === 'mos-on') match = state.mode === 'mosfet' && state.mosfet.vgs >= 3.2;
       btn.classList.toggle('active', match);
+    });
+  }
+
+  function renderStepCards() {
+    const meta = MODE_META[state.mode];
+    const list = (state.mode === 'bjt' && state.bjt.reversed && meta.reversedSteps)
+      ? meta.reversedSteps
+      : meta.steps;
+    stepCardsEl.innerHTML = '';
+    list.forEach((s) => {
+      const card = document.createElement('article');
+      card.className = 'step-card';
+      card.innerHTML = `<span class="step-num">${s.num}</span><h3>${s.title}</h3><p>${s.body}</p>`;
+      stepCardsEl.appendChild(card);
     });
   }
 
@@ -271,9 +340,14 @@
       btn.dataset.stateId = b.id;
       btn.textContent = b.label;
       btn.addEventListener('click', () => {
+        const prevRev = state.bjt.reversed;
         b.apply();
         syncSlidersToState();
         solveCurrentMode();
+        if (state.bjt.reversed !== prevRev) {
+          resetParticles();
+        }
+        renderStepCards();
         updateStatusAndButtons();
       });
       stateButtonsEl.appendChild(btn);
@@ -299,14 +373,7 @@
     }
 
     syncSlidersToState();
-
-    stepCardsEl.innerHTML = '';
-    meta.steps.forEach((s) => {
-      const card = document.createElement('article');
-      card.className = 'step-card';
-      card.innerHTML = `<span class="step-num">${s.num}</span><h3>${s.title}</h3><p>${s.body}</p>`;
-      stepCardsEl.appendChild(card);
-    });
+    renderStepCards();
   }
 
   function syncSlidersToState() {
@@ -328,6 +395,7 @@
     particles.flashes = [];
     particles.hillDots = [];
     particles.spawnAcc = 0;
+    particles.holeSpawnAcc = 0;
 
     if (state.mode === 'pn') {
       for (let i = 0; i < 28; i++) {
@@ -348,19 +416,34 @@
         particles.hillDots.push({ u: 0.55 + Math.random() * 0.40, dir: -1 });
       }
     } else if (state.mode === 'bjt') {
-      for (let i = 0; i < 26; i++) {
+      const L = getBjtLayout(sol);
+      const leftCount = L.reversed ? 7 : 24;
+      const rightCount = L.reversed ? 24 : 7;
+      const leftMaxU = Math.max(0.06, L.leftDepL - 0.012);
+      const rightMinU = Math.min(0.93, L.rightDepR + 0.012);
+      for (let i = 0; i < leftCount; i++) {
         particles.electrons.push({
-          kind: 'bulk',
-          u: 0.03 + Math.random() * 0.24,
-          v: 0.16 + Math.random() * 0.68,
-          vx: (Math.random() - 0.5) * 0.18,
-          vy: (Math.random() - 0.5) * 0.18
+          kind: 'bulkLeft',
+          u: 0.03 + Math.random() * (leftMaxU - 0.03),
+          v: 0.22 + Math.random() * 0.62,
+          vx: (Math.random() - 0.5) * 0.16,
+          vy: (Math.random() - 0.5) * 0.16
+        });
+      }
+      for (let i = 0; i < rightCount; i++) {
+        particles.electrons.push({
+          kind: 'bulkRight',
+          u: rightMinU + Math.random() * (0.96 - rightMinU),
+          v: 0.22 + Math.random() * 0.62,
+          vx: (Math.random() - 0.5) * 0.14,
+          vy: (Math.random() - 0.5) * 0.14
         });
       }
       for (let i = 0; i < 10; i++) {
         particles.holes.push({
-          u: 0.34 + Math.random() * 0.08,
-          v: 0.16 + Math.random() * 0.68,
+          kind: 'resident',
+          u: L.leftEnd + 0.015 + Math.random() * Math.max(0.02, L.baseFrac - 0.03),
+          v: 0.22 + Math.random() * 0.62,
           vx: (Math.random() - 0.5) * 0.10,
           vy: (Math.random() - 0.5) * 0.10
         });
@@ -467,53 +550,81 @@
         }
       });
     } else if (sol.mode === 'bjt') {
-      const emitEnd = 0.28;
-      const baseFrac = 0.09 + ((sol.wbUm - 0.3) / 4.2) * 0.28;
-      const baseEnd = emitEnd + baseFrac;
-      const isOn = sol.regime !== 'cutoff';
-      const activity = isOn ? Math.min(1.0, Math.max(0.25, Math.log10(1 + Math.max(0, sol.ieMa) * 2.5) / 2.0)) : 0;
+      const L = getBjtLayout(sol);
+      const isActive = sol.iOutMa >= 0.05 || sol.iBaseMa >= 0.05;
+      const flowNorm = sol.iOutMa < 0.05 ? 0 : Math.pow(clamp(sol.iOutMa / 42, 0, 1), 0.55);
+      const activity = isActive ? Math.max(0.22, flowNorm) : 0;
 
       const streamCount = particles.electrons.filter((p) => p.kind === 'stream').length;
-      const targetStream = Math.round(activity * 28);
+      const targetStream = Math.round(flowNorm * 28);
       particles.spawnAcc += dt * targetStream * 1.6;
+      const surviveProb = sol.reversed ? (sol.alphaEff / Math.max(sol.gammaEff, 0.1)) : sol.alphaT;
       while (streamCount < targetStream && particles.spawnAcc >= 1) {
         particles.spawnAcc -= 1;
-        const willSurvive = Math.random() < sol.alphaF;
+        const willSurvive = Math.random() < surviveProb;
         particles.electrons.push({
           kind: 'stream',
           u: 0.04,
-          v: 0.22 + Math.random() * 0.56,
-          vx: 0.30,
+          v: 0.24 + Math.random() * 0.56,
+          vx: sol.reversed ? 0.24 : 0.32,
           vy: 0,
           fate: willSurvive ? 'survive' : 'recombine',
-          recombU: emitEnd + baseFrac * (0.25 + Math.random() * 0.55)
+          recombU: L.leftEnd + L.baseFrac * (0.25 + Math.random() * 0.55)
         });
       }
 
+      if (sol.reversed && sol.iBaseMa > 0.3) {
+        const backHoleCount = particles.holes.filter((h) => h.kind === 'backHole').length;
+        const holeFlowNorm = Math.pow(clamp(sol.iBaseMa / 15, 0, 1), 0.65);
+        const targetBackHoles = Math.round(holeFlowNorm * 16);
+        particles.holeSpawnAcc += dt * targetBackHoles * 1.8;
+        while (backHoleCount < targetBackHoles && particles.holeSpawnAcc >= 1) {
+          particles.holeSpawnAcc -= 1;
+          particles.holes.push({
+            kind: 'backHole',
+            u: L.leftEnd + 0.015,
+            v: 0.24 + Math.random() * 0.56,
+            vx: -0.32,
+            recombU: 0.06 + Math.random() * Math.max(0.05, L.leftEnd - 0.10)
+          });
+        }
+      }
+
+      const leftMaxU = Math.max(0.06, L.leftDepL - 0.01);
+      const rightMinU = Math.min(0.93, L.rightDepR + 0.01);
+
       for (let i = particles.electrons.length - 1; i >= 0; i--) {
         const e = particles.electrons[i];
-        if (e.kind === 'bulk') {
+        if (e.kind === 'bulkLeft') {
           e.vx = (e.vx + (Math.random() - 0.5) * 0.55 * dt) * 0.92;
           e.vy = (e.vy + (Math.random() - 0.5) * 0.55 * dt) * 0.92;
           e.u += e.vx * dt;
           e.v += e.vy * dt;
           if (e.u < 0.03) { e.u = 0.03; e.vx = Math.abs(e.vx); }
-          if (e.u > emitEnd - 0.02) { e.u = emitEnd - 0.02; e.vx = -Math.abs(e.vx) - 0.08; }
-          e.v = Math.min(0.84, Math.max(0.16, e.v));
+          if (e.u > leftMaxU) { e.u = leftMaxU; e.vx = -Math.abs(e.vx) - 0.06; }
+          e.v = Math.min(0.86, Math.max(0.20, e.v));
+        } else if (e.kind === 'bulkRight') {
+          e.vx = (e.vx + (Math.random() - 0.5) * 0.50 * dt) * 0.92;
+          e.vy = (e.vy + (Math.random() - 0.5) * 0.50 * dt) * 0.92;
+          e.u += e.vx * dt;
+          e.v += e.vy * dt;
+          if (e.u < rightMinU) { e.u = rightMinU; e.vx = Math.abs(e.vx) + 0.06; }
+          if (e.u > 0.96) { e.u = 0.96; e.vx = -Math.abs(e.vx); }
+          e.v = Math.min(0.86, Math.max(0.20, e.v));
         } else {
-          if (!isOn) {
+          if (sol.iOutMa < 0.05) {
             particles.electrons.splice(i, 1);
             continue;
           }
-          if (e.u < emitEnd) {
-            e.vx = 0.34;
-          } else if (e.u < baseEnd) {
-            e.vx = Math.max(0.14, 0.28 * (0.8 / Math.max(0.45, sol.wbUm)));
+          if (e.u < L.leftEnd) {
+            e.vx = sol.reversed ? 0.24 : 0.34;
+          } else if (e.u < L.baseEnd) {
+            e.vx = Math.max(0.14, 0.28 * (0.6 / Math.max(0.45, sol.wbUm)));
             e.vy = (Math.random() - 0.5) * 0.14;
             if (e.fate === 'recombine' && e.u >= e.recombU) {
               particles.flashes.push({ u: e.u, v: e.v, life: 1.0 });
               particles.holes.push({
-                u: emitEnd + baseFrac * 0.5,
+                u: L.leftEnd + L.baseFrac * 0.5,
                 v: 0.04,
                 isReplacement: true,
                 targetV: e.v
@@ -522,15 +633,17 @@
               continue;
             }
           } else {
-            e.vx = Math.min(1.15, e.vx + 1.8 * dt);
+            e.vx = Math.min(1.15, e.vx + (sol.reversed ? 2.2 : 1.7) * dt);
             e.vy *= 0.85;
           }
           e.u += e.vx * dt;
-          e.v = Math.min(0.84, Math.max(0.16, e.v + e.vy * dt));
+          e.v = Math.min(0.86, Math.max(0.20, e.v + e.vy * dt));
           if (e.u > 0.97) particles.electrons.splice(i, 1);
         }
       }
 
+      const holeMinU = L.leftEnd + 0.012;
+      const holeMaxU = Math.max(holeMinU + 0.01, L.baseEnd - 0.012);
       for (let i = particles.holes.length - 1; i >= 0; i--) {
         const h = particles.holes[i];
         if (h.isReplacement) {
@@ -538,22 +651,35 @@
           if (h.v >= h.targetV) particles.holes.splice(i, 1);
           continue;
         }
+        if (h.kind === 'backHole') {
+          if (!sol.reversed || sol.iBaseMa <= 0.3) {
+            particles.holes.splice(i, 1);
+            continue;
+          }
+          h.u += h.vx * dt;
+          h.v = Math.min(0.86, Math.max(0.20, h.v + (Math.random() - 0.5) * 0.12 * dt));
+          if (h.u <= h.recombU) {
+            particles.flashes.push({ u: h.u, v: h.v, life: 0.85 });
+            particles.holes.splice(i, 1);
+          }
+          continue;
+        }
         h.vx = (h.vx + (Math.random() - 0.5) * 0.3 * dt) * 0.92;
         h.vy = (h.vy + (Math.random() - 0.5) * 0.3 * dt) * 0.92;
         h.u += h.vx * dt;
         h.v += h.vy * dt;
-        if (h.u < emitEnd + 0.015) { h.u = emitEnd + 0.015; h.vx = Math.abs(h.vx); }
-        if (h.u > baseEnd - 0.015) { h.u = baseEnd - 0.015; h.vx = -Math.abs(h.vx); }
-        h.v = Math.min(0.82, Math.max(0.18, h.v));
+        if (h.u < holeMinU) { h.u = holeMinU; h.vx = Math.abs(h.vx); }
+        if (h.u > holeMaxU) { h.u = holeMaxU; h.vx = -Math.abs(h.vx); }
+        h.v = Math.min(0.84, Math.max(0.20, h.v));
       }
 
       particles.hillDots.forEach((d) => {
-        if (!isOn) {
+        if (sol.iOutMa < 0.05) {
           d.u += d.dir * 0.14 * dt;
-          if (d.u > emitEnd - 0.02) { d.u = emitEnd - 0.02; d.dir = -1; }
+          if (d.u > leftMaxU) { d.u = leftMaxU; d.dir = -1; }
           if (d.u < 0.04) { d.u = 0.04; d.dir = 1; }
         } else {
-          const speed = d.u > baseEnd ? 0.65 : 0.28;
+          const speed = d.u > L.baseEnd ? 0.65 : 0.28;
           d.u += speed * activity * dt;
           if (d.u > 0.96) d.u = 0.04;
         }
@@ -891,79 +1017,139 @@
   }
 
   function drawBJT(w, h, slabX, slabY, slabW, slabH, hillTop, hillH) {
-    const emitEnd = 0.28;
-    const baseFrac = 0.09 + ((sol.wbUm - 0.3) / 4.2) * 0.28;
-    const baseEnd = emitEnd + baseFrac;
+    const L = getBjtLayout(sol);
+    const xLeft = slabX + slabW * L.leftEnd;
+    const xBC = slabX + slabW * L.baseEnd;
+    const xLeftDepL = slabX + slabW * L.leftDepL;
+    const xLeftDepR = slabX + slabW * L.leftDepR;
+    const xRightDepL = slabX + slabW * L.rightDepL;
+    const xRightDepR = slabX + slabW * L.rightDepR;
+    const bxMid = (xLeft + xBC) * 0.5;
 
-    const xEB = slabX + slabW * emitEnd;
-    const xBC = slabX + slabW * baseEnd;
-    const bxMid = (xEB + xBC) * 0.5;
-    const isOn = sol.regime !== 'cutoff';
-    const isThick = sol.betaF < 15 && isOn;
-    const brightness = !isOn ? 0 : (isThick ? 0.22 : Math.min(1.0, Math.max(0.4, sol.icMa / 35)));
+    const isCutoff = sol.regime === 'cutoff';
+    const isThick = !sol.reversed && sol.betaEff < 15 && !isCutoff;
+    const brightness = sol.iOutMa < 0.05 ? 0 : Math.pow(clamp(sol.iOutMa / 40, 0, 1), 0.65);
 
-    ctx.fillStyle = 'rgba(14, 165, 233, 0.22)';
-    ctx.fillRect(slabX, slabY, xEB - slabX, slabH);
+    ctx.fillStyle = sol.reversed ? 'rgba(14, 165, 233, 0.09)' : 'rgba(14, 165, 233, 0.27)';
+    ctx.fillRect(slabX, slabY, xLeft - slabX, slabH);
     ctx.fillStyle = 'rgba(225, 29, 72, 0.22)';
-    ctx.fillRect(xEB, slabY, xBC - xEB, slabH);
-    ctx.fillStyle = 'rgba(14, 165, 233, 0.14)';
+    ctx.fillRect(xLeft, slabY, xBC - xLeft, slabH);
+    ctx.fillStyle = sol.reversed ? 'rgba(14, 165, 233, 0.27)' : 'rgba(14, 165, 233, 0.09)';
     ctx.fillRect(xBC, slabY, slabX + slabW - xBC, slabH);
 
-    if (!isOn) {
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.32)';
-      ctx.fillRect(xEB - 14, slabY, 28, slabH);
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 2.4;
-      ctx.setLineDash([5, 4]);
-      ctx.strokeRect(xEB - 14, slabY + 1, 28, slabH - 2);
-      ctx.setLineDash([]);
-    }
+    const wallAlpha = clamp(sol.vBarLeft / 0.95, 0.08, 1.0) * 0.34;
+    const leftDepW = Math.max(5, xLeftDepR - xLeftDepL);
+    ctx.fillStyle = `rgba(245, 158, 11, ${wallAlpha.toFixed(2)})`;
+    ctx.fillRect(xLeftDepL, slabY, leftDepW, slabH);
+    ctx.strokeStyle = isCutoff ? '#fbbf24' : 'rgba(251, 191, 36, 0.70)';
+    ctx.lineWidth = isCutoff ? 2.2 : 1.3;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(xLeftDepL, slabY + 1, leftDepW, slabH - 2);
+    ctx.setLineDash([]);
 
-    const wfW = Math.min(slabX + slabW - xBC - 10, 88);
-    const wfGrad = ctx.createLinearGradient(xBC, slabY, xBC + wfW, slabY);
-    wfGrad.addColorStop(0, 'rgba(168, 85, 247, 0.26)');
-    wfGrad.addColorStop(1, 'rgba(168, 85, 247, 0.02)');
+    const rightDepW = Math.max(8, xRightDepR - xRightDepL);
+    const wfGrad = ctx.createLinearGradient(xRightDepL, slabY, xRightDepR, slabY);
+    if (sol.reversed) {
+      wfGrad.addColorStop(0, 'rgba(244, 63, 94, 0.44)');
+      wfGrad.addColorStop(1, 'rgba(168, 85, 247, 0.12)');
+    } else {
+      wfGrad.addColorStop(0, 'rgba(168, 85, 247, 0.28)');
+      wfGrad.addColorStop(1, 'rgba(168, 85, 247, 0.04)');
+    }
     ctx.fillStyle = wfGrad;
-    ctx.fillRect(xBC, slabY, wfW, slabH);
+    ctx.fillRect(xRightDepL, slabY, rightDepW, slabH);
+    ctx.strokeStyle = sol.reversed ? 'rgba(251, 113, 133, 0.78)' : 'rgba(192, 132, 252, 0.50)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(xRightDepL, slabY + 1, rightDepW, slabH - 2);
+    ctx.setLineDash([]);
 
     ctx.strokeStyle = 'rgba(203, 213, 225, 0.55)';
     ctx.lineWidth = 1.6;
     ctx.strokeRect(slabX, slabY, slabW, slabH);
 
-    ctx.font = 'bold 13.5px sans-serif';
     ctx.textAlign = 'center';
+    ctx.font = 'bold 13px sans-serif';
     ctx.fillStyle = '#7dd3fc';
-    ctx.fillText('N⁺ 射極 (E)', (slabX + xEB) * 0.5, slabY + 22);
-    ctx.fillStyle = '#fda4af';
-    ctx.fillText(`P 基極 (${sol.wbUm.toFixed(1)}μm)`, bxMid, slabY + 22);
-    ctx.fillStyle = '#7dd3fc';
-    ctx.fillText('N 集極 (C)', (xBC + slabX + slabW) * 0.5, slabY + 22);
+    ctx.fillText(sol.reversed ? 'N⁻ 集極 (C・當射極)' : 'N⁺ 射極 (E)', (slabX + xLeft) * 0.5, slabY + 20);
+    ctx.font = '11px monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.78)';
+    ctx.fillText(sol.reversed ? '輕摻雜 3×10¹⁵' : '重摻雜 5×10¹⁸', (slabX + xLeft) * 0.5, slabY + 35);
 
-    ctx.fillStyle = isOn ? '#34d399' : '#fb7185';
+    ctx.font = 'bold 12.5px sans-serif';
+    ctx.fillStyle = '#fda4af';
+    ctx.fillText('P 基極', bxMid, slabY + 20);
+    ctx.font = '11px monospace';
+    ctx.fillStyle = 'rgba(254, 205, 211, 0.85)';
+    ctx.fillText(`${sol.wbUm.toFixed(1)}μm`, bxMid, slabY + 35);
+
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillText(sol.reversed ? 'N⁺ 射極 (E・當集極)' : 'N⁻ 集極 (C)', (xBC + slabX + slabW) * 0.5, slabY + 20);
+    ctx.font = '11px monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.78)';
+    ctx.fillText(sol.reversed ? '重摻雜 5×10¹⁸' : '輕摻雜 3×10¹⁵', (xBC + slabX + slabW) * 0.5, slabY + 35);
+
+    const bCol = isCutoff ? '#fb7185' : (sol.reversed || isThick ? '#fbbf24' : '#34d399');
+    ctx.fillStyle = bCol;
     ctx.fillRect(bxMid - 18, slabY - 12, 36, 12);
-    ctx.strokeStyle = isOn ? '#34d399' : '#fb7185';
+    ctx.strokeStyle = bCol;
     ctx.lineWidth = 2.4;
     ctx.beginPath();
     ctx.moveTo(bxMid, slabY - 12);
-    ctx.lineTo(bxMid, slabY - 38);
+    ctx.lineTo(bxMid, slabY - 36);
     ctx.stroke();
+    if (!isCutoff) {
+      const ibThick = clamp(1.6 + Math.log10(1 + sol.iBaseMa) * 1.8, 1.8, 4.2);
+      drawArrow(bxMid - 10, slabY - 34, bxMid - 10, slabY - 16, bCol, ibThick, 6);
+    }
+    ctx.fillStyle = bCol;
+    ctx.font = 'bold 11.5px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`I_B ${fmtCurrent(sol.iBaseMa)}`, bxMid + 8, slabY - 24);
 
-    if (!isOn) {
-      drawCalloutPill(bxMid, slabY - 48, `B 極 = 0 V（未打開閘門）`, 'rgba(225, 29, 72, 0.25)', '#fb7185', '#fecdd3');
-      drawCalloutPill(xEB, slabY + slabH * 0.5, '🚧 E–B 阻障牆（擋住電子）', 'rgba(217, 119, 6, 0.35)', '#fbbf24', '#fef3c7');
+    const leftPillX = (slabX + xLeft) * 0.5;
+    const rightPillX = Math.min(slabX + slabW - 110, (xBC + slabX + slabW) * 0.54);
+    if (isCutoff) {
+      drawCalloutPill(bxMid, 18, 'B 極 = 0 V（未打開閘門）', 'rgba(225, 29, 72, 0.25)', '#fb7185', '#fecdd3');
+      drawCalloutPill(xLeft + 10, slabY + slabH * 0.54, `🚧 左阻障牆 (${sol.wLeftUm.toFixed(2)}μm) 擋住電子`, 'rgba(217, 119, 6, 0.35)', '#fbbf24', '#fef3c7');
+    } else if (sol.reversed) {
+      drawCalloutPill(leftPillX, 18, `① 淡 N⁻ 推不動，P 區電洞倒灌！`, 'rgba(225, 29, 72, 0.32)', '#fb7185', '#fecdd3');
+      drawCalloutPill(rightPillX, 18, `⚠️ B–E 逆偏耐壓僅 ~6V (電場 ${sol.eMaxRightKvCm.toFixed(0)} kV/cm)`, 'rgba(217, 119, 6, 0.34)', '#fbbf24', '#fef3c7');
     } else {
-      drawCalloutPill((slabX + xEB) * 0.5, 22, `① B 極 +${sol.vbe.toFixed(2)}V 消掉左牆`, 'rgba(5, 150, 105, 0.28)', '#34d399', '#a7f3d0');
-      drawCalloutPill((xBC + slabX + slabW) * 0.52, 22, `③ C 極 +5V 電場瀑布把電子吸走！`, 'rgba(139, 92, 246, 0.28)', '#c084fc', '#e9d5ff');
+      drawCalloutPill(leftPillX, 18, `① B 極 +${sol.vbe.toFixed(2)}V 壓低左牆`, 'rgba(5, 150, 105, 0.28)', '#34d399', '#a7f3d0');
+      drawCalloutPill(rightPillX, 18, `③ 寬電場區 (${sol.wRightUm.toFixed(2)}μm) 吸走電子`, 'rgba(139, 92, 246, 0.28)', '#c084fc', '#e9d5ff');
       if (isThick) {
-        drawCalloutPill(bxMid, slabY + slabH * 0.5, '⚠️ P 區太厚，電子半途撞電洞複合消失！', 'rgba(225, 29, 72, 0.35)', '#fb7185', '#fecdd3');
+        drawCalloutPill(bxMid, slabY + slabH * 0.55, '⚠️ P 區太厚，電子半途撞電洞複合消失！', 'rgba(225, 29, 72, 0.35)', '#fb7185', '#fecdd3');
       } else {
-        drawArrow(xBC + 6, slabY + slabH * 0.5, xBC + wfW - 8, slabY + slabH * 0.5, '#c084fc', 3, 9);
+        const wfArrowEnd = Math.min(slabX + slabW - 16, xRightDepL + Math.max(38, rightDepW * 0.85));
+        drawArrow(xRightDepL + 6, slabY + slabH * 0.55, wfArrowEnd, slabY + slabH * 0.55, '#c084fc', 3, 9);
       }
     }
 
-    particles.electrons.forEach((e) => drawElectron(slabX + e.u * slabW, slabY + e.v * slabH, e.kind === 'stream' ? 5.6 : 4.5));
-    particles.holes.forEach((p) => drawHole(slabX + p.u * slabW, slabY + p.v * slabH, 4.8));
+    particles.electrons.forEach((e) => drawElectron(slabX + e.u * slabW, slabY + e.v * slabH, e.kind === 'stream' ? 5.4 : 4.4));
+    particles.holes.forEach((p) => drawHole(slabX + p.u * slabW, slabY + p.v * slabH, p.kind === 'backHole' ? 5.2 : 4.6));
     drawFlashes(slabX, slabY, slabW, slabH);
+
+    const gndX = Math.max(16, slabX - 24);
+    const wireY = slabY + slabH * 0.5;
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(slabX, wireY);
+    ctx.lineTo(gndX, wireY);
+    ctx.lineTo(gndX, wireY + 26);
+    ctx.moveTo(gndX - 10, wireY + 26);
+    ctx.lineTo(gndX + 10, wireY + 26);
+    ctx.moveTo(gndX - 6, wireY + 31);
+    ctx.lineTo(gndX + 6, wireY + 31);
+    ctx.moveTo(gndX - 2.5, wireY + 36);
+    ctx.lineTo(gndX + 2.5, wireY + 36);
+    ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('0 V', gndX, wireY + 50);
 
     const lampX = slabX + slabW + (w - slabX - slabW) * 0.5;
     const lampY = slabY + slabH * 0.5;
@@ -973,32 +1159,56 @@
     ctx.moveTo(slabX + slabW, lampY);
     ctx.lineTo(lampX - 16, lampY);
     ctx.moveTo(lampX + 16, lampY);
-    ctx.lineTo(Math.min(w - 6, lampX + 34), lampY);
+    ctx.lineTo(Math.min(w - 10, lampX + 34), lampY);
     ctx.stroke();
-    drawLamp(lampX, lampY, brightness, !isOn ? '斷路熄滅' : (isThick ? '微弱發光' : '導通大亮'));
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 11.5px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('+5 V', Math.min(w - 22, lampX + 26), lampY - 12);
 
-    if (isOn) {
-      drawArrow(xEB - 30, slabY + slabH + 22, xBC + 110, slabY + slabH + 22, '#34d399', 3, 9);
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`電子流方向：射極 (E) → 薄基極 (B) → 集極 (C) ｜ ${(sol.alphaF * 100).toFixed(1)}% 成功抵達！`, (xEB + xBC) * 0.5 + 40, slabY + slabH + 40);
+    const lampLabel = brightness < 0.06
+      ? '斷路熄滅'
+      : (brightness < 0.35 ? '微弱發光' : (brightness < 0.70 ? '偏暗發光' : '導通大亮'));
+    drawLamp(lampX, lampY, brightness, lampLabel);
+
+    const arrowY = slabY + slabH + 13;
+    const capY = slabY + slabH + 28;
+    if (!isCutoff && sol.iOutMa >= 0.05) {
+      if (sol.reversed) {
+        drawArrow(xLeft + 26, arrowY, xLeft - 64, arrowY, '#fb7185', 3.2, 8);
+        ctx.fillStyle = '#fda4af';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('← 電洞大量倒灌進 N⁻ (浪費 I_B!)', xLeft + 26, capY);
+
+        drawArrow(xBC + 4, arrowY, xBC + 76, arrowY, '#34d399', 2.0, 7);
+        ctx.fillStyle = '#34d399';
+        ctx.textAlign = 'left';
+        ctx.fillText(`微弱電子流 → (β_R=${sol.betaEff.toFixed(2)}×)`, xBC + 4, capY);
+      } else {
+        drawArrow(xLeft - 36, arrowY, xBC + 115, arrowY, '#34d399', 3, 9);
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 12.5px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`電子流：N⁺射極 (E) → 薄基極 → N⁻集極 (C) ｜ ${(sol.alphaEff * 100).toFixed(1)}% 抵達`, (xLeft + xBC) * 0.5 + 42, capY);
+      }
     }
 
-    const eLevel = hillTop + hillH * 0.42;
-    const bHeightPx = (sol.vBarEB / 1.0) * (hillH * 0.36);
+    const eLevel = hillTop + hillH * 0.44;
+    const bHeightPx = clamp(sol.vBarLeft / 0.95, 0.06, 1.0) * (hillH * 0.36);
     const bLevel = Math.max(hillTop + 10, eLevel - bHeightPx);
-    const cLevel = hillTop + hillH * 0.88;
+    const dropPx = clamp(sol.vBarRight / 6.0, 0.25, 1.0) * (hillH * 0.44);
+    const cLevel = Math.min(hillTop + hillH - 10, bLevel + hillH * 0.32 + dropPx * 0.45);
 
     const mapHillY = (u) => {
-      if (u < emitEnd - 0.04) return eLevel;
-      if (u < emitEnd + 0.04) {
-        const t = (u - (emitEnd - 0.04)) / 0.08;
+      if (u <= L.leftDepL) return eLevel;
+      if (u < L.leftDepR) {
+        const t = (u - L.leftDepL) / Math.max(L.leftDepR - L.leftDepL, 0.008);
         return eLevel + (bLevel - eLevel) * (3 * t * t - 2 * t * t * t);
       }
-      if (u < baseEnd - 0.03) return bLevel;
-      if (u < baseEnd + 0.09) {
-        const t = (u - (baseEnd - 0.03)) / 0.12;
+      if (u <= L.rightDepL) return bLevel;
+      if (u < L.rightDepR) {
+        const t = (u - L.rightDepL) / Math.max(L.rightDepR - L.rightDepL, 0.012);
         return bLevel + (cLevel - bLevel) * (3 * t * t - 2 * t * t * t);
       }
       return cLevel;
@@ -1007,8 +1217,8 @@
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    for (let i = 0; i <= 100; i++) {
-      const u = i / 100;
+    for (let i = 0; i <= 120; i++) {
+      const u = i / 120;
       const px = slabX + u * slabW;
       const py = mapHillY(u);
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
@@ -1019,13 +1229,22 @@
       drawElectron(slabX + d.u * slabW, mapHillY(d.u) - 7, 5);
     });
 
-    ctx.fillStyle = '#cbd5e1';
     ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#cbd5e1';
     ctx.textAlign = 'left';
-    ctx.fillText(isOn ? 'B 極把門檻壓低，電子輕鬆翻過去！' : 'E–B 牆太高，電子被彈回！', slabX + 6, eLevel + 18);
+    let hillLeftMsg = 'B 極把門檻壓低，電子輕鬆翻過去！';
+    if (isCutoff) hillLeftMsg = '左牆太高，電子被彈回！';
+    else if (sol.reversed) hillLeftMsg = '反接推不動淡 N⁻ 電子，山坡還被電洞逆灌消耗';
+    else if (isThick) hillLeftMsg = '翻過左牆了，但中間平台太長，電子走不到盡頭';
+    ctx.fillText(hillLeftMsg, slabX + 6, eLevel + 18);
+
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#c084fc';
-    ctx.fillText('B–C 電場大溜滑梯 → 衝向集極 C', slabX + slabW - 6, cLevel - 10);
+    ctx.fillStyle = sol.reversed ? '#fda4af' : '#c084fc';
+    ctx.fillText(
+      sol.reversed ? '右坡超窄超陡（N⁺ 受反壓易 6 V 擊穿）' : '右坡寬廣電場大溜滑梯 → 衝向集極 C',
+      slabX + slabW - 6,
+      cLevel - 10
+    );
   }
 
   function drawMOSFET(w, h, slabX, slabY, slabW, slabH, hillTop, hillH) {
