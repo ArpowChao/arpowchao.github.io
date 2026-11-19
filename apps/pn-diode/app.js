@@ -263,15 +263,18 @@ function sceneD(dt) {
   begin();
   drawLoop(sD, 'D');
   const b = { x: 660, y: 90, w: 500, h: 480 };
-  const g = chart(b, [0, 0.7], [0, 2], [0, 0.1], [0, 0.5], '二極體兩端電壓 (V)', '電流 (mA)', '縱軸：電流(mA)，橫軸：二極體兩端電壓(V)', v => v.toFixed(1), v => v.toFixed(1));
+  // 縱軸隨最大電流自動放大（0.63 V 以上電流超過 2 mA）
+  const maxI = Math.max(sD.I, ...sD.pts.map(p => p[1]), 0);
+  const yMax = maxI <= 2 ? 2 : Math.ceil(maxI * 2) / 2, yStep = yMax <= 3 ? 0.5 : 1;
+  const g = chart(b, [0, 0.7], [0, yMax], [0, 0.1], [0, yStep], '二極體兩端電壓 (V)', '電流 (mA)', '縱軸：電流(mA)，橫軸：二極體兩端電壓(V)', v => v.toFixed(1), v => v.toFixed(1));
   ctx.save(); ctx.beginPath(); ctx.rect(b.x, b.y - 2, b.w, b.h + 4); ctx.clip();
   if (sD.cmp) {
     line(g.mx(0), g.my(0), g.mx(0.7), g.my(0.7 / 0.33), '#888', 2.5, [8, 6]);
     text('電阻（330 Ω）：直線', g.mx(0.36), g.my(0.72), 18, '#777', 'left');
   }
   sD.pts.forEach(([v, i]) => dot(g.mx(v), g.my(i), 8, '#3b7ff0'));
-  line(g.mx(sD.V), g.my(0), g.mx(sD.V), g.my(Math.min(sD.I, 2)), '#999', 1.5, [4, 4]);
-  dot(g.mx(sD.V), g.my(Math.min(sD.I, 2)), 11, C.accent, true);
+  line(g.mx(sD.V), g.my(0), g.mx(sD.V), g.my(sD.I), '#999', 1.5, [4, 4]);
+  dot(g.mx(sD.V), g.my(sD.I), 11, C.accent, true);
   ctx.restore();
   const R = sD.I > 1e-9 ? sD.V / (sD.I / 1000) : Infinity;
   infoBox(b.x + 14, b.y + 12, [['電壓', sD.V.toFixed(2) + ' V'], ['電流', fmtI(sD.I)], ['電阻 = V／I', fmtR(R), sD.I > 0.3 ? C.good : C.bad]], 270);
