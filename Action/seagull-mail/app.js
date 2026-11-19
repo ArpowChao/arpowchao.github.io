@@ -186,7 +186,7 @@
   function getWriteUrl() {
     const url = new URL(getBasePageUrl(), FALLBACK_PUBLIC_URL);
     url.searchParams.set('mode', 'write');
-    if (state.gasUrl) {
+    if (state.gasUrl && state.gasUrl !== (CFG.gasUrl || '').trim()) {
       url.searchParams.set('gas', state.gasUrl);
     }
     return url.toString();
@@ -1232,6 +1232,17 @@
     els.cardProgress.style.width = '0%';
   }
 
+  function makeEmptyHintLetter() {
+    return {
+      id: 'empty-hint',
+      timestamp: new Date().toISOString(),
+      group: GROUPS[GROUPS.length - 1].name,
+      sender: '海風小幫手',
+      avatar: 'sailor',
+      message: '目前還沒有符合條件的海鷗信喔！快掃描右下角 QR Code 或點「✉️ 寫一封信」，放飛第一隻海鷗吧！'
+    };
+  }
+
   function pickNextUnseenLetter() {
     const pool = getFilteredLetters();
     if (!pool.length) return null;
@@ -1404,8 +1415,8 @@
     }
 
     els.btnPick.addEventListener('click', () => {
-      const next = pickNextUnseenLetter();
-      if (next) openLetterModal(next, { animate: true, direction: 'next' });
+      const next = pickNextUnseenLetter() || makeEmptyHintLetter();
+      openLetterModal(next, { animate: true, direction: 'next' });
     });
 
     els.btnAuto.addEventListener('click', () => {
@@ -1413,8 +1424,8 @@
       els.btnAuto.setAttribute('aria-pressed', state.autoPlaying ? 'true' : 'false');
       els.btnAuto.textContent = state.autoPlaying ? '⏸ 暫停輪播' : '🔄 自動輪播';
       if (state.autoPlaying && els.letterModal.hidden) {
-        const next = pickNextUnseenLetter();
-        if (next) openLetterModal(next, { animate: true, direction: 'next' });
+        const next = pickNextUnseenLetter() || makeEmptyHintLetter();
+        openLetterModal(next, { animate: true, direction: 'next' });
       }
     });
 

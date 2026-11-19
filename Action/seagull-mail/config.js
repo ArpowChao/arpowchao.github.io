@@ -17,7 +17,7 @@
     publicUrl: '',
 
     // 貼上 Google Apps Script Web App 部署網址（以 /exec 結尾），留空為展示模式
-    gasUrl: '',
+    gasUrl: 'https://script.google.com/macros/s/AKfycbyucTpmsBMFBM8Q6H1rj6j6SHQLOQL7JejsZBGJy9NGfXgwOHid_ilag0jkLEheM5IjJQ/exec',
 
     // 大螢幕背景輪詢間隔（毫秒）；建議 >= 10000 避免超過 GAS 免費配額
     pollIntervalMs: 12000,
