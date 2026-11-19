@@ -19,8 +19,8 @@
     // 貼上 Google Apps Script Web App 部署網址（以 /exec 結尾），留空為展示模式
     gasUrl: 'https://script.google.com/macros/s/AKfycbyucTpmsBMFBM8Q6H1rj6j6SHQLOQL7JejsZBGJy9NGfXgwOHid_ilag0jkLEheM5IjJQ/exec',
 
-    // 大螢幕背景輪詢間隔（毫秒）；建議 >= 10000 避免超過 GAS 免費配額
-    pollIntervalMs: 12000,
+    // 大螢幕背景輪詢間隔（毫秒）；搭配 GAS 20 秒快取可設為 6000 ms 即時偵測新信
+    pollIntervalMs: 6000,
 
     // 自動輪播時每封明信片停留秒數
     autoRotateSec: 9,

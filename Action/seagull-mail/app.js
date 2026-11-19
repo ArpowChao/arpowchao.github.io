@@ -5,6 +5,7 @@
   const FALLBACK_PUBLIC_URL = 'https://arpowchao.github.io/Action/seagull-mail/';
   const LS_GAS_KEY = 'seagull_gas_url_v1';
   const LS_DEMO_KEY = 'seagull_demo_letters_v1';
+  const LS_SYNC_PING = 'seagull_gas_ping_v1';
   const LS_CLIENT_ID = 'seagull_client_id_v1';
 
   const DEFAULT_GROUPS = [
@@ -122,7 +123,9 @@
     hoveredBird: null,
     rafId: null,
     lastFrameMs: performance.now(),
-    pollTimer: null
+    pollTimer: null,
+    fetchPromise: null,
+    lastFetchMs: 0
   };
 
   /* -------------------- Utilities -------------------- */
@@ -374,7 +377,7 @@
     state.totalCount = Math.max(0, Number(newTotal) || 0);
     if (!els.letterCount) return;
     els.letterCount.textContent = state.totalCount.toLocaleString('zh-TW');
-    if (state.totalCount > prev && prev > 0) {
+    if (state.totalCount > prev) {
       els.letterCount.classList.remove('bump');
       void els.letterCount.offsetWidth;
       els.letterCount.classList.add('bump');
@@ -413,37 +416,48 @@
       const demo = loadDemoStore();
       mergeIncomingLetters(demo, isInitial, demo.length);
       setConnectionBadge('demo', '展示模式（點此接 GAS）');
+      state.lastFetchMs = Date.now();
       return;
     }
 
-    try {
-      const url = new URL(state.gasUrl);
-      url.searchParams.set('action', 'list');
-      if (!isInitial && state.lastTimestamp) {
-        url.searchParams.set('since', state.lastTimestamp);
-      }
-      const res = await fetch(url.toString(), { method: 'GET', cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      if (!data || data.ok === false) {
-        throw new Error((data && data.error) || 'GAS 回應格式錯誤');
-      }
+    if (state.fetchPromise) return state.fetchPromise;
 
-      if (data.eventTitle && els.eventTitle) {
-        els.eventTitle.textContent = data.eventTitle;
-      }
+    state.fetchPromise = (async () => {
+      try {
+        const url = new URL(state.gasUrl);
+        url.searchParams.set('action', 'list');
+        if (!isInitial && state.lastTimestamp) {
+          url.searchParams.set('since', state.lastTimestamp);
+        }
+        url.searchParams.set('_t', String(Date.now()));
+        const res = await fetch(url.toString(), { method: 'GET' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!data || data.ok === false) {
+          throw new Error((data && data.error) || 'GAS 回應格式錯誤');
+        }
 
-      const incoming = !isInitial && Array.isArray(data.newItems) ? data.newItems : (data.items || []);
-      mergeIncomingLetters(incoming, isInitial, data.total);
-      setConnectionBadge('live', 'GAS 即時連線中');
-    } catch (err) {
-      console.warn('Seagull Mail GAS fetch failed:', err);
-      if (isInitial && state.letters.length === 0) {
-        const fallback = loadDemoStore();
-        mergeIncomingLetters(fallback, true, fallback.length);
+        if (data.eventTitle && els.eventTitle) {
+          els.eventTitle.textContent = data.eventTitle;
+        }
+
+        const incoming = !isInitial && Array.isArray(data.newItems) ? data.newItems : (data.items || []);
+        mergeIncomingLetters(incoming, isInitial, data.total);
+        setConnectionBadge('live', 'GAS 即時連線中');
+      } catch (err) {
+        console.warn('Seagull Mail GAS fetch failed:', err);
+        if (isInitial && state.letters.length === 0) {
+          const fallback = loadDemoStore();
+          mergeIncomingLetters(fallback, true, fallback.length);
+        }
+        setConnectionBadge('error', 'GAS 連線重試中');
+      } finally {
+        state.lastFetchMs = Date.now();
+        state.fetchPromise = null;
       }
-      setConnectionBadge('error', 'GAS 連線重試中');
-    }
+    })();
+
+    return state.fetchPromise;
   }
 
   async function submitLetter(payload) {
@@ -474,6 +488,9 @@
     if (data.status === 'approved' && data.item) {
       mergeIncomingLetters([data.item], false, data.total);
     }
+    try {
+      localStorage.setItem(LS_SYNC_PING, String(Date.now()));
+    } catch (err) { /* ignore storage errors */ }
     return data;
   }
 
@@ -1233,13 +1250,16 @@
   }
 
   function makeEmptyHintLetter() {
+    const filteredOut = state.letters.length > 0 && state.activeFilter !== 'all_filter';
     return {
       id: 'empty-hint',
       timestamp: new Date().toISOString(),
       group: GROUPS[GROUPS.length - 1].name,
       sender: '海風小幫手',
       avatar: 'sailor',
-      message: '目前還沒有符合條件的海鷗信喔！快掃描右下角 QR Code 或點「✉️ 寫一封信」，放飛第一隻海鷗吧！'
+      message: filteredOut
+        ? `「${state.activeFilter}」目前還沒有信件，但其他組別已有 ${state.letters.length} 封信！點左上角「全部組別」就能看到。`
+        : '目前還沒有符合條件的海鷗信喔！快掃描右下角 QR Code 或點「✉️ 寫一封信」，放飛第一隻海鷗吧！'
     };
   }
 
@@ -1375,10 +1395,20 @@
     if (state.view === 'write') {
       closeLetterModal();
       buildWritePickers();
+      if (!els.writeSuccess.hidden) {
+        els.inputMessage.value = '';
+        els.charCount.textContent = `0 / ${MAX_LEN}`;
+        els.charCount.classList.remove('warn');
+      }
+      els.writeSuccess.hidden = true;
+      els.writeForm.hidden = false;
       els.writeFeedback.hidden = true;
     } else {
       resizeCanvas();
       renderQrCode();
+      if (state.lastFetchMs > 0 && state.gasUrl) {
+        refreshLetters(false);
+      }
     }
   }
 
@@ -1414,20 +1444,37 @@
       });
     }
 
-    els.btnPick.addEventListener('click', () => {
-      const next = pickNextUnseenLetter() || makeEmptyHintLetter();
-      openLetterModal(next, { animate: true, direction: 'next' });
+    els.btnPick.addEventListener('click', async () => {
+      let next = pickNextUnseenLetter();
+      if (!next && state.gasUrl) {
+        await refreshLetters(false);
+        next = pickNextUnseenLetter();
+      }
+      openLetterModal(next || makeEmptyHintLetter(), { animate: true, direction: 'next' });
     });
 
-    els.btnAuto.addEventListener('click', () => {
+    els.btnAuto.addEventListener('click', async () => {
       state.autoPlaying = !state.autoPlaying;
       els.btnAuto.setAttribute('aria-pressed', state.autoPlaying ? 'true' : 'false');
       els.btnAuto.textContent = state.autoPlaying ? '⏸ 暫停輪播' : '🔄 自動輪播';
       if (state.autoPlaying && els.letterModal.hidden) {
-        const next = pickNextUnseenLetter() || makeEmptyHintLetter();
-        openLetterModal(next, { animate: true, direction: 'next' });
+        let next = pickNextUnseenLetter();
+        if (!next && state.gasUrl) {
+          await refreshLetters(false);
+          next = pickNextUnseenLetter();
+        }
+        openLetterModal(next || makeEmptyHintLetter(), { animate: true, direction: 'next' });
       }
     });
+
+    const counterTicket = els.letterCount ? els.letterCount.closest('.counter-ticket') : null;
+    if (counterTicket) {
+      counterTicket.style.cursor = 'pointer';
+      counterTicket.title = '點此立即向 Google 試算表重新同步最新信件';
+      counterTicket.addEventListener('click', () => {
+        refreshLetters(false);
+      });
+    }
 
     els.btnOpenWrite.addEventListener('click', () => {
       setView('write');
@@ -1592,12 +1639,23 @@
       els.inputMessage.focus();
     });
 
-    // Cross-tab sync in Demo Mode
+    // Cross-tab sync in Demo Mode and Live GAS Mode
     window.addEventListener('storage', (e) => {
       if (e.key === LS_DEMO_KEY && !state.gasUrl) {
         refreshLetters(false);
+      } else if (e.key === LS_SYNC_PING && state.gasUrl) {
+        refreshLetters(false);
       }
     });
+
+    // Immediate refresh when returning to the stage tab/window
+    const triggerVisibleSync = () => {
+      if (!document.hidden && state.view === 'stage' && state.gasUrl && Date.now() - state.lastFetchMs > 2000) {
+        refreshLetters(false);
+      }
+    };
+    document.addEventListener('visibilitychange', triggerVisibleSync);
+    window.addEventListener('focus', triggerVisibleSync);
 
     // Keyboard shortcuts on stage
     document.addEventListener('keydown', (e) => {
