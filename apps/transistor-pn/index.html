@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f2f5f4">
+  <meta name="description" content="簡潔直覺的半導體物理互動圖解：PN 接面單向導通、NPN 電晶體 B 極如何控制 E→C 導通，以及 NPN 場效電晶體 G 極電場開闢通道。">
+  <title>PN 接面與 NPN 電晶體導通圖解 | Physics Lab</title>
+  <link rel="icon" href="../../assets/img/apps/transistor-pn.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="physics.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html" class="back-link">← Physics Lab</a>
+    <span>半導體物理直覺圖解 · PN Junction / NPN BJT / N-MOSFET</span>
+    <button id="theme-toggle" type="button" class="theme-btn" aria-pressed="false">🌙 深色投影</button>
+  </header>
+
+  <main>
+    <header class="hero">
+      <div>
+        <h1>PN 接面與 NPN 電晶體：控制導通的物理真相</h1>
+        <p>點選上方元件與「開啟／關閉」按鈕，直接看<strong>空乏區阻障牆</strong>與<strong>電子流</strong>如何受控制端（B 極或 G 極）左右。</p>
+      </div>
+    </header>
+
+    <div class="mode-tabs" role="tablist" aria-label="元件類型切換">
+      <button type="button" class="mode-tab" role="tab" data-mode="pn" aria-selected="false">
+        <strong>① PN 接面（二極體基礎）</strong>
+        <span>為什麼只能單向導通？看中間「阻障牆」變寬或消失</span>
+      </button>
+      <button type="button" class="mode-tab active" role="tab" data-mode="bjt" aria-selected="true">
+        <strong>② NPN 電晶體（B 極控制導通）</strong>
+        <span>B 極如何消除阻障、讓 99% 電子衝過薄 P 區進入 C 極</span>
+      </button>
+      <button type="button" class="mode-tab" role="tab" data-mode="mosfet" aria-selected="false">
+        <strong>③ NPN 場效電晶體（電場開闢通道）</strong>
+        <span>G 極絕緣不導電，如何靠電場在 P 區表面吸出一座藍色「電子橋」</span>
+      </button>
+    </div>
+
+    <section class="control-bar" aria-label="控制面板與目前狀態">
+      <div class="control-top-row">
+        <div id="state-buttons" class="state-buttons" role="group" aria-label="一鍵切換開關狀態"></div>
+        <button id="btn-play-pause" type="button" class="play-btn">⏸ 暫停動畫</button>
+      </div>
+
+      <div class="sliders-row">
+        <div class="slider-box" id="primary-slider-box">
+          <div class="slider-head">
+            <span id="primary-label">B 極控制電壓 V<sub>BE</sub></span>
+            <span id="primary-val" class="slider-val">+0.72 V</span>
+          </div>
+          <input id="primary-slider" type="range" min="0" max="0.82" step="0.01" value="0.72">
+          <div class="slider-ends">
+            <span id="primary-min-lbl">0.0 V（關閉）</span>
+            <span id="primary-max-lbl">0.82 V（導通）</span>
+          </div>
+        </div>
+
+        <div class="slider-box" id="secondary-slider-box">
+          <div class="slider-head">
+            <span id="secondary-label">中間 P 區（基極）厚度</span>
+            <span id="secondary-val" class="slider-val">0.8 μm（極薄）</span>
+          </div>
+          <input id="secondary-slider" type="range" min="0.4" max="4.5" step="0.1" value="0.8">
+          <div class="slider-ends">
+            <span id="secondary-min-lbl">極薄（電子直接穿過）</span>
+            <span id="secondary-max-lbl">過厚（半途複合失效）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-strip" aria-live="polite">
+        <div class="status-left">
+          <span id="status-badge" class="status-badge on">🟢 導通 ON</span>
+          <span id="status-text" class="status-text">B 極消除 E–B 阻障牆，射極電子穿過極薄 P 區被 C 極吸走！</span>
+        </div>
+        <div id="status-readout" class="status-readout">I_C = 47.2 mA ｜ I_B = 0.26 mA</div>
+      </div>
+    </section>
+
+    <section class="stage-card" aria-label="半導體導通物理動態圖解">
+      <canvas id="sim-canvas" aria-label="微觀載子流動與電子位能山丘同步對照畫布"></canvas>
+      <div class="stage-legend">
+        <div class="legend-items">
+          <span><i class="dot e"></i>自由電子 (−)</span>
+          <span><i class="dot h"></i>電洞 (+)</span>
+          <span><i class="dot wall"></i>空乏區阻障牆（無載子絕緣帶）</span>
+          <span><i class="dot bridge"></i>感應 N 型通道橋樑</span>
+        </div>
+        <span>圖中所有綠色箭頭皆代表「實際電子前進方向」與 💡 負載燈泡連動</span>
+      </div>
+    </section>
+
+    <section id="step-cards" class="step-cards" aria-label="三步驟物理原理解析"></section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#112744"/>
+      <stop offset="65%" stop-color="#071121"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+    <linearGradient id="nEmitter" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="pBase" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#e11d48" stop-opacity="0.22"/>
+    </linearGradient>
+    <linearGradient id="nCollector" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.30"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#38bdf8" stroke-width="0.6" stroke-opacity="0.12"/>
+    </pattern>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="800" height="480" fill="url(#bg)"/>
+  <rect width="800" height="480" fill="url(#grid)"/>
+
+  <text x="42" y="54" fill="#38bdf8" font-family="monospace" font-size="14" letter-spacing="3">SEMICONDUCTOR PHYSICS · PN JUNCTION &amp; NPN CONTROL</text>
+
+  <g transform="translate(70, 95)">
+    <rect x="0" y="0" width="210" height="190" rx="8" fill="url(#nEmitter)" stroke="#38bdf8" stroke-width="1.8"/>
+    <rect x="210" y="0" width="90" height="190" fill="url(#pBase)" stroke="#fb7185" stroke-width="1.8"/>
+    <rect x="300" y="0" width="360" height="190" rx="8" fill="url(#nCollector)" stroke="#38bdf8" stroke-width="1.8"/>
+
+    <rect x="196" y="2" width="28" height="186" fill="#f59e0b" fill-opacity="0.16" stroke="#fbbf24" stroke-dasharray="4 4" stroke-width="1.2"/>
+    <rect x="275" y="2" width="120" height="186" fill="#a855f7" fill-opacity="0.15" stroke="#c084fc" stroke-dasharray="5 4" stroke-width="1.3"/>
+
+    <rect x="-14" y="65" width="16" height="60" rx="3" fill="#94a3b8"/>
+    <text x="-28" y="100" fill="#e2e8f0" font-family="monospace" font-size="18" font-weight="bold" text-anchor="middle">E</text>
+
+    <rect x="225" y="-14" width="60" height="16" rx="3" fill="#fb7185"/>
+    <text x="255" y="-22" fill="#fda4af" font-family="monospace" font-size="16" font-weight="bold" text-anchor="middle">B 極 (V_BE 控制障壁)</text>
+
+    <rect x="658" y="65" width="16" height="60" rx="3" fill="#94a3b8"/>
+    <text x="690" y="100" fill="#e2e8f0" font-family="monospace" font-size="18" font-weight="bold" text-anchor="middle">C</text>
+
+    <text x="100" y="34" fill="#7dd3fc" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">N⁺ 射極 (Emitter)</text>
+    <text x="255" y="34" fill="#fda4af" font-family="sans-serif" font-size="15" font-weight="bold" text-anchor="middle">薄 P 基極</text>
+    <text x="515" y="34" fill="#7dd3fc" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">N 集極 (Collector)</text>
+
+    <g font-family="monospace" font-size="12" text-anchor="middle" opacity="0.85">
+      <circle cx="288" cy="65" r="7" fill="none" stroke="#fb7185" stroke-width="1.3"/>
+      <text x="288" y="69" fill="#fb7185">-</text>
+      <circle cx="288" cy="145" r="7" fill="none" stroke="#fb7185" stroke-width="1.3"/>
+      <text x="288" y="149" fill="#fb7185">-</text>
+
+      <circle cx="332" cy="65" r="7" fill="none" stroke="#38bdf8" stroke-width="1.3"/>
+      <text x="332" y="69" fill="#38bdf8">+</text>
+      <circle cx="332" cy="145" r="7" fill="none" stroke="#38bdf8" stroke-width="1.3"/>
+      <text x="332" y="149" fill="#38bdf8">+</text>
+      <circle cx="370" cy="65" r="7" fill="none" stroke="#38bdf8" stroke-width="1.3"/>
+      <text x="370" y="69" fill="#38bdf8">+</text>
+      <circle cx="370" cy="145" r="7" fill="none" stroke="#38bdf8" stroke-width="1.3"/>
+      <text x="370" y="149" fill="#38bdf8">+</text>
+    </g>
+
+    <g filter="url(#glow)">
+      <path d="M 35 105 L 210 105 C 245 105 268 104 300 104 L 620 104" fill="none" stroke="#22d3ee" stroke-width="3.2" stroke-dasharray="10 6"/>
+      <polygon points="628,104 614,97 614,111" fill="#22d3ee"/>
+      <path d="M 245 104 Q 255 68 255 12" fill="none" stroke="#fda4af" stroke-width="2" stroke-dasharray="4 4"/>
+      <polygon points="255,6 250,16 260,16" fill="#fda4af"/>
+    </g>
+
+    <g fill="#67e8f9" filter="url(#glow)">
+      <circle cx="65" cy="92" r="5"/>
+      <circle cx="120" cy="116" r="5"/>
+      <circle cx="170" cy="98" r="5"/>
+      <circle cx="238" cy="105" r="5.5"/>
+      <circle cx="315" cy="104" r="5.5"/>
+      <circle cx="420" cy="95" r="5.5"/>
+      <circle cx="495" cy="112" r="5.5"/>
+      <circle cx="575" cy="103" r="5.5"/>
+    </g>
+
+    <text x="480" y="166" fill="#67e8f9" font-family="sans-serif" font-size="13.5" text-anchor="middle">B-C 強電場瀑布掃掠：~99% 電子直奔集極 (I_C = β I_B)</text>
+  </g>
+
+  <g transform="translate(460, 315)">
+    <rect x="0" y="0" width="295" height="125" rx="10" fill="#071529" stroke="#1e3a5f" stroke-width="1.5"/>
+    <text x="16" y="22" fill="#94a3b8" font-family="monospace" font-size="11.5">CONDUCTION BAND E_c(x)</text>
+    <path d="M 20 82 L 75 82 C 92 82 96 36 112 36 L 146 36 C 165 36 175 106 200 106 L 275 106" fill="none" stroke="#475569" stroke-width="1.6" stroke-dasharray="4 4"/>
+    <path d="M 20 82 L 75 82 C 92 82 96 58 112 58 L 146 58 C 168 58 178 106 202 106 L 275 106" fill="none" stroke="#5eead4" stroke-width="2.8" filter="url(#glow)"/>
+    <circle cx="105" cy="58" r="4" fill="#67e8f9"/>
+    <circle cx="176" cy="86" r="4" fill="#67e8f9"/>
+    <text x="108" y="49" fill="#fbbf24" font-family="sans-serif" font-size="11" text-anchor="middle">V_BE 降障壁</text>
+    <text x="230" y="95" fill="#c084fc" font-family="sans-serif" font-size="11" text-anchor="middle">B-C 位能瀑布</text>
+  </g>
+
+  <text x="42" y="388" fill="#5eead4" font-family="Georgia, serif" font-size="36" font-weight="bold" letter-spacing="3">TRANSISTOR</text>
+  <text x="42" y="424" fill="#e2e8f0" font-family="sans-serif" font-size="19" font-weight="600">PN 接面與 NPN 電晶體導通物理實驗室</text>
+  <text x="42" y="450" fill="#94a3b8" font-family="monospace" font-size="13">PN Junction · NPN BJT (E-B-C) · N-MOSFET (S-G-D)</text>
+</svg>
