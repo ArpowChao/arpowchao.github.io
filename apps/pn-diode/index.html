@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIODE 二極體單行道實驗室</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="home" href="/" title="回首頁">⌂</a>
+  <h1>DIODE 二極體單行道實驗室</h1>
+  <nav class="tabs" id="tabs">
+    <button data-scene="0">① 電阻 V–I</button>
+    <button data-scene="1">② 二極體 V–I</button>
+    <button data-scene="2">③ 工作曲線</button>
+    <button data-scene="3">④ PN 動畫</button>
+    <button data-scene="4">⑤ 發光二極體</button>
+    <button data-scene="5">⑥ 電路中的 0.7 V</button>
+  </nav>
+  <button class="present-btn" id="fsBtn" title="全螢幕（F）">⛶ 上課全螢幕</button>
+</header>
+
+<div class="pbar" id="pbar">
+  <button id="pPrev" title="上一個（←）">◀</button>
+  <span id="pName"></span>
+  <button id="pNext" title="下一個（→）">▶</button>
+  <button id="pPanel" title="顯示／隱藏控制（C）">⚙ 控制</button>
+  <button id="pExit" title="離開全螢幕（Esc）">✕</button>
+</div>
+<main class="stage">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <aside class="panel">
+    <!-- ① 電阻 -->
+    <section class="ctrl" data-for="0">
+      <h2>電阻的電壓與電流</h2>
+      <label>電源電壓 <b id="r_vLbl">2.00 V</b>
+        <input type="range" id="r_v" min="0" max="4" step="0.05" value="2"></label>
+      <label>電阻 R
+        <select id="r_R">
+          <option value="220">220 Ω</option>
+          <option value="330" selected>330 Ω</option>
+          <option value="470">470 Ω</option>
+          <option value="1000">1000 Ω</option>
+        </select></label>
+      <div class="btns">
+        <button id="r_rec">記錄這一點</button>
+        <button id="r_auto">自動量一輪</button>
+        <button id="r_clr" class="ghost">清除</button>
+      </div>
+      <div class="q">
+        <p class="qt">電流和電壓呈現什麼關係？</p>
+        <button class="reveal" data-ans="正比：電壓加倍，電流也加倍（通過原點的直線）">看答案</button>
+        <p class="qt">斜率越大（越傾斜），則 ___ 越 ___</p>
+        <button class="reveal" data-ans="斜率 = I／V = 1／R → 電阻越小">看答案</button>
+      </div>
+      <p class="tip">換不同電阻各量一輪，比較直線的傾斜程度。</p>
+    </section>
+
+    <!-- ② 二極體 V-I -->
+    <section class="ctrl" data-for="1">
+      <h2>二極體的電壓與電流</h2>
+      <label>二極體兩端電壓 <b id="d_vLbl">0.30 V</b>
+        <input type="range" id="d_v" min="0" max="0.64" step="0.01" value="0.3"></label>
+      <div class="btns">
+        <button id="d_rec">記錄這一點</button>
+        <button id="d_class">載入課堂數據</button>
+        <button id="d_clr" class="ghost">清除</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="d_cmp"> 疊上一條電阻直線比較</label>
+      <div class="q">
+        <p class="qt">電壓與電流的實驗中，你看到了什麼？</p>
+        <button class="reveal" data-ans="不是直線！約 0.5 V 以前幾乎沒有電流，超過後電流急速變大">看答案</button>
+        <p class="qt">電壓越大 → 電流越 ___ → 電阻（V／I）越 ___</p>
+        <button class="reveal" data-ans="電流越大（急速變大）→ 電阻越小">看答案</button>
+      </div>
+      <p class="tip">看右上角的「電阻 = V／I」，電壓一點點增加，電阻掉得很快。</p>
+    </section>
+
+    <!-- ③ 工作曲線 -->
+    <section class="ctrl" data-for="2">
+      <h2>二極體工作曲線</h2>
+      <label>二極體兩端電壓 <b id="c_vLbl">0.60 V</b>
+        <input type="range" id="c_s" min="-1" max="1" step="0.002" value="0.75"></label>
+      <p class="tip">滑桿左半邊是逆向（0 ～ −45 V），右半邊是順向（0 ～ 0.8 V），刻度不同。</p>
+      <div class="btns">
+        <button data-cv="-0.5">逆向 −20 V</button>
+        <button data-cv="-0.96">逆向 −43 V</button>
+        <button data-cv="0.5">順向 0.4 V</button>
+        <button data-cv="0.875">順向 0.7 V</button>
+      </div>
+      <div class="q two">
+        <div>
+          <p class="qt">逆向偏壓</p>
+          <p>電壓越 ___</p><p>電流越 ___</p><p>電阻越 ___</p>
+          <button class="reveal" data-ans="電壓越大、電流幾乎是 0（不變）、電阻越大">看答案</button>
+        </div>
+        <div>
+          <p class="qt">順向偏壓</p>
+          <p>電壓越 ___</p><p>電流越 ___</p><p>電阻越 ___</p>
+          <button class="reveal" data-ans="電壓越大、電流越大、電阻越小">看答案</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ PN 動畫 -->
+    <section class="ctrl" data-for="3">
+      <h2>PN 二極體裡發生什麼事？</h2>
+      <div class="seg" id="pn_mode">
+        <button data-m="off">不接電池</button>
+        <button data-m="fwd">順向偏壓</button>
+        <button data-m="rev">逆向偏壓</button>
+      </div>
+      <label>電池電壓 <b id="pn_vLbl">0.70 V</b>
+        <input type="range" id="pn_v" min="0" max="0.8" step="0.01" value="0.7"></label>
+      <label>動畫速度 <b id="pn_spLbl">1.0×</b>
+        <input type="range" id="pn_sp" min="0.2" max="2" step="0.1" value="1"></label>
+      <label class="chk"><input type="checkbox" id="pn_cur" checked> 顯示電流方向</label>
+      <label class="chk"><input type="checkbox" id="pn_wire"> 顯示導線中的電子</label>
+      <label class="chk"><input type="checkbox" id="pn_sign" checked> 粒子上標示 ＋／－</label>
+      <div class="btns">
+        <button id="pn_pause">暫停</button>
+        <button id="pn_reset" class="ghost">粒子重新排好</button>
+      </div>
+      <div class="explain" id="pn_explain"></div>
+      <div class="q">
+        <p class="qt">為什麼二極體可以讓電流「單方向」通過？</p>
+        <button class="reveal" data-ans="順向：電池把電洞、電子都推向中間，越過交界相遇，電流一直流（阻礙小、電阻小）。逆向：電池把電洞、電子都拉向兩端，中間沒有能移動的電荷，電流幾乎是 0（阻礙大、電阻大）。">看答案</button>
+      </div>
+    </section>
+
+    <!-- ⑤ LED -->
+    <section class="ctrl" data-for="4">
+      <h2>發光二極體 LED</h2>
+      <div class="seg" id="led_mode">
+        <button data-m="fwd">順向偏壓</button>
+        <button data-m="rev">逆向偏壓</button>
+      </div>
+      <label>LED 顏色
+        <select id="led_col">
+          <option value="red">紅光（約 1.8 V 亮）</option>
+          <option value="yellow">黃光（約 2.0 V 亮）</option>
+          <option value="green">綠光（約 2.2 V 亮）</option>
+          <option value="blue">藍光（約 2.8 V 亮）</option>
+        </select></label>
+      <label>電池電壓 <b id="led_vLbl">1.80 V</b>
+        <input type="range" id="led_v" min="0" max="3.4" step="0.02" value="1.8"></label>
+      <label>動畫速度 <b id="led_spLbl">1.0×</b>
+        <input type="range" id="led_sp" min="0.2" max="2" step="0.1" value="1"></label>
+      <div class="explain" id="led_explain"></div>
+      <div class="q">
+        <p class="qt">LED 的光是從哪裡來的？</p>
+        <button class="reveal" data-ans="電洞和電子在 P、N 交界相遇（結合）時，把多出來的能量變成光放出來。">看答案</button>
+        <p class="qt">LED 接反了會亮嗎？</p>
+        <button class="reveal" data-ans="不會。逆向偏壓時電洞、電子被拉開，不會相遇，所以沒有光。">看答案</button>
+      </div>
+    </section>
+
+    <!-- ⑥ 電路 -->
+    <section class="ctrl" data-for="5">
+      <h2>電路中的二極體</h2>
+      <label>電源電壓 <b id="k_vLbl">5.0 V</b>
+        <input type="range" id="k_v" min="0" max="9" step="0.1" value="5"></label>
+      <div class="seg" id="k_dir">
+        <button data-d="fwd">二極體順接</button>
+        <button data-d="rev">二極體反接</button>
+      </div>
+      <label>串聯電阻
+        <select id="k_R">
+          <option value="100">100 Ω</option>
+          <option value="470" selected>470 Ω</option>
+          <option value="1000">1000 Ω</option>
+        </select></label>
+      <div class="q">
+        <p class="qt">電源 5 V，二極體導通後，電阻分到多少電壓？</p>
+        <button class="reveal" data-ans="5 V − 0.7 V ≈ 4.3 V：二極體一導通，兩端電壓差不多固定在 0.7 V 左右">看答案</button>
+        <p class="qt">把電源調到 9 V，二極體兩端電壓變多少？</p>
+        <button class="reveal" data-ans="還是差不多 0.7 V！多出來的電壓幾乎都給了電阻">看答案</button>
+      </div>
+      <p class="tip">反接時看看電壓都跑到哪裡去了。</p>
+    </section>
+  </aside>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年11月19日"
+    entry: "新增「DIODE 二極體單行道實驗室」：不用空乏區，以電洞、電子被電池「推近／拉開」的粒子動畫說明二極體單向導電；六個場景依序比較電阻與二極體的 V–I 實驗（可載入課堂數據）、工作曲線（順向、逆向、崩潰）、PN 動畫（接觸前各自電中性→接觸後 P 型帶負電、N 型帶正電→順向／逆向偏壓）、LED 發光，以及電路中「5 V − 0.7 V = 4.3 V」；支援上課全螢幕。"
   - date: "2026年11月18日"
     entry: "「SPIN 投球旋轉實驗室」與「Pitcher's Baseball simulation」合併：直接輸入 PitchLab 的球速、轉速、轉軸（幾點鐘）與陀螺角，自動換算旋轉軸、啟用中轉速與效率（效率＝cos 陀螺角），並和影片實測對照；新增「轉軸與陀螺角」互動說明、VPython 3D 球場三顆球同場比較，以及可拖曳小視窗調參數的全螢幕模式。"
   - date: "2026年10月26日"
@@ -61,6 +63,12 @@ changelog:
     entry: "為首頁增加了淺色/深色模式切換功能。"
 
 projects:
+  - title: "DIODE 二極體單行道實驗室"
+    image: "/assets/img/apps/pn-diode.svg"
+    description: "不用空乏區也能看懂二極體：P、N 接觸後 P 型帶負電、N 型帶正電；順向偏壓時電池把電洞、電子推向中間相遇而導通，逆向時拉向兩端而不通。從電阻與二極體的 V–I 實驗、工作曲線、PN 粒子動畫、LED 發光到電路中的 0.7 V，一鍵上課全螢幕。"
+    url: "/apps/pn-diode/index.html"
+    category: "現代物理"
+    tags: ["Semiconductor", "Diode", "LED", "Physics", "Interactive"]
   - title: "CANNON 牛頓大砲與軌道誕生實驗室"
     image: "/assets/img/apps/newton-cannon.svg"
     description: "重現牛頓 1687《自然哲學的數學原理》高山大砲思想實驗與 Reel 五發連射：從低速墜地、跨洲弧線，到第一宇宙速度圓軌道（7.50 km/s 永遠下墜卻永不落地）、克卜勒橢圓軌道與第二宇宙速度星際逃逸，結合地球曲率 8 km 落差 5 m 放大鏡與能量相圖。"
