@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#62b6ea">
+  <meta name="description" content="活動與專題互動區：海風專題信箱（Seagull Mail）結合日系海邊插畫舞台與 Google Apps Script 即時留言牆。">
+  <title>Action 互動專區｜海風專題信箱</title>
+  <link rel="icon" href="seagull-mail/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a354d;
+      --paper: #fffdf7;
+      --sand: #fdf3df;
+      --sky-top: #3c99dc;
+      --sky-mid: #8dd0f5;
+      --coral: #e85d4a;
+      --blue: #2b7de9;
+      --teal: #0d9488;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Zen Maru Gothic", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 52%, var(--sand) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 20px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .waves-bg {
+      position: fixed;
+      inset: auto 0 0 0;
+      height: 140px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.45) 0 42%, transparent 43%) 0 0 / 80px 40px repeat-x,
+        linear-gradient(180deg, #2d87c8 0%, #1d5d96 100%);
+      border-top: 2px solid var(--ink);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 920px;
+      position: relative;
+      z-index: 1;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .pill-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 rgba(26, 53, 77, 0.2);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+    .pill-link:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 rgba(26, 53, 77, 0.22);
+    }
+    .hero-card {
+      background: var(--paper);
+      border: 2.5px solid var(--ink);
+      border-radius: 22px;
+      padding: 28px 30px;
+      box-shadow: 7px 7px 0 rgba(26, 53, 77, 0.18);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 10px;
+      background: repeating-linear-gradient(
+        135deg,
+        #d94862 0 18px,
+        #fffdf7 18px 26px,
+        #2b7de9 26px 44px,
+        #fffdf7 44px 52px
+      );
+      border-bottom: 2px solid var(--ink);
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 12px;
+      border: 1.5px solid var(--ink);
+      border-radius: 999px;
+      background: #e0f2fe;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    h1 {
+      margin: 12px 0 8px;
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .lead {
+      margin: 0;
+      color: #415b73;
+      font-size: 15.5px;
+      line-height: 1.65;
+    }
+    .grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    .app-card {
+      background: var(--paper);
+      border: 2.5px solid var(--ink);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 6px 6px 0 rgba(26, 53, 77, 0.18);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .app-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .app-head img {
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+    }
+    .app-head h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .app-head p {
+      margin: 3px 0 0;
+      font-size: 13px;
+      color: #4a657d;
+    }
+    .app-desc {
+      margin: 0;
+      font-size: 14.5px;
+      line-height: 1.65;
+      color: #324c63;
+      flex: 1;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      border: 2px solid var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14.5px;
+      box-shadow: 3px 3px 0 rgba(26, 53, 77, 0.2);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 rgba(26, 53, 77, 0.22);
+    }
+    .btn-primary {
+      background: var(--coral);
+      color: #fffdf7;
+    }
+    .btn-secondary {
+      background: #e0f2fe;
+      color: var(--ink);
+    }
+    .btn-ghost {
+      background: var(--paper);
+      color: var(--ink);
+    }
+  </style>
+</head>
+<body>
+  <div class="waves-bg" aria-hidden="true"></div>
+  <main class="wrap">
+    <nav class="topbar" aria-label="頁首導覽">
+      <a href="../index.html" class="pill-link">← 回到主站首頁</a>
+      <span class="pill-link" style="background:#fef3c7;">Action 互動專區</span>
+    </nav>
+
+    <section class="hero-card">
+      <span class="eyebrow">SEASIDE INTERACTIVE WALL · GOOGLE APPS SCRIPT</span>
+      <h1>海風專區 · 活動與專題互動工具</h1>
+      <p class="lead">專為專題成果發表會、課堂交流與開放式留言牆設計的互動網頁應用，結合插畫動態舞台與 Google 試算表免伺服器後端。</p>
+
+      <div class="grid">
+        <article class="app-card">
+          <div class="app-head">
+            <img src="seagull-mail/favicon.svg" alt="海鷗送信圖示">
+            <div>
+              <h2>海風專題信箱｜Seagull Mail</h2>
+              <p>日系海邊插畫 ・ 專題留言牆</p>
+            </div>
+          </div>
+          <p class="app-desc">
+            觀眾掃描右下角 QR Code 挑選專屬海鷗寄出給各專題組的祝福或提問；海鷗銜著彩色航空信封飛過湘南海濱與江之電海岸線，點擊海鷗或啟動自動輪播就能投影大字明信片。內建 Demo 模式，亦可 5 分鐘接上 Google Apps Script 即時同步試算表。
+          </p>
+          <div class="actions">
+            <a href="seagull-mail/index.html" class="btn btn-primary">🌊 開啟投影大螢幕端</a>
+            <a href="seagull-mail/index.html?mode=write" class="btn btn-secondary">✉️ 直接前往寫信頁</a>
+            <a href="seagull-mail/gas/SETUP.md" class="btn btn-ghost">📘 GAS 部署指南</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3c99dc">
+  <meta name="description" content="海風專題信箱（Seagull Mail）：結合日系海邊插畫舞台與 Google Apps Script 試算表後端的即時專題留言牆。">
+  <title>海風專題信箱｜Seagull Mail</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body data-view="stage">
+  <!-- 大螢幕舞台端 -->
+  <section id="stage-view" class="stage-view" aria-label="海鷗即時留言牆舞台">
+    <canvas id="sky-canvas" aria-label="湘南海濱天空、海鷗送信與海岸鐵道互動插畫畫布"></canvas>
+
+    <!-- 左上角：活動招牌與分組篩選 -->
+    <header class="hud-top-left coastal-plaque">
+      <div class="plaque-header-row">
+        <a href="../index.html" class="back-pill" title="返回 Action 專區">← Action</a>
+        <span class="plaque-tag">SEAGULL POST</span>
+      </div>
+      <h1 id="event-title" class="plaque-title">海風專題信箱</h1>
+      <p id="event-subtitle" class="plaque-sub">專題成果發表・海鷗即時留言牆</p>
+      <div id="group-filters" class="group-filters" role="group" aria-label="依專題組別篩選海鷗信"></div>
+    </header>
+
+    <!-- 右上角：累計送達計數與連線狀態 -->
+    <aside class="hud-top-right">
+      <div class="counter-ticket">
+        <span class="counter-label">海鷗已送達</span>
+        <div class="counter-num-row">
+          <span id="letter-count" class="counter-num">0</span>
+          <span class="counter-unit">封專題信件</span>
+        </div>
+      </div>
+      <button id="conn-status" type="button" class="conn-badge" title="設定或檢視 Google Apps Script 連線">
+        <span class="conn-dot" aria-hidden="true"></span>
+        <span class="conn-label">展示模式（點此接 GAS）</span>
+      </button>
+    </aside>
+
+    <!-- 滑鼠移過海鷗時的浮動提示 -->
+    <div id="seagull-tip" class="seagull-tip" role="status" hidden></div>
+
+    <!-- 左下角：操作控制列 -->
+    <nav class="hud-bottom-left control-dock" aria-label="舞台互動控制列">
+      <button id="btn-pick" type="button" class="dock-btn dock-primary">▶ 攔截一封</button>
+      <button id="btn-auto" type="button" class="dock-btn" aria-pressed="false">🔄 自動輪播</button>
+      <button id="btn-open-write" type="button" class="dock-btn dock-accent">✉️ 寫一封信</button>
+      <button id="btn-scene-time" type="button" class="dock-btn" aria-pressed="false">🌅 切換黃昏</button>
+      <button id="btn-fullscreen" type="button" class="dock-btn" aria-pressed="false">⛶ 全螢幕</button>
+    </nav>
+
+    <!-- 右下角：QR Code 寫信入口卡 -->
+    <aside id="qr-card" class="hud-bottom-right qr-card" aria-label="掃碼寫信 QR Code">
+      <div class="qr-card-head">
+        <span class="qr-badge">MOBILE POST</span>
+        <button id="btn-qr-toggle" type="button" class="qr-toggle-btn" aria-expanded="true" title="收合或展開 QR Code">收合</button>
+      </div>
+      <div class="qr-body">
+        <div id="qr-box" class="qr-box" aria-label="寫信頁 QR Code"></div>
+        <p class="qr-caption">掃碼放飛海鷗信</p>
+        <div class="qr-mini-actions">
+          <button id="btn-copy-link" type="button" class="mini-btn">複製連結</button>
+          <a id="btn-open-write-tab" href="?mode=write" target="_blank" rel="noopener noreferrer" class="mini-btn">開寫信頁 ↗</a>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 中央航空明信片彈窗 -->
+  <div id="letter-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="card-sender" hidden>
+    <!-- 海鷗送信 3D 拆封過場動畫層 -->
+    <div id="delivery-stage" class="delivery-stage" aria-hidden="true" hidden>
+      <div id="delivery-bird" class="delivery-bird"></div>
+      <div id="delivery-envelope" class="delivery-envelope">
+        <div class="env-back"></div>
+        <div class="env-letter-peek">
+          <span class="peek-line short"></span>
+          <span class="peek-line"></span>
+          <span class="peek-line"></span>
+        </div>
+        <div class="env-front"></div>
+        <div id="env-flap" class="env-flap"></div>
+        <span id="env-seal" class="env-seal">海</span>
+      </div>
+      <div class="delivery-sparkles" aria-hidden="true">
+        <i></i><i></i><i></i><i></i>
+      </div>
+    </div>
+
+    <article id="letter-postcard" class="postcard">
+      <div class="postcard-airmail-bar" aria-hidden="true"></div>
+      <button id="btn-close-modal" type="button" class="postcard-close" aria-label="關閉明信片">✕</button>
+
+      <div class="postcard-top">
+        <div class="postcard-sender-block">
+          <div id="card-avatar" class="postcard-avatar" aria-hidden="true"></div>
+          <div>
+            <div id="card-sender" class="postcard-sender">海風訪客</div>
+            <div class="postcard-meta">
+              <span id="card-group" class="postcard-group-pill">給全體專題</span>
+              <time id="card-time" class="postcard-time">剛剛</time>
+            </div>
+          </div>
+        </div>
+        <div id="card-postmark" class="postcard-postmark" aria-hidden="true">
+          <span class="postmark-ring">海</span>
+          <span class="postmark-sub">SHONAN AIR</span>
+        </div>
+      </div>
+
+      <div class="postcard-divider" aria-hidden="true"></div>
+
+      <p id="card-body" class="postcard-body"></p>
+
+      <div class="postcard-progress-track" aria-hidden="true">
+        <div id="card-progress" class="postcard-progress-fill"></div>
+      </div>
+
+      <footer class="postcard-footer">
+        <button id="btn-prev-letter" type="button" class="postcard-nav-btn">← 上一封</button>
+        <button id="btn-next-letter" type="button" class="postcard-nav-btn postcard-nav-next">▶ 下一封海鷗信</button>
+      </footer>
+    </article>
+  </div>
+
+  <!-- 手機端／掃碼端：寫信頁面 -->
+  <section id="write-view" class="write-view" aria-label="寫一封海鷗信" hidden>
+    <div class="write-sky-band" aria-hidden="true"></div>
+    <main class="write-shell">
+      <header class="write-header">
+        <div id="write-mascot" class="write-mascot" aria-hidden="true"></div>
+        <div class="write-head-text">
+          <span class="write-kicker">SEAGULL AIRMAIL</span>
+          <h2 id="write-title">寄出你的海鷗信</h2>
+          <p id="write-subtitle">選一隻海鷗替你把專題鼓勵或提問帶上大螢幕！</p>
+        </div>
+        <button id="btn-back-stage" type="button" class="back-stage-btn">← 回到海鷗天空牆</button>
+      </header>
+
+      <form id="write-form" class="write-form" novalidate>
+        <div class="field-block">
+          <label class="field-label">1. 選一隻送信海鷗</label>
+          <div id="avatar-picker" class="avatar-picker" role="radiogroup" aria-label="選擇海鷗角色"></div>
+        </div>
+
+        <div class="field-block">
+          <label class="field-label">2. 這封信要飛給哪個專題組別？</label>
+          <div id="write-group-picker" class="write-group-picker" role="radiogroup" aria-label="選擇專題組別"></div>
+        </div>
+
+        <div class="field-block">
+          <label for="input-sender" class="field-label">3. 你的署名（選填）</label>
+          <input id="input-sender" type="text" class="text-input" maxlength="20" placeholder="例如：302 小明、來賓（留空則為「海風訪客」）">
+        </div>
+
+        <div class="field-block">
+          <div class="field-label-row">
+            <label for="input-message" class="field-label">4. 想說的話／給專題組的提問</label>
+            <span id="char-count" class="char-count">0 / 120</span>
+          </div>
+          <textarea id="input-message" class="text-area" rows="4" maxlength="120" required placeholder="寫下鼓勵、建議或你對這個專題最好奇的地方⋯⋯"></textarea>
+        </div>
+
+        <p id="write-feedback" class="write-feedback" role="alert" hidden></p>
+
+        <button id="btn-submit-letter" type="submit" class="submit-btn">🕊️ 放飛海鷗！</button>
+      </form>
+
+      <div id="write-success" class="write-success" hidden>
+        <div id="success-seagull-wrap" class="success-seagull-wrap" aria-hidden="true"></div>
+        <h3>海鷗已經銜著信起飛了！</h3>
+        <p id="success-note">幾秒後就會飛進大螢幕的湘南海岸天空中。</p>
+        <div class="success-actions">
+          <button id="btn-write-again" type="button" class="submit-btn">✉️ 再寫一封給別組</button>
+          <button id="btn-go-stage" type="button" class="back-stage-btn">🌊 看大螢幕海鷗牆</button>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- GAS 後端連線設定彈窗 -->
+  <div id="gas-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="gas-modal-title" hidden>
+    <div class="gas-dialog">
+      <div class="postcard-airmail-bar" aria-hidden="true"></div>
+      <div class="gas-dialog-head">
+        <div>
+          <h2 id="gas-modal-title">Google Apps Script 後端連線</h2>
+          <span id="gas-mode-pill" class="gas-mode-pill">目前：展示模式（Demo + 本機試寫）</span>
+        </div>
+        <button id="btn-close-gas" type="button" class="postcard-close" aria-label="關閉連線設定">✕</button>
+      </div>
+
+      <p class="gas-help">
+        若要讓所有現場掃碼的手機即時把信寫進 Google 試算表並在大螢幕同步播放，請依 <a href="gas/SETUP.md" target="_blank" rel="noopener noreferrer">5 分鐘 GAS 部署指南</a> 部署後，將 Web App 網址貼於下方（設定會保存在本機瀏覽器並自動帶入 QR Code）。
+      </p>
+
+      <label for="input-gas-url" class="field-label">GAS Web App 部署網址（以 /exec 結尾）</label>
+      <input id="input-gas-url" type="url" class="text-input" placeholder="https://script.google.com/macros/s/.../exec">
+
+      <div class="gas-actions">
+        <button id="btn-save-gas" type="button" class="dock-btn dock-primary">儲存並立即連線</button>
+        <button id="btn-clear-gas" type="button" class="dock-btn">切回展示模式</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
