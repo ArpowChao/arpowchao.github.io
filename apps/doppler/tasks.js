@@ -13,7 +13,7 @@
     },
     {
       id: 'still', title: '靜止打水',
-      q: '鴨子在原地每秒打水 1 下，打了 5 秒。先預測，再把圓片排進水面；排好後打開小鴨、播放，數左邊小鴨被打到幾次。',
+      q: '鴨子在原地每秒打水 1 下，打了 5 秒。先預測，再把圓片排進水面；排好後打開小鴨、播放，數左、右兩隻小鴨被打到幾次。',
       setup: { mach: 0, observers: false }, image: true, check: true, reasonLabel: '判斷哪一圈最早，我看的是…；原本我認為…，排完後我認為…，因為…',
       fields: [
         { key: 'predict', label: '① 先預測：t = 0 秒的水波在', type: 'choice', options: ['最外圈', '最內圈', '不一定'] },
@@ -21,8 +21,11 @@
         { key: 'outer', label: '③ 排完後：最外圈是', type: 'choice', options: ['t = 0 s', 't = 1 s', 't = 2 s', 't = 3 s', 't = 4 s', 't = 5 s'] },
         { key: 'inner', label: '最內圈是', type: 'choice', options: ['t = 0 s', 't = 1 s', 't = 2 s', 't = 3 s', 't = 4 s', 't = 5 s'] },
         { key: 'center', label: '這些圓的圓心', type: 'choice', options: ['在同一點', '不在同一點'] },
-        { key: 'perSec', label: '(1) 左邊小鴨每秒被水波打到幾次', type: 'number', fill: 'freqB' },
-        { key: 'tenSec', label: '十秒內被打到幾次', type: 'number' }
+        { key: 'perSec', label: '(1) 左邊小鴨：每秒被水波打到的數目（次）', type: 'number', fill: 'freqB' },
+        { key: 'tenSec', label: '左邊小鴨：十秒內被打到的數目（次）', type: 'number' },
+        { key: 'rPerSec', label: '右邊小鴨：每秒被水波打到的數目（次）', type: 'number', fill: 'freqA' },
+        { key: 'rTenSec', label: '右邊小鴨：十秒內被打到的數目（次）', type: 'number' },
+        { key: 'stillDiff', label: '兩隻小鴨所感受到的「水波震動」有何差別？', type: 'text' }
       ]
     },
     {
@@ -39,29 +42,35 @@
     },
     {
       id: 'ducks', title: '誰被打得多？',
-      q: '波源以 ½ 波速向右，前方 A、後方 B 兩隻小鴨。先預測誰被打得比較頻繁，再打開小鴨、按「▶ 播放」，記下 A、B 被打到的間隔。',
+      q: '波源以 ½ 波速向右，前方 A、後方 B 兩隻小鴨。先預測誰被打得比較頻繁；再選 ½ 波速、打開小鴨，按「▶ 示範」聽小鴨叫，記下 A、B 被打一次的間隔，算出每秒幾次。',
       setup: { mach: 0.5, observers: true }, image: true, check: true, reasonLabel: '(3) 兩隻小鴨感受到的水波震動次數有何差別？（我看到…和預測比較，我的想法…）',
       fields: [
-        { key: 'predict', label: '先預測：誰被打得比較頻繁？', type: 'choice', options: ['A 較頻繁', 'B 較頻繁', '一樣'] },
+        { key: 'predict', label: '先預測：誰被打得比較頻繁？', type: 'choice', options: ['A 比較頻繁', 'B 比較頻繁', '一樣'] },
         { key: 'predictWhy', label: '我這樣預測，是因為', type: 'text' },
-        { key: 'aInt', label: 'A 間隔（s）', type: 'number', fill: 'duckA' },
-        { key: 'bInt', label: 'B 間隔（s）', type: 'number', fill: 'duckB' }
+        { key: 'aInt', label: 'A 前方（靠近端）：被打一次的間隔（s）', type: 'number', fill: 'duckA' },
+        { key: 'aPerSec', label: 'A：每秒幾次', type: 'number' },
+        { key: 'bInt', label: 'B 後方（遠離端）：被打一次的間隔（s）', type: 'number', fill: 'duckB' },
+        { key: 'bPerSec', label: 'B：每秒幾次', type: 'number' }
       ]
     },
     {
       id: 'observer', title: '觀察者移動',
-      q: '按「套用起始設定」再按「▶ 播放」：波源靜止，小鴨以 0.5 倍波速向左游。記下 A（迎著波）、B（順著波）每秒被打幾次。',
+      q: '按「套用起始設定」再按「▶ 播放」：天鵝在原地打水，小鴨以 ½ 倍水波速游，A 迎著波、B 順著波。看「即時讀值」，記下每秒被打幾次。',
       setup: { mach: 0, observers: true, swim: true }, image: true, reasonLabel: '(8) 靠近、遠離靜止的天鵝，感受到的頻率有何變化？為什麼？（波長、相對波速）',
       fields: [
-        { key: 'fNear', label: 'A 迎著波：每秒幾次', type: 'number', fill: 'freqA' },
-        { key: 'fFar', label: 'B 順著波：每秒幾次', type: 'number', fill: 'freqB' },
+        { key: 'fNear', label: 'A 迎著波（靠近）：每秒幾次', type: 'number', fill: 'freqA' },
+        { key: 'fFar', label: 'B 順著波（遠離）：每秒幾次', type: 'number', fill: 'freqB' },
+        { key: 'nearN', label: '(6) 小鴨以 ½ 倍水波速靠近天鵝：每秒接收的波數', type: 'choice', options: ['變多', '不變', '變少'] },
+        { key: 'nearF', label: '靠近時，頻率會', type: 'choice', options: ['變高', '不變', '變低'] },
+        { key: 'farN', label: '(7) 小鴨以 ½ 倍水波速遠離天鵝：每秒接收的波數', type: 'choice', options: ['變多', '不變', '變少'] },
+        { key: 'farF', label: '遠離時，頻率會', type: 'choice', options: ['變高', '不變', '變低'] },
         { key: 'lambda', label: '水波的波長會', type: 'choice', options: ['變短', '不變', '變長'] }
       ]
     },
     {
       id: 'exit', title: '看水波判斷波源',
       q: '利用水波圖形判斷 A～D 波源的運動狀態（紅點是波源現在的位置）。',
-      setup: null, image: false, figure: 'abcd', reasonLabel: '理由（用波長、波速）',
+      setup: null, image: false, figure: 'abcd', reasonLabel: 'B、C 誰比較快，為什麼？（我比較的是：波長？圓心間距？所以我判斷…）',
       fields: [
         { key: 'A', label: 'A', type: 'choice', options: MOTION },
         { key: 'B', label: 'B', type: 'choice', options: MOTION },
