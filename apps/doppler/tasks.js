@@ -7,12 +7,9 @@
   root.DopplerTasks = [
     {
       id: 'photo', title: '誰跑得最快？',
-      q: '看天鵝與小鴨的照片：哪一隻跑得最快？',
-      setup: null, image: false, reasonLabel: '理由',
-      fields: [
-        { key: 'fastest', label: '最快的是', type: 'text', placeholder: '例：右下的天鵝' },
-        { key: 'clue', label: '判斷依據', type: 'choice', options: ['前密後疏', 'V 字波較長', '身體姿勢', '其他'] }
-      ]
+      q: '在照片上圈出來：藍筆圈在原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻。',
+      setup: null, image: false, draw: 'swans', reasonLabel: '你是看什麼判斷的？',
+      fields: []
     },
     {
       id: 'still', title: '靜止打水',

@@ -29,6 +29,16 @@
     [/圓片 (\d+)，半徑/g, 'Ring $1, radius']
   ];
   const EN = {
+    '在照片上圈出來：藍筆圈在原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻。': 'Circle them on the photo: blue for ones staying put, red for ones moving, highlighter for the fastest.',
+    '在照片上圈出來': 'Circle them on the photo', '藍筆圈原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻': 'Blue: staying put · Red: moving · Highlighter: the fastest',
+    '在照片上圈': 'Circle on the photo', '藍筆：原地': 'Blue: still', '紅筆：移動': 'Red: moving', '螢光筆：最快': 'Highlighter: fastest', '✓ 完成': '✓ Done', '🖍 放大來圈': '🖍 Open large to circle',
+    '先在照片上圈出來': 'Circle on the photo first', '按「✎ 作答」，再按「🖍 放大來圈」': 'Tap “✎ Answer”, then “🖍 Open large to circle”',
+    '藍筆圈在原地的、紅筆圈在移動的': 'Circle ones staying put in blue and moving ones in red', '螢光筆圈跑得最快的那一隻': 'Mark the fastest with the highlighter',
+    '寫下你是看什麼判斷的，再送出': 'Write what you looked at to decide, then send',
+    '選這題會打開照片：藍筆圈在原地的、紅筆圈在移動的': 'This task opens the photo: circle ones staying put in blue, moving ones in red',
+    '螢光筆圈跑得最快的那一隻，按「✓ 完成」': 'Mark the fastest with the highlighter, then tap “✓ Done”',
+    '按「✎ 作答」寫下你是看什麼判斷的，再送出': 'Tap “✎ Answer”, write what you looked at to decide, then send',
+    '想改：在作答區按「🖍 放大來圈」': 'To change it: tap “🖍 Open large to circle” in the answer panel',
     '都卜勒・水波實驗 | Physics Lab': 'Doppler Ripple Lab | Physics Lab', '都卜勒水波': 'Doppler Ripples', '都卜勒・水波實驗': 'Doppler Ripple Lab',
     '一圈一圈排出水波，量測、播放，作答直接送給老師。': 'Place ripples ring by ring, measure, play, and send your answers to your teacher.',
     '水波與都卜勒效應': 'Ripples and the Doppler effect', '前往作答 ↓': 'Go to answers ↓', '一圈一圈，看見頻率的改變。': 'Ring by ring, see the frequency change.',
@@ -108,7 +118,7 @@
     '已清除。': 'Cleared.', '請先貼上網址。': 'Paste a URL first.', '測試中…': 'Testing…', '✓ 連線成功：': '✓ Connected: ', '連線有回應，但內容不正確。': 'The server answered, but not as expected.',
     '無法讀取回覆。請確認部署時「誰可以存取」選「任何人」，網址是 /exec 結尾。': 'Could not read the reply. Check the deployment allows “Anyone” and the URL ends in /exec.',
     '向右移動': 'moving right', '向左移動': 'moving left', '誰跑得最快？': 'Who is fastest?', '看天鵝與小鴨的照片：哪一隻跑得最快？': 'Look at the photo of swans and ducks: which one is fastest?',
-    '理由': 'Reason', '最快的是': 'Fastest one', '例：右下的天鵝': 'e.g. the swan at the bottom right', '判斷依據': 'I judged by', '前密後疏': 'Crowded ahead, spread behind', 'V 字波較長': 'Longer V-shaped wake',
+    '理由': 'Reason', '最快的是': 'Fastest one', '例：右下的天鵝': 'e.g. the swan at the bottom right', '判斷依據': 'I judged by', '你是看什麼判斷的？': 'What did you look at to decide?', '前密後疏': 'Crowded ahead, spread behind', 'V 字波較長': 'Longer V-shaped wake',
     '身體姿勢': 'Body posture', '其他': 'Other', '靜止打水': 'Paddling in place', '原地每秒打水 1 下，排出 5 秒時的水波。': 'A duck paddles in place once a second. Place the ripples at 5 s.',
     '最外圈在第幾秒發出？': 'When was the outer ring made?', '移動波源': 'Moving source', '每人負責一種速度：排出 5 秒的水波，量前、後方相鄰兩圈的間距。': 'One speed each: place the ripples at 5 s and measure the gaps between rings ahead and behind.',
     '發現': 'What I found', '我的速度': 'My speed', '前方間距（m）': 'Gap ahead (m)', '後方間距（m）': 'Gap behind (m)', '水波速度會？': 'The wave speed…', '變快': 'increases', '不變': 'stays the same', '變慢': 'decreases',

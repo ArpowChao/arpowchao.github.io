@@ -825,6 +825,7 @@
     demo: ['水面早已布滿波：波源一邊往前走、一邊每秒發出一圈', '比較前方和後方相鄰兩圈的距離；聽每隻小鴨誰叫得比較密', '換「波源速度」再看一次；按「✕ 結束示範」回到自己排'],
     swim: ['波源不動，小鴨以 0.5 倍波速向左游', 'A 迎著波游、B 順著波游：聽誰叫得比較密', '看「即時讀值」：每秒被打幾次？波長有沒有變？']
   };
+  const FS_PHOTO = ['選這題會打開照片：藍筆圈在原地的、紅筆圈在移動的', '螢光筆圈跑得最快的那一隻，按「✓ 完成」', '按「✎ 作答」寫下你是看什麼判斷的，再送出', '想改：在作答區按「🖍 放大來圈」'];
   function fsSync() {
     if (!fsLayer || !stage.classList.contains('is-full')) return;
     const mode = manual ? 'manual' : swim > 0 ? 'swim' : 'demo', t = tasks[task];
@@ -833,8 +834,10 @@
     $('fs-task').value = $('task').value;
     $('fs-q').textContent = t ? t.q : '';
     $('fs-load').hidden = !(t && t.setup);
-    const steps = FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
-    const ol = $('fs-steps'); if (ol.dataset.mode !== mode + view3d?.visible) { ol.dataset.mode = mode + view3d?.visible; ol.replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.textContent = s; return li; })); }
+    const photo = !!(t && t.draw);
+    const steps = photo ? FS_PHOTO : FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
+    const sig = photo ? 'photo' : mode + view3d?.visible;
+    const ol = $('fs-steps'); if (ol.dataset.mode !== sig) { ol.dataset.mode = sig; ol.replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.textContent = s; return li; })); }
     if (!$('fs-status').textContent) $('fs-status').textContent = $('status').textContent;
     fsLayer.querySelector('[data-fs="tray"]').hidden = answering || $('piece-tray').hidden;
     fsLayer.querySelector('[data-fs="guide"]').hidden = answering;

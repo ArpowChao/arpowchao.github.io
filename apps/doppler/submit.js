@@ -37,12 +37,27 @@
       '<circle cx="' + (60 + m * 4 * 11) + '" cy="60" r="2.5" fill="#153f4d"/></svg><figcaption>' + k + '</figcaption></figure>').join('') + '</div>';
   }
 
+  // 選到「圈照片」的題目：照片自動打開（身分視窗還開著時，等它關掉再開）
+  let lastShown = null;
+  function autoPhoto(index) {
+    if (!tasks[index].draw || !window.DopplerPhoto) return;
+    setTimeout(() => {
+      if (Lab.taskIndex !== index) return;
+      const dlg = document.querySelector('.fs-iddlg');
+      if (dlg && !dlg.hidden) {
+        const mo = new MutationObserver(() => { if (dlg.hidden) { mo.disconnect(); if (Lab.taskIndex === index) window.DopplerPhoto.open(); } });
+        mo.observe(dlg, { attributes: true, attributeFilter: ['hidden'] });
+      } else window.DopplerPhoto.open();
+    }, 500);
+  }
   function render(index) {
+    if (index !== lastShown) { lastShown = index; autoPhoto(index); }
     const t = tasks[index], box = $('task-fields'), saved = values[t.id] || {};
     box.replaceChildren();
     $('answer-label').textContent = t.reasonLabel || '我的回答';
-    $('task-figure').hidden = t.figure !== 'abcd';
+    $('task-figure').hidden = t.figure !== 'abcd' && !t.draw;
     $('task-figure').innerHTML = t.figure === 'abcd' ? abcdFigure() : '';
+    if (t.draw && window.DopplerPhoto) window.DopplerPhoto.mount($('task-figure'));
     $('task-link').hidden = !t.link;
     if (t.link) { $('task-link').href = t.link.href; $('task-link').textContent = t.link.label; }
     for (const f of t.fields) {
@@ -116,7 +131,7 @@
       image: '', thumb: ''
     };
     if (t.check) data.arrangement = Lab.arrangement(t.id === 'moving' && labelMach(fields.speed) !== undefined ? labelMach(fields.speed) : p.mach);
-    const shot = t.image ? Lab.snapshot(false) : null;
+    const shot = t.image ? Lab.snapshot(false) : t.draw && window.DopplerPhoto ? window.DopplerPhoto.canvas() : null;
     const card = makeCard(t, data, shot);
     data.image = shrink(card, 1000, 0.8);          // 存進雲端資料夾的作答卡
     if (shot) {
@@ -206,7 +221,9 @@
     }
     const t = tasks[Lab.taskIndex], data = payload();
     const filled = Object.values(data.fields).filter(Boolean).length;
-    if (!filled && !data.answer) { setStatus('還沒作答', 'warn'); return; }
+    const drawn = t.draw && window.DopplerPhoto ? window.DopplerPhoto.count() : 0;
+    if (!filled && !data.answer && !drawn) { setStatus('還沒作答', 'warn'); return; }
+    if (t.draw && !drawn) { setStatus('先在照片上圈出來', 'warn'); window.DopplerPhoto && window.DopplerPhoto.open(); return; }
     if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm((window.T || String)('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + '），仍要送出？'))) return;
     $('submit').disabled = true; setStatus('傳送中…');
     try {
