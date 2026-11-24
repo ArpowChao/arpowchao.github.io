@@ -527,7 +527,7 @@
   function loadQuestion() {
     const t = tasks[task];
     $('question').textContent = t.q; $('answer').value = answers[task];
-    $('load-task').hidden = !t.setup;
+    $('load-task').hidden = !(t.setup && t.setup.swim);  // 要自己排的題目不給「套用」，只有觀察者移動（第 5 題）需要
     document.dispatchEvent(new CustomEvent('doppler:task', { detail: { index: task, task: t } }));
   }
   $('task').addEventListener('change', () => { task = Number($('task').value); loadQuestion(); });
@@ -833,7 +833,7 @@
     if ($('fs-task').options.length !== $('task').options.length) $('fs-task').replaceChildren(...[...$('task').options].map(o => new Option(o.textContent, o.value)));
     $('fs-task').value = $('task').value;
     $('fs-q').textContent = t ? t.q : '';
-    $('fs-load').hidden = !(t && t.setup);
+    $('fs-load').hidden = !(t && t.setup && t.setup.swim);
     const photo = !!(t && t.draw);
     const steps = photo ? FS_PHOTO : FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
     const sig = photo ? 'photo' : mode + view3d?.visible;
