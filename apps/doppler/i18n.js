@@ -127,7 +127,7 @@
     '觀察者移動': 'Moving observer', '按「套用起始設定」再按「▶ 播放」：波源靜止，小鴨以 0.5 倍波速向左游。記下 A（迎著波）、B（順著波）每秒被打幾次。':
       'Press “Apply start settings”, then “▶ Play”: the source is still and the ducklings swim left at 0.5 × wave speed. Record hits per second for A (into the waves) and B (with the waves).',
     '頻率為什麼變？': 'Why does the frequency change?', 'A 迎著波：每秒幾次': 'A into the waves: hits per second', 'B 順著波：每秒幾次': 'B with the waves: hits per second', '波長會？': 'The wavelength…',
-    '變短': 'gets shorter', '變長': 'gets longer', '出口票': 'Exit ticket', '判斷 A～D 波源的運動。': 'Work out how the source moves in A–D.', '理由（用波長、波速）': 'Reason (use wavelength and wave speed)',
+    '變短': 'gets shorter', '變長': 'gets longer', '出口票': 'Read the source from the ripples', '看水波判斷波源': 'Read the source from the ripples', '判斷 A～D 波源的運動。': 'Work out how the source moves in A–D.', '理由（用波長、波速）': 'Reason (use wavelength and wave speed)',
     'B、C 誰快？': 'Faster: B or C?', 'B 快': 'B', 'C 快': 'C', '波源向右，誰收到的頻率高？': 'Source moving right: who receives the higher frequency?', '前方': 'Ahead', '後方': 'Behind',
     '呱': 'Quack', '嗡': 'Buzz', '叮': 'Ding', '啾啾': 'Tweet', '吱': 'Squeak', '咚': 'Dong',
     '波源': 'source', ' 波速': ' wave speed', '圈 ': 'Ring ', '圓片 ': 'Ring ', ' · 半徑 ': ' · radius ', '圓心：(': 'Centre: (', '，半徑 ': ', radius ', '波源速度': 'Source speed', ' 小鴨': ' duckling',

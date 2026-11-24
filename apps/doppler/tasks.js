@@ -51,7 +51,7 @@
       ]
     },
     {
-      id: 'exit', title: '出口票',
+      id: 'exit', title: '看水波判斷波源',
       q: '判斷 A～D 波源的運動。',
       setup: null, image: false, figure: 'abcd', reasonLabel: '理由（用波長、波速）',
       fields: [

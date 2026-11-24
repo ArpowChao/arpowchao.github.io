@@ -68,8 +68,10 @@
   function applySwim() { observers.forEach(o => { o.vx = -swim * params.c; o.vy = 0; }); }
   // 只算 0 秒（開始播放）之後收到的波；間隔仍用最近兩次抵達計算
   function live(o) {
+    // 只算播放開始（t > 0）之後真的打到小鴨的波：沒播放、還沒收到兩圈時不給間隔與每秒次數
     const r = P.received(phys(), o, time), events = r.events.filter(a => a.time > 1e-9);
-    return { ...r, events, count: events.length };
+    const last = events.at(-1), prev = events.at(-2), interval = prev ? last.time - prev.time : null;
+    return { ...r, events, count: events.length, interval, frequency: interval > 1e-9 ? 1 / interval : null, last: last ? last.time : null };
   }
   function reading(i) { return manual ? previewReading(i) : live(observers[i]); }
   const panOf = o => Math.max(-1, Math.min(1, posAt(o).x / 6));
