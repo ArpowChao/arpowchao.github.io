@@ -13,6 +13,7 @@ function radialTexture(inner, outer) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 function labelSprite(text, color = '#153f4d') {
+  if (window.T) text = window.T(text);
   const c = document.createElement('canvas'); c.width = 256; c.height = 96;
   const g = c.getContext('2d');
   g.font = 'bold 56px "Microsoft JhengHei","Noto Sans TC",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';

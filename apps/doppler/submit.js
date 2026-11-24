@@ -207,7 +207,7 @@
     const t = tasks[Lab.taskIndex], data = payload();
     const filled = Object.values(data.fields).filter(Boolean).length;
     if (!filled && !data.answer) { setStatus('還沒作答', 'warn'); return; }
-    if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + '），仍要送出？')) return;
+    if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm((window.T || String)('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + '），仍要送出？'))) return;
     $('submit').disabled = true; setStatus('傳送中…');
     try {
       const r = await send(data);

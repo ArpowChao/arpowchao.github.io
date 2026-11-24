@@ -226,7 +226,7 @@
   function xy(point, camera) { return { x: camera.cx + point.x * camera.scale, y: camera.cy - point.y * camera.scale }; }
   function world(x, y) { return { x: (x - view.cx) / view.scale, y: (view.cy - y) / view.scale }; }
   function text(c, label, x, y, color = '#153f4d', align = 'left', size = 12) {
-    c.fillStyle = color; c.font = size + 'px "Microsoft JhengHei",sans-serif'; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(label, x, y);
+    c.fillStyle = color; c.font = size + 'px "Microsoft JhengHei",sans-serif'; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(window.T ? window.T(label) : label, x, y);
   }
   function arrow(c, from, to, color) {
     const angle = Math.atan2(to.y - from.y, to.x - from.x);
@@ -725,7 +725,7 @@
   function fsBuild() {
     fsLayer = document.createElement('div'); fsLayer.className = 'fs-layer';
     fsLayer.innerHTML = `
-      <div class="fs-col fs-colL"><section class="fs-panel" data-fs="guide"><header><strong>怎麼操作</strong><button type="button" class="fs-id" data-id-open></button><span class="fs-sub" id="fs-mode"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
+      <div class="fs-col fs-colL"><section class="fs-panel" data-fs="guide"><header><strong>怎麼操作</strong><button type="button" class="fs-id" data-id-open></button><button type="button" class="fs-langbtn" data-lang-toggle data-no-i18n aria-label="中文 / English">EN</button><span class="fs-sub" id="fs-mode"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
         <div class="fs-body">
           <label class="fs-task">題目<select id="fs-task"></select></label>
           <p class="fs-q" id="fs-q"></p>
@@ -766,7 +766,7 @@
     $('fs-answer').addEventListener('click', () => setAnswering(true));
     // 身分（班級／組別／座號）：一開始填一次，整節課沿用，送出作答時自動帶入
     const dlg = document.createElement('div'); dlg.className = 'fs-iddlg'; dlg.hidden = true;
-    dlg.innerHTML = `<div class="fs-idbox" role="dialog" aria-label="填寫身分"><h3>先填好你的身分</h3><p class="fs-idnote">整節課都用這個，送出作答時會自動帶入。</p>
+    dlg.innerHTML = `<div class="fs-idbox" role="dialog" aria-label="填寫身分"><div class="fs-lang" data-no-i18n role="group" aria-label="Language"><button type="button" data-lang="zh">中文</button><button type="button" data-lang="en">English</button></div><h3>先填好你的身分</h3><p class="fs-idnote">整節課都用這個，送出作答時會自動帶入。</p>
       <div data-slot="who"></div><div class="fs-grp-label">組別（一組 3 人）</div>
       <div class="fs-grp">${Array.from({ length: 11 }, (_, i) => `<button type="button" data-grp="${i + 1}">${i + 1}</button>`).join('')}</div>
       <button type="button" class="fs-primary fs-wide" id="fs-id-done">開始</button></div>`;
@@ -886,5 +886,6 @@
     // submit.js 稍後才把上次填的身分放回欄位，等它跑完再檢查
     setTimeout(() => { idSync(); if (!idReady()) openId(); }, 0);
   }
+  window.addEventListener('doppler:lang', () => refresh());
   refresh(); requestAnimationFrame(tick);
 })();

@@ -217,3 +217,5 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
 .fs-grp button{min-height:52px;font-size:22px;font-weight:700;border-radius:12px}
 .fs-grp button.on{background:var(--teal);border-color:var(--teal);color:#fff}
 .fs-idbox #fs-id-done{margin-top:16px;min-height:50px;font-size:19px}
+
+.topbar-right{display:flex;align-items:center;gap:14px}.lang-toggle,.fs-langbtn{min-height:30px;padding:2px 12px;border-radius:999px;border:1px solid var(--teal);background:#fff;color:var(--teal);font-size:13px;font-weight:700;line-height:1.4}.fs-langbtn{flex:0 0 auto;margin-left:4px}.fs-lang{display:flex;gap:8px;justify-content:flex-end;margin:0 0 6px}.fs-lang button{min-height:34px;padding:4px 14px;border-radius:999px;font-size:13px}.fs-lang button[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:#fff}
