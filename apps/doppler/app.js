@@ -23,7 +23,7 @@
   let boards = {}, boardFor = null;
   try { boards = JSON.parse(localStorage.getItem(BOARD_KEY) || '{}') || {}; } catch (_) { boards = {}; }
   const arranging = () => !!(tasks[task] && tasks[task].setup && (tasks[task].setup.arrange || tasks[task].setup.watch));
-  let viewOnly = false;
+  let viewOnly = false, homeCam = { z: 1, x: 0, y: 0 };   // homeCam：這一關預設的畫面（「原大小」回到這裡）
   let mode = 'place', gest0 = null; const cam = { z: 1, x: 0, y: 0 }, gest = new Map(), lastPt = new Map();
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
@@ -57,8 +57,23 @@
     $('preview-play').setAttribute('aria-pressed', String(manual && playing));
   }
   function clearPreview() { if (manual) setPlaying(false); preview = null; flashDirty = false; }
+  // 播放學生的排列：排好的圈繼續往外擴散，鴨子也依當下情況（位置、移速）每秒繼續打水，持續產生新的水波
+  function genWaves(pv) {
+    const out = [], g = pv.gen; if (!g) return out;
+    for (let k = 0; k / params.f <= pv.elapsed + 1e-9; k++) {
+      const e = k / params.f, r = params.c * (pv.elapsed - e);
+      if (r < 40) out.push({ n: 100 + k, x: g.x + g.v * e, y: g.y, radius: r, emitted: 5 + e });
+    }
+    return out;
+  }
+  function previewWaves() { return P.snapshotWaves(params.c, preview.waves, preview.elapsed).concat(genWaves(preview)); }
   function previewReading(i) {
-    return preview ? P.snapshotReceived(params.c, preview.waves, observers[i], preview.elapsed) : { count: 0, interval: null, last: null };
+    if (!preview) return { count: 0, interval: null, last: null };
+    const o = observers[i], placed = P.snapshotArrivals(params.c, preview.waves, o).map(a => a.time), g = preview.gen, gen = [];
+    if (g) for (let k = 0; k / params.f <= preview.elapsed + 1e-9; k++) { const e = k / params.f, t = e + Math.hypot(o.x - (g.x + g.v * e), o.y - g.y) / params.c; if (t <= preview.elapsed + 1e-9) gen.push(t); }
+    const events = placed.filter(t => t <= preview.elapsed + 1e-9).concat(gen).sort((a, b) => a - b);
+    const last = events.at(-1), prev = events.at(-2);
+    return { events, count: events.length, last: last ?? null, interval: prev !== undefined ? last - prev : null };
   }
   // 觀察者目前位置：自己排列時不動；示範時依游動速度移動
   // 示範與觀察者動：波源早已在打水（t0 = -12 s），水面一開始就布滿波，
@@ -114,7 +129,12 @@
     if (!manual || pointer || !$('observers').checked) return;
     if (!preview || preview.elapsed >= preview.end) {
       const waves = snapshot(), arrivals = observers.flatMap(o => P.snapshotArrivals(params.c, waves, o));
-      preview = { waves, elapsed: 0, hits: observers.map(() => 0), flashAt: observers.map(() => -Infinity), end: Math.max(3, ...arrivals.map(a => a.time)) + .6 };
+      const src = pieces.at(-1);
+      preview = { waves, elapsed: 0, hits: observers.map(() => 0), flashAt: observers.map(() => -Infinity), end: Infinity,
+        gen: src && src.placed ? { x: src.x, y: src.y, v: params.mach * params.c } : null };
+      // 波源往前游：快碰到前方的 A 小鴨前，從頭再播一次（持續播放，按暫停才停）
+      const g = preview.gen, a = observers[0];
+      if (g && g.v > 0 && a && a.x > g.x) preview.loopAt = Math.max(2, (a.x - .6 - g.x) / g.v);
     }
     setMeasure(false); setPlaying(true); detectHits(performance.now()); refresh();
   });
@@ -276,7 +296,7 @@
     if (glow > .35) text(c, sound + '！', point.x, point.y - 40, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
-    const selP = viewOnly ? -1 : selectedPiece;   // 只看不操作的關卡：不標示選取的圓片
+    const selP = viewOnly || (tasks[task] && tasks[task].setup && tasks[task].setup.watch) ? -1 : selectedPiece;   // 只看不操作的關卡：不標示選取的圓片
     const camera = savedCamera || projection(width, height, c === ctx ? safeInsets() : null, c === ctx);
     c.save(); c.beginPath(); c.rect(0, 0, width, height); c.clip();
     c.fillStyle = '#f7fbfc'; c.fillRect(0, 0, width, height);
@@ -296,9 +316,9 @@
       for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
     }
     if ($('grid').checked) scaleBar(c, camera, cell);
-    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
+    const waves = manual ? preview ? previewWaves().filter(w => w.radius < 60) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
     c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
-    const source = xy(manual ? pieces.at(-1) : P.source(phys(), time), camera);
+    const source = xy(manual ? (preview && preview.gen ? { x: preview.gen.x + preview.gen.v * preview.elapsed, y: preview.gen.y } : pieces.at(-1)) : P.source(phys(), time), camera);
     if (!manual) { const from = xy(P.source(phys(), phys().t0), camera); c.moveTo(from.x, from.y); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
     waves.forEach(w => {
       const p = xy(w, camera), radius = w.radius * camera.scale;
@@ -622,15 +642,16 @@
     // 觀察／擺放切換只在「觀察小鴨」的關卡出現（要放小鴨聽呱呱叫）；其他關卡縮放時只顯示「原大小」
     const modes = !!(tasks[task] && tasks[task].setup && tasks[task].setup.watch);
     modeBar.querySelectorAll('[data-mode]').forEach(b => { b.hidden = !modes; b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
-    modeBar.querySelector('.mode-reset').hidden = cam.z === 1;
-    modeBar.hidden = !!view3d?.visible || (!modes && cam.z === 1);
+    const home = Math.abs(cam.z - homeCam.z) < 1e-6 && Math.abs(cam.x - homeCam.x) < 1e-6 && Math.abs(cam.y - homeCam.y) < 1e-6;
+    modeBar.querySelector('.mode-reset').hidden = home;
+    modeBar.hidden = !!view3d?.visible || (!modes && home);
     document.body.classList.toggle('mode-observe', mode === 'observe');
   }
   function setMode(next, say) {
     mode = next; gest.clear(); gest0 = null; if (mode === 'observe') { pointer = null; setMeasure(false); }
     syncMode();
   }
-  function resetZoom() { cam.z = 1; cam.x = 0; cam.y = 0; syncMode(); draw(); }
+  function resetZoom() { Object.assign(cam, homeCam); syncMode(); draw(); }
   canvas.addEventListener('lostpointercapture', () => { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; refresh(); });
   canvas.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; ruler = null; setMeasure(false); refresh(); return; }
@@ -676,6 +697,16 @@
   function renderTaskSelect() { fillTaskSelect($('task')); if ($('fs-task')) fillTaskSelect($('fs-task')); }
   function setTaskFilter(fn) { taskFilter = fn || (() => true); renderTaskSelect(); }
   function markSent(id) { sent.add(id); try { localStorage.setItem('doppler-sent-v1', JSON.stringify([...sent])); } catch (_) { } renderTaskSelect(); }
+  // 小鴨的位置：靜止打水放在 ±4.5 格；移動的波源放在鴨子前方 3.5 格（A）與起點後方（B），畫面縮小到看得到兩隻
+  function duckLayout(boardId) {
+    const src = pieces.at(-1), sx = src && src.placed ? src.x : 0;
+    observers.length = 2;
+    if (boardId === 'moving' && params.mach > 0) {
+      observers[0] = { x: sx + 3.5, y: 0 }; observers[1] = { x: -4.5, y: 0 };
+      const left = -5.25, right = sx + 4.25; cam.z = Math.min(1, 9.5 / (right - left)); cam.x = (left + right) / 2; cam.y = 0; homeCam = { ...cam };
+    } else { observers[0] = { x: 4.5, y: 0 }; observers[1] = { x: -4.5, y: 0 }; }
+    syncDucks(); syncMode();
+  }
   function enterBoard(t) {
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
@@ -687,7 +718,7 @@
     document.body.classList.toggle('bare', bare);
     document.body.classList.toggle('swimstage', !!su.swim);
     document.body.classList.toggle('demostage', !!su.demo);
-    cam.z = 1; cam.x = 0; cam.y = 0; setMode(arrange ? 'place' : 'observe');
+    cam.z = 1; cam.x = 0; cam.y = 0; homeCam = { z: 1, x: 0, y: 0 }; setMode(arrange ? 'place' : 'observe');
     viewOnly = su.scene || viewId || false;
     // 示範：自動模擬（波源 ½ 波速向右，前方 A、後方 B），學生按時間軸的「▶」播放、聽小鴨叫
     if (su.demo) {
@@ -708,7 +739,7 @@
       changeMach(b && Number.isFinite(b.mach) ? b.mach : 0);
       rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
       // 預測用的情境圖：只畫鴨子（向右箭頭）與 A、B 兩隻小鴨，不畫水波
-      if (su.scene === 'ab') { changeMach(su.mach || 0.5); $('observers').checked = true; observers.length = 2; observers[0] = { x: 4, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); }
+      if (su.scene === 'ab') { if (!b) changeMach(su.mach || 0.5); $('observers').checked = true; duckLayout(viewId); }
       syncQuick(); refresh();
       return;
     }
@@ -719,11 +750,11 @@
     ruler = null; setMeasure(false);
     $('labels').checked = false; $('centers').checked = true; $('grid').checked = true; $('snap-grid').checked = true;
     // 排圖時水面只留波源小鴨；觀察小鴨的關卡沿用排好的那張圖，放上 A、B 兩隻小鴨
-    $('observers').checked = watch;
-    if (watch) { observers.length = 2; observers[0] = { x: 4.5, y: 0 }; observers[1] = { x: -4.5, y: 0 }; syncDucks(); }
+    $('observers').checked = watch; if (watch) $('centers').checked = false;   // 觀察小鴨：不標圓心編號
     const b = boards[boardId];
     changeMach(b && Number.isFinite(b.mach) ? b.mach : su.mach || 0);
     rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
+    if (watch) duckLayout(boardId);
     undo.length = 0; selectedPiece = 0; boardFor = boardId;
     syncQuick(); refresh(); persist();
   }
@@ -809,11 +840,12 @@
       detectHits(now); draw();
       if (now - lastReadout > 80 || preview.elapsed >= preview.end) { readouts(); lastReadout = now; }
       if (preview.elapsed >= preview.end) { setPlaying(false); status('播放完畢'); }
+      else if (preview.loopAt && preview.elapsed >= preview.loopAt) { preview.elapsed = 0; preview.hits = observers.map(() => 0); }
     } else if (playing) {
       if (lastFrame !== null) time = Math.min(10, time + Math.min(.1, (now - lastFrame) / 1000) * Number($('play-rate').value));
       autoQuack(lastFrame === null); draw();
       if (now - lastReadout > 100 || time >= 10) { readouts(); lastReadout = now; }
-      if (time >= 10) { setPlaying(false); status('已到 10 秒'); }
+      if (time >= 10) { time = 0; autoHits = null; }   // 持續播放：到 10 秒接回 0 秒重新計次，按「暫停」才停
     } else if (flashDirty) {
       draw(); readouts(); flashDirty = Boolean(preview && preview.flashAt.some(t => now - t < FLASH_MS));
     }
@@ -872,7 +904,7 @@
   $('measure').addEventListener('click', syncQuick);
   // ---------- 3D 水面 ----------
   function scene3d() {
-    const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
+    const waves = manual ? preview ? previewWaves().filter(w => w.radius < 60) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
     const src = manual ? (pieces.at(-1).placed ? pieces.at(-1) : null) : P.source(phys(), time);
     const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
       Math.ceil(Math.max(5.5, params.c * Math.max(5, time) + .65, ...observers.flatMap(obsExtent)));
