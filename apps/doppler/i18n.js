@@ -287,6 +287,8 @@
     "已送出": "Sent",
     "向右游": "swims right",
     "🧪 自由模式：所有功能都開放，給老師出題、展示用，不會送出作答。": "🧪 Free mode: every tool is available for the teacher to pose and demo questions; nothing is sent.",
+    "🧊 3D": "🧊 3D",
+    "↩ 回 2D": "↩ Back to 2D",
     '變短': 'gets shorter', '變長': 'gets longer', '出口票': 'Read the source from the ripples', '看水波判斷波源': 'Read the source from the ripples', '判斷 A～D 波源的運動。': 'Work out how the source moves in A–D.', '理由（用波長、波速）': 'Reason (use wavelength and wave speed)',
     'B、C 誰快？': 'Faster: B or C?', 'B 快': 'B', 'C 快': 'C', '波源向右，誰收到的頻率高？': 'Source moving right: who receives the higher frequency?', '前方': 'Ahead', '後方': 'Behind',
     '呱': 'Quack', '嗡': 'Buzz', '叮': 'Ding', '啾啾': 'Tweet', '吱': 'Squeak', '咚': 'Dong',

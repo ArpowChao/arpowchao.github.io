@@ -285,3 +285,4 @@ body.demostage #qb-swim,body.demostage #qb-3d,body.demostage #qb-labels,body.dem
 html.free .fs-free{display:block}
 html.free .fs-task,html.free #fs-q,html.free #fs-answer,html.free #fs-upnote,html.free .fs-id,html.free .assignment,html.free .answer-sheet,html.free #fs-info{display:none!important}
 html.free .fs-layer [data-fs="tray"]:not([hidden]){display:block!important}
+.mode-switch .mode-3d{background:#eef4ff;color:#1c3fa8;font-weight:700}

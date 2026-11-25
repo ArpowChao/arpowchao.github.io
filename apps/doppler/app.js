@@ -655,17 +655,30 @@
     e.preventDefault(); const p = eventPoint(e); zoomAt(cam.z * Math.exp(-e.deltaY * .0015), p, world(p.x, p.y));
   }, { passive: false });
   const modeBar = document.createElement('div'); modeBar.className = 'mode-switch'; modeBar.setAttribute('role', 'group'); modeBar.setAttribute('aria-label', '操作模式');
-  modeBar.innerHTML = '<button type="button" data-mode="observe">👀 觀察・縮放</button><button type="button" data-mode="place">✋ 擺放</button><button type="button" class="mode-reset" aria-label="回到原大小">⟲ 原大小</button>';
+  modeBar.innerHTML = '<button type="button" data-mode="observe">👀 觀察・縮放</button><button type="button" data-mode="place">✋ 擺放</button><button type="button" class="mode-reset" aria-label="回到原大小">⟲ 原大小</button>' +
+    '<button type="button" class="mode-view" data-v3="oblique">斜看</button><button type="button" class="mode-view" data-v3="top">俯視</button><button type="button" class="mode-view" data-v3="low">貼近水面</button>' +
+    '<button type="button" class="mode-3d">🧊 3D</button>';
   $('pond-area').append(modeBar);
   modeBar.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode, true)));
   modeBar.querySelector('.mode-reset').addEventListener('click', () => { resetZoom(); status('回到原大小'); });
+  // 3D 視角：看水波的關卡都可以切 3D（擺圓片的關卡要在 2D 排）；3D 裡可以換斜看、俯視、貼近水面
+  modeBar.querySelector('.mode-3d').addEventListener('click', () => set3D(!view3d?.visible));
+  modeBar.querySelectorAll('[data-v3]').forEach(b => b.addEventListener('click', () => document.querySelector('#view3d-tools [data-view="' + b.dataset.v3 + '"]')?.click()));
+  function can3D() {
+    const su = (tasks[task] && tasks[task].setup) || {};
+    return FREE || !!(su.watch || su.swim || su.demo || su.scene || (viewOnly && viewOnly !== 'blank'));
+  }
   function syncMode() {
     // 觀察／擺放切換只在「觀察小鴨」的關卡出現（要放小鴨聽呱呱叫）；其他關卡縮放時只顯示「原大小」
     const su0 = (tasks[task] && tasks[task].setup) || {}, modes = FREE || !!(su0.watch || su0.swim);   // 觀察小鴨、觀察者運動：可以切到「擺放」移動小鴨
     modeBar.querySelectorAll('[data-mode]').forEach(b => { b.hidden = !modes; b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
     const home = Math.abs(cam.z - homeCam.z) < 1e-6 && Math.abs(cam.x - homeCam.x) < 1e-6 && Math.abs(cam.y - homeCam.y) < 1e-6;
-    modeBar.querySelector('.mode-reset').hidden = home;
-    modeBar.hidden = !!view3d?.visible || (!modes && home);
+    const in3d = !!view3d?.visible, allow = can3D();
+    modeBar.querySelectorAll('[data-mode]').forEach(b => { if (in3d) b.hidden = true; });
+    modeBar.querySelector('.mode-reset').hidden = home || in3d;
+    modeBar.querySelectorAll('[data-v3]').forEach(b => { b.hidden = !in3d; });
+    const b3 = modeBar.querySelector('.mode-3d'); b3.hidden = !allow && !in3d; b3.textContent = in3d ? '↩ 回 2D' : '🧊 3D';
+    modeBar.hidden = !(modes || !home || allow || in3d);
     document.body.classList.toggle('mode-observe', mode === 'observe');
   }
   function setMode(next, say) {
@@ -688,7 +701,7 @@
   function loadQuestion() {
     const t = tasks[task];
     $('question').textContent = t.q; $('answer').value = answers[t.id] || '';
-    enterBoard(t);
+    enterBoard(t); syncMode();
     $('load-task').hidden = true;  // 觀察者運動一進來就自動擺好，不需要「套用起始設定」
     document.dispatchEvent(new CustomEvent('doppler:task', { detail: { index: task, task: t } }));
     fsSync();   // 老師開放新關卡時（gate.js 直接切換題目）全螢幕面板也要跟著換
@@ -729,6 +742,7 @@
     syncDucks(); syncMode();
   }
   function enterBoard(t) {
+    if (view3d?.visible && !FREE) set3D(false);   // 換關卡先回 2D
     if (FREE) { document.body.classList.add('free'); syncMode(); return; }   // 自由模式：不套用任何關卡限制
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
@@ -950,11 +964,10 @@
       $('qb-3d').disabled = false;
     }
     if (!view3d) return;
-    modeBar.hidden = on;
     if (on) { setMeasure(false); view3d.show(); $('view3d-tools').hidden = false; status('3D：拖曳旋轉、雙指縮放；排列請回 2D'); }
     else { view3d.hide(); $('view3d-tools').hidden = true; status(manual ? '拖曳圓圈排列' : '拖曳 A、B 小鴨'); refresh(); }
     $('qb-3d').textContent = on ? '2D' : '3D';
-    syncQuick(); fsSync();
+    syncQuick(); fsSync(); syncMode();
   }
   $('qb-3d').addEventListener('click', () => set3D(!view3d?.visible));
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => view3d?.setView(b.dataset.view)));
