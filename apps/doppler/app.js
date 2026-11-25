@@ -329,6 +329,17 @@
       if (manual && selectedPiece === pieces.length - 1) { c.strokeStyle = '#a47700'; c.lineWidth = 2; c.beginPath(); c.arc(source.x, source.y, 22, 0, Math.PI * 2); c.stroke(); }
       if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 13);
     }
+    // 擺圖的關卡：標出 t = 0 時鴨子的位置（起點）
+    if (manual && arranging()) {
+      const o = xy({ x: 0, y: 0 }, camera);
+      c.save(); c.fillStyle = '#e03131'; c.strokeStyle = '#ffffff'; c.lineWidth = 2.5;
+      c.beginPath(); c.arc(o.x, o.y, 7, 0, Math.PI * 2); c.fill(); c.stroke();
+      const lab = (window.T || String)('t = 0 起點');
+      c.font = '700 14px "Microsoft JhengHei", sans-serif'; const lw = c.measureText(lab).width;
+      c.fillStyle = '#ffffffe6'; c.fillRect(o.x - lw / 2 - 5, o.y - 44, lw + 10, 22);
+      c.fillStyle = '#c92a2a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(lab, o.x, o.y - 33);
+      c.restore();
+    }
     if ($('observers').checked) observers.forEach((o, i) => {
       const sx = manual ? pieces.at(-1).x : P.source(phys(), time).x;
       const at = xy(posAt(o), camera), moving = !manual && o.vx;
