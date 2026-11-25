@@ -56,7 +56,7 @@
     box.replaceChildren();
     $('answer-label').textContent = t.reasonLabel || '我的回答';
     // 上傳圖的關卡只交圖，不用寫字；寫想法的關卡不附水波圖
-    const image = t.kind === 'image';
+    const image = t.kind === 'image' || t.kind === 'form';   // 上傳圖、只填欄位的關卡都不用寫一段話
     $('answer-label').hidden = image; $('answer').hidden = image;
     $('save-note').textContent = '';
     $('task-figure').hidden = t.figure !== 'abcd' && !t.draw;
@@ -135,7 +135,7 @@
       image: '', thumb: ''
     };
     if (t.check) data.arrangement = Lab.arrangement(t.setup && t.setup.speed && labelMach(fields.speed) !== undefined ? labelMach(fields.speed) : p.mach);
-    if (t.kind === 'image') data.answer = '';
+    if (t.kind === 'image' || t.kind === 'form') data.answer = '';
     const shot = t.kind !== 'image' ? null : t.draw ? (window.DopplerPhoto ? window.DopplerPhoto.canvas() : null) : Lab.snapshot(false);
     const card = makeCard(t, data, shot);
     data.image = shrink(card, 1000, 0.8);          // 存進雲端資料夾的作答卡
@@ -226,10 +226,10 @@
     }
     const t = tasks[Lab.taskIndex], data = payload();
     const drawn = t.draw && window.DopplerPhoto ? window.DopplerPhoto.count() : 0;
-    const empty = t.fields.find(f => f.type === 'choice' && !data.fields[f.key]);
+    const empty = t.fields.find(f => (f.type === 'choice' || t.kind === 'form') && !data.fields[f.key]);
     if (t.draw && !drawn) { setStatus('先在照片上圈出來', 'warn'); window.DopplerPhoto && window.DopplerPhoto.open(); return; }
     if (t.check && data.arrangement && data.arrangement.placed === 0) { setStatus('先把圓片拖進水面排好', 'warn'); return; }
-    if (empty) { setStatus((window.T || String)('先選：') + (window.T || String)(empty.label), 'warn'); return; }
+    if (empty) { setStatus((window.T || String)(empty.type === 'choice' ? '先選：' : '先填：') + (window.T || String)(empty.label), 'warn'); return; }
     if (t.kind === 'idea' && !data.answer) { setStatus('寫下你的想法再送出', 'warn'); $('answer').focus(); return; }
     if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm((window.T || String)('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + '），仍要送出？'))) return;
     $('submit').disabled = true; setStatus('傳送中…');

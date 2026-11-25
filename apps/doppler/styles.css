@@ -254,3 +254,6 @@ body.mode-observe #pond{cursor:move}
 /* 操作步驟、提示列都不顯示（老師上課講） */
 .fs-steps,.fs-status,#save-note,.fs-layer .small-note{display:none!important}
 body:not(.arrange) .fs-layer [data-fs="tray"]{display:none!important}
+/* 觀察小鴨的關卡：只留播放與讀值 */
+body.watch #qb-auto,body.watch #qb-swim,body.watch #qb-3d,body.watch #view3d-tools,body.watch #qb-add-duck,body.watch #qb-remove-duck,body.watch #qb-labels,body.watch #qb-measure,body.watch #manual-scene-tools{display:none!important}
+body.watch .fs-layer [data-fs="ctrl"],body.watch .fs-layer [data-fs="more"],body.watch .fs-layer [data-fs="time"],body.watch .fs-layer .scene-head,body.watch .fs-layer .scene-foot,body.watch .quick-bar .qb-group{display:none!important}

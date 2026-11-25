@@ -22,7 +22,7 @@
   const BOARD_KEY = 'doppler-boards-v1';
   let boards = {}, boardFor = null;
   try { boards = JSON.parse(localStorage.getItem(BOARD_KEY) || '{}') || {}; } catch (_) { boards = {}; }
-  const arranging = () => !!(tasks[task] && tasks[task].setup && tasks[task].setup.arrange);
+  const arranging = () => !!(tasks[task] && tasks[task].setup && (tasks[task].setup.arrange || tasks[task].setup.watch));
   let mode = 'place', gest0 = null; const cam = { z: 1, x: 0, y: 0 }, gest = new Map();
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
@@ -633,20 +633,24 @@
   // 進入關卡：要自己擺的關卡把水面整理乾淨（只留波源小鴨、圓片全部在托盤），回到這關時接著排
   function enterBoard(t) {
     saveBoard(); boardFor = null;
-    const arrange = !!(t.setup && t.setup.arrange);
+    const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
     document.body.classList.toggle('arrange', arrange);
-    document.body.classList.toggle('arrange-speed', !!(arrange && t.setup.speed));
+    document.body.classList.toggle('arrange-speed', !!(arrange && su.speed));
+    document.body.classList.toggle('watch', watch);
     cam.z = 1; cam.x = 0; cam.y = 0; setMode(arrange ? 'place' : 'observe');
-    if (!arrange) return;
+    if (!boardId) return;
     if (view3d?.visible) set3D(false);
     setPlaying(false); swim = 0; applySwim(); if (!manual) setManual(true);
     params.c = 1; params.f = 1; $('wave-speed').value = 1; $('frequency').value = 1;
     ruler = null; setMeasure(false);
-    $('observers').checked = false; $('labels').checked = false; $('centers').checked = true; $('grid').checked = true; $('snap-grid').checked = true;
-    const b = boards[t.id];
-    changeMach(b && Number.isFinite(b.mach) ? b.mach : t.setup.mach);
+    $('labels').checked = false; $('centers').checked = true; $('grid').checked = true; $('snap-grid').checked = true;
+    // 排圖時水面只留波源小鴨；觀察小鴨的關卡沿用排好的那張圖，放上 A、B 兩隻小鴨
+    $('observers').checked = watch;
+    if (watch) { observers.length = 2; observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 }; syncDucks(); }
+    const b = boards[boardId];
+    changeMach(b && Number.isFinite(b.mach) ? b.mach : su.mach || 0);
     rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
-    undo.length = 0; selectedPiece = 0; boardFor = t.id;
+    undo.length = 0; selectedPiece = 0; boardFor = boardId;
     syncQuick(); refresh(); persist();
   }
   $('student').addEventListener('input', persist);
