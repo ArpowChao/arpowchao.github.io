@@ -657,7 +657,7 @@
   modeBar.querySelector('.mode-reset').addEventListener('click', () => { resetZoom(); status('回到原大小'); });
   function syncMode() {
     // 觀察／擺放切換只在「觀察小鴨」的關卡出現（要放小鴨聽呱呱叫）；其他關卡縮放時只顯示「原大小」
-    const modes = !!(tasks[task] && tasks[task].setup && tasks[task].setup.watch);
+    const su0 = (tasks[task] && tasks[task].setup) || {}, modes = !!(su0.watch || su0.swim);   // 觀察小鴨、觀察者運動：可以切到「擺放」移動小鴨
     modeBar.querySelectorAll('[data-mode]').forEach(b => { b.hidden = !modes; b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
     const home = Math.abs(cam.z - homeCam.z) < 1e-6 && Math.abs(cam.x - homeCam.x) < 1e-6 && Math.abs(cam.y - homeCam.y) < 1e-6;
     modeBar.querySelector('.mode-reset').hidden = home;
