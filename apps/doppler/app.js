@@ -229,11 +229,14 @@
       Math.max(6.5, Math.abs(params.mach) * params.c * 5 + 1.5, ...observers.flatMap(obsExtent));
     // Use the whole square board for the five waves, without extra side ranges
     // or a pixel-per-metre cap. The physical view stays fixed while arranging.
-    const scale = Math.max(1, (Math.min(w, h) - (manual ? 0 : 54)) / (2 * extent));
+    let scale = Math.max(1, (Math.min(w, h) - (manual ? 0 : 54)) / (2 * extent));
+    // 擺圖、觀察小鴨的關卡：格子放大。水面左右看到 ±4.75 格、上下 ±4.25 格（最外圈的邊可能略超出畫面，觀察模式可縮小看全部）
+    const board = manual && arranging();
+    if (board) scale = Math.max(1, Math.min(w / (2 * 4.75), h / (2 * 4.25)));
     // 觀察模式可以縮放、移動畫面（cam）；擺放的範圍（halfWidth）仍以原大小計算
     const ox = ins.l + w / 2, oy = ins.t + h / 2, z = zoomed ? cam.z : 1, zs = scale * z;
     return { scale: zs, cx: ox - (zoomed ? cam.x : 0) * zs, cy: oy + (zoomed ? cam.y : 0) * zs, width, height, ox, oy, base: scale, l: ins.l, t: ins.t,
-      halfWidth: width / 2 / scale, halfHeight: height / 2 / scale };
+      halfWidth: board ? 10 : width / 2 / scale, halfHeight: board ? 10 : height / 2 / scale };
   }
   function xy(point, camera) { return { x: camera.cx + point.x * camera.scale, y: camera.cy - point.y * camera.scale }; }
   function world(x, y) { return { x: (x - view.cx) / view.scale, y: (view.cy - y) / view.scale }; }
@@ -565,12 +568,12 @@
     } else gest0 = null;
   }
   function clampCam() {
-    cam.z = Math.min(4, Math.max(1, cam.z));
+    cam.z = Math.min(4, Math.max(.6, cam.z));   // 可以縮小到 0.6 倍看整張圖
     const lim = 7; cam.x = Math.max(-lim, Math.min(lim, cam.x)); cam.y = Math.max(-lim, Math.min(lim, cam.y));
     if (cam.z === 1) { cam.x = 0; cam.y = 0; }
   }
   function zoomAt(z, mid, w) {
-    cam.z = Math.min(4, Math.max(1, z)); const s = view.base * cam.z;
+    cam.z = Math.min(4, Math.max(.6, z)); const s = view.base * cam.z;
     cam.x = w.x - (mid.x - view.ox) / s; cam.y = w.y + (mid.y - view.oy) / s; clampCam(); syncMode(); draw();
   }
   function gestMove() {
@@ -646,7 +649,7 @@
     $('labels').checked = false; $('centers').checked = true; $('grid').checked = true; $('snap-grid').checked = true;
     // 排圖時水面只留波源小鴨；觀察小鴨的關卡沿用排好的那張圖，放上 A、B 兩隻小鴨
     $('observers').checked = watch;
-    if (watch) { observers.length = 2; observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 }; syncDucks(); }
+    if (watch) { observers.length = 2; observers[0] = { x: 4.5, y: 0 }; observers[1] = { x: -4.5, y: 0 }; syncDucks(); }
     const b = boards[boardId];
     changeMach(b && Number.isFinite(b.mach) ? b.mach : su.mach || 0);
     rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
