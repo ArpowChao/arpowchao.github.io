@@ -785,7 +785,12 @@
     setManual(true); time = 5;
     $('labels').checked = false; $('observers').checked = setup.observers; $('centers').checked = true; $('grid').checked = true;
     swim = 0; applySwim(); changeMach(setup.mach);
-    if (setup.swim) { observers[0] = { x: 6, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
+    if (setup.swim) {
+      observers[0] = { x: 6, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false);
+      // 初始畫面放大到天鵝與兩隻小鴨附近（約 ±6 格）；要看整片水面可以縮小，「原大小」回到這裡
+      const ext = Math.max(6.5, ...observers.flatMap(obsExtent));
+      cam.z = Math.max(1, ext / 6); cam.x = -.5; cam.y = 0; homeCam = { ...cam }; syncMode();
+    }
     syncQuick(); refresh();
     status('已套用起始設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
   }
