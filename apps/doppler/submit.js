@@ -242,7 +242,7 @@
       const r = await send(data);
       const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
       setStatus('✓ 已送出（' + time + '）', 'ok');
-      Lab.status('已送出第 ' + data.taskNo + ' 題');
+      Lab.status('已送出');
       if (Lab.markSent) Lab.markSent(t.id);
       sentDialog(Lab.taskIndex);
     } catch (err) {
@@ -257,7 +257,7 @@
     const el = document.createElement('div'); el.className = 'sent-dlg'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', T('傳送完成'));
     const box = document.createElement('div'); box.className = 'sent-box';
     const ok = document.createElement('div'); ok.className = 'sent-ok'; ok.textContent = '✓ ' + T('傳送完成');
-    const sub = document.createElement('p'); sub.textContent = next === undefined ? T('等老師開下一題') : T('下一題：') + tasks[next].n + '　' + T(tasks[next].title);
+    const sub = document.createElement('p'); sub.textContent = next === undefined ? T('等老師開下一題') : T('下一題：') + (tasks[next].n ? tasks[next].n + '　' : '') + T(tasks[next].title);
     const go = document.createElement('button'); go.type = 'button'; go.className = 'sent-next';
     go.textContent = next === undefined ? T('好') : T('下一題 ▸');
     go.addEventListener('click', () => {

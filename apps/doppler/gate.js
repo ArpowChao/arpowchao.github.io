@@ -32,7 +32,7 @@
     toastEl = el;
     if (act) setTimeout(() => { if (toastEl === el) el.remove(); }, 20000);
   }
-  const name = i => tasks[i].n + '　' + T(tasks[i].title);
+  const name = i => (tasks[i].n ? tasks[i].n + '　' : '') + T(tasks[i].title);
 
   function apply(prev) {
     const list = openIdx(), cur = Lab.taskIndex;

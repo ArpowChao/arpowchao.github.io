@@ -659,7 +659,7 @@
   }
   // 進入關卡：要自己擺的關卡把水面整理乾淨（只留波源小鴨、圓片全部在托盤），回到這關時接著排
   // 題目選單：依五個段落分組；送出過的關卡打 ✓；只列出老師開放的關卡（gate.js 設定 taskFilter）
-  const SECTIONS = { photo: '一、生活體驗', still: '二、靜止打水', moving: '三、移動的波源', ducks: '四、波與觀察者', observer: '五、觀察者運動' };
+  const SECTIONS = { photo: '一、生活體驗', still: '二、靜止打水', moving: '三、移動的波源', ducks: '四、波與觀察者', observer: '六、觀察者運動' };   // 對齊學習單大題
   let taskFilter = () => true, sent = new Set();
   try { sent = new Set(JSON.parse(localStorage.getItem('doppler-sent-v1') || '[]')); } catch (_) { sent = new Set(); }
   function fillTaskSelect(sel) {
@@ -667,7 +667,7 @@
     tasks.forEach((t, i) => {
       if (!taskFilter(i)) return;
       if (!cur || cur.g !== t.group) { cur = { g: t.group, el: document.createElement('optgroup') }; cur.el.label = SECTIONS[t.group] || ''; groups.push(cur); }
-      cur.el.append(new Option((sent.has(t.id) ? '✓ ' : '') + t.n + '　' + t.title, String(i)));
+      cur.el.append(new Option((sent.has(t.id) ? '✓ ' : '') + (t.n ? t.n + '　' : '') + t.title, String(i)));
     });
     sel.replaceChildren(...groups.map(g => g.el));
     if ([...sel.options].some(o => o.value === String(task))) sel.value = String(task);
@@ -722,7 +722,7 @@
     swim = 0; applySwim(); changeMach(setup.mach);
     if (setup.swim) { observers[0] = { x: 6, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
     syncQuick(); refresh();
-    status('已套用第 ' + tasks[task].n + ' 題設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
+    status('已套用起始設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
   });
   function wrap(c, value, maxWidth) {
     const lines = [];
@@ -1043,7 +1043,7 @@
     fsLayer.querySelector('[data-fs="tray"]').hidden = answering || $('piece-tray').hidden;
     fsLayer.querySelector('[data-fs="guide"]').hidden = answering;
     fsLayer.querySelector('[data-fs="answer"]').hidden = !answering;
-    $('fs-anum').textContent = '第 ' + t.n + ' 題';
+    $('fs-anum').textContent = t.n ? '學習單 ' + t.n : '';
     const up = t && t.kind === 'image', fa = $('fs-answer'), want = up ? '⇪ 上傳給老師' : '✎ 作答';
     if (fa.dataset.label !== want) { fa.dataset.label = want; fa.textContent = want; }
     if (!up) $('fs-upnote').textContent = '';
