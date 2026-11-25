@@ -257,3 +257,9 @@ body:not(.arrange) .fs-layer [data-fs="tray"]{display:none!important}
 /* 觀察小鴨的關卡：只留播放與讀值 */
 body.watch #qb-auto,body.watch #qb-swim,body.watch #qb-3d,body.watch #view3d-tools,body.watch #qb-add-duck,body.watch #qb-remove-duck,body.watch #qb-labels,body.watch #qb-measure,body.watch #manual-scene-tools{display:none!important}
 body.watch .fs-layer [data-fs="ctrl"],body.watch .fs-layer [data-fs="more"],body.watch .fs-layer [data-fs="time"],body.watch .fs-layer .scene-head,body.watch .fs-layer .scene-foot,body.watch .quick-bar .qb-group{display:none!important}
+/* 傳送完成 */
+.sent-dlg{position:fixed;inset:0;z-index:10060;display:flex;align-items:center;justify-content:center;background:rgba(21,63,77,.35)}
+.sent-box{width:min(88vw,380px);padding:26px 24px 20px;background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.25);text-align:center;display:grid;gap:10px}
+.sent-ok{font-size:28px;font-weight:700;color:#0a7d4f}.sent-box p{margin:0 0 6px;font-size:16px;color:var(--muted)}
+.sent-next{min-height:54px;font-size:20px;font-weight:700;color:#fff;background:var(--teal);border-color:var(--teal);border-radius:12px}
+.sent-stay{min-height:44px;font-size:15px;background:transparent;border-color:transparent;color:var(--muted)}

@@ -238,10 +238,33 @@
       const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
       setStatus('✓ 已送出（' + time + '）', 'ok');
       Lab.status('已送出第 ' + data.taskNo + ' 題');
+      sentDialog(Lab.taskIndex);
     } catch (err) {
       setStatus('沒送出，請再按一次', 'warn');
     } finally { $('submit').disabled = false; }
   });
+
+  // ---------- 傳送完成：跳出視窗，按「下一題」到下一個老師開放的關卡 ----------
+  function sentDialog(index) {
+    const T = window.T || String, old = document.querySelector('.sent-dlg'); if (old) old.remove();
+    const sel = $('task'), opts = [...sel.options].map(o => Number(o.value)), next = opts.find(i => i > index);
+    const el = document.createElement('div'); el.className = 'sent-dlg'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', T('傳送完成'));
+    const box = document.createElement('div'); box.className = 'sent-box';
+    const ok = document.createElement('div'); ok.className = 'sent-ok'; ok.textContent = '✓ ' + T('傳送完成');
+    const sub = document.createElement('p'); sub.textContent = next === undefined ? T('等老師開下一題') : T('下一題：') + tasks[next].n + '　' + T(tasks[next].title);
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'sent-next';
+    go.textContent = next === undefined ? T('好') : T('下一題 ▸');
+    go.addEventListener('click', () => {
+      el.remove();
+      document.querySelector('.fs-layer .fs-back:not([hidden])')?.click();   // 收起作答面板，回到水面
+      if (next !== undefined) { sel.value = String(next); sel.dispatchEvent(new Event('change')); }
+    });
+    box.append(ok, sub, go);
+    if (next !== undefined) { const stay = document.createElement('button'); stay.type = 'button'; stay.className = 'sent-stay'; stay.textContent = T('留在這題'); stay.addEventListener('click', () => el.remove()); box.append(stay); }
+    el.append(box);
+    (document.fullscreenElement || document.webkitFullscreenElement || document.body).append(el);
+    go.focus();
+  }
 
   // ---------- 教師設定 ----------
   if ($('gas-url')) {
