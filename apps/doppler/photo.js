@@ -70,7 +70,7 @@
     if (modal) return;
     const el = document.createElement('div'); el.className = 'ph-modal'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '在照片上圈');
     const head = document.createElement('div'); head.className = 'ph-head';
-    head.innerHTML = '<strong>在照片上圈出來</strong><span>藍筆圈原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻</span>';
+    head.innerHTML = '<strong>在照片上圈出來</strong>';
     const stage = document.createElement('div'); stage.className = 'ph-stage';
     const canvas = document.createElement('canvas'); stage.append(canvas);
     el.append(head, tools(closeModal), stage);

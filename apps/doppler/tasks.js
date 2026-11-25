@@ -8,7 +8,7 @@
   root.DopplerTasks = [
     {
       id: 'photo', group: 'photo', n: '1-1', kind: 'image', title: '圈照片',
-      q: '在照片上圈出來：藍筆圈在原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻。圈好就送出。',
+      q: '圈出原地的、移動的、跑得最快的。',
       setup: null, draw: 'swans', fields: []
     },
     {
@@ -35,13 +35,13 @@
     },
     {
       id: 'ducks', group: 'ducks', n: '4', kind: 'idea', title: '先預測：誰被打得多？',
-      q: '波源向右游，前方 A、後方 B 兩隻小鴨，誰被水波打得比較頻繁？先預測，再寫下理由。',
+      q: '波源向右游，前方 A、後方 B 兩隻小鴨，誰被水波打得比較頻繁？',
       setup: null, reasonLabel: '我這樣預測，是因為…',
       fields: [{ key: 'predict', label: '我的預測', type: 'choice', options: ['A 比較頻繁', 'B 比較頻繁', '一樣'] }]
     },
     {
       id: 'observer', group: 'observer', n: '5', kind: 'idea', title: '小鴨自己游',
-      q: '按「套用起始設定」再按「▶ 播放」：天鵝在原地打水，A 迎著波、B 順著波游。圈圈（波長）有沒有變？那為什麼每秒碰到的圈數不一樣？',
+      q: '天鵝在原地打水，A 迎著波、B 順著波游。圈圈（波長）有沒有變？為什麼每秒碰到的圈數不一樣？',
       setup: { mach: 0, observers: true, swim: true }, reasonLabel: '每秒碰到的圈數不一樣，是因為…',
       fields: [{ key: 'lambda', label: '圈圈（波長）有沒有變？', type: 'choice', options: ['有變', '沒有變'] }]
     },

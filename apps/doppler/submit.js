@@ -58,7 +58,7 @@
     // 上傳圖的關卡只交圖，不用寫字；寫想法的關卡不附水波圖
     const image = t.kind === 'image';
     $('answer-label').hidden = image; $('answer').hidden = image;
-    $('save-note').textContent = image ? (t.draw ? '這關只要圈好照片送出，不用寫字' : '這關只要把水波排好送出，不用寫字') : '這關寫下你的想法就好，數值寫在學習單上';
+    $('save-note').textContent = '';
     $('task-figure').hidden = t.figure !== 'abcd' && !t.draw;
     $('task-figure').innerHTML = t.figure === 'abcd' ? abcdFigure() : '';
     if (t.draw && window.DopplerPhoto) window.DopplerPhoto.mount($('task-figure'));

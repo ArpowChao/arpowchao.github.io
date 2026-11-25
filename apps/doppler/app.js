@@ -621,6 +621,7 @@
     enterBoard(t);
     $('load-task').hidden = !(t.setup && t.setup.swim);  // 要自己排的題目不給「套用」，只有觀察者移動（第 5 題）需要
     document.dispatchEvent(new CustomEvent('doppler:task', { detail: { index: task, task: t } }));
+    fsSync();   // 老師開放新關卡時（gate.js 直接切換題目）全螢幕面板也要跟著換
   }
   $('task').addEventListener('change', () => { task = Number($('task').value); loadQuestion(); });
   $('answer').addEventListener('input', () => { answers[tasks[task].id] = $('answer').value; persist(); });

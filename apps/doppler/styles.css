@@ -251,3 +251,6 @@ body.mode-observe #pond{cursor:move}
 .fs-info .fs-speed{flex-wrap:wrap}.fs-info .seg{display:inline-flex;gap:4px;margin-left:auto}.fs-info .seg button{min-height:44px;min-width:48px;font-size:19px;font-weight:700;color:#a45200;background:#fff;border:1px solid #f0d7a0}.fs-info .seg button[aria-pressed=true]{background:#c96a00;border-color:#c96a00;color:#fff}
 .fs-info .fs-speed>span:first-child{flex-basis:100%}.fs-info .fs-speed .seg{margin-left:0}.fs-info .fs-speed b{margin-left:auto}
 .fs-info b{white-space:normal;text-align:right;min-width:0}.fs-info>div{min-width:0}
+/* 操作步驟、提示列都不顯示（老師上課講） */
+.fs-steps,.fs-status,#save-note,.fs-layer .small-note{display:none!important}
+body:not(.arrange) .fs-layer [data-fs="tray"]{display:none!important}
