@@ -95,5 +95,21 @@
     if (!strokes.length) return null;
     const c = document.createElement('canvas'); c.width = 1500; c.height = 998; paint(c); return c;
   }
+  // 生活體驗（1-1、1-2）：水面換成這張鴨子划水的照片（含自己圈的筆跡）；1-1 點照片可以再打開來圈
+  let back = null;
+  function backdrop(on, drawTask) {
+    const host = document.getElementById('pond-area');
+    if (!on || !host) { if (back) { views.delete(back.c); back.el.remove(); back = null; } return; }
+    if (!back) {
+      const el = document.createElement('div'); el.className = 'ph-back';
+      const c = document.createElement('canvas'); c.width = 1500; c.height = 998; el.append(c); host.append(el);
+      back = { el, c }; views.add(c);
+      el.addEventListener('click', () => { if (back && back.draw) open(); });
+    }
+    back.draw = !!drawTask; back.el.classList.toggle('can-draw', !!drawTask); paint(back.c);
+  }
+  const sync = t => backdrop(!!t && t.group === 'photo', !!(t && t.draw));
+  document.addEventListener('doppler:task', e => sync(e.detail.task));
+  if (window.DopplerLab) sync(window.DopplerLab.tasks[window.DopplerLab.taskIndex]);
   window.DopplerPhoto = { mount, open, canvas, count: () => strokes.length };
 })();
