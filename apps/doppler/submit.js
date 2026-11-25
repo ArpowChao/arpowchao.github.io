@@ -5,7 +5,7 @@
   const Lab = window.DopplerLab;
   if (!Lab) return;
   const tasks = Lab.tasks;
-  const KEY_URL = 'doppler-gas-url', KEY_ID = 'doppler-identity-v1', KEY_FIELDS = 'doppler-fields-v1';
+  const KEY_URL = 'doppler-gas-url', KEY_ID = 'doppler-identity-v1', KEY_FIELDS = 'doppler-fields-v2';
   const store = {
     get(key, fallback) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch (_) { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* 瀏覽器不允許保存時仍可送出 */ } }
@@ -55,6 +55,10 @@
     const t = tasks[index], box = $('task-fields'), saved = values[t.id] || {};
     box.replaceChildren();
     $('answer-label').textContent = t.reasonLabel || '我的回答';
+    // 上傳圖的關卡只交圖，不用寫字；寫想法的關卡不附水波圖
+    const image = t.kind === 'image';
+    $('answer-label').hidden = image; $('answer').hidden = image;
+    $('save-note').textContent = image ? (t.draw ? '這關只要圈好照片送出，不用寫字' : '這關只要把水波排好送出，不用寫字') : '這關寫下你的想法就好，數值寫在學習單上';
     $('task-figure').hidden = t.figure !== 'abcd' && !t.draw;
     $('task-figure').innerHTML = t.figure === 'abcd' ? abcdFigure() : '';
     if (t.draw && window.DopplerPhoto) window.DopplerPhoto.mount($('task-figure'));
@@ -126,12 +130,13 @@
     const data = {
       v: 1, sentAt: new Date().toISOString(),
       cls: $('cls').value.trim(), seat: $('seat').value.trim(), group: $('group').value, name: $('student').value.trim(),
-      taskId: t.id, taskNo: index + 1, taskTitle: t.title, fields, answer: Lab.answer().trim(),
+      taskId: t.id, taskNo: t.n, taskTitle: t.title, fields, answer: Lab.answer().trim(),
       mach: p.mach, c: p.c, f: p.f, mode: Lab.manual() ? 'manual' : 'auto', ruler: Lab.ruler(), ducks: Lab.ducks(),
       image: '', thumb: ''
     };
-    if (t.check) data.arrangement = Lab.arrangement(t.id === 'moving' && labelMach(fields.speed) !== undefined ? labelMach(fields.speed) : p.mach);
-    const shot = t.image ? Lab.snapshot(false) : t.draw && window.DopplerPhoto ? window.DopplerPhoto.canvas() : null;
+    if (t.check) data.arrangement = Lab.arrangement(t.setup && t.setup.speed && labelMach(fields.speed) !== undefined ? labelMach(fields.speed) : p.mach);
+    if (t.kind === 'image') data.answer = '';
+    const shot = t.kind !== 'image' ? null : t.draw ? (window.DopplerPhoto ? window.DopplerPhoto.canvas() : null) : Lab.snapshot(false);
     const card = makeCard(t, data, shot);
     data.image = shrink(card, 1000, 0.8);          // 存進雲端資料夾的作答卡
     if (shot) {
@@ -220,10 +225,12 @@
       return;
     }
     const t = tasks[Lab.taskIndex], data = payload();
-    const filled = Object.values(data.fields).filter(Boolean).length;
     const drawn = t.draw && window.DopplerPhoto ? window.DopplerPhoto.count() : 0;
-    if (!filled && !data.answer && !drawn) { setStatus('還沒作答', 'warn'); return; }
+    const empty = t.fields.find(f => f.type === 'choice' && !data.fields[f.key]);
     if (t.draw && !drawn) { setStatus('先在照片上圈出來', 'warn'); window.DopplerPhoto && window.DopplerPhoto.open(); return; }
+    if (t.check && data.arrangement && data.arrangement.placed === 0) { setStatus('先把圓片拖進水面排好', 'warn'); return; }
+    if (empty) { setStatus((window.T || String)('先選：') + (window.T || String)(empty.label), 'warn'); return; }
+    if (t.kind === 'idea' && !data.answer) { setStatus('寫下你的想法再送出', 'warn'); $('answer').focus(); return; }
     if (t.check && data.arrangement && data.arrangement.label === '未完成' && !confirm((window.T || String)('水波還沒排完（' + data.arrangement.placed + '/' + data.arrangement.total + '），仍要送出？'))) return;
     $('submit').disabled = true; setStatus('傳送中…');
     try {

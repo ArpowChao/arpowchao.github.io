@@ -1,76 +1,56 @@
-// 課堂作答題目：對應公開觀課的六個收集點。
-// setup：題目的水面條件。只有觀察者移動那題（swim）會顯示「套用起始設定」；其他題學生自己選速度、自己排。
-// fields：送出給老師時一併收集的欄位。
+// 課堂作答：只放「老師要拿全班結果引導討論」的關卡，順序跟著上課簡報走。
+// kind：image＝只上傳圖（不用寫字）；idea＝寫想法（可附一個選項）；quiz＝看水波判斷波源（課後依結果派送因材網）。
+// 數值（間距、間隔、每秒幾次）寫在學習單上，網頁不收。
+// setup.arrange：要學生自己擺圓片的關卡，進來時水面先淨空；setup.swim：觀察者移動，給「套用起始設定」。
 (function (root) {
   'use strict';
   const MOTION = ['靜止', '向右移動', '向左移動'];
   root.DopplerTasks = [
     {
-      id: 'photo', title: '誰跑得最快？',
-      q: '在照片上圈出來：藍筆圈在原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻。',
-      setup: null, image: false, draw: 'swans', reasonLabel: '你是看什麼判斷的？',
-      fields: []
+      id: 'photo', group: 'photo', n: '1-1', kind: 'image', title: '圈照片',
+      q: '在照片上圈出來：藍筆圈在原地的、紅筆圈在移動的、螢光筆圈跑得最快的那一隻。圈好就送出。',
+      setup: null, draw: 'swans', fields: []
     },
     {
-      id: 'still', title: '靜止打水',
-      q: '鴨子在原地每秒打水 1 下，打了 5 秒。先預測，再把圓片排進水面；排好後打開小鴨、播放，數左、右兩隻小鴨被打到幾次。',
-      setup: { mach: 0, observers: false }, image: true, check: true, reasonLabel: '判斷哪一圈最早，我看的是…；原本我認為…，排完後我認為…，因為…',
-      fields: [
-        { key: 'predict', label: '① 先預測：t = 0 秒的水波在', type: 'choice', options: ['最外圈', '最內圈', '不一定'] },
-        { key: 'predictWhy', label: '我這樣預測，是因為', type: 'text' },
-        { key: 'outer', label: '③ 排完後：最外圈是', type: 'choice', options: ['t = 0 s', 't = 1 s', 't = 2 s', 't = 3 s', 't = 4 s', 't = 5 s'] },
-        { key: 'inner', label: '最內圈是', type: 'choice', options: ['t = 0 s', 't = 1 s', 't = 2 s', 't = 3 s', 't = 4 s', 't = 5 s'] },
-        { key: 'center', label: '這些圓的圓心', type: 'choice', options: ['在同一點', '不在同一點'] },
-        { key: 'perSec', label: '(1) 左邊小鴨：每秒被水波打到的數目（次）', type: 'number', fill: 'freqB' },
-        { key: 'tenSec', label: '左邊小鴨：十秒內被打到的數目（次）', type: 'number' },
-        { key: 'rPerSec', label: '右邊小鴨：每秒被水波打到的數目（次）', type: 'number', fill: 'freqA' },
-        { key: 'rTenSec', label: '右邊小鴨：十秒內被打到的數目（次）', type: 'number' },
-        { key: 'stillDiff', label: '兩隻小鴨所感受到的「水波震動」有何差別？', type: 'text' }
-      ]
+      id: 'photoWhy', group: 'photo', n: '1-2', kind: 'idea', title: '判斷的理由',
+      q: '哪一隻跑得最快？你是看什麼判斷的？',
+      setup: null, reasonLabel: '我是看…判斷的，因為…', fields: []
     },
     {
-      id: 'moving', title: '移動波源',
-      q: '每人負責一種速度：排出 5 秒的水波，量前、後方相鄰兩圈的間距。',
-      setup: { mach: 0.25, observers: false }, image: true, check: true, reasonLabel: '(2) 波源移速越大，水波形狀有何變化？（我從表格看到…所以我認為…）',
-      fields: [
-        { key: 'speed', label: '我的速度', type: 'choice', options: ['¼ 波速', '½ 波速', '¾ 波速'], fromMach: true },
-        { key: 'front', label: '前方間距（m）', type: 'number', fill: 'ruler' },
-        { key: 'back', label: '後方間距（m）', type: 'number', fill: 'ruler' },
-        { key: 'waveSpeed', label: '◎ 波源越快，水波的波速會', type: 'choice', options: ['變快', '不變', '變慢'] },
-        { key: 'waveWhy', label: '我的證據是', type: 'text' }
-      ]
+      id: 'still', group: 'still', n: '2', kind: 'image', title: '排出靜止打水',
+      q: '鴨子在原地每秒打水 1 下，打了 5 秒。把圓片一片一片拖進水面，排出 5 秒時的水波，排好就送出。',
+      setup: { arrange: true, mach: 0 }, check: true, fields: [],
+      steps: ['從「圓片」把圈一片一片拖進水面', '拖圓心或圓周可以移動；放錯了按「全部收回」重來', '排好按「✎ 作答」→「送出給老師」']
     },
     {
-      id: 'ducks', title: '誰被打得多？',
-      q: '波源以 ½ 波速向右，前方 A、後方 B 兩隻小鴨。先預測誰被打得比較頻繁；再選 ½ 波速、打開小鴨，按「▶ 示範」聽小鴨叫，記下 A、B 被打一次的間隔，算出每秒幾次。',
-      setup: { mach: 0.5, observers: true }, image: true, check: true, reasonLabel: '(3) 兩隻小鴨感受到的水波震動次數有何差別？（我看到…和預測比較，我的想法…）',
-      fields: [
-        { key: 'predict', label: '先預測：誰被打得比較頻繁？', type: 'choice', options: ['A 比較頻繁', 'B 比較頻繁', '一樣'] },
-        { key: 'predictWhy', label: '我這樣預測，是因為', type: 'text' },
-        { key: 'aInt', label: 'A 前方（靠近端）：被打一次的間隔（s）', type: 'number', fill: 'duckA' },
-        { key: 'aPerSec', label: 'A：每秒幾次', type: 'number' },
-        { key: 'bInt', label: 'B 後方（遠離端）：被打一次的間隔（s）', type: 'number', fill: 'duckB' },
-        { key: 'bPerSec', label: 'B：每秒幾次', type: 'number' }
-      ]
+      id: 'moving', group: 'moving', n: '3-1', kind: 'image', title: '排出邊游邊打水',
+      q: '先選好自己負責的速度，再把 5 片圓片排出 5 秒時的水波（圓心依 0－1－2－3－4），排好就送出。',
+      setup: { arrange: true, mach: 0.25, speed: true }, check: true,
+      fields: [{ key: 'speed', label: '我負責的速度', type: 'choice', options: ['¼ 波速', '½ 波速', '¾ 波速'], fromMach: true }],
+      steps: ['先在右邊選好自己負責的速度', '從「圓片」把圈一片一片拖進水面，圓心放在發波時鴨子的位置', '排好按「✎ 作答」→「送出給老師」']
     },
     {
-      id: 'observer', title: '觀察者移動',
-      q: '按「套用起始設定」再按「▶ 播放」：天鵝在原地打水，小鴨以 ½ 倍水波速游，A 迎著波、B 順著波。看「即時讀值」，記下每秒被打幾次。',
-      setup: { mach: 0, observers: true, swim: true }, image: true, reasonLabel: '(8) 靠近、遠離靜止的天鵝，感受到的頻率有何變化？為什麼？（波長、相對波速）',
-      fields: [
-        { key: 'fNear', label: 'A 迎著波（靠近）：每秒幾次', type: 'number', fill: 'freqA' },
-        { key: 'fFar', label: 'B 順著波（遠離）：每秒幾次', type: 'number', fill: 'freqB' },
-        { key: 'nearN', label: '(6) 小鴨以 ½ 倍水波速靠近天鵝：每秒接收的波數', type: 'choice', options: ['變多', '不變', '變少'] },
-        { key: 'nearF', label: '靠近時，頻率會', type: 'choice', options: ['變高', '不變', '變低'] },
-        { key: 'farN', label: '(7) 小鴨以 ½ 倍水波速遠離天鵝：每秒接收的波數', type: 'choice', options: ['變多', '不變', '變少'] },
-        { key: 'farF', label: '遠離時，頻率會', type: 'choice', options: ['變高', '不變', '變低'] },
-        { key: 'lambda', label: '水波的波長會', type: 'choice', options: ['變短', '不變', '變長'] }
-      ]
+      id: 'waveSpeed', group: 'moving', n: '3-2', kind: 'idea', title: '水波跑得更快嗎？',
+      q: '想一想：波源游得越快，水波本身跑得更快嗎？',
+      setup: null, reasonLabel: '我的證據是…',
+      fields: [{ key: 'waveSpeed', label: '水波本身的速度會', type: 'choice', options: ['變快', '不變', '變慢'] }]
     },
     {
-      id: 'exit', title: '看水波判斷波源',
+      id: 'ducks', group: 'ducks', n: '4', kind: 'idea', title: '先預測：誰被打得多？',
+      q: '波源向右游，前方 A、後方 B 兩隻小鴨，誰被水波打得比較頻繁？先預測，再寫下理由。',
+      setup: null, reasonLabel: '我這樣預測，是因為…',
+      fields: [{ key: 'predict', label: '我的預測', type: 'choice', options: ['A 比較頻繁', 'B 比較頻繁', '一樣'] }]
+    },
+    {
+      id: 'observer', group: 'observer', n: '5', kind: 'idea', title: '小鴨自己游',
+      q: '按「套用起始設定」再按「▶ 播放」：天鵝在原地打水，A 迎著波、B 順著波游。圈圈（波長）有沒有變？那為什麼每秒碰到的圈數不一樣？',
+      setup: { mach: 0, observers: true, swim: true }, reasonLabel: '每秒碰到的圈數不一樣，是因為…',
+      fields: [{ key: 'lambda', label: '圈圈（波長）有沒有變？', type: 'choice', options: ['有變', '沒有變'] }]
+    },
+    {
+      id: 'exit', group: 'exit', n: '6', kind: 'quiz', title: '看水波判斷波源',
       q: '利用水波圖形判斷 A～D 波源的運動狀態（紅點是波源現在的位置）。',
-      setup: null, image: false, figure: 'abcd', reasonLabel: 'B、C 誰比較快，為什麼？（我比較的是：波長？圓心間距？所以我判斷…）',
+      setup: null, figure: 'abcd', reasonLabel: 'B、C 誰比較快，為什麼？（我比較的是：波長？圓心間距？所以我判斷…）',
       fields: [
         { key: 'A', label: 'A', type: 'choice', options: MOTION },
         { key: 'B', label: 'B', type: 'choice', options: MOTION },

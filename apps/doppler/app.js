@@ -17,13 +17,19 @@
   const quack = new window.DopplerQuack();
   const undo = [];
   const legacyParking = [{ x: -2, y: 1.5 }, { x: 1.5, y: 1 }, { x: -1.5, y: -1.5 }, { x: 2, y: -1 }, { x: 0, y: 2 }, { x: 3, y: -2 }];
-  let task = 0, answers = tasks.map(() => ''), savedStudent = '', storageOK = true;
+  let task = 0, answers = {}, savedStudent = '', storageOK = true;
+  // 自己擺圓片的關卡：每關各自保留排好的樣子（boards），第一次進來時水面淨空
+  const BOARD_KEY = 'doppler-boards-v1';
+  let boards = {}, boardFor = null;
+  try { boards = JSON.parse(localStorage.getItem(BOARD_KEY) || '{}') || {}; } catch (_) { boards = {}; }
+  const arranging = () => !!(tasks[task] && tasks[task].setup && tasks[task].setup.arrange);
+  let mode = 'place', gest0 = null; const cam = { z: 1, x: 0, y: 0 }, gest = new Map();
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
   const status = message => { $('status').textContent = message; const f = document.getElementById('fs-status'); if (f) f.textContent = message; };
   try {
     const saved = JSON.parse(localStorage.getItem('doppler-worksheet-v2') || 'null');
-    if (saved && Array.isArray(saved.answers)) answers = tasks.map((_, i) => typeof saved.answers[i] === 'string' ? saved.answers[i].slice(0, 2400) : '');
+    if (saved && saved.answersById && typeof saved.answersById === 'object') tasks.forEach(t => { const a = saved.answersById[t.id]; if (typeof a === 'string') answers[t.id] = a.slice(0, 2400); });
     if (saved && typeof saved.student === 'string') savedStudent = saved.student.slice(0, 80);
     if (saved && typeof saved.snapToGrid === 'boolean') $('snap-grid').checked = saved.snapToGrid;
     if (saved && saved.manualSettings && [saved.manualSettings.c, saved.manualSettings.f, saved.manualSettings.mach].every(Number.isFinite) &&
@@ -35,9 +41,10 @@
   } catch (_) { storageOK = false; }
   $('student').value = savedStudent;
   function persist() {
-    try { localStorage.setItem('doppler-worksheet-v2', JSON.stringify({ answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
+    try { localStorage.setItem('doppler-worksheet-v2', JSON.stringify({ answersById: answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
       manualCenters: pieces.map(p => ({ n: p.n, x: p.x, y: p.y, placed: p.placed })) })); }
     catch (_) { storageOK = false; }
+    saveBoard();
     if (!storageOK) $('save-note').textContent = '無法保存，請先下載';
   }
   function setPlaying(next) {
@@ -150,6 +157,7 @@
       button.innerHTML = '<svg viewBox="0 0 44 44" aria-hidden="true">' + (radius ? '<circle cx="22" cy="22" r="' + radius + '" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="22" cy="22" r="2" fill="currentColor"/>' : '<ellipse cx="18" cy="22" rx="14" ry="10" fill="#e9b93a" stroke="#b2821a"/><circle cx="31" cy="22" r="7" fill="#e9b93a" stroke="#b2821a"/><path d="M37 19h6v6h-6" fill="#e5a234"/><path d="M9 17q8-4 15 0M9 27q8 4 15 0" fill="none" stroke="#b2821a"/><circle cx="32" cy="19" r="1" fill="#153f4d"/><circle cx="32" cy="25" r="1" fill="#153f4d"/>') + '</svg><span>' + (p.radius ? '圈 ' + (p.n + 1) : '波源小鴨') + '</span>';
       button.addEventListener('pointerdown', e => {
         if (e.button !== 0 || pointer || !manual) return;
+        if (mode !== 'place') setMode('place', true);
         e.preventDefault(); clearPreview(); selectedPiece = p.n; setMeasure(false);
         if (!pieces[p.n].placed) {
           pointer = { id: e.pointerId, mode: 'piece', i: p.n, camera: { ...view }, dx: 0, dy: 0, before: snapshot(), fromTray: true, inside: false };
@@ -214,15 +222,17 @@
     ins.l = Math.min(ins.l, cr.width * .4); ins.r = Math.min(ins.r, cr.width * .4); ins.t = Math.min(ins.t, cr.height * .4); ins.b = Math.min(ins.b, cr.height * .4);
     return ins;
   }
-  function projection(width, height, insets = null) {
+  function projection(width, height, insets = null, zoomed = false) {
     const ins = insets || { l: 0, r: 0, t: 0, b: 0 }, w = width - ins.l - ins.r, h = height - ins.t - ins.b;
-    const extent = manual ? Math.max(6.25, ...pieces.map(p => p.radius + 1.25)) :
+    const extent = manual ? Math.max(arranging() ? 5.75 : 6.25, ...pieces.map(p => p.radius + (arranging() ? .75 : 1.25))) :
       // 水面一開始就布滿波，視野固定：涵蓋小鴨與波源 0～10 秒走過的路段
       Math.max(6.5, Math.abs(params.mach) * params.c * 5 + 1.5, ...observers.flatMap(obsExtent));
     // Use the whole square board for the five waves, without extra side ranges
     // or a pixel-per-metre cap. The physical view stays fixed while arranging.
     const scale = Math.max(1, (Math.min(w, h) - (manual ? 0 : 54)) / (2 * extent));
-    return { scale, cx: ins.l + w / 2, cy: ins.t + h / 2, width, height,
+    // 觀察模式可以縮放、移動畫面（cam）；擺放的範圍（halfWidth）仍以原大小計算
+    const ox = ins.l + w / 2, oy = ins.t + h / 2, z = zoomed ? cam.z : 1, zs = scale * z;
+    return { scale: zs, cx: ox - (zoomed ? cam.x : 0) * zs, cy: oy + (zoomed ? cam.y : 0) * zs, width, height, ox, oy, base: scale,
       halfWidth: width / 2 / scale, halfHeight: height / 2 / scale };
   }
   function xy(point, camera) { return { x: camera.cx + point.x * camera.scale, y: camera.cy - point.y * camera.scale }; }
@@ -262,7 +272,7 @@
     if (glow > .35) text(c, sound + '！', point.x, point.y - 40, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
-    const camera = savedCamera || projection(width, height, c === ctx ? safeInsets() : null);
+    const camera = savedCamera || projection(width, height, c === ctx ? safeInsets() : null, c === ctx);
     c.save(); c.beginPath(); c.rect(0, 0, width, height); c.clip();
     c.fillStyle = '#f7fbfc'; c.fillRect(0, 0, width, height);
     const cell = params.c / params.f, smallCell = cell / 4;
@@ -273,8 +283,9 @@
         for (let n = Math.ceil((camera.cy - height) / camera.scale / step); n <= camera.cy / camera.scale / step; n++) { const py = xy({ x: 0, y: n * step }, camera).y; c.moveTo(0, py); c.lineTo(width, py); }
         c.stroke();
       };
-      if (smallCell * camera.scale >= 1) gridLines(smallCell, '#d6e4e8', .75);
-      gridLines(cell, '#90b1bd', 1.2);
+      const big = c === ctx && arranging();
+      if (smallCell * camera.scale >= 1) gridLines(smallCell, big ? '#cadde2' : '#d6e4e8', big ? 1 : .75);
+      gridLines(cell, big ? '#7fa3b0' : '#90b1bd', big ? 1.8 : 1.2);
       c.strokeStyle = '#658e9b'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, camera.cy); c.lineTo(width, camera.cy); c.moveTo(camera.cx, 0); c.lineTo(camera.cx, height); c.stroke();
       const labelStep = cell * Math.max(1, Math.ceil(30 / (cell * camera.scale)));
       for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
@@ -320,7 +331,7 @@
       duck(c, at, DUCK_FILL[i], moving ? Math.sign(o.vx) : o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i), quack.name(i));
       if (moving) arrow(c, { x: at.x, y: at.y - 26 }, { x: at.x + Math.sign(o.vx) * 34, y: at.y - 26 }, '#3d6b78');
     });
-    if (manual && pieces[selectedPiece]?.placed) {
+    if (manual && pieces[selectedPiece]?.placed && !arranging()) {
       const selected = pieces[selectedPiece], p = xy(selected, camera);
       const label = '(' + fmt(selected.x) + ', ' + fmt(selected.y) + ')';
       const x = Math.max(5, Math.min(width - 120, p.x + 14)), y = Math.max(12, Math.min(height - 15, p.y + 21));
@@ -457,22 +468,27 @@
       const center = xy(p, view), d = Math.hypot(center.x - point.x, center.y - point.y);
       return { p, d, edge: Math.abs(d - p.radius * view.scale) };
     });
-    const centers = candidates.filter(h => h.d < (h.p.radius === 0 ? 24 : 13));
-    if (centers.length) return (centers.find(h => h.p.n === selectedPiece) || centers.sort((a, b) => a.d - b.d)[0]).p;
-    const edges = candidates.filter(h => h.p.radius > 0 && h.edge < 12);
+    // 自己擺的關卡：手指好抓（圓心 26 px、圓周 20 px），圓心和波源小鴨重疊時先抓圓片
+    const big = arranging(), near = h => h.d + (h.p.radius === 0 ? 10 : 0);
+    const centers = candidates.filter(h => h.d < (h.p.radius === 0 ? 24 : big ? 26 : 13));
+    if (centers.length) return (centers.find(h => h.p.n === selectedPiece && h.p.radius > 0) || centers.sort((a, b) => near(a) - near(b))[0]).p;
+    const edges = candidates.filter(h => h.p.radius > 0 && h.edge < (big ? 20 : 12));
     return (edges.find(h => h.p.n === selectedPiece) || edges.sort((a, b) => a.edge - b.edge)[0])?.p;
   }
   function capture(id) { try { canvas.setPointerCapture(id); } catch (_) { } }
   function eventPoint(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   canvas.addEventListener('pointerdown', e => {
-    if (e.button !== 0 || pointer) return;
+    if (e.button !== 0) return;
+    if (mode === 'observe' && !measureMode) { e.preventDefault(); gest.set(e.pointerId, eventPoint(e)); capture(e.pointerId); gestStart(); return; }
+    if (pointer) return;
     const p = eventPoint(e); setPlaying(false); canvas.focus({ preventScroll: true });
     if (manual && preview && !measureMode) { clearPreview(); draw(); }
     if (measureMode) { pointer = { id: e.pointerId, mode: 'measure' }; const w = world(p.x, p.y); ruler = { a: w, b: { ...w } }; }
     else {
       const observerIndex = $('observers').checked ? observers.findIndex(o => { const s = xy(posAt(o), view); return Math.hypot(s.x - p.x, s.y - p.y) < 24; }) : -1;
       const piece = manual ? hitPiece(p) : null;
-      if (manual && !pieces[selectedPiece].placed && !piece && observerIndex < 0) {
+      // 選了托盤裡還沒放的圓片：點水面就放在那裡（點在別的圓心或波源上也一樣，靜止打水的圓心本來就疊在一起）
+      if (manual && !pieces[selectedPiece].placed && observerIndex < 0) {
         const before = snapshot(), selected = pieces[selectedPiece], w = world(p.x, p.y);
         selected.placed = true; selected.x = w.x; selected.y = w.y; constrainPiece(selected, view, $('snap-grid').checked);
         pointer = { id: e.pointerId, mode: 'piece', i: selected.n, camera: { ...view }, dx: selected.x - w.x, dy: selected.y - w.y, before };
@@ -489,6 +505,7 @@
   });
   // iPad Safari：手指從圓片托盤開始拖時，事件可能仍送到托盤按鈕，所以在 window 上統一接收
   window.addEventListener('pointermove', e => {
+    if (gest.has(e.pointerId)) { gest.set(e.pointerId, eventPoint(e)); gestMove(); return; }
     if (!pointer || pointer.id !== e.pointerId) return;
     const p = eventPoint(e), cam = pointer.camera || view;
     if (pointer.fromTray) {
@@ -505,6 +522,7 @@
     refresh();
   });
   function finish(e) {
+    if (gest.has(e.pointerId)) { gest.delete(e.pointerId); gestStart(); return; }
     if (!pointer || pointer.id !== e.pointerId) return;
     const action = pointer; pointer = null; if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     if (action.mode === 'piece') {
@@ -514,6 +532,56 @@
     status(manual ? '已放好' : '已暫停'); refresh();
   }
   window.addEventListener('pointerup', finish); window.addEventListener('pointercancel', finish);
+
+  // ---------- 觀察模式（兩指縮放、拖曳移動畫面）／擺放模式（拖圓片、小鴨）分開，避免亂按 ----------
+  function gestStart() {
+    const pts = [...gest.values()];
+    if (pts.length === 1) gest0 = { kind: 'pan', p: pts[0], cam: { ...cam }, s: view.scale };
+    else if (pts.length >= 2) {
+      const [a, b] = pts, mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      gest0 = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y) || 1, w: world(mid.x, mid.y), cam: { ...cam } };
+    } else gest0 = null;
+  }
+  function clampCam() {
+    cam.z = Math.min(4, Math.max(1, cam.z));
+    const lim = 7; cam.x = Math.max(-lim, Math.min(lim, cam.x)); cam.y = Math.max(-lim, Math.min(lim, cam.y));
+    if (cam.z === 1) { cam.x = 0; cam.y = 0; }
+  }
+  function zoomAt(z, mid, w) {
+    cam.z = Math.min(4, Math.max(1, z)); const s = view.base * cam.z;
+    cam.x = w.x - (mid.x - view.ox) / s; cam.y = w.y + (mid.y - view.oy) / s; clampCam(); syncMode(); draw();
+  }
+  function gestMove() {
+    if (!gest0) return;
+    const pts = [...gest.values()];
+    if (gest0.kind === 'pan' && pts.length === 1) {
+      if (cam.z === 1) return;
+      cam.x = gest0.cam.x - (pts[0].x - gest0.p.x) / gest0.s; cam.y = gest0.cam.y + (pts[0].y - gest0.p.y) / gest0.s; clampCam(); draw();
+    } else if (gest0.kind === 'pinch' && pts.length >= 2) {
+      const [a, b] = pts, mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      zoomAt(gest0.cam.z * Math.hypot(a.x - b.x, a.y - b.y) / gest0.d, mid, gest0.w);
+    }
+  }
+  canvas.addEventListener('wheel', e => {
+    if (mode !== 'observe') return;
+    e.preventDefault(); const p = eventPoint(e); zoomAt(cam.z * Math.exp(-e.deltaY * .0015), p, world(p.x, p.y));
+  }, { passive: false });
+  const modeBar = document.createElement('div'); modeBar.className = 'mode-switch'; modeBar.setAttribute('role', 'group'); modeBar.setAttribute('aria-label', '操作模式');
+  modeBar.innerHTML = '<button type="button" data-mode="observe">👀 觀察・縮放</button><button type="button" data-mode="place">✋ 擺放</button><button type="button" class="mode-reset" aria-label="回到原大小">⟲ 原大小</button>';
+  $('pond-area').append(modeBar);
+  modeBar.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode, true)));
+  modeBar.querySelector('.mode-reset').addEventListener('click', () => { resetZoom(); status('回到原大小'); });
+  function syncMode() {
+    modeBar.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    modeBar.querySelector('.mode-reset').hidden = cam.z === 1;
+    document.body.classList.toggle('mode-observe', mode === 'observe');
+  }
+  function setMode(next, say) {
+    mode = next; gest.clear(); gest0 = null; if (mode === 'observe') { pointer = null; setMeasure(false); }
+    syncMode();
+    if (say) status(mode === 'observe' ? '觀察：兩指縮放、拖曳移動畫面；水面上的東西不會動' : '擺放：拖曳圓片或小鴨');
+  }
+  function resetZoom() { cam.z = 1; cam.x = 0; cam.y = 0; syncMode(); draw(); }
   canvas.addEventListener('lostpointercapture', () => { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; refresh(); });
   canvas.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; ruler = null; setMeasure(false); refresh(); return; }
@@ -528,12 +596,37 @@
   });
   function loadQuestion() {
     const t = tasks[task];
-    $('question').textContent = t.q; $('answer').value = answers[task];
+    $('question').textContent = t.q; $('answer').value = answers[t.id] || '';
+    enterBoard(t);
     $('load-task').hidden = !(t.setup && t.setup.swim);  // 要自己排的題目不給「套用」，只有觀察者移動（第 5 題）需要
     document.dispatchEvent(new CustomEvent('doppler:task', { detail: { index: task, task: t } }));
   }
   $('task').addEventListener('change', () => { task = Number($('task').value); loadQuestion(); });
-  $('answer').addEventListener('input', () => { answers[task] = $('answer').value; persist(); });
+  $('answer').addEventListener('input', () => { answers[tasks[task].id] = $('answer').value; persist(); });
+  function saveBoard() {
+    if (!boardFor) return;
+    boards[boardFor] = { mach: params.mach, centers: pieces.map(p => ({ n: p.n, x: p.x, y: p.y, placed: p.placed })) };
+    try { localStorage.setItem(BOARD_KEY, JSON.stringify(boards)); } catch (_) { /* 只保留在這次 */ }
+  }
+  // 進入關卡：要自己擺的關卡把水面整理乾淨（只留波源小鴨、圓片全部在托盤），回到這關時接著排
+  function enterBoard(t) {
+    saveBoard(); boardFor = null;
+    const arrange = !!(t.setup && t.setup.arrange);
+    document.body.classList.toggle('arrange', arrange);
+    document.body.classList.toggle('arrange-speed', !!(arrange && t.setup.speed));
+    cam.z = 1; cam.x = 0; cam.y = 0; setMode(arrange ? 'place' : 'observe');
+    if (!arrange) return;
+    if (view3d?.visible) set3D(false);
+    setPlaying(false); swim = 0; applySwim(); if (!manual) setManual(true);
+    params.c = 1; params.f = 1; $('wave-speed').value = 1; $('frequency').value = 1;
+    ruler = null; setMeasure(false);
+    $('observers').checked = false; $('labels').checked = false; $('centers').checked = true; $('grid').checked = true; $('snap-grid').checked = true;
+    const b = boards[t.id];
+    changeMach(b && Number.isFinite(b.mach) ? b.mach : t.setup.mach);
+    rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
+    undo.length = 0; selectedPiece = 0; boardFor = t.id;
+    syncQuick(); refresh(); persist();
+  }
   $('student').addEventListener('input', persist);
   $('load-task').addEventListener('click', () => {
     const setup = tasks[task].setup; if (!setup) return;
@@ -543,7 +636,7 @@
     swim = 0; applySwim(); changeMach(setup.mach);
     if (setup.swim) { observers[0] = { x: 6, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
     syncQuick(); refresh();
-    status('已套用第 ' + (task + 1) + ' 題設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
+    status('已套用第 ' + tasks[task].n + ' 題設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
   });
   function wrap(c, value, maxWidth) {
     const lines = [];
@@ -587,21 +680,21 @@
     if (preview) text(c, measurement, inset, y + 63, '#5d7b86', 'left', 16);
     if (withAnswer) {
       let cursor = y + 85 + (preview ? 32 : 0);
-      text(c, '第 ' + (task + 1) + ' 題　' + tasks[task].title + '  |  ' + (studentLabel() || '未填班級／座號'), inset, cursor, '#087c91', 'left', 21); cursor += 40;
+      text(c, '第 ' + tasks[task].n + ' 題　' + tasks[task].title + '  |  ' + (studentLabel() || '未填班級／座號'), inset, cursor, '#087c91', 'left', 21); cursor += 40;
       question.forEach(line => { text(c, line, inset, cursor, '#153f4d', 'left', 21); cursor += 34; });
       cursor += 16; text(c, '我的回答', inset, cursor, '#087c91', 'left', 21); cursor += 36;
       answer.forEach(line => { text(c, line, inset, cursor, '#153f4d', 'left', 21); cursor += 34; });
     }
-    const filename = 'doppler-' + (manual ? preview ? 'my-waves' : 'manual' : 'auto') + '-q' + (task + 1) + '-v' + fmt(params.mach) + '-t' + fmt(preview ? preview.elapsed : manual ? 5 : time) + (withAnswer ? '-answer' : '-pond') + '.png';
+    const filename = 'doppler-' + (manual ? preview ? 'my-waves' : 'manual' : 'auto') + '-q' + tasks[task].n + '-v' + fmt(params.mach) + '-t' + fmt(preview ? preview.elapsed : manual ? 5 : time) + (withAnswer ? '-answer' : '-pond') + '.png';
     return { image, filename };
   }
   function evidence(withAnswer) {
     const { image, filename } = renderEvidence(withAnswer), width = image.width;
     const url = image.toDataURL('image/png'); download(url, filename);
     const figure = document.createElement('figure'); figure.className = 'record';
-    const img = document.createElement('img'); img.src = url; img.alt = '第 ' + (task + 1) + ' 題，' + configText() + '，' + fmt(manual ? 5 : time) + ' 秒的實驗紀錄'; img.width = width; img.height = image.height;
+    const img = document.createElement('img'); img.src = url; img.alt = '第 ' + tasks[task].n + ' 題，' + configText() + '，' + fmt(manual ? 5 : time) + ' 秒的實驗紀錄'; img.width = width; img.height = image.height;
     const caption = document.createElement('figcaption'), label = document.createElement('span'), link = document.createElement('a');
-    label.textContent = '第 ' + (task + 1) + ' 題 · ' + configText() + ' · ' + fmt(manual ? 5 : time) + ' s';
+    label.textContent = '第 ' + tasks[task].n + ' 題 · ' + configText() + ' · ' + fmt(manual ? 5 : time) + ' s';
     link.href = url; link.download = filename; link.textContent = '再下載';
     caption.append(label, link); figure.append(img, caption); $('records').prepend(figure); records.push(figure);
     if (records.length > 6) records.shift().remove();
@@ -695,6 +788,7 @@
       $('qb-3d').disabled = false;
     }
     if (!view3d) return;
+    modeBar.hidden = on;
     if (on) { setMeasure(false); view3d.show(); $('view3d-tools').hidden = false; status('3D：拖曳旋轉、雙指縮放；排列請回 2D'); }
     else { view3d.hide(); $('view3d-tools').hidden = true; status(manual ? '拖曳圓圈排列' : '拖曳 A、B 小鴨'); refresh(); }
     $('qb-3d').textContent = on ? '2D' : '3D';
@@ -827,7 +921,7 @@
     demo: ['水面早已布滿波：波源一邊往前走、一邊每秒發出一圈', '比較前方和後方相鄰兩圈的距離；聽每隻小鴨誰叫得比較密', '換「波源速度」再看一次；按「✕ 結束示範」回到自己排'],
     swim: ['波源不動，小鴨以 0.5 倍波速向左游', 'A 迎著波游、B 順著波游：聽誰叫得比較密', '看「即時讀值」：每秒被打幾次？波長有沒有變？']
   };
-  const FS_PHOTO = ['選這題會打開照片：藍筆圈在原地的、紅筆圈在移動的', '螢光筆圈跑得最快的那一隻，按「✓ 完成」', '按「✎ 作答」寫下你是看什麼判斷的，再送出', '想改：在作答區按「🖍 放大來圈」'];
+  const FS_PHOTO = ['選這題會打開照片：藍筆圈在原地的、紅筆圈在移動的', '螢光筆圈跑得最快的那一隻，按「✓ 完成」', '圈好按「✎ 作答」→「送出給老師」', '想改：在作答區按「🖍 放大來圈」'];
   function fsSync() {
     if (!fsLayer || !stage.classList.contains('is-full')) return;
     const mode = manual ? 'manual' : swim > 0 ? 'swim' : 'demo', t = tasks[task];
@@ -837,14 +931,15 @@
     $('fs-q').textContent = t ? t.q : '';
     $('fs-load').hidden = !(t && t.setup && t.setup.swim);
     const photo = !!(t && t.draw);
-    const steps = photo ? FS_PHOTO : FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
-    const sig = photo ? 'photo' : mode + view3d?.visible;
+    const own = !photo && t && t.steps && manual;
+    const steps = photo ? FS_PHOTO : own ? t.steps : FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
+    const sig = photo ? 'photo' : own ? 'own-' + t.id : mode + view3d?.visible;
     const ol = $('fs-steps'); if (ol.dataset.mode !== sig) { ol.dataset.mode = sig; ol.replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.textContent = s; return li; })); }
     if (!$('fs-status').textContent) $('fs-status').textContent = $('status').textContent;
     fsLayer.querySelector('[data-fs="tray"]').hidden = answering || $('piece-tray').hidden;
     fsLayer.querySelector('[data-fs="guide"]').hidden = answering;
     fsLayer.querySelector('[data-fs="answer"]').hidden = !answering;
-    $('fs-anum').textContent = '第 ' + (task + 1) + ' 題';
+    $('fs-anum').textContent = '第 ' + t.n + ' 題';
     $('fs-aq').textContent = t ? t.q : '';
     fsLayer.querySelector('[data-fs="time"]').hidden = $('timeline').hidden;
   }
@@ -883,7 +978,7 @@
   rebuildPieces(savedCenters || []);
   $('wave-speed').value = params.c; $('frequency').value = params.f; $('mach').value = Math.abs(params.mach); $('reverse').checked = params.mach < 0;
   document.querySelectorAll('[data-mach]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.mach) === params.mach)));
-  $('task').replaceChildren(...tasks.map((t, i) => new Option((i + 1) + '　' + t.title, String(i))));
+  $('task').replaceChildren(...tasks.map((t, i) => new Option(t.n + '　' + t.title, String(i))));
   syncDucks(); syncQuick();
   loadQuestion(); setManual(true); persist();
   if (!new URLSearchParams(location.search).has('page')) {

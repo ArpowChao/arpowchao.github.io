@@ -222,3 +222,24 @@ html.lock-scroll,html.lock-scroll body{overscroll-behavior:none}
 .ph-inline{display:grid;gap:8px}.ph-preview{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);background:#f3f7f8;display:block}.ph-open{width:100%;min-height:44px;font-size:15px;font-weight:700;border-radius:10px}
 .ph-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.ph-tools button{min-height:38px;padding:4px 10px;border-radius:999px;font-size:13px}.ph-pen{display:inline-flex;align-items:center;gap:6px}.ph-pen i{width:14px;height:14px;border-radius:50%;display:inline-block}.ph-blue i{background:#1f6fd1}.ph-red i{background:#d93a3a}.ph-hi i{background:#ffd23a;border-radius:3px;width:18px}.ph-pen[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset;font-weight:700}.ph-done{margin-left:auto;background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
 .ph-modal{position:fixed;inset:0;z-index:9999;background:rgba(10,30,36,.92);display:grid;grid-template-rows:auto auto 1fr;gap:10px;padding:14px 16px 16px;box-sizing:border-box}.ph-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;color:#fff}.ph-head strong{font-size:18px}.ph-head span{font-size:14px;opacity:.85}.ph-modal .ph-tools button{background:#fff}.ph-modal .ph-tools .ph-done{background:var(--teal);color:#fff}.ph-stage{min-height:0;display:flex;align-items:center;justify-content:center}.ph-stage canvas{border-radius:8px;background:#fff;touch-action:none}
+
+/* 老師控制開放題目 */
+.gate-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10050;display:flex;align-items:center;gap:12px;max-width:min(92vw,560px);padding:12px 14px 12px 18px;background:#153f4d;color:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:16px}
+.gate-toast span{flex:1}.gate-toast button{min-height:44px;background:var(--gold);border-color:var(--gold);color:#153f4d;font-size:15px;font-weight:700}.gate-toast .gate-x{background:transparent;border-color:transparent;color:#fff;font-weight:400}
+.gate-wait{margin:10px 0 0;padding:10px 12px;border:1px dashed var(--gold);border-radius:8px;background:#fff8e1;font-size:14px}
+body.gate-waiting #question,body.gate-waiting #task-figure,body.gate-waiting #task-fields,body.gate-waiting #answer-label,body.gate-waiting #answer,body.gate-waiting .submit-row{display:none!important}
+
+/* 自己擺圓片的關卡：水面淨空、只留排圓片需要的東西 */
+body.arrange #qb-auto,body.arrange #qb-swim,body.arrange #qb-3d,body.arrange #view3d-tools,body.arrange #qb-ducks,body.arrange #qb-add-duck,body.arrange #qb-remove-duck,body.arrange #qb-labels,body.arrange #qb-measure,body.arrange #manual-scene-tools{display:none!important}
+body.arrange .fs-layer [data-fs="more"],body.arrange .fs-layer [data-fs="read"],body.arrange .fs-layer [data-fs="time"]{display:none!important}
+body.arrange:not(.arrange-speed) .fs-layer [data-fs="ctrl"],body.arrange:not(.arrange-speed) .quick-bar .qb-group{display:none!important}
+body.arrange .fs-layer [data-fs="ctrl"] .fs-cap~.fs-cap,body.arrange .fs-layer [data-fs="ctrl"] [data-slot="mode"],body.arrange .fs-layer [data-fs="ctrl"] [data-slot="tools"]{display:none!important}
+body.arrange-speed .qb-group [data-mach="0"]{display:none!important}
+body.arrange .tray-piece{min-height:64px}
+
+/* 觀察（縮放）／擺放 切換 */
+.mode-switch{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:4px;padding:4px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 14px rgba(21,63,77,.14)}
+.mode-switch button{min-height:46px;font-size:16px;border:none;border-radius:10px;padding:6px 18px;white-space:nowrap;background:transparent}
+.mode-switch button[aria-pressed=true]{background:var(--teal);color:#fff}
+.mode-switch .mode-reset{background:#fff5d4;color:#765400}
+body.mode-observe #pond{cursor:move}
