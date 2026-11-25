@@ -685,7 +685,7 @@
     const t = tasks[task];
     $('question').textContent = t.q; $('answer').value = answers[t.id] || '';
     enterBoard(t);
-    $('load-task').hidden = !(t.setup && t.setup.swim);  // 要自己排的題目不給「套用」，只有觀察者移動（第 5 題）需要
+    $('load-task').hidden = true;  // 觀察者運動一進來就自動擺好，不需要「套用起始設定」
     document.dispatchEvent(new CustomEvent('doppler:task', { detail: { index: task, task: t } }));
     fsSync();   // 老師開放新關卡時（gate.js 直接切換題目）全螢幕面板也要跟著換
   }
@@ -728,7 +728,7 @@
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
     // 只看不操作的關卡（bare）：右邊的控制、讀值、時間軸都不出現；水面顯示指定的那張圖（su.view）或空白水面
-    const bare = !arrange && !watch && !su.swim && !su.demo, viewId = bare || su.swim ? (su.view || 'blank') : null;
+    const bare = !arrange && !watch && !su.swim && !su.demo, viewId = bare ? (su.view || 'blank') : null;
     document.body.classList.toggle('arrange', arrange);
     document.body.classList.toggle('arrange-speed', !!(arrange && su.speed));
     document.body.classList.toggle('watch', watch);
@@ -737,6 +737,8 @@
     document.body.classList.toggle('demostage', !!su.demo);
     cam.z = 1; cam.x = 0; cam.y = 0; homeCam = { z: 1, x: 0, y: 0 }; setMode(arrange ? 'place' : 'observe');
     viewOnly = su.scene || viewId || false;
+    // 觀察者運動：一進來就擺好（天鵝在原地打水、A 迎著波、B 順著波），按時間軸的「▶」就開始
+    if (su.swim) { applyTaskSetup(); return; }
     // 示範：自動模擬（波源 ½ 波速向右，前方 A、後方 B），學生按時間軸的「▶」播放、聽小鴨叫
     if (su.demo) {
       if (view3d?.visible) set3D(false);
@@ -776,7 +778,8 @@
     syncQuick(); refresh(); persist();
   }
   $('student').addEventListener('input', persist);
-  $('load-task').addEventListener('click', () => {
+  $('load-task').addEventListener('click', () => applyTaskSetup());
+  function applyTaskSetup() {
     const setup = tasks[task].setup; if (!setup) return;
     basic(); observers.length = 2; observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 }; syncDucks();
     setManual(true); time = 5;
@@ -785,7 +788,7 @@
     if (setup.swim) { observers[0] = { x: 6, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); setSwim(true, false); time = 0; setPlaying(false); }
     syncQuick(); refresh();
     status('已套用起始設定' + (setup.swim ? '：按「▶ 播放」開始' : ''));
-  });
+  }
   function wrap(c, value, maxWidth) {
     const lines = [];
     for (const paragraph of value.split('\n')) {
@@ -1081,7 +1084,7 @@
     if ($('fs-task').options.length !== $('task').options.length) fillTaskSelect($('fs-task'));
     $('fs-task').value = $('task').value;
     $('fs-q').textContent = t ? t.q : '';
-    $('fs-load').hidden = !(t && t.setup && t.setup.swim);
+    $('fs-load').hidden = true;
     const photo = !!(t && t.draw);
     const own = !photo && t && t.steps && manual;
     const steps = photo ? FS_PHOTO : own ? t.steps : FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
