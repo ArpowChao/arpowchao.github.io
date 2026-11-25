@@ -23,6 +23,7 @@
   let boards = {}, boardFor = null;
   try { boards = JSON.parse(localStorage.getItem(BOARD_KEY) || '{}') || {}; } catch (_) { boards = {}; }
   const arranging = () => !!(tasks[task] && tasks[task].setup && (tasks[task].setup.arrange || tasks[task].setup.watch));
+  let viewOnly = false;
   let mode = 'place', gest0 = null; const cam = { z: 1, x: 0, y: 0 }, gest = new Map(), lastPt = new Map();
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
@@ -275,6 +276,7 @@
     if (glow > .35) text(c, sound + '！', point.x, point.y - 40, '#946400', 'center', 18);
   }
   function drawScene(c, width, height, savedCamera = null) {
+    const selP = viewOnly ? -1 : selectedPiece;   // 只看不操作的關卡：不標示選取的圓片
     const camera = savedCamera || projection(width, height, c === ctx ? safeInsets() : null, c === ctx);
     c.save(); c.beginPath(); c.rect(0, 0, width, height); c.clip();
     c.fillStyle = '#f7fbfc'; c.fillRect(0, 0, width, height);
@@ -302,13 +304,13 @@
       const p = xy(w, camera), radius = w.radius * camera.scale;
       if (radius > .1) {
         // 波前：藍色（深淺交錯），比灰色格線粗；選到的圓片用橘色
-        c.strokeStyle = manual && w.n === selectedPiece ? '#d9480f' : w.n % 2 ? '#3b6fe0' : '#1c3fa8';
-        c.lineWidth = manual && w.n === selectedPiece ? 3.4 : 2.6;
+        c.strokeStyle = manual && w.n === selP ? '#d9480f' : w.n % 2 ? '#3b6fe0' : '#1c3fa8';
+        c.lineWidth = manual && w.n === selP ? 3.4 : 2.6;
         c.beginPath(); c.arc(p.x, p.y, radius, 0, Math.PI * 2); c.stroke();
       }
       if ($('centers').checked) { c.fillStyle = '#507985'; c.beginPath(); c.arc(p.x, p.y, 2.5, 0, Math.PI * 2); c.fill(); }
-      if (manual && w.radius > 0 && ($('centers').checked || w.n === selectedPiece)) {
-        const color = w.n === selectedPiece ? '#d9480f' : '#1c3fa8';
+      if (manual && w.radius > 0 && ($('centers').checked || w.n === selP)) {
+        const color = w.n === selP ? '#d9480f' : '#1c3fa8';
         c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.beginPath();
         c.moveTo(p.x - 10, p.y); c.lineTo(p.x + 10, p.y); c.moveTo(p.x, p.y - 10); c.lineTo(p.x, p.y + 10); c.stroke();
         c.strokeStyle = color; c.lineWidth = 1.6; c.stroke();
@@ -327,11 +329,11 @@
     if (!manual && params.mach !== 0) arrow(c, { x: source.x, y: source.y - 30 }, { x: source.x + Math.sign(params.mach) * 42, y: source.y - 30 }, '#977008');
     if (!manual || pieces.at(-1).placed) {
       duck(c, source, '#e9b93a', params.mach < 0 ? -1 : 1, '波源', false);
-      if (manual && selectedPiece === pieces.length - 1) { c.strokeStyle = '#a47700'; c.lineWidth = 2; c.beginPath(); c.arc(source.x, source.y, 22, 0, Math.PI * 2); c.stroke(); }
+      if (manual && selP === pieces.length - 1) { c.strokeStyle = '#a47700'; c.lineWidth = 2; c.beginPath(); c.arc(source.x, source.y, 22, 0, Math.PI * 2); c.stroke(); }
       if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 13);
     }
     // 擺圖的關卡：標出鴨子起始位置（t = 0）
-    if (manual && arranging()) {
+    if (manual && (arranging() || (viewOnly && viewOnly !== 'blank'))) {
       const o = xy({ x: 0, y: 0 }, camera);
       c.save(); c.fillStyle = '#e03131'; c.strokeStyle = '#ffffff'; c.lineWidth = 2.5;
       c.beginPath(); c.arc(o.x, o.y, 7, 0, Math.PI * 2); c.fill(); c.stroke();
@@ -347,8 +349,8 @@
       duck(c, at, DUCK_FILL[i], moving ? Math.sign(o.vx) : o.x >= sx ? -1 : 1, LETTERS[i] + ' 小鴨', glowOf(i), quack.name(i));
       if (moving) arrow(c, { x: at.x, y: at.y - 26 }, { x: at.x + Math.sign(o.vx) * 34, y: at.y - 26 }, '#3d6b78');
     });
-    if (manual && pieces[selectedPiece]?.placed && !arranging()) {
-      const selected = pieces[selectedPiece], p = xy(selected, camera);
+    if (manual && pieces[selP]?.placed && !arranging()) {
+      const selected = pieces[selP], p = xy(selected, camera);
       const label = '(' + fmt(selected.x) + ', ' + fmt(selected.y) + ')';
       const x = Math.max(5, Math.min(width - 120, p.x + 14)), y = Math.max(12, Math.min(height - 15, p.y + 21));
       c.fillStyle = '#fff9e8'; c.fillRect(x - 3, y - 12, 118, 24); text(c, label, x, y, '#765400', 'left', 14);
@@ -659,10 +661,26 @@
   function enterBoard(t) {
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
+    // 只看不操作的關卡（bare）：右邊的控制、讀值、時間軸都不出現；水面顯示指定的那張圖（su.view）或空白水面
+    const bare = !arrange && !watch && !su.swim, viewId = bare || su.swim ? (su.view || 'blank') : null;
     document.body.classList.toggle('arrange', arrange);
     document.body.classList.toggle('arrange-speed', !!(arrange && su.speed));
     document.body.classList.toggle('watch', watch);
+    document.body.classList.toggle('bare', bare);
+    document.body.classList.toggle('swimstage', !!su.swim);
     cam.z = 1; cam.x = 0; cam.y = 0; setMode(arrange ? 'place' : 'observe');
+    viewOnly = viewId || false;
+    if (viewId) {
+      if (view3d?.visible) set3D(false);
+      setPlaying(false); swim = 0; applySwim(); if (!manual) setManual(true);
+      params.c = 1; params.f = 1; ruler = null; setMeasure(false);
+      $('labels').checked = false; $('observers').checked = false; $('grid').checked = true; $('centers').checked = false;
+      const b = viewId === 'blank' ? null : boards[viewId];
+      changeMach(b && Number.isFinite(b.mach) ? b.mach : 0);
+      rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
+      syncQuick(); refresh();
+      return;
+    }
     if (!boardId) return;
     if (view3d?.visible) set3D(false);
     setPlaying(false); swim = 0; applySwim(); if (!manual) setManual(true);

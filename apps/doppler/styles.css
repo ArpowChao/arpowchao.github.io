@@ -263,3 +263,7 @@ body.watch .fs-layer [data-fs="ctrl"],body.watch .fs-layer [data-fs="more"],body
 .sent-ok{font-size:28px;font-weight:700;color:#0a7d4f}.sent-box p{margin:0 0 6px;font-size:16px;color:var(--muted)}
 .sent-next{min-height:54px;font-size:20px;font-weight:700;color:#fff;background:var(--teal);border-color:var(--teal);border-radius:12px}
 .sent-stay{min-height:44px;font-size:15px;background:transparent;border-color:transparent;color:var(--muted)}
+/* 只看不操作的關卡：沒有控制、讀值、時間軸；觀察者移動那關只留時間軸與讀值 */
+body.bare .fs-layer [data-fs="ctrl"],body.bare .fs-layer [data-fs="more"],body.bare .fs-layer [data-fs="read"],body.bare .fs-layer [data-fs="time"],
+body.swimstage .fs-layer [data-fs="ctrl"],body.swimstage .fs-layer [data-fs="more"]{display:none!important}
+body.bare .quick-bar>*:not(#qb-full),body.swimstage #qb-auto,body.swimstage #qb-3d,body.swimstage #qb-labels,body.swimstage #qb-measure,body.swimstage #qb-add-duck,body.swimstage #qb-remove-duck{display:none!important}

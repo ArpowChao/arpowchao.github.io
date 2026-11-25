@@ -1,6 +1,7 @@
 // 課堂作答：只放上課要拿全班結果討論的問題，跟著上課簡報分成五段。
 // kind：image＝只上傳圖；idea＝寫想法（可附一個選項）；form＝只填欄位（數據、投票、一句話結論）。
 // setup.arrange：自己擺圓片（進來時水面淨空）；setup.watch＋board：沿用某一張排好的圖，放上小鴨觀察；setup.swim：觀察者移動。
+// 其他關卡只看不操作：setup.view 指定顯示哪一張排好的圖，沒有就是空白水面；右邊的控制面板都不出現。
 (function (root) {
   'use strict';
   const T5 = ['t = 0 s', 't = 1 s', 't = 2 s', 't = 3 s', 't = 4 s', 't = 5 s'];
@@ -17,7 +18,7 @@
     // 二、靜止打水
     { id: 'still', group: 'still', n: '2-1', kind: 'image', title: '擺圖', q: '鴨子在原地每秒打水 1 下，打了 5 秒。排出 5 秒時的水波。',
       setup: { arrange: true, mach: 0 }, check: true, fields: [] },
-    { id: 'outer', group: 'still', n: '2-2', kind: 'idea', title: '最外圈是幾秒打出來的', q: '最外圈是 t = 幾秒打出來的？為什麼？', setup: null, reasonLabel: '因為',
+    { id: 'outer', group: 'still', n: '2-2', kind: 'idea', title: '最外圈是幾秒打出來的', q: '最外圈是 t = 幾秒打出來的？為什麼？', setup: { view: 'still' }, reasonLabel: '因為',
       fields: [{ key: 'outer', label: '最外圈是', type: 'choice', options: T5 }] },
     { id: 'hits', group: 'still', n: '2-3', kind: 'form', title: '觀察小鴨', q: '小鴨 10 秒被水波打到幾次？每秒被打到幾次？',
       setup: { watch: true, board: 'still', mach: 0 },
@@ -26,8 +27,8 @@
     { id: 'moving', group: 'moving', n: '3-1', kind: 'image', title: '鴨子移速擺圖', q: '鴨子邊游邊打水，每秒打 1 下，打了 5 秒。選好你負責的移速，排出 5 秒時的水波。',
       setup: { arrange: true, mach: 0.25, speed: true }, check: true,
       fields: [{ key: 'speed', label: '我負責的速度', type: 'choice', options: ['¼ 波速', '½ 波速', '¾ 波速'], fromMach: true }] },
-    { id: 'shape', group: 'moving', n: '3-2', kind: 'idea', title: '水波形狀的變化', q: '鴨子移速越大，水波形狀有何變化？', setup: null, reasonLabel: '我看到', fields: [] },
-    { id: 'waveSpeed', group: 'moving', n: '3-3', kind: 'idea', title: '水波波速的變化', q: '當鴨子移速越大，水波波速有何變化？', setup: null, reasonLabel: '因為',
+    { id: 'shape', group: 'moving', n: '3-2', kind: 'idea', title: '水波形狀的變化', q: '鴨子移速越大，水波形狀有何變化？', setup: { view: 'moving' }, reasonLabel: '我看到', fields: [] },
+    { id: 'waveSpeed', group: 'moving', n: '3-3', kind: 'idea', title: '水波波速的變化', q: '當鴨子移速越大，水波波速有何變化？', setup: { view: 'moving' }, reasonLabel: '因為',
       fields: [{ key: 'waveSpeed', label: '水波波速', type: 'choice', options: ['變快', '不變', '變慢'] }] },
     // 四、波與觀察者
     { id: 'vote', group: 'ducks', n: '4-1', kind: 'form', title: '誰被打得比較頻繁', q: '鴨子向右游，前方 A、後方 B 兩隻小鴨，你覺得誰被水波打得比較頻繁？', setup: null,
