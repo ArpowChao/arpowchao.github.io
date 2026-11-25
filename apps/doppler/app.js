@@ -23,7 +23,7 @@
   let boards = {}, boardFor = null;
   try { boards = JSON.parse(localStorage.getItem(BOARD_KEY) || '{}') || {}; } catch (_) { boards = {}; }
   const arranging = () => !!(tasks[task] && tasks[task].setup && (tasks[task].setup.arrange || tasks[task].setup.watch));
-  let mode = 'place', gest0 = null; const cam = { z: 1, x: 0, y: 0 }, gest = new Map();
+  let mode = 'place', gest0 = null; const cam = { z: 1, x: 0, y: 0 }, gest = new Map(), lastPt = new Map();
   const records = [];
   const fmt = (v, places = 2) => Number(v).toFixed(places);
   const status = message => { $('status').textContent = message; const f = document.getElementById('fs-status'); if (f) f.textContent = message; };
@@ -516,7 +516,14 @@
   function eventPoint(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   canvas.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
+    lastPt.set(e.pointerId, eventPoint(e));
     if (mode === 'observe' && !measureMode) { e.preventDefault(); gest.set(e.pointerId, eventPoint(e)); capture(e.pointerId); gestStart(); return; }
+    // 擺放時放下第二根手指：取消正在拖的圓片，改成兩指縮放
+    if (pointer && pointer.id !== e.pointerId && pointer.mode !== 'measure') {
+      e.preventDefault(); if (pointer.mode === 'piece' && pointer.before) pieces = pointer.before;
+      const first = pointer.id; pointer = null;
+      gest.set(first, lastPt.get(first) || eventPoint(e)); gest.set(e.pointerId, eventPoint(e)); capture(e.pointerId); gestStart(); refresh(); return;
+    }
     if (pointer) return;
     const p = eventPoint(e); setPlaying(false); canvas.focus({ preventScroll: true });
     if (manual && preview && !measureMode) { clearPreview(); draw(); }
@@ -542,6 +549,7 @@
   });
   // iPad Safari：手指從圓片托盤開始拖時，事件可能仍送到托盤按鈕，所以在 window 上統一接收
   window.addEventListener('pointermove', e => {
+    lastPt.set(e.pointerId, eventPoint(e));
     if (gest.has(e.pointerId)) { gest.set(e.pointerId, eventPoint(e)); gestMove(); return; }
     if (!pointer || pointer.id !== e.pointerId) return;
     const p = eventPoint(e), cam = pointer.camera || view;
@@ -600,7 +608,6 @@
     }
   }
   canvas.addEventListener('wheel', e => {
-    if (mode !== 'observe') return;
     e.preventDefault(); const p = eventPoint(e); zoomAt(cam.z * Math.exp(-e.deltaY * .0015), p, world(p.x, p.y));
   }, { passive: false });
   const modeBar = document.createElement('div'); modeBar.className = 'mode-switch'; modeBar.setAttribute('role', 'group'); modeBar.setAttribute('aria-label', '操作模式');
@@ -609,8 +616,11 @@
   modeBar.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode, true)));
   modeBar.querySelector('.mode-reset').addEventListener('click', () => { resetZoom(); status('回到原大小'); });
   function syncMode() {
-    modeBar.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    // 觀察／擺放切換只在「觀察小鴨」的關卡出現（要放小鴨聽呱呱叫）；其他關卡縮放時只顯示「原大小」
+    const modes = !!(tasks[task] && tasks[task].setup && tasks[task].setup.watch);
+    modeBar.querySelectorAll('[data-mode]').forEach(b => { b.hidden = !modes; b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
     modeBar.querySelector('.mode-reset').hidden = cam.z === 1;
+    modeBar.hidden = !!view3d?.visible || (!modes && cam.z === 1);
     document.body.classList.toggle('mode-observe', mode === 'observe');
   }
   function setMode(next, say) {
