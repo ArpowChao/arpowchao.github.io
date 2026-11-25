@@ -287,9 +287,9 @@
         c.stroke();
       };
       const big = c === ctx && arranging();
-      if (smallCell * camera.scale >= 1) gridLines(smallCell, big ? '#cadde2' : '#d6e4e8', big ? 1 : .75);
-      gridLines(cell, big ? '#7fa3b0' : '#90b1bd', big ? 1.8 : 1.2);
-      c.strokeStyle = '#658e9b'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, camera.cy); c.lineTo(width, camera.cy); c.moveTo(camera.cx, 0); c.lineTo(camera.cx, height); c.stroke();
+      if (smallCell * camera.scale >= 1) gridLines(smallCell, '#e3e7e9', big ? 1 : .75);
+      gridLines(cell, '#bcc4c8', big ? 1.6 : 1.2);
+      c.strokeStyle = '#97a2a7'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, camera.cy); c.lineTo(width, camera.cy); c.moveTo(camera.cx, 0); c.lineTo(camera.cx, height); c.stroke();
       const labelStep = cell * Math.max(1, Math.ceil(30 / (cell * camera.scale)));
       for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
     }
@@ -301,13 +301,14 @@
     waves.forEach(w => {
       const p = xy(w, camera), radius = w.radius * camera.scale;
       if (radius > .1) {
-        c.strokeStyle = manual && w.n === selectedPiece ? '#a47700' : w.n % 2 ? '#278aac' : '#08677f';
-        c.lineWidth = manual && w.n === selectedPiece ? 2.8 : 1.7;
+        // 波前：藍色（深淺交錯），比灰色格線粗；選到的圓片用橘色
+        c.strokeStyle = manual && w.n === selectedPiece ? '#d9480f' : w.n % 2 ? '#3b6fe0' : '#1c3fa8';
+        c.lineWidth = manual && w.n === selectedPiece ? 3.4 : 2.6;
         c.beginPath(); c.arc(p.x, p.y, radius, 0, Math.PI * 2); c.stroke();
       }
       if ($('centers').checked) { c.fillStyle = '#507985'; c.beginPath(); c.arc(p.x, p.y, 2.5, 0, Math.PI * 2); c.fill(); }
       if (manual && w.radius > 0 && ($('centers').checked || w.n === selectedPiece)) {
-        const color = w.n === selectedPiece ? '#a47700' : '#08677f';
+        const color = w.n === selectedPiece ? '#d9480f' : '#1c3fa8';
         c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.beginPath();
         c.moveTo(p.x - 10, p.y); c.lineTo(p.x + 10, p.y); c.moveTo(p.x, p.y - 10); c.lineTo(p.x, p.y + 10); c.stroke();
         c.strokeStyle = color; c.lineWidth = 1.6; c.stroke();
