@@ -1091,8 +1091,9 @@
     info.hidden = !arr; $('fs-steps').hidden = arr; $('fs-status').hidden = arr;
     if (arr) {
       const m = Math.abs(params.mach), frac = { 0.25: '¼', 0.5: '½', 0.75: '¾' }[m] || fmt(m), dir = params.mach < 0 ? '←' : '→';
-      if (info.dataset.sig !== String(m)) {
-        info.dataset.sig = String(m);
+      const sig = tasks[task].id + '|' + m;   // 換關卡也要重畫（速度那關要有 ¼ ½ ¾ 按鈕）
+      if (info.dataset.sig !== sig) {
+        info.dataset.sig = sig;
         info.innerHTML = '<div><span>水波波速</span><b>1 格／秒</b></div>' +
           (tasks[task].setup.speed
             ? '<div class="fs-speed"><span>鴨子移速</span><span class="seg">' + [0.25, 0.5, 0.75].map(v => '<button type="button" data-setmach="' + v + '" aria-pressed="' + (m === v) + '">' + { 0.25: '¼', 0.5: '½', 0.75: '¾' }[v] + '</button>').join('') + '</span><b>格／秒 →</b></div>'
