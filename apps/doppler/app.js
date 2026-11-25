@@ -9,6 +9,10 @@
   const FLASH_MS = 520;
   let view3d = null;
   const tasks = window.DopplerTasks;
+  // 自由模式（老師展示用，網址加 ?free）：所有功能都開，不鎖關卡、不收作答
+  const FREE = (() => { const q = new URLSearchParams(location.search); return q.has('free') || q.get('mode') === 'free'; })();
+  window.DOPPLER_FREE = FREE;
+  if (FREE) document.documentElement.classList.add('free');
   let time = 5, playing = false, lastFrame = null, lastReadout = 0;
   let swim = 0; // 小鴨游動速度（倍波速，向左）；只在示範（自動模擬）時移動
   let ruler = null, measureMode = false, pointer = null, view = null;
@@ -657,7 +661,7 @@
   modeBar.querySelector('.mode-reset').addEventListener('click', () => { resetZoom(); status('回到原大小'); });
   function syncMode() {
     // 觀察／擺放切換只在「觀察小鴨」的關卡出現（要放小鴨聽呱呱叫）；其他關卡縮放時只顯示「原大小」
-    const su0 = (tasks[task] && tasks[task].setup) || {}, modes = !!(su0.watch || su0.swim);   // 觀察小鴨、觀察者運動：可以切到「擺放」移動小鴨
+    const su0 = (tasks[task] && tasks[task].setup) || {}, modes = FREE || !!(su0.watch || su0.swim);   // 觀察小鴨、觀察者運動：可以切到「擺放」移動小鴨
     modeBar.querySelectorAll('[data-mode]').forEach(b => { b.hidden = !modes; b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
     const home = Math.abs(cam.z - homeCam.z) < 1e-6 && Math.abs(cam.x - homeCam.x) < 1e-6 && Math.abs(cam.y - homeCam.y) < 1e-6;
     modeBar.querySelector('.mode-reset').hidden = home;
@@ -725,6 +729,7 @@
     syncDucks(); syncMode();
   }
   function enterBoard(t) {
+    if (FREE) { document.body.classList.add('free'); syncMode(); return; }   // 自由模式：不套用任何關卡限制
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
     // 只看不操作的關卡（bare）：右邊的控制、讀值、時間軸都不出現；水面顯示指定的那張圖（su.view）或空白水面
@@ -980,6 +985,7 @@
     fsLayer.innerHTML = `
       <div class="fs-col fs-colL"><section class="fs-panel" data-fs="guide"><header><strong>怎麼操作</strong><button type="button" class="fs-id" data-id-open></button><button type="button" class="fs-langbtn" data-lang-toggle data-no-i18n aria-label="中文 / English">EN</button><span class="fs-sub" id="fs-mode"></span><button type="button" class="fs-fold" aria-label="收合">▾</button></header>
         <div class="fs-body">
+          <p class="fs-free">🧪 自由模式：所有功能都開放，給老師出題、展示用，不會送出作答。</p>
           <label class="fs-task">題目<select id="fs-task"></select></label>
           <p class="fs-q" id="fs-q"></p>
           <button type="button" id="fs-load" class="fs-wide">套用這題的起始設定</button>
@@ -1163,7 +1169,7 @@
   if (!new URLSearchParams(location.search).has('page')) {
     setFull(true);
     // submit.js 稍後才把上次填的身分放回欄位，等它跑完再檢查
-    setTimeout(() => { idSync(); if (!idReady()) openId(); }, 0);
+    setTimeout(() => { idSync(); if (!idReady() && !FREE) openId(); }, 0);
   }
   window.addEventListener('doppler:lang', () => refresh());
   refresh(); requestAnimationFrame(tick);

@@ -280,3 +280,8 @@ body.bare .quick-bar>*:not(#qb-full),body.swimstage #qb-auto,body.swimstage #qb-
 /* 示範的關卡：只留時間軸（播放）與即時讀值 */
 body.demostage .fs-layer [data-fs="ctrl"],body.demostage .fs-layer [data-fs="more"]{display:none!important}
 body.demostage #qb-swim,body.demostage #qb-3d,body.demostage #qb-labels,body.demostage #qb-measure,body.demostage #qb-add-duck,body.demostage #qb-remove-duck{display:none!important}
+/* 自由模式（?free）：老師展示用 */
+.fs-free{display:none;margin:0 0 8px;padding:8px 10px;border-radius:8px;background:#fff3cd;color:#7a4b00;font-size:13px;font-weight:700}
+html.free .fs-free{display:block}
+html.free .fs-task,html.free #fs-q,html.free #fs-answer,html.free #fs-upnote,html.free .fs-id,html.free .assignment,html.free .answer-sheet,html.free #fs-info{display:none!important}
+html.free .fs-layer [data-fs="tray"]:not([hidden]){display:block!important}

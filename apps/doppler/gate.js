@@ -4,7 +4,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const Lab = window.DopplerLab, sel = $('task');
-  if (!Lab || !sel) return;
+  if (!Lab || !sel || window.DOPPLER_FREE) return;   // 自由模式不受老師開關卡限制
   const tasks = Lab.tasks, T = s => (window.T || String)(s);
   const KEY = 'doppler-gate-v1', EVERY = 10000;
   const read = (k, f) => { try { const v = localStorage.getItem(k); return v === null ? f : JSON.parse(v); } catch (_) { return f; } };

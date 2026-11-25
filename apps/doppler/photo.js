@@ -110,7 +110,7 @@
     }
     paint(back.c);
   }
-  const sync = t => backdrop(!!t && t.group === 'photo', !!(t && t.draw));
+  const sync = t => backdrop(!window.DOPPLER_FREE && !!t && t.group === 'photo', !!(t && t.draw));
   document.addEventListener('doppler:task', e => sync(e.detail.task));
   if (window.DopplerLab) sync(window.DopplerLab.tasks[window.DopplerLab.taskIndex]);
   window.DopplerPhoto = { mount, open, canvas, count: () => strokes.length };
