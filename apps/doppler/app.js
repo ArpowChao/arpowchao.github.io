@@ -326,14 +326,15 @@
         text(c, label, tx, ty, '#08677f', 'center', 14);
       }
     });
-    if (!manual && params.mach !== 0) arrow(c, { x: source.x, y: source.y - 30 }, { x: source.x + Math.sign(params.mach) * 42, y: source.y - 30 }, '#977008');
+    if ((!manual || viewOnly === 'ab') && params.mach !== 0) arrow(c, { x: source.x, y: source.y - 30 }, { x: source.x + Math.sign(params.mach) * 42, y: source.y - 30 }, '#977008');
+    if (manual && viewOnly === 'ab') text(c, (window.T || String)('向右游') + ' ' + ({ 0.25: '¼', 0.5: '½', 0.75: '¾' }[Math.abs(params.mach)] || '') + ' ' + (window.T || String)('格／秒'), source.x + 21, source.y - 50, '#7a5200', 'center', 15);
     if (!manual || pieces.at(-1).placed) {
       duck(c, source, '#e9b93a', params.mach < 0 ? -1 : 1, '波源', false);
       if (manual && selP === pieces.length - 1) { c.strokeStyle = '#a47700'; c.lineWidth = 2; c.beginPath(); c.arc(source.x, source.y, 22, 0, Math.PI * 2); c.stroke(); }
       if ($('labels').checked && (manual || Math.abs(waves.at(-1).emitted - time) < 1e-8)) text(c, (manual ? '當下 t=' : '剛發出 t=') + fmt(manual ? 5 : time, 1) + 's', source.x, source.y + 45, '#977008', 'center', 13);
     }
     // 擺圖的關卡：標出鴨子起始位置（t = 0）
-    if (manual && (arranging() || (viewOnly && viewOnly !== 'blank'))) {
+    if (manual && (arranging() || (viewOnly && viewOnly !== 'blank' && viewOnly !== 'ab'))) {
       const o = xy({ x: 0, y: 0 }, camera);
       c.save(); c.fillStyle = '#e03131'; c.strokeStyle = '#ffffff'; c.lineWidth = 2.5;
       c.beginPath(); c.arc(o.x, o.y, 7, 0, Math.PI * 2); c.fill(); c.stroke();
@@ -679,14 +680,25 @@
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
     // 只看不操作的關卡（bare）：右邊的控制、讀值、時間軸都不出現；水面顯示指定的那張圖（su.view）或空白水面
-    const bare = !arrange && !watch && !su.swim, viewId = bare || su.swim ? (su.view || 'blank') : null;
+    const bare = !arrange && !watch && !su.swim && !su.demo, viewId = bare || su.swim ? (su.view || 'blank') : null;
     document.body.classList.toggle('arrange', arrange);
     document.body.classList.toggle('arrange-speed', !!(arrange && su.speed));
     document.body.classList.toggle('watch', watch);
     document.body.classList.toggle('bare', bare);
     document.body.classList.toggle('swimstage', !!su.swim);
+    document.body.classList.toggle('demostage', !!su.demo);
     cam.z = 1; cam.x = 0; cam.y = 0; setMode(arrange ? 'place' : 'observe');
-    viewOnly = viewId || false;
+    viewOnly = su.scene || viewId || false;
+    // 示範：自動模擬（波源 ½ 波速向右，前方 A、後方 B），學生按時間軸的「▶」播放、聽小鴨叫
+    if (su.demo) {
+      if (view3d?.visible) set3D(false);
+      setPlaying(false); swim = 0; applySwim(); params.c = 1; params.f = 1; ruler = null; setMeasure(false);
+      $('labels').checked = false; $('observers').checked = true; $('grid').checked = true;
+      observers.length = 2; observers[0] = { x: 5, y: 0 }; observers[1] = { x: -5, y: 0 }; syncDucks();
+      changeMach(su.mach || 0.5); if (manual) setManual(false); time = 0; autoHits = null;
+      syncQuick(); refresh();
+      return;
+    }
     if (viewId) {
       if (view3d?.visible) set3D(false);
       setPlaying(false); swim = 0; applySwim(); if (!manual) setManual(true);
@@ -695,6 +707,8 @@
       const b = viewId === 'blank' ? null : boards[viewId];
       changeMach(b && Number.isFinite(b.mach) ? b.mach : 0);
       rebuildPieces(b && Array.isArray(b.centers) ? b.centers : []);
+      // 預測用的情境圖：只畫鴨子（向右箭頭）與 A、B 兩隻小鴨，不畫水波
+      if (su.scene === 'ab') { changeMach(su.mach || 0.5); $('observers').checked = true; observers.length = 2; observers[0] = { x: 4, y: 0 }; observers[1] = { x: -4, y: 0 }; syncDucks(); }
       syncQuick(); refresh();
       return;
     }

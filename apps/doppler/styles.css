@@ -277,3 +277,6 @@ body.bare .quick-bar>*:not(#qb-full),body.swimstage #qb-auto,body.swimstage #qb-
 .ph-back .ph-tools{flex:0 0 auto}
 .ph-back canvas{flex:0 1 auto;min-height:0;touch-action:none}
 .fs-upnote{margin:8px 2px 0;font-size:14px;min-height:1.4em;color:var(--teal)}.fs-upnote[data-kind=warn]{color:#b45309;font-weight:700}.fs-upnote[data-kind=ok]{color:#0a7d4f;font-weight:700}
+/* 示範的關卡：只留時間軸（播放）與即時讀值 */
+body.demostage .fs-layer [data-fs="ctrl"],body.demostage .fs-layer [data-fs="more"]{display:none!important}
+body.demostage #qb-swim,body.demostage #qb-3d,body.demostage #qb-labels,body.demostage #qb-measure,body.demostage #qb-add-duck,body.demostage #qb-remove-duck{display:none!important}
