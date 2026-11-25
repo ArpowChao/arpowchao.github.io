@@ -12,6 +12,12 @@
     { key: 'cause', label: '造成', type: 'text', placeholder: '（影響）' },
     { key: 'so', label: '所以', type: 'text', placeholder: '（結果）' }
   ];
+  // 每位學生（班級＋座號）各自的作答與圖：存在瀏覽器時鍵名加上身分，換人登入就看不到上一位的圖
+  root.DopplerWho = (() => {
+    try { const id = JSON.parse(localStorage.getItem('doppler-identity-v1') || '{}'), c = String(id.cls || '').trim(), s = String(id.seat || '').trim(); return c && s ? c + '-' + s : ''; }
+    catch (_) { return ''; }
+  })();
+  root.DopplerKey = base => root.DopplerWho ? base + '@' + root.DopplerWho : base;
   root.DopplerTasks = [
     // 一、生活體驗
     { id: 'photo', group: 'photo', n: '2、3', kind: 'image', title: '圈的結果圖', q: '圈出原地的、移動的、跑得最快的。', setup: null, draw: 'swans', fields: [] },

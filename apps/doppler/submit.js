@@ -5,7 +5,7 @@
   const Lab = window.DopplerLab;
   if (!Lab) return;
   const tasks = Lab.tasks;
-  const KEY_URL = 'doppler-gas-url', KEY_ID = 'doppler-identity-v1', KEY_FIELDS = 'doppler-fields-v2';
+  const KEY_URL = 'doppler-gas-url', KEY_ID = 'doppler-identity-v1', KEY_FIELDS = window.DopplerKey('doppler-fields-v2');
   const store = {
     get(key, fallback) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch (_) { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* 瀏覽器不允許保存時仍可送出 */ } }
@@ -22,7 +22,12 @@
   idFields.forEach(id => {
     if ($(id) && savedId[id] && !$(id).value) $(id).value = savedId[id];
     $(id)?.addEventListener('input', () => store.set(KEY_ID, Object.fromEntries(idFields.map(k => [k, $(k)?.value || '']))));
-    $(id)?.addEventListener('change', () => store.set(KEY_ID, Object.fromEntries(idFields.map(k => [k, $(k)?.value || '']))));
+    $(id)?.addEventListener('change', () => {
+      store.set(KEY_ID, Object.fromEntries(idFields.map(k => [k, $(k)?.value || ''])));
+      // 不在全螢幕身分視窗時，換了班級＋座號就重新載入（全螢幕時由「開始」按鈕處理）
+      const who = ($('cls')?.value || '').trim() + '-' + ($('seat')?.value || '').trim(), dlg = document.querySelector('.fs-iddlg');
+      if (($('cls')?.value || '').trim() && ($('seat')?.value || '').trim() && who !== window.DopplerWho && (!dlg || dlg.hidden)) location.reload();
+    });
   });
 
   // ---------- 每題欄位 ----------

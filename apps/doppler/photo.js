@@ -1,7 +1,7 @@
 // 第 1 題：直接在照片上圈（藍筆圈原地、紅筆圈移動、螢光筆圈最快），圈好的照片隨作答送出
 (function () {
   'use strict';
-  const KEY = 'doppler-photo-v1', SRC = 'swans.jpg?v=1';
+  const KEY = window.DopplerKey ? window.DopplerKey('doppler-photo-v1') : 'doppler-photo-v1', SRC = 'swans.jpg?v=1';
   const PENS = {
     blue: { label: '藍筆：原地', color: '#1f6fd1', w: 0.006 },
     red: { label: '紅筆：移動', color: '#d93a3a', w: 0.006 },

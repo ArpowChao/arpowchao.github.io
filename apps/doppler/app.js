@@ -23,7 +23,7 @@
   const legacyParking = [{ x: -2, y: 1.5 }, { x: 1.5, y: 1 }, { x: -1.5, y: -1.5 }, { x: 2, y: -1 }, { x: 0, y: 2 }, { x: 3, y: -2 }];
   let task = 0, answers = {}, savedStudent = '', storageOK = true;
   // 自己擺圓片的關卡：每關各自保留排好的樣子（boards），第一次進來時水面淨空
-  const BOARD_KEY = 'doppler-boards-v1';
+  const BOARD_KEY = DopplerKey('doppler-boards-v1');
   let boards = {}, boardFor = null;
   try { boards = JSON.parse(localStorage.getItem(BOARD_KEY) || '{}') || {}; } catch (_) { boards = {}; }
   const arranging = () => !!(tasks[task] && tasks[task].setup && (tasks[task].setup.arrange || tasks[task].setup.watch));
@@ -33,7 +33,7 @@
   const fmt = (v, places = 2) => Number(v).toFixed(places);
   const status = message => { $('status').textContent = message; const f = document.getElementById('fs-status'); if (f) f.textContent = message; };
   try {
-    const saved = JSON.parse(localStorage.getItem('doppler-worksheet-v2') || 'null');
+    const saved = JSON.parse(localStorage.getItem(DopplerKey('doppler-worksheet-v2')) || 'null');
     if (saved && saved.answersById && typeof saved.answersById === 'object') tasks.forEach(t => { const a = saved.answersById[t.id]; if (typeof a === 'string') answers[t.id] = a.slice(0, 2400); });
     if (saved && typeof saved.student === 'string') savedStudent = saved.student.slice(0, 80);
     if (saved && typeof saved.snapToGrid === 'boolean') $('snap-grid').checked = saved.snapToGrid;
@@ -46,7 +46,7 @@
   } catch (_) { storageOK = false; }
   $('student').value = savedStudent;
   function persist() {
-    try { localStorage.setItem('doppler-worksheet-v2', JSON.stringify({ answersById: answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
+    try { localStorage.setItem(DopplerKey('doppler-worksheet-v2'), JSON.stringify({ answersById: answers, student: $('student').value, snapToGrid: $('snap-grid').checked, manualSettings: { ...params },
       manualCenters: pieces.map(p => ({ n: p.n, x: p.x, y: p.y, placed: p.placed })) })); }
     catch (_) { storageOK = false; }
     saveBoard();
@@ -717,7 +717,7 @@
   // 題目選單：依五個段落分組；送出過的關卡打 ✓；只列出老師開放的關卡（gate.js 設定 taskFilter）
   const SECTIONS = { photo: '一、生活體驗', still: '二、靜止打水', moving: '三、移動的波源', ducks: '四、波與觀察者', observer: '六、觀察者運動' };   // 對齊學習單大題
   let taskFilter = () => true, sent = new Set();
-  try { sent = new Set(JSON.parse(localStorage.getItem('doppler-sent-v1') || '[]')); } catch (_) { sent = new Set(); }
+  try { sent = new Set(JSON.parse(localStorage.getItem(DopplerKey('doppler-sent-v1')) || '[]')); } catch (_) { sent = new Set(); }
   function fillTaskSelect(sel) {
     const groups = []; let cur = null;
     tasks.forEach((t, i) => {
@@ -730,7 +730,7 @@
   }
   function renderTaskSelect() { fillTaskSelect($('task')); if ($('fs-task')) fillTaskSelect($('fs-task')); }
   function setTaskFilter(fn) { taskFilter = fn || (() => true); renderTaskSelect(); }
-  function markSent(id) { sent.add(id); try { localStorage.setItem('doppler-sent-v1', JSON.stringify([...sent])); } catch (_) { } renderTaskSelect(); }
+  function markSent(id) { sent.add(id); try { localStorage.setItem(DopplerKey('doppler-sent-v1'), JSON.stringify([...sent])); } catch (_) { } renderTaskSelect(); }
   // 小鴨的位置：靜止打水放在 ±4.5 格；移動的波源放在鴨子前方 3.5 格（A）與起點後方（B），畫面縮小到看得到兩隻
   function duckLayout(boardId) {
     const src = pieces.at(-1), sx = src && src.placed ? src.x : 0;
@@ -1050,7 +1050,12 @@
       const g = e.target.closest('[data-grp]');
       if (g) { $('group').value = g.dataset.grp; $('group').dispatchEvent(new Event('change', { bubbles: true })); idSync(); }
     });
-    $('fs-id-done').addEventListener('click', () => { if (idReady()) { dlg.hidden = true; } else idSync(true); });
+    $('fs-id-done').addEventListener('click', () => {
+      if (!idReady()) { idSync(true); return; }
+      dlg.hidden = true;
+      // 換了班級或座號：重新載入，換成這位學生自己的作答與圖
+      if ($('cls').value.trim() + '-' + $('seat').value.trim() !== window.DopplerWho) location.reload();
+    });
     fsLayer.addEventListener('click', e => { if (e.target.closest('[data-id-open]')) openId(); });
     ['cls', 'seat', 'student'].forEach(id => ['input', 'change'].forEach(ev => $(id).addEventListener(ev, () => idSync())));
     fsLayer.querySelector('.fs-back').addEventListener('click', () => setAnswering(false));
