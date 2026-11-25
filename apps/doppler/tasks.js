@@ -24,7 +24,7 @@
       setup: { watch: true, board: 'still', mach: 0 },
       fields: [{ key: 'ten', label: '10 秒被水波打到的次數', type: 'number' }, { key: 'per', label: '每秒被水波打到的次數', type: 'number' }] },
     // 三、移動的波源
-    { id: 'moving', group: 'moving', n: '表格', kind: 'image', title: '鴨子移速擺圖', q: '鴨子邊游邊打水，每秒打 1 下，打了 5 秒。選好你負責的移速，排出 5 秒時的水波。',
+    { id: 'moving', group: 'moving', n: '6', kind: 'image', title: '鴨子移速擺圖', q: '鴨子邊游邊打水，每秒打 1 下，打了 5 秒。選好你負責的移速，排出 5 秒時的水波。',
       setup: { arrange: true, mach: 0.25, speed: true }, check: true,
       fields: [{ key: 'speed', label: '我負責的速度', type: 'choice', options: ['¼ 波速', '½ 波速', '¾ 波速'], fromMach: true }] },
     { id: 'shape', group: 'moving', n: '(2)', kind: 'idea', title: '水波形狀的變化', q: '鴨子移速越大，水波形狀有何變化？', setup: { view: 'moving' }, reasonLabel: '我看到', fields: [] },
