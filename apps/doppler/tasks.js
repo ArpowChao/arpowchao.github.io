@@ -18,16 +18,14 @@
     },
     {
       id: 'still', group: 'still', n: '2', kind: 'image', title: '排出靜止打水',
-      q: '鴨子在原地每秒打水 1 下，打了 5 秒。把圓片一片一片拖進水面，排出 5 秒時的水波，排好就送出。',
-      setup: { arrange: true, mach: 0 }, check: true, fields: [],
-      steps: ['從「圓片」把圈一片一片拖進水面', '拖圓心或圓周可以移動；放錯了按「全部收回」重來', '排好按「✎ 作答」→「送出給老師」']
+      q: '鴨子在原地每秒打水 1 下，打了 5 秒。排出 5 秒時的水波。',
+      setup: { arrange: true, mach: 0 }, check: true, fields: []
     },
     {
       id: 'moving', group: 'moving', n: '3-1', kind: 'image', title: '排出邊游邊打水',
-      q: '先選好自己負責的速度，再把 5 片圓片排出 5 秒時的水波（圓心依 0－1－2－3－4），排好就送出。',
+      q: '鴨子邊游邊打水，每秒打 1 下，打了 5 秒。選好你的速度，排出 5 秒時的水波。',
       setup: { arrange: true, mach: 0.25, speed: true }, check: true,
-      fields: [{ key: 'speed', label: '我負責的速度', type: 'choice', options: ['¼ 波速', '½ 波速', '¾ 波速'], fromMach: true }],
-      steps: ['先在右邊選好自己負責的速度', '從「圓片」把圈一片一片拖進水面，圓心放在發波時鴨子的位置', '排好按「✎ 作答」→「送出給老師」']
+      fields: [{ key: 'speed', label: '我負責的速度', type: 'choice', options: ['¼ 波速', '½ 波速', '¾ 波速'], fromMach: true }]
     },
     {
       id: 'waveSpeed', group: 'moving', n: '3-2', kind: 'idea', title: '水波跑得更快嗎？',

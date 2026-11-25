@@ -232,7 +232,7 @@ body.gate-waiting #question,body.gate-waiting #task-figure,body.gate-waiting #ta
 /* 自己擺圓片的關卡：水面淨空、只留排圓片需要的東西 */
 body.arrange #qb-auto,body.arrange #qb-swim,body.arrange #qb-3d,body.arrange #view3d-tools,body.arrange #qb-ducks,body.arrange #qb-add-duck,body.arrange #qb-remove-duck,body.arrange #qb-labels,body.arrange #qb-measure,body.arrange #manual-scene-tools{display:none!important}
 body.arrange .fs-layer [data-fs="more"],body.arrange .fs-layer [data-fs="read"],body.arrange .fs-layer [data-fs="time"]{display:none!important}
-body.arrange:not(.arrange-speed) .fs-layer [data-fs="ctrl"],body.arrange:not(.arrange-speed) .quick-bar .qb-group{display:none!important}
+body.arrange .fs-layer [data-fs="ctrl"],body.arrange:not(.arrange-speed) .quick-bar .qb-group{display:none!important}
 body.arrange .fs-layer [data-fs="ctrl"] .fs-cap~.fs-cap,body.arrange .fs-layer [data-fs="ctrl"] [data-slot="mode"],body.arrange .fs-layer [data-fs="ctrl"] [data-slot="tools"]{display:none!important}
 body.arrange-speed .qb-group [data-mach="0"]{display:none!important}
 body.arrange .tray-piece{min-height:64px}
@@ -243,3 +243,11 @@ body.arrange .tray-piece{min-height:64px}
 .mode-switch button[aria-pressed=true]{background:var(--teal);color:#fff}
 .mode-switch .mode-reset{background:#fff5d4;color:#765400}
 body.mode-observe #pond{cursor:move}
+
+/* 排圓片要用的數據 */
+.fs-info{display:grid;gap:6px;margin:4px 0 10px}
+.fs-info>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 12px;border-radius:10px;background:#fff8e6;border:1px solid #f0d7a0}
+.fs-info span{font-size:14px;color:#7a5a2a}.fs-info b{font-size:19px;color:#a45200;white-space:nowrap}
+.fs-info .fs-speed{flex-wrap:wrap}.fs-info .seg{display:inline-flex;gap:4px;margin-left:auto}.fs-info .seg button{min-height:44px;min-width:48px;font-size:19px;font-weight:700;color:#a45200;background:#fff;border:1px solid #f0d7a0}.fs-info .seg button[aria-pressed=true]{background:#c96a00;border-color:#c96a00;color:#fff}
+.fs-info .fs-speed>span:first-child{flex-basis:100%}.fs-info .fs-speed .seg{margin-left:0}.fs-info .fs-speed b{margin-left:auto}
+.fs-info b{white-space:normal;text-align:right;min-width:0}.fs-info>div{min-width:0}

@@ -232,7 +232,7 @@
     const scale = Math.max(1, (Math.min(w, h) - (manual ? 0 : 54)) / (2 * extent));
     // 觀察模式可以縮放、移動畫面（cam）；擺放的範圍（halfWidth）仍以原大小計算
     const ox = ins.l + w / 2, oy = ins.t + h / 2, z = zoomed ? cam.z : 1, zs = scale * z;
-    return { scale: zs, cx: ox - (zoomed ? cam.x : 0) * zs, cy: oy + (zoomed ? cam.y : 0) * zs, width, height, ox, oy, base: scale,
+    return { scale: zs, cx: ox - (zoomed ? cam.x : 0) * zs, cy: oy + (zoomed ? cam.y : 0) * zs, width, height, ox, oy, base: scale, l: ins.l, t: ins.t,
       halfWidth: width / 2 / scale, halfHeight: height / 2 / scale };
   }
   function xy(point, camera) { return { x: camera.cx + point.x * camera.scale, y: camera.cy - point.y * camera.scale }; }
@@ -290,6 +290,7 @@
       const labelStep = cell * Math.max(1, Math.ceil(30 / (cell * camera.scale)));
       for (let n = Math.ceil(-camera.cx / camera.scale / labelStep); n <= (width - camera.cx) / camera.scale / labelStep; n++) { const x = n * labelStep, px = xy({ x, y: 0 }, camera).x; if (px > 20 && px < width - 20) text(c, fmt(x, 1).replace('.0', ''), px, height - 13, '#688790', 'center', 13); }
     }
+    if ($('grid').checked) scaleBar(c, camera, cell);
     const waves = manual ? preview ? P.snapshotWaves(params.c, preview.waves, preview.elapsed) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
     c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
     const source = xy(manual ? pieces.at(-1) : P.source(phys(), time), camera);
@@ -345,6 +346,27 @@
       c.fillStyle = '#fff5d4'; c.fillRect(x - 45, y - 12, 90, 24); text(c, label, x, y, '#765400', 'center', 15);
     }
     c.restore(); return { camera, cell };
+  }
+  // 比例尺：標出「1 格」是哪裡到哪裡（剛好跨一大格，對齊格線），並分成 4 小格
+  function scaleBar(c, camera, cell) {
+    const x0 = Math.ceil(((camera.l || 0) + 30 - camera.cx) / camera.scale / cell) * cell;
+    const y0 = Math.floor((camera.cy - ((camera.t || 0) + 96)) / camera.scale / cell) * cell;
+    const a = xy({ x: x0, y: y0 }, camera), b = xy({ x: x0 + cell, y: y0 }, camera), len = b.x - a.x;
+    if (len < 24) return;
+    const T = window.T || String, label = T('1 格'), sub = T('＝ 4 小格');
+    c.save();
+    c.font = '13px "Microsoft JhengHei", sans-serif'; const subW = c.measureText(sub).width;
+    c.font = '700 17px "Microsoft JhengHei", sans-serif'; const labW = c.measureText(label).width;
+    const bw = Math.max(len, labW + 10 + subW) + 20;
+    c.fillStyle = '#ffffffe6'; c.strokeStyle = '#e3b04b'; c.lineWidth = 1;
+    c.beginPath(); if (c.roundRect) c.roundRect(a.x - 10, a.y - 44, bw, 62, 8); else c.rect(a.x - 10, a.y - 44, bw, 62); c.fill(); c.stroke();
+    c.strokeStyle = '#c96a00'; c.lineWidth = 4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.moveTo(a.x, a.y - 10); c.lineTo(a.x, a.y + 10); c.moveTo(b.x, b.y - 10); c.lineTo(b.x, b.y + 10); c.stroke();
+    c.lineWidth = 2; c.beginPath(); for (let k = 1; k < 4; k++) { const x = a.x + len * k / 4; c.moveTo(x, a.y - 5); c.lineTo(x, a.y + 5); } c.stroke();
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    c.fillStyle = '#a45200'; c.fillText(label, a.x, a.y - 20);
+    c.font = '13px "Microsoft JhengHei", sans-serif'; c.fillStyle = '#7a5a2a'; c.fillText(sub, a.x + labW + 10, a.y - 20);
+    c.restore();
   }
   // 波峰剛到時的發光強度（0～1，逐漸淡出）
   function glowOf(i) {
@@ -579,7 +601,6 @@
   function setMode(next, say) {
     mode = next; gest.clear(); gest0 = null; if (mode === 'observe') { pointer = null; setMeasure(false); }
     syncMode();
-    if (say) status(mode === 'observe' ? '觀察：兩指縮放、拖曳移動畫面；水面上的東西不會動' : '擺放：拖曳圓片或小鴨');
   }
   function resetZoom() { cam.z = 1; cam.x = 0; cam.y = 0; syncMode(); draw(); }
   canvas.addEventListener('lostpointercapture', () => { if (pointer?.mode === 'piece') pieces = pointer.before; pointer = null; refresh(); });
@@ -826,6 +847,7 @@
           <label class="fs-task">題目<select id="fs-task"></select></label>
           <p class="fs-q" id="fs-q"></p>
           <button type="button" id="fs-load" class="fs-wide">套用這題的起始設定</button>
+          <div class="fs-info" id="fs-info" hidden></div>
           <ol class="fs-steps" id="fs-steps"></ol>
           <p class="fs-status" id="fs-status" aria-live="polite"></p>
           <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 作答</button>
@@ -934,6 +956,21 @@
     const own = !photo && t && t.steps && manual;
     const steps = photo ? FS_PHOTO : own ? t.steps : FS_STEPS[mode].concat(view3d?.visible ? ['3D：拖曳旋轉，兩指縮放；排圓片請回 2D'] : []);
     const sig = photo ? 'photo' : own ? 'own-' + t.id : mode + view3d?.visible;
+    // 自己擺的關卡：不放操作說明，只放排圓片要用的數據（波速、鴨子移速）
+    const arr = arranging(), info = $('fs-info');
+    info.hidden = !arr; $('fs-steps').hidden = arr; $('fs-status').hidden = arr;
+    if (arr) {
+      const m = Math.abs(params.mach), frac = { 0.25: '¼', 0.5: '½', 0.75: '¾' }[m] || fmt(m), dir = params.mach < 0 ? '←' : '→';
+      if (info.dataset.sig !== String(m)) {
+        info.dataset.sig = String(m);
+        info.innerHTML = '<div><span>水波波速</span><b>1 格／秒</b></div>' +
+          (tasks[task].setup.speed
+            ? '<div class="fs-speed"><span>鴨子移速</span><span class="seg">' + [0.25, 0.5, 0.75].map(v => '<button type="button" data-setmach="' + v + '" aria-pressed="' + (m === v) + '">' + { 0.25: '¼', 0.5: '½', 0.75: '¾' }[v] + '</button>').join('') + '</span><b>格／秒 →</b></div>'
+            : '<div><span>鴨子移速</span><b>' + (m ? frac + ' 格／秒 ' + dir : '0（不動）') + '</b></div>') +
+          '<div><span>打水</span><b>每秒 1 下，打了 5 秒</b></div>';
+      }
+    }
+    if (!info.dataset.bound) { info.dataset.bound = '1'; info.addEventListener('click', e => { const bt = e.target.closest('[data-setmach]'); if (bt) document.querySelector('.qb-group [data-mach="' + bt.dataset.setmach + '"]')?.click(); }); }
     const ol = $('fs-steps'); if (ol.dataset.mode !== sig) { ol.dataset.mode = sig; ol.replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.textContent = s; return li; })); }
     if (!$('fs-status').textContent) $('fs-status').textContent = $('status').textContent;
     fsLayer.querySelector('[data-fs="tray"]').hidden = answering || $('piece-tray').hidden;
