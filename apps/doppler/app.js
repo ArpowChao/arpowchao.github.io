@@ -317,9 +317,20 @@
     }
     if ($('grid').checked) scaleBar(c, camera, cell);
     const waves = manual ? preview ? previewWaves().filter(w => w.radius < 60) : pieces.filter(p => p.placed) : shown(P.waves(phys(), time));
-    c.save(); c.setLineDash([3, 6]); c.lineWidth = 1; c.strokeStyle = '#b6cdd2'; c.beginPath();
-    const source = xy(manual ? (preview && preview.gen ? { x: preview.gen.x + preview.gen.v * preview.elapsed, y: preview.gen.y } : pieces.at(-1)) : P.source(phys(), time), camera);
-    if (!manual) { const from = xy(P.source(phys(), phys().t0), camera); c.moveTo(from.x, from.y); c.lineTo(source.x, source.y); c.stroke(); } c.restore();
+    const srcW = manual ? (preview && preview.gen ? { x: preview.gen.x + preview.gen.v * preview.elapsed, y: preview.gen.y } : pieces.at(-1)) : P.source(phys(), time);
+    const source = xy(srcW, camera);
+    // 鴨子的移動軌跡（淡色）：從起點畫到現在的位置，每秒打水的位置點一個小點；自己擺圖的關卡不畫（避免提示）
+    const su = (tasks[task] && tasks[task].setup) || {};
+    const fromW = !manual ? P.source(phys(), phys().t0) : params.mach !== 0 && !su.arrange && (pieces.at(-1)?.placed) ? { x: 0, y: 0 } : null;
+    if (fromW && Math.hypot(srcW.x - fromW.x, srcW.y - fromW.y) > 1e-6) {
+      const from = xy(fromW, camera);
+      c.save(); c.lineCap = 'round'; c.strokeStyle = 'rgba(201,138,0,.28)'; c.lineWidth = 7;
+      c.beginPath(); c.moveTo(from.x, from.y); c.lineTo(source.x, source.y); c.stroke();
+      const v = params.mach * params.c, step = v / params.f, n = step ? Math.floor((srcW.x - fromW.x) / step + 1e-6) : 0;
+      c.fillStyle = 'rgba(201,138,0,.5)';
+      for (let k = 0; k <= Math.min(n, 60); k++) { const q = xy({ x: fromW.x + k * step, y: fromW.y }, camera); c.beginPath(); c.arc(q.x, q.y, 3.2, 0, Math.PI * 2); c.fill(); }
+      c.restore();
+    }
     waves.forEach(w => {
       const p = xy(w, camera), radius = w.radius * camera.scale;
       if (radius > .1) {
@@ -364,6 +375,12 @@
       c.fillStyle = '#c92a2a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(lab, o.x, o.y - 33);
       c.restore();
     }
+    // 小鴨自己游的時候也畫出淡淡的軌跡
+    if ($('observers').checked && !manual) observers.forEach(o => {
+      if (!o.vx && !o.vy) return;
+      const a = xy({ x: o.x, y: o.y }, camera), b = xy(posAt(o), camera);
+      c.save(); c.lineCap = 'round'; c.strokeStyle = 'rgba(8,124,145,.22)'; c.lineWidth = 7; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); c.restore();
+    });
     if ($('observers').checked) observers.forEach((o, i) => {
       const sx = manual ? pieces.at(-1).x : P.source(phys(), time).x;
       const at = xy(posAt(o), camera), moving = !manual && o.vx;
