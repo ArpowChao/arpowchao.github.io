@@ -274,6 +274,12 @@
     "好": "OK",
     "留在這題": "Stay here",
     "鴨子起始位置": "Duck’s starting point",
+    "一、生活體驗": "1 · Everyday observation",
+    "二、靜止打水": "2 · Paddling in place",
+    "三、移動的波源": "3 · A moving source",
+    "四、波與觀察者": "4 · Waves and an observer",
+    "五、觀察者運動": "5 · A moving observer",
+    "⇪ 上傳給老師": "⇪ Send to teacher",
     '變短': 'gets shorter', '變長': 'gets longer', '出口票': 'Read the source from the ripples', '看水波判斷波源': 'Read the source from the ripples', '判斷 A～D 波源的運動。': 'Work out how the source moves in A–D.', '理由（用波長、波速）': 'Reason (use wavelength and wave speed)',
     'B、C 誰快？': 'Faster: B or C?', 'B 快': 'B', 'C 快': 'C', '波源向右，誰收到的頻率高？': 'Source moving right: who receives the higher frequency?', '前方': 'Ahead', '後方': 'Behind',
     '呱': 'Quack', '嗡': 'Buzz', '叮': 'Ding', '啾啾': 'Tweet', '吱': 'Squeak', '咚': 'Dong',
@@ -303,7 +309,7 @@
 
   // 文字節點與屬性：記住原本的中文，切換時可以換回來
   const textRec = new WeakMap(), attrRec = new WeakMap();
-  const ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
+  const ATTRS = ['placeholder', 'aria-label', 'title', 'alt', 'label'];
   const SKIP = el => el && el.closest && el.closest('script,style,textarea,[data-no-i18n]');
   function doText(n) {
     if (SKIP(n.parentElement)) return;

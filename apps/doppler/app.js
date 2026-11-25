@@ -658,6 +658,23 @@
     try { localStorage.setItem(BOARD_KEY, JSON.stringify(boards)); } catch (_) { /* 只保留在這次 */ }
   }
   // 進入關卡：要自己擺的關卡把水面整理乾淨（只留波源小鴨、圓片全部在托盤），回到這關時接著排
+  // 題目選單：依五個段落分組；送出過的關卡打 ✓；只列出老師開放的關卡（gate.js 設定 taskFilter）
+  const SECTIONS = { photo: '一、生活體驗', still: '二、靜止打水', moving: '三、移動的波源', ducks: '四、波與觀察者', observer: '五、觀察者運動' };
+  let taskFilter = () => true, sent = new Set();
+  try { sent = new Set(JSON.parse(localStorage.getItem('doppler-sent-v1') || '[]')); } catch (_) { sent = new Set(); }
+  function fillTaskSelect(sel) {
+    const groups = []; let cur = null;
+    tasks.forEach((t, i) => {
+      if (!taskFilter(i)) return;
+      if (!cur || cur.g !== t.group) { cur = { g: t.group, el: document.createElement('optgroup') }; cur.el.label = SECTIONS[t.group] || ''; groups.push(cur); }
+      cur.el.append(new Option((sent.has(t.id) ? '✓ ' : '') + t.n + '　' + t.title, String(i)));
+    });
+    sel.replaceChildren(...groups.map(g => g.el));
+    if ([...sel.options].some(o => o.value === String(task))) sel.value = String(task);
+  }
+  function renderTaskSelect() { fillTaskSelect($('task')); if ($('fs-task')) fillTaskSelect($('fs-task')); }
+  function setTaskFilter(fn) { taskFilter = fn || (() => true); renderTaskSelect(); }
+  function markSent(id) { sent.add(id); try { localStorage.setItem('doppler-sent-v1', JSON.stringify([...sent])); } catch (_) { } renderTaskSelect(); }
   function enterBoard(t) {
     saveBoard(); boardFor = null;
     const su = t.setup || {}, arrange = !!su.arrange, watch = !!su.watch, boardId = su.board || (arrange ? t.id : null);
@@ -899,6 +916,7 @@
           <ol class="fs-steps" id="fs-steps"></ol>
           <p class="fs-status" id="fs-status" aria-live="polite"></p>
           <button type="button" id="fs-answer" class="fs-wide fs-primary">✎ 作答</button>
+          <p class="fs-upnote" id="fs-upnote" aria-live="polite"></p>
           <a class="fs-home" href="../index.html">← Physics Lab</a>
         </div></section>
       <section class="fs-panel" data-fs="answer" hidden><header><strong>作答</strong><span class="fs-sub" id="fs-anum"></span><button type="button" class="fs-id" data-id-open></button><button type="button" class="fs-back">← 回操作</button></header>
@@ -929,7 +947,8 @@
     scr.hidden = !canBrowserFull; scr.addEventListener('click', toggleBrowserFull);
     $('fs-load').addEventListener('click', () => $('load-task').click());
     // 作答也在全螢幕裡：左欄換成作答卡，水面與右側讀值照常可用
-    $('fs-answer').addEventListener('click', () => setAnswering(true));
+    // 上傳圖的關卡：按鈕直接上傳，不打開作答面板
+    $('fs-answer').addEventListener('click', () => { const t = tasks[task]; if (t && t.kind === 'image') $('submit').click(); else setAnswering(true); });
     // 身分（班級／組別／座號）：一開始填一次，整節課沿用，送出作答時自動帶入
     const dlg = document.createElement('div'); dlg.className = 'fs-iddlg'; dlg.hidden = true;
     dlg.innerHTML = `<div class="fs-idbox" role="dialog" aria-label="填寫身分"><div class="fs-lang" data-no-i18n role="group" aria-label="Language"><button type="button" data-lang="zh">中文</button><button type="button" data-lang="en">English</button></div><h3>先填好你的身分</h3><p class="fs-idnote">整節課都用這個，送出作答時會自動帶入。</p>
@@ -996,7 +1015,7 @@
     if (!fsLayer || !stage.classList.contains('is-full')) return;
     const mode = manual ? 'manual' : swim > 0 ? 'swim' : 'demo', t = tasks[task];
     $('fs-mode').textContent = { manual: '自己排', demo: '示範中', swim: '觀察者動' }[mode];
-    if ($('fs-task').options.length !== $('task').options.length) $('fs-task').replaceChildren(...[...$('task').options].map(o => new Option(o.textContent, o.value)));
+    if ($('fs-task').options.length !== $('task').options.length) fillTaskSelect($('fs-task'));
     $('fs-task').value = $('task').value;
     $('fs-q').textContent = t ? t.q : '';
     $('fs-load').hidden = !(t && t.setup && t.setup.swim);
@@ -1025,6 +1044,9 @@
     fsLayer.querySelector('[data-fs="guide"]').hidden = answering;
     fsLayer.querySelector('[data-fs="answer"]').hidden = !answering;
     $('fs-anum').textContent = '第 ' + t.n + ' 題';
+    const up = t && t.kind === 'image', fa = $('fs-answer'), want = up ? '⇪ 上傳給老師' : '✎ 作答';
+    if (fa.dataset.label !== want) { fa.dataset.label = want; fa.textContent = want; }
+    if (!up) $('fs-upnote').textContent = '';
     $('fs-aq').textContent = t ? t.q : '';
     fsLayer.querySelector('[data-fs="time"]').hidden = $('timeline').hidden;
   }
@@ -1048,7 +1070,7 @@
     return { label, placed: placed.length, total: rings.length, err: Math.round(err * 1000) / 1000 };
   }
   window.DopplerLab = {
-    tasks, get taskIndex() { return task; }, studentLabel,
+    tasks, get taskIndex() { return task; }, studentLabel, setTaskFilter, renderTaskSelect, markSent,
     params: () => ({ ...params }), manual: () => manual,
     ruler: () => ruler ? Math.round(P.distance(ruler.a, ruler.b) * 1000) / 1000 : null,
     ducks: () => [0, 1].map(i => { const r = reading(i); return { count: r.count, interval: r.interval === null ? null : Math.round(r.interval * 1000) / 1000, perSecond: r.interval ? Math.round(1000 / r.interval) / 1000 : null }; }),
@@ -1063,7 +1085,7 @@
   rebuildPieces(savedCenters || []);
   $('wave-speed').value = params.c; $('frequency').value = params.f; $('mach').value = Math.abs(params.mach); $('reverse').checked = params.mach < 0;
   document.querySelectorAll('[data-mach]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.mach) === params.mach)));
-  $('task').replaceChildren(...tasks.map((t, i) => new Option(t.n + '　' + t.title, String(i))));
+  renderTaskSelect();
   syncDucks(); syncQuick();
   loadQuestion(); setManual(true); persist();
   if (!new URLSearchParams(location.search).has('page')) {

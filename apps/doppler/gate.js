@@ -12,16 +12,11 @@
   const url = () => (read('doppler-gas-url', '') || window.DOPPLER_GAS_URL || '').trim();
   const cls = () => (($('cls') && $('cls').value) || read('doppler-identity-v1', {}).cls || '').trim();
 
-  const master = [...sel.options];          // app.js 建好的全部題目（保留同一個節點，翻譯才跟得上）
   let open = read(KEY, null), timer = null, toastEl = null;
   const isOpen = i => open === null || open.indexOf(tasks[i].id) >= 0;
   const openIdx = () => tasks.map((_, i) => i).filter(isOpen);
 
-  function syncFs() {
-    const fs = $('fs-task'); if (!fs) return;
-    fs.replaceChildren(...[...sel.options].map(o => new Option(o.textContent, o.value)));
-    fs.value = sel.value;
-  }
+  function syncFs() { if (Lab.renderTaskSelect) Lab.renderTaskSelect(); }
   function go(i) {
     if (String(i) === sel.value && Lab.taskIndex === i) return;
     sel.value = String(i); sel.dispatchEvent(new Event('change')); syncFs();
@@ -41,7 +36,7 @@
 
   function apply(prev) {
     const list = openIdx(), cur = Lab.taskIndex;
-    sel.replaceChildren(...master.filter(o => isOpen(Number(o.value))));
+    Lab.setTaskFilter(isOpen);
     const waiting = !list.length;
     document.body.classList.toggle('gate-waiting', waiting);
     if ($('submit')) $('submit').disabled = waiting;

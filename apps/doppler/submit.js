@@ -51,7 +51,8 @@
     }, 500);
   }
   function render(index) {
-    if (index !== lastShown) { lastShown = index; autoPhoto(index); }
+    lastShown = index;   // 1-1 直接在照片上畫，不再自動跳出放大視窗
+    if (lastShown !== render.last) { render.last = lastShown; setStatus(''); }   // 換關卡時清掉上一關的訊息
     const t = tasks[index], box = $('task-fields'), saved = values[t.id] || {};
     box.replaceChildren();
     $('answer-label').textContent = t.reasonLabel || '我的回答';
@@ -109,6 +110,7 @@
     store.set(KEY_FIELDS, values);
   }
   document.addEventListener('doppler:task', e => render(e.detail.index));
+  document.addEventListener('doppler:photo', () => { if ($('submit-status').dataset.kind === 'warn') setStatus(''); });
   // 選速度按鈕時，同步「我負責的波源速度」
   document.querySelectorAll('[data-mach]').forEach(b => b.addEventListener('click', () => {
     const sel = $('task-fields').querySelector('[data-key="speed"]'), label = machLabel(Number(b.dataset.mach));
@@ -117,7 +119,10 @@
   render(Lab.taskIndex);
 
   // ---------- 送出 ----------
-  function setStatus(text, kind = '') { $('submit-status').textContent = text; $('submit-status').dataset.kind = kind; }
+  function setStatus(text, kind = '') {
+    $('submit-status').textContent = text; $('submit-status').dataset.kind = kind;
+    const up = $('fs-upnote'); if (up) { up.textContent = text; up.dataset.kind = kind; }   // 直接上傳的關卡：訊息顯示在上傳按鈕下面
+  }
   function shrink(src, width, quality) {
     const scale = Math.min(1, width / src.width), c = document.createElement('canvas');
     c.width = Math.round(src.width * scale); c.height = Math.round(src.height * scale);
@@ -227,7 +232,7 @@
     const t = tasks[Lab.taskIndex], data = payload();
     const drawn = t.draw && window.DopplerPhoto ? window.DopplerPhoto.count() : 0;
     const empty = t.fields.find(f => (f.type === 'choice' || t.kind === 'form') && !data.fields[f.key]);
-    if (t.draw && !drawn) { setStatus('先在照片上圈出來', 'warn'); window.DopplerPhoto && window.DopplerPhoto.open(); return; }
+    if (t.draw && !drawn) { setStatus('先在照片上圈出來', 'warn'); return; }
     if (t.check && data.arrangement && data.arrangement.placed === 0) { setStatus('先把圓片拖進水面排好', 'warn'); return; }
     if (empty) { setStatus((window.T || String)(empty.type === 'choice' ? '先選：' : '先填：') + (window.T || String)(empty.label), 'warn'); return; }
     if (t.kind === 'idea' && !data.answer) { setStatus('寫下你的想法再送出', 'warn'); $('answer').focus(); return; }
@@ -238,6 +243,7 @@
       const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
       setStatus('✓ 已送出（' + time + '）', 'ok');
       Lab.status('已送出第 ' + data.taskNo + ' 題');
+      if (Lab.markSent) Lab.markSent(t.id);
       sentDialog(Lab.taskIndex);
     } catch (err) {
       setStatus('沒送出，請再按一次', 'warn');

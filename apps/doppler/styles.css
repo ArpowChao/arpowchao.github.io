@@ -272,3 +272,8 @@ body.bare .quick-bar>*:not(#qb-full),body.swimstage #qb-auto,body.swimstage #qb-
 .ph-back canvas{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:12px;box-shadow:0 8px 26px rgba(21,63,77,.18);background:#fff}
 .ph-back.can-draw{cursor:pointer}
 @media (max-width:760px){.ph-back{padding:16px}}
+/* 1-1：照片上方放筆的工具列，直接在照片上畫 */
+.ph-back{flex-direction:column;gap:10px}
+.ph-back .ph-tools{flex:0 0 auto}
+.ph-back canvas{flex:0 1 auto;min-height:0;touch-action:none}
+.fs-upnote{margin:8px 2px 0;font-size:14px;min-height:1.4em;color:var(--teal)}.fs-upnote[data-kind=warn]{color:#b45309;font-weight:700}.fs-upnote[data-kind=ok]{color:#0a7d4f;font-weight:700}
