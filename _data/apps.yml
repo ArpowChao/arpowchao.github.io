@@ -1,4 +1,6 @@
 changelog:
+  - date: "2026年11月26日"
+    entry: "新增「幸運籤籤所」班級抽籤工具，可匯入 Excel 名單、一次抽多位，並用日期或當下時間設定數學規則。全螢幕轉盤附可收合的操作卡。"
   - date: "2026年11月19日"
     entry: "新增「DIODE 二極體單行道實驗室」：不用空乏區，以電洞、電子被電池「推近／拉開」的粒子動畫說明二極體單向導電；六個場景依序比較電阻與二極體的 V–I 實驗（可載入課堂數據）、工作曲線（順向、逆向、崩潰）、PN 動畫（接觸前各自電中性→接觸後 P 型帶負電、N 型帶正電→順向／逆向偏壓）、LED 發光，以及電路中「5 V − 0.7 V = 4.3 V」；支援上課全螢幕。"
   - date: "2026年11月18日"
@@ -149,6 +151,12 @@ projects:
     url: "/apps/simulation/index.html"
     category: "力學"
     tags: ["Physics", "Simulation", "Collision", "Hooke's Law", "Energy"]
+  - title: "幸運籤籤所｜班級抽籤"
+    image: "/assets/img/apps/luckylab-thumbnail.png"
+    description: "匯入 Excel 班級名單，一次抽出多位同學。支援轉盤、快速揭曉、日期與時間數學規則，以及可收合操作卡的全螢幕投影。"
+    url: "/apps/luckylab/"
+    category: "實用工具"
+    tags: ["Classroom", "Random Picker", "Education", "Utility"]
   - title: "房貸試算與模擬分析系統"
     image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80"
     description: "房貸逐月攤銷計算、多筆提前還本模擬、十年分欄對照表，並整合蒙地卡羅利率風險模擬，量化未來利率波動對總利息的影響分布。"

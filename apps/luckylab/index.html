@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f9f7ff">
+  <meta name="description" content="把課堂點名變成一場幸運實驗。支援多人抽籤、權重調整與日期數學規則。">
+  <title>幸運籤籤所｜班級抽籤</title>
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./draw.js"></script>
+  <script defer src="./roster-xlsx.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#stage"><span class="brand-icon" aria-hidden="true">✦</span><span>幸運籤籤所<small>班級抽籤</small></span></a>
+      <nav aria-label="主選單">
+        <a href="#stage" data-page="stage" aria-current="page"><span aria-hidden="true">✦</span> 抽籤舞台</a>
+        <a href="#roster" data-page="roster"><span aria-hidden="true">☷</span> 班級名單</a>
+        <a href="#history" data-page="history"><span aria-hidden="true">◷</span> 抽籤紀錄</a>
+      </nav>
+      <div class="header-tools">
+        <div class="class-picker" id="class-picker" hidden><label for="active-class">班級</label><select id="active-class"></select></div>
+        <button class="fullscreen-button" type="button" id="fullscreen-button"><span class="fullscreen-icon" aria-hidden="true">⛶</span>全螢幕</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="stage" class="page" aria-labelledby="stage-title">
+      <h1 class="sr-only" id="stage-title">抽籤舞台</h1>
+      <article class="panel stage-panel" aria-labelledby="mode-title">
+        <header class="panel-heading stage-heading">
+          <h2 id="mode-title">好運轉盤</h2>
+          <div class="stage-tools">
+            <span class="availability" id="available-count">30 人可抽</span>
+            <details class="stage-settings" id="stage-settings">
+              <summary id="settings-toggle"><span aria-hidden="true">☷</span><span id="settings-label">抽籤設定</span></summary>
+              <aside class="settings-card" aria-label="抽籤設定">
+                <div class="fullscreen-operations" id="fullscreen-operations" hidden>
+                  <div class="fullscreen-toolbar">
+                    <div id="fullscreen-class-slot"></div>
+                    <button type="button" class="secondary fullscreen-exit" id="stage-exit">退出全螢幕</button>
+                  </div>
+                  <div id="fullscreen-draw-slot"></div>
+                </div>
+                <section class="panel control-panel" aria-labelledby="mode-heading">
+                  <h2 id="mode-heading"><span class="heading-icon" aria-hidden="true">✦</span> 選擇抽籤模式</h2>
+                  <fieldset class="mode-options" id="mode-options">
+                    <legend class="sr-only">抽籤模式</legend>
+                    <label class="mode-choice"><input type="radio" name="mode" value="wheel" checked><span class="choice-icon violet" aria-hidden="true">◉</span><span class="choice-text"><strong>好運轉盤</strong><small>旋轉揭曉，適合全班一起看</small></span><span class="choice-indicator" aria-hidden="true"></span></label>
+                    <label class="mode-choice"><input type="radio" name="mode" value="quick"><span class="choice-icon amber" aria-hidden="true">ϟ</span><span class="choice-text"><strong>快速揭曉</strong><small>直接公布本輪得主</small></span><span class="choice-indicator" aria-hidden="true"></span></label>
+                    <label class="mode-choice"><input type="radio" name="mode" value="rule"><span class="choice-icon mint" aria-hidden="true">✚</span><span class="choice-text"><strong>數學任務</strong><small>用日期、時間或自訂數值篩選座號</small></span><span class="choice-indicator" aria-hidden="true"></span></label>
+                  </fieldset>
+                </section>
+
+                <section class="panel control-panel" aria-labelledby="settings-heading">
+                  <h2 id="settings-heading"><span class="heading-icon" aria-hidden="true">☷</span> 人數與中籤方式</h2>
+                  <div class="setting-row"><label for="count">每次抽幾位？</label><div class="stepper"><button id="count-minus" type="button" aria-label="減少一位">−</button><input id="count" type="number" inputmode="numeric" min="1" max="9999" step="1" value="1" aria-describedby="draw-note"><button id="count-plus" type="button" aria-label="增加一位">+</button></div></div>
+                  <div class="setting-line"><label for="policy">抽過的同學</label><select id="policy"><option value="exclude">下輪排除</option><option value="keep">下輪照常參加</option><option value="lower">下輪降低權重</option></select></div>
+                  <p class="setting-help" id="policy-help">每位同學在清空紀錄前只會中籤一次。</p>
+                  <div id="weight-setting" class="weight-setting" hidden><label for="weight">每次中籤後保留權重 <output id="weight-output" for="weight">50%</output></label><input id="weight" type="range" min="5" max="95" step="5" value="50"></div>
+                </section>
+
+                <section class="panel control-panel rule-panel" id="rule-panel" aria-labelledby="rule-heading" hidden>
+                  <h2 id="rule-heading"><span class="heading-icon" aria-hidden="true">✚</span> 數學規則</h2>
+                  <div class="setting-line"><label for="rule-type">篩選方式</label><select id="rule-type"><option value="arithmetic">等差數列</option><option value="geometric">等比數列</option><option value="factor">公因數</option><option value="add">加法</option><option value="subtract">減法</option><option value="multiple">倍數</option></select></div>
+                  <div class="rule-numbers">
+                    <div class="setting-line"><label for="rule-source" id="rule-source-label">首項來源</label>
+                      <select id="rule-source">
+                        <optgroup label="日期"><option value="day">日期的日</option><option value="month">日期的月</option><option value="sum">月 ＋ 日</option><option value="difference">月 − 日</option></optgroup>
+                        <optgroup label="當下時間"><option value="hour">當下小時（0–23）</option><option value="minute">當下分鐘（0–59）</option></optgroup>
+                        <option value="custom">自訂數值</option>
+                      </select>
+                    </div>
+                    <div class="setting-line" id="rule-b-source-setting"><label for="rule-b-source" id="rule-b-source-label">公差來源</label>
+                      <select id="rule-b-source">
+                        <option value="custom">自訂數值</option>
+                        <optgroup label="日期"><option value="day">日期的日</option><option value="month">日期的月</option><option value="sum">月 ＋ 日</option><option value="difference">月 − 日</option></optgroup>
+                        <optgroup label="當下時間"><option value="hour">當下小時（0–23）</option><option value="minute">當下分鐘（0–59）</option></optgroup>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="setting-line" id="rule-date-setting"><label for="rule-date">抽籤日期</label><input id="rule-date" type="date" min="0001-01-01" max="9999-12-31"></div>
+                  <p class="rule-clock" id="rule-clock" hidden>目前臺灣時間 <time id="clock-time"></time></p>
+                  <div class="rule-numbers"><div class="setting-line" id="rule-a-setting" hidden><label for="rule-a" id="rule-a-label">首項</label><input id="rule-a" type="number" min="-999999" max="999999" step="1" value="1"></div><div class="setting-line" id="rule-b-setting"><label for="rule-b" id="rule-b-label">公差</label><input id="rule-b" type="number" min="-999999" max="999999" step="1" value="2"></div></div>
+                  <p class="rule-preview" id="rule-preview" aria-live="polite"></p>
+                </section>
+              </aside>
+            </details>
+          </div>
+        </header>
+        <div class="visual-stage" id="visual-stage" data-mode="wheel">
+          <span class="deco deco-a" aria-hidden="true">✦</span><span class="deco deco-b" aria-hidden="true">✧</span><span class="deco deco-c" aria-hidden="true">✧</span><span class="deco deco-d" aria-hidden="true">✦</span><span class="deco deco-e" aria-hidden="true">·</span><span class="deco deco-f" aria-hidden="true">·</span>
+          <div id="wheel-wrap" class="wheel-wrap" aria-hidden="true">
+            <div class="pointer"></div>
+            <canvas id="wheel" width="1440" height="1440"></canvas>
+            <span class="wheel-hub">✦</span>
+          </div>
+          <div class="mode-art" id="mode-art" aria-hidden="true" hidden>
+            <div class="art-back"></div><div class="art-mid"></div><div class="art-front" id="art-symbol">⚡</div>
+          </div>
+          <section class="result-panel" id="result-panel" aria-labelledby="result-title" hidden>
+            <header class="panel-heading">
+              <div><h3 id="result-title"><span aria-hidden="true">✦</span> 本輪得主</h3><p id="result-detail"></p></div>
+              <button type="button" class="result-close" id="close-result" aria-label="收起抽籤結果">收起</button>
+            </header>
+            <ul id="result-list" class="winner-list" aria-label="中籤同學"></ul>
+          </section>
+          <div id="confetti" class="confetti" aria-hidden="true"></div>
+          <button type="button" class="sr-only" id="stage-trigger" hidden>開始抽籤</button>
+          <div class="fullscreen-controls" id="fullscreen-controls" hidden></div>
+        </div>
+        <div class="stage-actions" id="stage-actions">
+          <button type="button" class="primary draw-button" id="draw-button"><span aria-hidden="true">✦</span> <span id="draw-label">開始抽籤</span></button>
+          <p id="draw-note">每輪抽出 1 位同學</p>
+        </div>
+      </article>
+    </section>
+
+    <section id="roster" class="page" aria-labelledby="roster-title" hidden>
+      <div class="intro"><div><h1 id="roster-title">班級<span>名單</span></h1><p class="intro-copy">匯入有「座號」和「姓名」欄的 Excel，或直接編輯目前班級的名單。</p></div><button class="secondary" type="button" id="import-roster">匯入 Excel 名單</button><input id="roster-file" type="file" accept=".xlsx" hidden></div>
+      <p class="form-message" id="import-message" role="status" hidden></p>
+      <div class="dashboard roster-dashboard">
+        <section class="panel roster-panel" aria-labelledby="roster-list-title"><header class="panel-heading"><div><h2 id="roster-list-title">目前名單</h2><p id="roster-summary"></p></div></header><ul class="student-list" id="student-list"></ul></section>
+        <form class="panel control-panel roster-form" id="roster-form">
+          <h2>批次編輯</h2>
+          <p id="roster-format">每行一位。可輸入「12 王小明」、「12,王小明」或只填座號。只填姓名會自動分配空座號。</p>
+          <label class="sr-only" for="roster-input">名單</label>
+          <textarea id="roster-input" rows="10" spellcheck="false" required aria-describedby="roster-format roster-message"></textarea>
+          <p class="form-message" id="roster-message" aria-live="polite" hidden></p>
+          <button class="primary" type="submit">儲存名單</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="history" class="page" aria-labelledby="history-title" hidden>
+      <div class="intro"><div><h1 id="history-title">抽籤<span>紀錄</span></h1><p class="intro-copy">查看每一輪抽出了誰，也可清空紀錄，讓全班重新開始。</p></div><button class="secondary" type="button" id="clear-history" disabled>清空紀錄</button></div>
+      <div class="panel history-panel" id="history-panel"></div>
+    </section>
+    <p id="storage-warning" class="storage-warning" role="status" hidden>瀏覽器未開放儲存。重新整理後，名單和紀錄會重設。</p>
+    <div class="sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <dialog id="clear-dialog" aria-labelledby="clear-title">
+    <form method="dialog">
+      <h2 id="clear-title">清空抽籤紀錄？</h2>
+      <p>目前班級的中籤次數會歸零，全班會以相同權重重新開始。</p>
+      <div class="dialog-actions"><button class="secondary" value="cancel" autofocus>取消</button><button class="primary" value="clear">清空紀錄</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
