@@ -7,6 +7,7 @@
   <meta name="description" content="把課堂點名變成一場幸運實驗。支援多人抽籤、權重調整與日期數學規則。">
   <title>幸運籤籤所｜班級抽籤</title>
   <link rel="stylesheet" href="./style.css">
+  <script id="preset-class-seats" type="application/json">[{"id":"sheet:105","label":"105","seats":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33]},{"id":"sheet:305","label":"305","seats":[1,2,3,4,5,6,7,8,9,11,12,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,31,32,34,35]},{"id":"sheet:307","label":"307","seats":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24,25,26,27,28,29,30,31,32,33,34,35,36]},{"id":"sheet:308","label":"308","seats":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34]},{"id":"sheet:310","label":"310","seats":[1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,18,19,20,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38]}]</script>
   <script defer src="./draw.js"></script>
   <script defer src="./roster-xlsx.js"></script>
   <script defer src="./app.js"></script>
@@ -120,7 +121,7 @@
     </section>
 
     <section id="roster" class="page" aria-labelledby="roster-title" hidden>
-      <div class="intro"><div><h1 id="roster-title">班級<span>名單</span></h1><p class="intro-copy">匯入有「座號」和「姓名」欄的 Excel，或直接編輯目前班級的名單。</p></div><button class="secondary" type="button" id="import-roster">匯入 Excel 名單</button><input id="roster-file" type="file" accept=".xlsx" hidden></div>
+      <div class="intro"><div><h1 id="roster-title">班級<span>名單</span></h1><p class="intro-copy">選擇班級即可用預設座號抽籤。匯入 Excel 可加入姓名，也可直接編輯目前班級的名單。</p></div><button class="secondary" type="button" id="import-roster">匯入 Excel 名單</button><input id="roster-file" type="file" accept=".xlsx" hidden></div>
       <p class="form-message" id="import-message" role="status" hidden></p>
       <div class="dashboard roster-dashboard">
         <section class="panel roster-panel" aria-labelledby="roster-list-title"><header class="panel-heading"><div><h2 id="roster-list-title">目前名單</h2><p id="roster-summary"></p></div></header><ul class="student-list" id="student-list"></ul></section>

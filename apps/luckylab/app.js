@@ -2,6 +2,9 @@
 
 const $ = id => document.getElementById(id);
 const seedClasses = JSON.parse($('initial-classes')?.textContent ?? '[]');
+const presetClasses = JSON.parse($('preset-class-seats')?.textContent ?? '[]').map(({ id, label, seats }) => ({
+  id, label, roster: seats.map(seat => ({ seat, name: '' })), history: [],
+}));
 const storageSuffix = seedClasses.length ? '-offline' : '';
 const dataKey = 'lucky-lab-data-v2' + storageSuffix;
 const legacyDataKey = 'lucky-lab-data-v1';
@@ -25,7 +28,7 @@ const starterClass = {
   roster: Array.from({ length: 30 }, (_, index) => ({ seat: index + 1, name: '' })), history: [],
 };
 const legacy = seedClasses.length ? null : readStored(legacyDataKey, null);
-const initialData = { classes: seedClasses.length ? seedClasses : [{ ...starterClass, ...legacy }] };
+const initialData = { classes: seedClasses.length ? seedClasses : [...presetClasses, { ...starterClass, ...legacy }] };
 const taipeiDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei', dateStyle: 'short' });
 const taipeiTime = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'short' });
 const taipeiClock = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -54,7 +57,7 @@ const colors = [
 ];
 const canvas = $('wheel');
 const spinDuration = 1750;
-let data = readStored(dataKey, initialData);
+let data = readClassData();
 let settings = { ...defaultSettings, ...readStored(settingsKey, {}) };
 let drawing = false;
 let importing = false;
@@ -90,9 +93,15 @@ function saveStored(key, value) {
   }
 }
 
+function readClassData(fallback = initialData) {
+  const saved = readStored(dataKey, fallback);
+  const missing = presetClasses.filter(preset => !saved.classes.some(entry => entry.id === preset.id));
+  return missing.length ? { ...saved, classes: [...saved.classes, ...missing] } : saved;
+}
+
 function changeData(update) {
   const apply = () => {
-    const previous = $('storage-warning').hidden ? readStored(dataKey, data) : data;
+    const previous = $('storage-warning').hidden ? readClassData(data) : data;
     const next = update(previous);
     if (next !== previous) saveStored(dataKey, next);
     data = next;
@@ -659,7 +668,7 @@ window.addEventListener('storage', event => {
   if (event.key !== dataKey) return;
   const editor = $('roster-input');
   const savedText = rosterText(activeClass().roster);
-  data = readStored(dataKey, initialData);
+  data = readClassData();
   if (editor.value === savedText) syncRosterEditor();
   renderRoster();
   if (drawing) return;
